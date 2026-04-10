@@ -1,0 +1,81 @@
+package com.claim.claim_processing.master.entities.claim;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "CLAIM_VESTING_RULE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ClaimVestingRuleMaster {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
+    private Long id;
+
+    @Column(name = "RULE_CODE", nullable = false, unique = true, length = 50)
+    private String ruleCode;
+
+    @Column(name = "MEMBER_CATEGORY", length = 50)
+    private String memberCategory;
+
+    @Column(name = "EFFECTIVE_FROM")
+    private LocalDate effectiveFrom;
+
+    @Column(name = "EFFECTIVE_TO")
+    private LocalDate effectiveTo;
+
+    @Column(name = "REFUND_TYPE", length = 50)
+    private String refundType;
+
+    @Column(name = "MIN_VESTING_MONTHS")
+    private Integer minVestingMonths;
+
+    @Column(name = "MAX_VESTING_MONTHS")
+    private Integer maxVestingMonths;
+
+    @Column(name = "COMPARISON_TYPE", length = 30)
+    private String comparisonType;
+
+    @Column(name = "PAYOUT_RESULT", length = 50)
+    private String payoutResult;
+
+    @Column(name = "REMARKS", length = 500)
+    private String remarks;
+
+    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    private String isActive = "Y";
+
+    @Column(name = "CREATED_AT", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "CREATED_BY", length = 100)
+    private String createdBy;
+
+    @Column(name = "UPDATED_AT")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "UPDATED_BY", length = 100)
+    private String updatedBy;
+
+    @PrePersist
+    public void prePersist() {
+        if (isActive == null) {
+            isActive = "Y";
+        }
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
