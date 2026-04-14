@@ -1,4 +1,5 @@
 package com.claim.claim_processing.master.entities.claim;
+import com.claim.claim_processing.master.entities.contribution.SchemeMaster;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,17 +20,38 @@ public class ClaimLapsedRefundMaster {
     @Column(name = "ID")
     private Long id;
 
+    @Column(name = "RULE_CODE", nullable = false, unique = true, length = 50)
+    private String ruleCode;
+
+    @Column(name = "RULE_NAME", nullable = false, length = 200)
+    private String ruleName;
+
     @Column(name = "CLAIM_CATEGORY_CODE", length = 50)
     private String claimCategoryCode;
 
-    @Column(name = "MEMBER_TYPE", length = 50)
-    private String memberType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "CLAIM_CIRCUMSTANCE_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_CIRCUMSTANCE")
+    )
+    private ClaimCircumstanceMaster claimCircumstance;
 
-    @Column(name = "CESSATION_TYPE", length = 50)
-    private String cessationType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "CESSATION_TYPE_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_CESSATION_TYPE")
+    )
+    private CessationTypeMaster cessationType;
 
-    @Column(name = "SCHEME_TYPE", length = 30)
-    private String schemeType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "SCHEME_TYPE_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_SCHEME_TYPE")
+    )
+    private SchemeMaster schemeType;
 
     @Column(name = "MIN_CONTRIBUTION_MONTHS")
     private Integer minContributionMonths;
@@ -43,8 +65,8 @@ public class ClaimLapsedRefundMaster {
     @Column(name = "EFFECTIVE_TO")
     private LocalDate effectiveTo;
 
-    @Column(name = "LAPSED_FORMULA", length = 500)
-    private String lapsedFormula;
+    @Column(name = "REMARKS", length = 500)
+    private String remarks;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
     private String isActive = "Y";
@@ -63,16 +85,14 @@ public class ClaimLapsedRefundMaster {
 
     @PrePersist
     public void prePersist() {
-        if (isActive == null) {
-            isActive = "Y";
+        if (this.isActive == null) {
+            this.isActive = "Y";
         }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

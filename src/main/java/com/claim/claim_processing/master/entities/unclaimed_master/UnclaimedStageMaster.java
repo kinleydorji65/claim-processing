@@ -1,4 +1,5 @@
 package com.claim.claim_processing.master.entities.unclaimed_master;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,9 @@ public class UnclaimedStageMaster {
     @Column(name = "DISPLAY_ORDER")
     private Integer displayOrder;
 
+    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    private String isActive = "Y";
+
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -41,13 +45,17 @@ public class UnclaimedStageMaster {
 
     @PrePersist
     public void prePersist() {
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
+        if (this.isActive == null) {
+            this.isActive = "Y";
         }
+        if (this.displayOrder == null) {
+            this.displayOrder = 1;
+        }
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

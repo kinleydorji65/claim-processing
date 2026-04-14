@@ -33,4 +33,29 @@ public class ActionMaster {
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "CREATED_BY", length = 100)
+    private String createdBy;
+
+    @Column(name = "UPDATED_AT")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "UPDATED_BY", length = 100)
+    private String updatedBy;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.isActive == null) {
+            this.isActive = "Y";
+        }
+        if (this.displayOrder == null) {
+            this.displayOrder = 1;
+        }
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

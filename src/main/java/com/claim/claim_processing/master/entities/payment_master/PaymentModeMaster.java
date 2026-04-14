@@ -25,6 +25,9 @@ public class PaymentModeMaster {
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
+    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    private String isActive = "Y";
+
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -39,13 +42,14 @@ public class PaymentModeMaster {
 
     @PrePersist
     public void prePersist() {
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
+        if (this.isActive == null) {
+            this.isActive = "Y";
         }
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

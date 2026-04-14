@@ -1,4 +1,4 @@
-package com.claim.claim_processing.master.entities.special_case;
+package com.claim.claim_processing.master.entities.contribution;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -6,20 +6,20 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "SPECIAL_CASE_REFUND_REASON_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "BENEFIT_COMPONENT_TYPE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SpecialCaseRefundReasonMaster {
+public class BenefitComponentTypeMaster {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "CODE", nullable = false, unique = true, length = 60)
+    @Column(name = "CODE", nullable = false, unique = true, length = 50)
     private String code;
 
     @Column(name = "NAME", nullable = false, length = 150)

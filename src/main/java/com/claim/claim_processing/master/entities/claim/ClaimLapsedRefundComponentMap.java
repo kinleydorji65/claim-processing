@@ -1,46 +1,50 @@
 package com.claim.claim_processing.master.entities.claim;
-
-import com.claim.claim_processing.master.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.master.entities.contribution.BenefitComponentTypeMaster;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "RESERVE_ACCOUNT_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(
+        name = "CLAIM_LAPSED_REFUND_COMPONENT_MAP",
+        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "UK_LAPSED_REFUND_RULE_COMP",
+                        columnNames = {"RULE_ID", "BENEFIT_COMPONENT_TYPE_ID"}
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReserveAccountMaster {
+public class ClaimLapsedRefundComponentMap {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "RESERVE_ACCOUNT_CODE", nullable = false, unique = true, length = 50)
-    private String reserveAccountCode;
-
-    @Column(name = "RESERVE_ACCOUNT_NAME", nullable = false, length = 150)
-    private String reserveAccountName;
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
-            name = "ACCOUNT_TYPE_ID",
+            name = "RULE_ID",
             referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_RESERVE_ACCOUNT_TYPE")
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_COMPONENT_RULE")
     )
-    private AccountTypeMaster accountType;
+    private ClaimLapsedRefundMaster rule;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
-            name = "SCHEME_TYPE_ID",
+            name = "BENEFIT_COMPONENT_TYPE_ID",
             referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_RESERVE_ACCOUNT_SCHEME")
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_COMPONENT_TYPE")
     )
-    private SchemeMaster schemeType;
+    private BenefitComponentTypeMaster benefitComponentType;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
     private String isActive = "Y";

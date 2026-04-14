@@ -1,4 +1,5 @@
 package com.claim.claim_processing.master.entities.common;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -41,16 +42,14 @@ public class DeductionTypeMaster {
 
     @PrePersist
     public void prePersist() {
-        if (isActive == null) {
-            isActive = "Y";
+        if (this.isActive == null) {
+            this.isActive = "Y";
         }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

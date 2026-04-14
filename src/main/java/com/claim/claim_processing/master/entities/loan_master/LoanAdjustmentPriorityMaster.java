@@ -26,14 +26,12 @@ public class LoanAdjustmentPriorityMaster {
     private String name;
 
     @Column(name = "IS_APPLICABLE", nullable = false, length = 1)
-    @Builder.Default
     private String isApplicable = "Y";
 
     @Column(name = "PRIORITY_SEQUENCE", nullable = false)
     private Integer prioritySequence;
 
-    @Column(name = "IS_ACTIVE", length = 30)
-    @Builder.Default
+    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
     private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
@@ -50,16 +48,17 @@ public class LoanAdjustmentPriorityMaster {
 
     @PrePersist
     public void prePersist() {
-        if (isApplicable == null) {
-            isApplicable = "Y";
+        if (this.isActive == null) {
+            this.isActive = "Y";
         }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
+        if (this.isApplicable == null) {
+            this.isApplicable = "Y";
         }
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -3,6 +3,8 @@ package com.claim.claim_processing.master.entities.common;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "CLAIM_SOURCE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
@@ -26,10 +28,28 @@ public class ClaimSourceMaster {
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
     private String isActive = "Y";
 
+    @Column(name = "CREATED_AT", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "CREATED_BY", length = 100)
+    private String createdBy;
+
+    @Column(name = "UPDATED_AT")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "UPDATED_BY", length = 100)
+    private String updatedBy;
+
     @PrePersist
     public void prePersist() {
-        if (isActive == null) {
-            isActive = "Y";
+        if (this.isActive == null) {
+            this.isActive = "Y";
         }
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

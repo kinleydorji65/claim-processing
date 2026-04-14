@@ -1,40 +1,41 @@
-package com.claim.claim_processing.master.entities.claim;
+package com.claim.claim_processing.master.entities.contribution;
 
-import com.claim.claim_processing.master.entities.contribution.BenefitComponentTypeMaster;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "CLAIM_ELIGIBILITY_COMPONENT_MAP", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "BENEFIT_COMPONENT_TYPE_DETAIL", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ClaimEligibilityComponentMap {
+public class BenefitComponentTypeDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "RULE_ID",
-            referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_RULE")
-    )
-    private ClaimEligibilityMaster rule;
-
+    // 🔥 Relation to Benefit Component Type
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "BENEFIT_COMPONENT_TYPE_ID",
             referencedColumnName = "ID",
             nullable = false,
-            foreignKey = @ForeignKey(name = "FK_BENEFIT_TYPE_MAP")
+            foreignKey = @ForeignKey(name = "FK_BENEFIT_TYPE")
     )
     private BenefitComponentTypeMaster benefitComponentType;
+
+    // 🔥 Relation to Claim Component
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "COMPONENT_ID",
+            referencedColumnName = "ID",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_COMPONENT")
+    )
+    private ComponentMaster component;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
     private String isActive = "Y";

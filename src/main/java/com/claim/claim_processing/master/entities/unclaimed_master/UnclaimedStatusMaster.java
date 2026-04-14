@@ -44,16 +44,17 @@ public class UnclaimedStatusMaster {
 
     @PrePersist
     public void prePersist() {
-        if (isActive == null) {
-            isActive = "Y";
+        if (this.isActive == null) {
+            this.isActive = "Y";
         }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
+        if (this.displayOrder == null) {
+            this.displayOrder = 1;
         }
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

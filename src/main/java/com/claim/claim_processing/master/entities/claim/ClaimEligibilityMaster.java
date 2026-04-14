@@ -32,17 +32,25 @@ public class ClaimEligibilityMaster {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-        name = "CESSATION_TYPE_ID",
-        referencedColumnName = "ID",
-        foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_CESSATION_TYPE")
+            name = "CLAIM_CIRCUMSTANCE_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_CIRCUMSTANCE")
+    )
+    private ClaimCircumstanceMaster claimCircumstance;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "CESSATION_TYPE_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_CESSATION_TYPE")
     )
     private CessationTypeMaster cessationType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-        name = "SCHEME_TYPE_ID",
-        referencedColumnName = "ID",
-        foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_SCHEME_TYPE")
+            name = "SCHEME_TYPE_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_SCHEME_TYPE")
     )
     private SchemeMaster schemeType;
 
@@ -59,7 +67,6 @@ public class ClaimEligibilityMaster {
     private LocalDate effectiveTo;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
-    @Builder.Default
     private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
@@ -76,16 +83,14 @@ public class ClaimEligibilityMaster {
 
     @PrePersist
     public void prePersist() {
-        if (isActive == null) {
-            isActive = "Y";
+        if (this.isActive == null) {
+            this.isActive = "Y";
         }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }
