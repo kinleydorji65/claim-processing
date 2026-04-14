@@ -1,10 +1,10 @@
 package com.claim.claim_processing.master.entities.partial;
 
+import com.claim.claim_processing.master.entities.others.AgencyCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,43 +21,33 @@ public class PartialWithdrawalRuleMaster {
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "RULE_CODE", nullable = false, unique = true, length = 50)
-    private String ruleCode;
-
-    @Column(name = "RULE_NAME", nullable = false, length = 200)
-    private String ruleName;
-
-    @Column(name = "WITHDRAWAL_CATEGORY", length = 50)
-    private String withdrawalCategory;
+    // MANY RULES → ONE CATEGORY
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "CATEGORY_ID",
+            referencedColumnName = "CATEGORY_ID",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_PARTIAL_WITHDRAWAL_RULE_CATEGORY")
+    )
+    private AgencyCategory category;
 
     @Column(name = "MAX_WITHDRAWAL_PERCENTAGE", precision = 5, scale = 2)
     private BigDecimal maxWithdrawalPercentage;
 
-    @Column(name = "MIN_PF_ACCUMULATION", precision = 18, scale = 2)
-    private BigDecimal minPfAccumulation;
+    // Boolean mapped to Y/N
+    @Convert(converter = YesNoConverter.class)
+    @Column(name = "PF_ACCUMULATION")
+    private Boolean pfAccumulation;
 
-    @Column(name = "MIN_TOTAL_ACCUMULATION", precision = 18, scale = 2)
-    private BigDecimal minTotalAccumulation;
+    @Convert(converter = YesNoConverter.class)
+    @Column(name = "TOTAL_ACCUMULATION_VALUE")
+    private Boolean totalAccumulationValue;
 
-    @Column(name = "MIN_CONTRIBUTION_MONTHS")
-    private Integer minContributionMonths;
-
-    @Column(name = "UNEMPLOYMENT_MIN_MONTHS")
-    private Integer unemploymentMinMonths;
-
-    @Column(name = "ACTIVE_EMPLOYMENT_ALLOWED", length = 1)
-    private String activeEmploymentAllowed = "N";
-
-    @Column(name = "DUPLICATE_ACTIVE_REQUEST_ALLOWED", length = 1)
-    private String duplicateActiveRequestAllowed = "N";
-
-    @Column(name = "EFFECTIVE_FROM")
-    private LocalDate effectiveFrom;
-
-    @Column(name = "EFFECTIVE_TO")
-    private LocalDate effectiveTo;
+    @Column(name = "NUMBER_OF_CONTRIBUTION_MONTHS")
+    private Integer numberOfContributionMonths;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
@@ -72,24 +62,33 @@ public class PartialWithdrawalRuleMaster {
     @Column(name = "UPDATED_BY", length = 100)
     private String updatedBy;
 
+    // ✅ Enforce logic at application level
     @PrePersist
     public void prePersist() {
+        handleDefaults();
+        validateAccumulation();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+        validateAccumulation();
+    }
+
+    private void handleDefaults() {
         if (isActive == null) {
             isActive = "Y";
-        }
-        if (activeEmploymentAllowed == null) {
-            activeEmploymentAllowed = "N";
-        }
-        if (duplicateActiveRequestAllowed == null) {
-            duplicateActiveRequestAllowed = "N";
         }
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
         }
     }
 
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+    private void validateAccumulation() {
+        if (Boolean.TRUE.equals(pfAccumulation)) {
+            totalAccumulationValue = false;
+        } else if (Boolean.TRUE.equals(totalAccumulationValue)) {
+            pfAccumulation = false;
+        }
     }
 }

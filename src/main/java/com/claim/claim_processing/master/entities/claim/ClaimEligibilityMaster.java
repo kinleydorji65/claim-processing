@@ -1,5 +1,6 @@
 package com.claim.claim_processing.master.entities.claim;
 
+import com.claim.claim_processing.master.entities.contribution.SchemeMaster;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,14 +30,21 @@ public class ClaimEligibilityMaster {
     @Column(name = "CLAIM_CATEGORY_CODE", length = 50)
     private String claimCategoryCode;
 
-    @Column(name = "MEMBER_TYPE", length = 50)
-    private String memberType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "CESSATION_TYPE_ID",
+        referencedColumnName = "ID",
+        foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_CESSATION_TYPE")
+    )
+    private CessationTypeMaster cessationType;
 
-    @Column(name = "CESSATION_TYPE", length = 50)
-    private String cessationType;
-
-    @Column(name = "SCHEME_TYPE", length = 30)
-    private String schemeType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "SCHEME_TYPE_ID",
+        referencedColumnName = "ID",
+        foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_SCHEME_TYPE")
+    )
+    private SchemeMaster schemeType;
 
     @Column(name = "MIN_CONTRIBUTION_MONTHS")
     private Integer minContributionMonths;
@@ -51,6 +59,7 @@ public class ClaimEligibilityMaster {
     private LocalDate effectiveTo;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)

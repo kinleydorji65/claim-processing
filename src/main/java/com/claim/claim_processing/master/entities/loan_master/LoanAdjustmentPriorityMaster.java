@@ -26,13 +26,15 @@ public class LoanAdjustmentPriorityMaster {
     private String name;
 
     @Column(name = "IS_APPLICABLE", nullable = false, length = 1)
+    @Builder.Default
     private String isApplicable = "Y";
 
     @Column(name = "PRIORITY_SEQUENCE", nullable = false)
     private Integer prioritySequence;
 
-    @Column(name = "STATUS", length = 30)
-    private String status;
+    @Column(name = "IS_ACTIVE", length = 30)
+    @Builder.Default
+    private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
