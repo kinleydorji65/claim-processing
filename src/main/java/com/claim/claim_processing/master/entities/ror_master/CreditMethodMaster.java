@@ -1,48 +1,34 @@
-package com.claim.claim_processing.master.entities.loan_master;
-
+package com.claim.claim_processing.master.entities.ror_master;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "LOAN_ADJUSTMENT_PRIORITY_MASTER",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "UK_LOAN_ADJ_PRIORITY",
-                        columnNames = {"LOAN_TYPE_ID"}
-                )
-        }
-)
+@Table(name = "CREDIT_METHOD_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoanAdjustmentPriorityMaster {
+public class CreditMethodMaster {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
 
-    // 🔥 FK → LOAN_TYPE_MASTER
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "LOAN_TYPE_ID",
-            referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_LOAN_ADJ_PRIORITY_LOAN_TYPE")
-    )
-    private LoanTypeMaster loanType;
+    @Column(name = "CODE", nullable = false, unique = true, length = 50)
+    private String code;
 
-    @Column(name = "PRIORITY_ORDER", nullable = false)
-    private Integer priorityOrder;
+    @Column(name = "NAME", nullable = false, length = 100)
+    private String name;
 
     @Column(name = "DESCRIPTION", length = 255)
     private String description;
+
+    @Column(name = "DISPLAY_ORDER")
+    private Integer displayOrder = 1;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
     private String isActive = "Y";
@@ -61,6 +47,9 @@ public class LoanAdjustmentPriorityMaster {
 
     @PrePersist
     public void prePersist() {
+        if (this.displayOrder == null) {
+            this.displayOrder = 1;
+        }
         if (this.isActive == null) {
             this.isActive = "Y";
         }

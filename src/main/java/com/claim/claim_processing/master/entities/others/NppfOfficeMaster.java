@@ -1,4 +1,4 @@
-package com.claim.claim_processing.master.entities.loan_master;
+package com.claim.claim_processing.master.entities.others;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -6,43 +6,24 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "LOAN_ADJUSTMENT_PRIORITY_MASTER",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "UK_LOAN_ADJ_PRIORITY",
-                        columnNames = {"LOAN_TYPE_ID"}
-                )
-        }
-)
+@Table(name = "NPPF_OFFICE_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoanAdjustmentPriorityMaster {
+public class NppfOfficeMaster {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
 
-    // 🔥 FK → LOAN_TYPE_MASTER
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "LOAN_TYPE_ID",
-            referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_LOAN_ADJ_PRIORITY_LOAN_TYPE")
-    )
-    private LoanTypeMaster loanType;
+    @Column(name = "CODE", nullable = false, unique = true)
+    private Long code;
 
-    @Column(name = "PRIORITY_ORDER", nullable = false)
-    private Integer priorityOrder;
-
-    @Column(name = "DESCRIPTION", length = 255)
-    private String description;
+    @Column(name = "NAME", nullable = false, length = 150)
+    private String name;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
     private String isActive = "Y";

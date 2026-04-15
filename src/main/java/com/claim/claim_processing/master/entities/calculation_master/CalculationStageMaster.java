@@ -1,4 +1,4 @@
-package com.claim.claim_processing.master.entities.claim;
+package com.claim.claim_processing.master.entities.calculation_master;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -6,24 +6,33 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "CLAIMANT_TYPE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "CALCULATION_STAGE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ClaimantTypeMaster {
+public class CalculationStageMaster {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "CODE", nullable = false, unique = true, length = 40)
+    @Column(name = "CODE", nullable = false, unique = true, length = 50)
     private String code;
 
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
+
+    @Column(name = "DESCRIPTION", length = 255)
+    private String description;
+
+    @Column(name = "DISPLAY_ORDER")
+    private Integer displayOrder = 1;
+
+    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -39,13 +48,17 @@ public class ClaimantTypeMaster {
 
     @PrePersist
     public void prePersist() {
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
+        if (this.displayOrder == null) {
+            this.displayOrder = 1;
         }
+        if (this.isActive == null) {
+            this.isActive = "Y";
+        }
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }
