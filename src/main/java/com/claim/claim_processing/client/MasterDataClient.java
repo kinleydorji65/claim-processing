@@ -10,7 +10,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import com.claim.claim_processing.common.DTO.master.*;
+import com.claim.claim_processing.common.DTO.others.*;
 import com.claim.claim_processing.exceptions.ClaimException;
 
 @Component

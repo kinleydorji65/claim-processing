@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.DTO.master;
+package com.claim.claim_processing.common.DTO.others;
 
 import java.time.LocalDateTime;
 
