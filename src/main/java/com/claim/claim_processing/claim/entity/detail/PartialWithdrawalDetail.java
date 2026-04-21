@@ -1,4 +1,4 @@
-package com.claim.claim_processing.claim.entity.application;
+package com.claim.claim_processing.claim.entity.detail;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
+import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.partial.BusinessTypeMaster;
 import com.claim.claim_processing.common.entities.partial.DisasterTypeMaster;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalCauseMaster;

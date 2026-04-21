@@ -38,5 +38,6 @@ public class ClaimEligibilityComponentMap {
     private BenefitComponentTypeMaster benefitComponentType;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+        @Builder.Default
     private String isActive = "Y";
 }

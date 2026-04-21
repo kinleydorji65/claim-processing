@@ -1,5 +1,6 @@
-package com.claim.claim_processing.claim.entity.application;
+package com.claim.claim_processing.claim.entity.detail;
 
+import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import jakarta.persistence.*;
 import lombok.*;
@@ -66,4 +67,16 @@ public class BeneficiarySettlementDetail {
 
     @Column(name = "UPDATED_AT", insertable = false)
     private Timestamp updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        createdAt = new Timestamp(System.currentTimeMillis());
+        updatedAt = new Timestamp(System.currentTimeMillis());
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = new Timestamp(System.currentTimeMillis());
+    }
+
 }

@@ -26,9 +26,11 @@ public class ActionMaster {
     private String name;
 
     @Column(name = "DISPLAY_ORDER")
+    @Builder.Default
     private Integer displayOrder = 1;
 
     @Column(name = "IS_ACTIVE", length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)

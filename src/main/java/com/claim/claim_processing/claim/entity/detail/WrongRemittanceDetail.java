@@ -1,4 +1,4 @@
-package com.claim.claim_processing.claim.entity.application;
+package com.claim.claim_processing.claim.entity.detail;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
+import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.ContributionTypeMaster;
 import com.claim.claim_processing.common.entities.wrong_remittance_master.WrongRemittanceErrorTypeMaster;
@@ -106,4 +107,16 @@ public class WrongRemittanceDetail {
 
     @Column(name = "UPDATED_AT", insertable = false, updatable = false)
     private Timestamp updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        createdAt = new Timestamp(System.currentTimeMillis());
+        updatedAt = new Timestamp(System.currentTimeMillis());
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = new Timestamp(System.currentTimeMillis());
+    }
+
 }

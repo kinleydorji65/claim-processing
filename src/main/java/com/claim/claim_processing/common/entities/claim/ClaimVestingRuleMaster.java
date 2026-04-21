@@ -50,6 +50,7 @@ public class ClaimVestingRuleMaster {
     private String remarks;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
