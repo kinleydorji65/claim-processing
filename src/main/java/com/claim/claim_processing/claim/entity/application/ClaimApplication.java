@@ -24,8 +24,7 @@ import com.claim.claim_processing.common.entities.special_case.SpecialCaseRefund
         name = "CLAIM_APPLICATION",
         schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",
         uniqueConstraints = {
-                @UniqueConstraint(name = "UK_CLAIM_APPLICATION_NUMBER", columnNames = "APPLICATION_NUMBER"),
-                @UniqueConstraint(name = "UK_CLAIM_REFERENCE_NUMBER", columnNames = "CLAIM_REFERENCE_NUMBER")
+                @UniqueConstraint(name = "UK_CLAIM_APPLICATION_NUMBER", columnNames = "APPLICATION_NUMBER")
         }
 )
 @Data
