@@ -48,12 +48,6 @@ public class ClaimApplicationCalculationComponent {
     @Column(name = "COMPONENT_TYPE_ID")
     private Long componentTypeId;
 
-    @Column(name = "COMPONENT_CODE", length = 50)
-    private String componentCode;
-
-    @Column(name = "COMPONENT_NAME", length = 150)
-    private String componentName;
-
     @Column(name = "COMPONENT_CATEGORY_CODE", length = 50)
     private String componentCategoryCode;
 

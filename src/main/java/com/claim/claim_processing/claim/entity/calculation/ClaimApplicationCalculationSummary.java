@@ -4,6 +4,7 @@ import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.calculation_master.CalculationTriggerTypeMaster;
 import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.StageMaster;
+import com.claim.claim_processing.common.entities.ror_master.ArrRuleMaster;
 import com.claim.claim_processing.common.entities.status_master.CalculationStatusMaster;
 
 import jakarta.persistence.*;
@@ -66,11 +67,12 @@ public class ClaimApplicationCalculationSummary {
     @Column(name = "CREDIT_METHOD_CODE", length = 50)
     private String creditMethodCode;
 
-    @Column(name = "ROR_DECLARATION_ID")
-    private Long rorDeclarationId;
-
-    @Column(name = "ARR_RULE_ID")
-    private Long arrRuleId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "ARR_RULE_ID",
+            foreignKey = @ForeignKey(name = "FK_CACS_ARR_RULE")
+    )
+    private ArrRuleMaster arrRule;
 
     @Column(name = "IS_PENSION_BALANCE_INCLUDED", length = 1)
     @Builder.Default

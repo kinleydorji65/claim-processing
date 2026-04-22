@@ -11,6 +11,7 @@ import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.ContributionTypeMaster;
 import com.claim.claim_processing.common.entities.wrong_remittance_master.WrongRemittanceErrorTypeMaster;
+import com.claim.claim_processing.common.entities.wrong_remittance_master.WrongRemittanceReasonMaster;
 
 @Entity
 @Table(
@@ -42,8 +43,9 @@ public class WrongRemittanceDetail {
     @Column(name = "AGENCY_CODE", length = 100)
     private String agencyCode;
 
-    @Column(name = "REASON_FOR_REVERSAL", length = 1000)
-    private String reasonForReversal;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "WRONG_REMITTANCE_REASON_ID")
+    private WrongRemittanceReasonMaster wrongRemittanceReason;
 
     @Column(name = "REMITTANCE_MONTH", precision = 2)
     private Integer remittanceMonth;
