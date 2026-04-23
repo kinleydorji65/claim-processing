@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.partial;
 import com.claim.claim_processing.common.DTO.request.partial.DisasterTypeRequestDto;
 import com.claim.claim_processing.common.DTO.response.partial.DisasterTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.DisasterTypeUpdateDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.DisasterTypeMaster;
 import com.claim.claim_processing.common.mapper.partial.DisasterTypeMapper;
 import com.claim.claim_processing.common.repository.partial.DisasterTypeRepository;
@@ -79,7 +80,7 @@ public class DisasterTypeServiceImpl implements DisasterTypeService {
         DisasterTypeMaster entity = findById(id);
 
         // Soft delete
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.Y);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);

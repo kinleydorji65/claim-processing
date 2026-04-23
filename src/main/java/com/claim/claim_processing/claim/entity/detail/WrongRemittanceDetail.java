@@ -9,6 +9,7 @@ import java.time.LocalDate;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
+import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.ContributionTypeMaster;
 import com.claim.claim_processing.common.entities.wrong_remittance_master.WrongRemittanceErrorTypeMaster;
 import com.claim.claim_processing.common.entities.wrong_remittance_master.WrongRemittanceReasonMaster;
@@ -91,6 +92,10 @@ public class WrongRemittanceDetail {
             foreignKey = @ForeignKey(name = "FK_WRD_ERROR_TYPE")
     )
     private WrongRemittanceErrorTypeMaster errorType;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
+    private PayeeTypeMaster payeeType;
 
     @Column(name = "TOTAL_REMITTED_AMOUNT", precision = 15, scale = 2)
     private BigDecimal totalRemittedAmount;

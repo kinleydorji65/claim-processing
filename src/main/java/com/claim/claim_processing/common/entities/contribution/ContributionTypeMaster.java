@@ -5,17 +5,12 @@ import lombok.*;
 
 import java.sql.Timestamp;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+
 @Entity
-@Table(
-        name = "CONTRIBUTION_TYPE_MASTER",
-        schema = "PPFMS_CONTRIBUTION_SERVICE_SCHEMA",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "UK_CONTRIBUTION_TYPE_CODE",
-                        columnNames = {"CODE"}
-                )
-        }
-)
+@Table(name = "CONTRIBUTION_TYPE_MASTER", schema = "PPFMS_CONTRIBUTION_SERVICE_SCHEMA", uniqueConstraints = {
+        @UniqueConstraint(name = "UK_CONTRIBUTION_TYPE_CODE", columnNames = { "CODE" })
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -28,7 +23,8 @@ public class ContributionTypeMaster {
 
     /**
      * Unique code
-     * Example: REGULAR, ARREAR, VOLUNTARY, ADJUSTMENT, TRANSFER, REVERSAL, GOVERNMENT
+     * Example: REGULAR, ARREAR, VOLUNTARY, ADJUSTMENT, TRANSFER, REVERSAL,
+     * GOVERNMENT
      */
     @Column(name = "CODE", nullable = false, length = 50)
     private String code;
@@ -48,9 +44,10 @@ public class ContributionTypeMaster {
     /**
      * Active flag
      */
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private String isActive = "Y";
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     /**
      * Audit fields
@@ -75,7 +72,7 @@ public class ContributionTypeMaster {
         this.createdAt = new Timestamp(System.currentTimeMillis());
         this.updatedAt = this.createdAt;
         if (this.isActive == null) {
-            this.isActive = "Y";
+            this.isActive = ActivityEnum.Y;
         }
     }
 

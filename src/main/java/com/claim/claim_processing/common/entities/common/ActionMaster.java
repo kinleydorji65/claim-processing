@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+
 @Entity
 @Table(name = "ACTION_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Getter
@@ -29,9 +31,10 @@ public class ActionMaster {
     @Builder.Default
     private Integer displayOrder = 1;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private String isActive = "Y";
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -48,7 +51,7 @@ public class ActionMaster {
     @PrePersist
     public void prePersist() {
         if (this.isActive == null) {
-            this.isActive = "Y";
+            this.isActive = ActivityEnum.Y;
         }
         if (this.displayOrder == null) {
             this.displayOrder = 1;

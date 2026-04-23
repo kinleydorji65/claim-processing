@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.sql.Timestamp;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+
 @Entity
 @Table(name = "DISASTER_TYPE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA", uniqueConstraints = {
         @UniqueConstraint(name = "UK_DISASTER_TYPE_CODE", columnNames = "CODE")
@@ -41,9 +43,10 @@ public class DisasterTypeMaster {
     /**
      * Active flag
      */
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private String isActive = "Y";
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     /**
      * Audit fields
@@ -68,7 +71,7 @@ public class DisasterTypeMaster {
         this.createdAt = new Timestamp(System.currentTimeMillis());
         this.updatedAt = this.createdAt;
         if (this.isActive == null) {
-            this.isActive = "Y";
+            this.isActive = ActivityEnum.Y;
         }
     }
 

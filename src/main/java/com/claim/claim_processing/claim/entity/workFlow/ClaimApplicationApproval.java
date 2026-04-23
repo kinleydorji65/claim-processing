@@ -2,6 +2,7 @@ package com.claim.claim_processing.claim.entity.workFlow;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.DecisionMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.status_master.ApprovalStatusMaster;
 
 import jakarta.persistence.*;
@@ -11,10 +12,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Entity
-@Table(
-        name = "CLAIM_APPLICATION_APPROVAL",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
-)
+@Table(name = "CLAIM_APPLICATION_APPROVAL", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,28 +25,18 @@ public class ClaimApplicationApproval {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "CLAIM_APPLICATION_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_CAA_CLAIM_APP")
-    )
+    @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_CAA_CLAIM_APP"))
     private ClaimApplication claimApplication;
 
     @Column(name = "APPROVAL_LEVEL")
     private Integer approvalLevel;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "APPROVAL_STATUS_ID",
-            foreignKey = @ForeignKey(name = "FK_CAA_APPROVAL_STATUS")
-    )
+    @JoinColumn(name = "APPROVAL_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAA_APPROVAL_STATUS"))
     private ApprovalStatusMaster approvalStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "APPROVAL_DECISION_ID",
-            foreignKey = @ForeignKey(name = "FK_CAA_APPROVAL_DECISION")
-    )
+    @JoinColumn(name = "APPROVAL_DECISION_ID", foreignKey = @ForeignKey(name = "FK_CAA_APPROVAL_DECISION"))
     private DecisionMaster approvalDecision;
 
     @Column(name = "APPROVED_AMOUNT", precision = 15, scale = 2)
@@ -73,7 +61,7 @@ public class ClaimApplicationApproval {
     private BigDecimal finalNetPayableAmount;
 
     @Column(name = "REQUIRES_FINANCE_ACTION", length = 1)
-    @Builder.Default    
+    @Builder.Default
     private String requiresFinanceAction = "N";
 
     @Column(name = "REQUIRES_MANUAL_REVIEW", length = 1)
@@ -101,9 +89,10 @@ public class ClaimApplicationApproval {
     @Column(name = "APPROVED_AT")
     private Timestamp approvedAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private String isActive = "Y";
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
@@ -129,7 +118,7 @@ public class ClaimApplicationApproval {
             this.requiresManualReview = "N";
         }
         if (this.isActive == null) {
-            this.isActive = "Y";
+            this.isActive = ActivityEnum.Y;
         }
     }
 

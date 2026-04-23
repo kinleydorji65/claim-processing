@@ -7,9 +7,12 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
+import org.springframework.web.server.PayloadTooLargeException;
+
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
+import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 
 @Entity
 @Table(
@@ -39,6 +42,16 @@ public class NormalClaimDetail {
 
     @Column(name = "DATE_OF_TERMINATION")
     private LocalDate dateOfTermination;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
+    private PayeeTypeMaster payeeType;
+    
+    @Column(name = "PF_JOINING_DATE")
+    private LocalDate pfJoiningDate;
+
+    @Column(name = "PENSION_JOINING_DATE")
+    private LocalDate pensionJoiningDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TERMINATION_REASON_TYPE_ID")

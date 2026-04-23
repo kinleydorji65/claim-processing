@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
+import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.partial.BusinessTypeMaster;
 import com.claim.claim_processing.common.entities.partial.DisasterTypeMaster;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalCauseMaster;
@@ -36,6 +37,16 @@ public class PartialWithdrawalDetail {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true)
     private ClaimApplication claimApplication;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
+    private PayeeTypeMaster payeeType;
+    
+    @Column(name = "PF_JOINING_DATE")
+    private LocalDate pfJoiningDate;
+
+    @Column(name = "PENSION_JOINING_DATE")
+    private LocalDate pensionJoiningDate;
 
     /**
      * Optional partial withdrawal master
