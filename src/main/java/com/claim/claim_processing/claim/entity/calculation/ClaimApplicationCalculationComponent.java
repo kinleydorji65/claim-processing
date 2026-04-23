@@ -1,6 +1,7 @@
 package com.claim.claim_processing.claim.entity.calculation;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.status_master.CalculationStatusMaster;
 
 import jakarta.persistence.*;
@@ -47,9 +48,6 @@ public class ClaimApplicationCalculationComponent {
 
     @Column(name = "COMPONENT_TYPE_ID")
     private Long componentTypeId;
-
-    @Column(name = "COMPONENT_CATEGORY_CODE", length = 50)
-    private String componentCategoryCode;
 
     @Column(name = "DISPLAY_ORDER")
     private Integer displayOrder;
@@ -136,9 +134,10 @@ public class ClaimApplicationCalculationComponent {
     )
     private CalculationStatusMaster calculationStatus;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private String isActive = "Y";
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;

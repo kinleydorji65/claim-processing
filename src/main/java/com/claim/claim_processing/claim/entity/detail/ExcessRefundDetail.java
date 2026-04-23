@@ -7,7 +7,8 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
-import com.claim.claim_processing.claim.entity.memberScopeEnum.MemberRefundScope;
+import com.claim.claim_processing.claim.entity.applicationEnum.MemberRefundScope;
+import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.refund_master.ExcessRefundReasonMaster;
 import com.claim.claim_processing.common.entities.refund_master.RefundScopeMaster;
 
@@ -42,6 +43,10 @@ public class ExcessRefundDetail {
     @Column(name = "MEMBER_REFUND_SCOPE", length = 50)
     private MemberRefundScope memberRefundScope;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
+    private PayeeTypeMaster payeeType;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "EXCESS_REFUND_REASON_ID")
     private ExcessRefundReasonMaster excessRefundReason;

@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+
 @Entity
 @Table(name = "CLAIMANT_TYPE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
@@ -32,9 +34,10 @@ public class ClaimantTypeMaster {
     @Builder.Default
     private Integer displayOrder = 1;
 
-    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private String isActive = "Y";
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
@@ -54,7 +57,7 @@ public class ClaimantTypeMaster {
             this.displayOrder = 1;
         }
         if (this.isActive == null) {
-            this.isActive = "Y";
+            this.isActive = ActivityEnum.Y;
         }
         this.updatedAt = LocalDateTime.now();
     }

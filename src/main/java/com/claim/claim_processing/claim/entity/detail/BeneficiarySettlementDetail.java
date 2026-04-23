@@ -2,6 +2,8 @@ package com.claim.claim_processing.claim.entity.detail;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
+import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,13 +32,12 @@ public class BeneficiarySettlementDetail {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true)
     private ClaimApplication claimApplication;
+    
+    @Column(name = "PF_JOINING_DATE")
+    private LocalDate pfJoiningDate;
 
-    @Column(name = "DECEASED_MEMBER_CODE", length = 100)
-    private String deceasedMemberCode;
-
-    @Column(name = "DECEASED_NPPF_NUMBER", length = 100)
-    private String deceasedNppfNumber;
-
+    @Column(name = "PENSION_JOINING_DATE")
+    private LocalDate pensionJoiningDate;
     @Column(name = "DATE_OF_DEATH")
     private LocalDate dateOfDeath;
 

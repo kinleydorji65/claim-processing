@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
+import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 
 @Entity
@@ -48,6 +49,10 @@ public class ExcessRefundMemberDetail {
     @Column(name = "CURRENT_STATUS")
     private Long currentStatus;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
+    private PayeeTypeMaster payeeType;
+    
     @Column(name = "SCHEDULED_CONTRIBUTION", precision = 15, scale = 2)
     private BigDecimal scheduledContribution;
 

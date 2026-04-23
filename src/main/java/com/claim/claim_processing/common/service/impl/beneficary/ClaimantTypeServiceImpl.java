@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.impl.beneficary;
 
 import com.claim.claim_processing.common.entities.beneficiary_master.ClaimantTypeMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.DTO.response.beneficiary.ClaimantTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.beneficiary.ClaimantTypeUpdateRequestDto;
 import com.claim.claim_processing.common.DTO.request.beneficiary.ClaimantTypeCreateRequestDto;
@@ -69,7 +70,7 @@ public class ClaimantTypeServiceImpl implements ClaimantTypeService {
         ClaimantTypeMaster existingClaimantType = claimantTypeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Claimant type not found with id: " + id));
 
-        existingClaimantType.setIsActive("N");
+        existingClaimantType.setIsActive(ActivityEnum.N);
         existingClaimantType.setUpdatedBy("SYSTEM");
 
         claimantTypeRepository.save(existingClaimantType);
