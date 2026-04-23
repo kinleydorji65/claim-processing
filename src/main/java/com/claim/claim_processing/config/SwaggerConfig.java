@@ -1,4 +1,4 @@
-package com.claim.claim_processing.config;
+package com.claim.claim_processing.common.config;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

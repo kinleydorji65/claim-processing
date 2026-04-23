@@ -48,9 +48,6 @@ public class ClaimApplicationDeductionDetail {
     )
     private DeductionReferenceTypeMaster deductionReferenceType;
 
-    @Column(name = "DEDUCTION_REFERENCE_ID", length = 100)
-    private String deductionReferenceId;
-
     @Column(name = "OUTSTANDING_AMOUNT", precision = 15, scale = 2)
     private BigDecimal outstandingAmount;
 

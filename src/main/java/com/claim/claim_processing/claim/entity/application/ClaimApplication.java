@@ -41,9 +41,6 @@ public class ClaimApplication {
     @Column(name = "APPLICATION_NUMBER", nullable = false, length = 100)
     private String applicationNumber;
 
-    @Column(name = "CLAIM_REFERENCE_NUMBER", length = 100)
-    private String claimReferenceNumber;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLAIM_TYPE_ID", nullable = false)
     private ClaimTypeMaster claimType;
@@ -113,9 +110,6 @@ public class ClaimApplication {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PARENT_CLAIM_APPLICATION_ID")
     private ClaimApplication parentClaimApplication;
-
-    @Column(name = "RELATED_CASE_REFERENCE", length = 100)
-    private String relatedCaseReference;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "SPECIAL_CASE_AUTHORITY_ID")
