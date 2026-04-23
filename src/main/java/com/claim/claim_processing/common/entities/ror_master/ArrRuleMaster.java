@@ -33,39 +33,43 @@ public class ArrRuleMaster {
     private String memberCategoryId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "CREDIT_METHOD_ID",
-            referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_ARR_CREDIT_METHOD")
-    )
+    @JoinColumn(name = "CREDIT_METHOD_ID", referencedColumnName = "ID", nullable = false, foreignKey = @ForeignKey(name = "FK_ARR_CREDIT_METHOD"))
     private CreditMethodMaster creditMethod;
 
     @Column(name = "INCLUDE_PF_MC", nullable = false, length = 1)
+    @Builder.Default
     private String includePfMc = "N";
 
     @Column(name = "INCLUDE_PF_EC", nullable = false, length = 1)
+    @Builder.Default
     private String includePfEc = "N";
 
     @Column(name = "INCLUDE_PF_GC", nullable = false, length = 1)
+    @Builder.Default
     private String includePfGc = "N";
 
     @Column(name = "INCLUDE_PF_VC", nullable = false, length = 1)
+    @Builder.Default
     private String includePfVc = "N";
 
     @Column(name = "INCLUDE_PF_INTEREST", nullable = false, length = 1)
+    @Builder.Default
     private String includePfInterest = "N";
 
     @Column(name = "INCLUDE_PC_MC", nullable = false, length = 1)
+    @Builder.Default
     private String includePcMc = "N";
 
     @Column(name = "INCLUDE_PC_EC", nullable = false, length = 1)
+    @Builder.Default
     private String includePcEc = "N";
 
     @Column(name = "INCLUDE_PC_INTEREST", nullable = false, length = 1)
+    @Builder.Default
     private String includePcInterest = "N";
 
     @Column(name = "IS_PENSION_BALANCE_INCLUDED", nullable = false, length = 1)
+    @Builder.Default
     private String isPensionBalanceIncluded = "N";
 
     @Column(name = "FORMULA_EXPRESSION", length = 1000)
@@ -75,6 +79,7 @@ public class ArrRuleMaster {
     private String roundingMethodCode;
 
     @Column(name = "PRIORITY_ORDER")
+    @Builder.Default
     private Integer priorityOrder = 1;
 
     @Column(name = "EFFECTIVE_FROM")
@@ -87,6 +92,7 @@ public class ArrRuleMaster {
     private String remarks;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     @Column(name = "CREATED_BY", length = 100)
@@ -103,17 +109,28 @@ public class ArrRuleMaster {
 
     @PrePersist
     public void prePersist() {
-        if (this.includePfMc == null) this.includePfMc = "N";
-        if (this.includePfEc == null) this.includePfEc = "N";
-        if (this.includePfGc == null) this.includePfGc = "N";
-        if (this.includePfVc == null) this.includePfVc = "N";
-        if (this.includePfInterest == null) this.includePfInterest = "N";
-        if (this.includePcMc == null) this.includePcMc = "N";
-        if (this.includePcEc == null) this.includePcEc = "N";
-        if (this.includePcInterest == null) this.includePcInterest = "N";
-        if (this.isPensionBalanceIncluded == null) this.isPensionBalanceIncluded = "N";
-        if (this.priorityOrder == null) this.priorityOrder = 1;
-        if (this.isActive == null) this.isActive = "Y";
+        if (this.includePfMc == null)
+            this.includePfMc = "N";
+        if (this.includePfEc == null)
+            this.includePfEc = "N";
+        if (this.includePfGc == null)
+            this.includePfGc = "N";
+        if (this.includePfVc == null)
+            this.includePfVc = "N";
+        if (this.includePfInterest == null)
+            this.includePfInterest = "N";
+        if (this.includePcMc == null)
+            this.includePcMc = "N";
+        if (this.includePcEc == null)
+            this.includePcEc = "N";
+        if (this.includePcInterest == null)
+            this.includePcInterest = "N";
+        if (this.isPensionBalanceIncluded == null)
+            this.isPensionBalanceIncluded = "N";
+        if (this.priorityOrder == null)
+            this.priorityOrder = 1;
+        if (this.isActive == null)
+            this.isActive = "Y";
         this.updatedAt = LocalDateTime.now();
     }
 

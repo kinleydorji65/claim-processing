@@ -1,4 +1,5 @@
 package com.claim.claim_processing.common.entities.common;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,9 +32,11 @@ public class WorkflowReasonMaster {
     private String description;
 
     @Column(name = "DISPLAY_ORDER")
+    @Builder.Default
     private Integer displayOrder = 1;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)

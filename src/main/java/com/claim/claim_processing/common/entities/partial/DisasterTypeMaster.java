@@ -6,13 +6,9 @@ import lombok.*;
 import java.sql.Timestamp;
 
 @Entity
-@Table(
-    name = "DISASTER_TYPE_MASTER",
-    schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",
-    uniqueConstraints = {
+@Table(name = "DISASTER_TYPE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA", uniqueConstraints = {
         @UniqueConstraint(name = "UK_DISASTER_TYPE_CODE", columnNames = "CODE")
-    }
-)
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -46,6 +42,7 @@ public class DisasterTypeMaster {
      * Active flag
      */
     @Column(name = "IS_ACTIVE", length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     /**
