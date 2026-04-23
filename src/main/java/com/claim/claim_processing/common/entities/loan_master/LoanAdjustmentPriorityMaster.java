@@ -6,16 +6,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "LOAN_ADJUSTMENT_PRIORITY_MASTER",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "UK_LOAN_ADJ_PRIORITY",
-                        columnNames = {"LOAN_TYPE_ID"}
-                )
-        }
-)
+@Table(name = "LOAN_ADJUSTMENT_PRIORITY_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA", uniqueConstraints = {
+        @UniqueConstraint(name = "UK_LOAN_ADJ_PRIORITY", columnNames = { "LOAN_TYPE_ID" })
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,12 +23,7 @@ public class LoanAdjustmentPriorityMaster {
 
     // 🔥 FK → LOAN_TYPE_MASTER
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "LOAN_TYPE_ID",
-            referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_LOAN_ADJ_PRIORITY_LOAN_TYPE")
-    )
+    @JoinColumn(name = "LOAN_TYPE_ID", referencedColumnName = "ID", nullable = false, foreignKey = @ForeignKey(name = "FK_LOAN_ADJ_PRIORITY_LOAN_TYPE"))
     private LoanTypeMaster loanType;
 
     @Column(name = "PRIORITY_ORDER", nullable = false)
@@ -45,6 +33,7 @@ public class LoanAdjustmentPriorityMaster {
     private String description;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     @Column(name = "CREATED_BY", length = 100)

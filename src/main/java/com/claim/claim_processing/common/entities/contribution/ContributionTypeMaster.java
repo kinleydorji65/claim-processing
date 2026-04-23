@@ -49,6 +49,7 @@ public class ContributionTypeMaster {
      * Active flag
      */
     @Column(name = "IS_ACTIVE", length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     /**

@@ -12,31 +12,22 @@ import lombok.*;
 @Builder
 public class BenefitComponentTypeDetail {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
-    private Long id;
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @Column(name = "ID")
+        private Long id;
 
-    // 🔥 Relation to Benefit Component Type
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "BENEFIT_COMPONENT_TYPE_ID",
-            referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_BENEFIT_TYPE")
-    )
-    private BenefitComponentTypeMaster benefitComponentType;
+        // 🔥 Relation to Benefit Component Type
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "BENEFIT_COMPONENT_TYPE_ID", referencedColumnName = "ID", nullable = false, foreignKey = @ForeignKey(name = "FK_BENEFIT_TYPE"))
+        private BenefitComponentTypeMaster benefitComponentType;
 
-    // 🔥 Relation to Claim Component
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "COMPONENT_ID",
-            referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_COMPONENT")
-    )
-    private ComponentMaster component;
+        // 🔥 Relation to Claim Component
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "COMPONENT_ID", referencedColumnName = "ID", nullable = false, foreignKey = @ForeignKey(name = "FK_COMPONENT"))
+        private ComponentMaster component;
 
-    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
-    private String isActive = "Y";
+        @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+        @Builder.Default
+        private String isActive = "Y";
 }

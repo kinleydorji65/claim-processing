@@ -1,4 +1,5 @@
 package com.claim.claim_processing.common.entities.unclaimed_master;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,6 +29,7 @@ public class UnclaimedPeriodRuleMaster {
     private String periodUnit;
 
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Builder.Default
     private String isActive = "Y";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
