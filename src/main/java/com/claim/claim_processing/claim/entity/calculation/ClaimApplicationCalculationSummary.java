@@ -4,6 +4,7 @@ import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.calculation_master.CalculationTriggerTypeMaster;
 import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.StageMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.Currency;
 import com.claim.claim_processing.common.entities.ror_master.ArrRuleMaster;
 import com.claim.claim_processing.common.entities.ror_master.CreditMethodMaster;
@@ -15,6 +16,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "CLAIM_APPLICATION_CALCULATION_SUMMARY", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
@@ -53,8 +55,9 @@ public class ClaimApplicationCalculationSummary {
         private ArrRuleMaster arrRule;
 
         @Column(name = "IS_PENSION_BALANCE_INCLUDED", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isPensionBalanceIncluded = "N";
+        private ActivityEnum isPensionBalanceIncluded = ActivityEnum.N;
 
         @Column(name = "CALCULATION_EFFECTIVE_DATE")
         private LocalDate calculationEffectiveDate;
@@ -133,6 +136,14 @@ public class ClaimApplicationCalculationSummary {
 
         @Column(name = "UPDATED_AT", insertable = false, updatable = false)
         private Timestamp updatedAt;
+
+        @OneToMany(mappedBy = "calculationSummary", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<ClaimApplicationCalculationComponent> calculationSummary = new java.util.ArrayList<>();
+
+        @OneToMany(mappedBy = "calculationSummary", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<ClaimApplicationRuleEvaluation> ruleEvaluations = new java.util.ArrayList<>();
 
         @PrePersist
         public void prePersist() {

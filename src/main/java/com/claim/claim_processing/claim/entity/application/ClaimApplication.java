@@ -8,12 +8,15 @@ import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
+import com.claim.claim_processing.claim.entity.calculation.*;
+import com.claim.claim_processing.claim.entity.detail.*;
+import com.claim.claim_processing.claim.entity.payment.ClaimApplicationPayment;
+import com.claim.claim_processing.claim.entity.workFlow.*;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
-import com.claim.claim_processing.common.entities.common.ActionMaster;
-import com.claim.claim_processing.common.entities.common.ClaimSourceMaster;
-import com.claim.claim_processing.common.entities.common.StageMaster;
-import com.claim.claim_processing.common.entities.common.SubmissionChannelMaster;
+import com.claim.claim_processing.common.entities.common.*;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
@@ -151,6 +154,77 @@ public class ClaimApplication {
     @Column(name = "UPDATED_AT")
     private Timestamp updatedAt;
 
+
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private NormalClaimDetail normalClaimDetail;
+
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private PartialWithdrawalDetail partialWithdrawalDetail;
+
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private BeneficiarySettlementDetail beneficiarySettlementDetail;
+
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ExcessRefundDetail excessRefundDetail;
+
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private LegalRecoveryDetail legalRecoveryDetail;
+
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private WrongRemittanceDetail wrongRemittanceDetail;
+
+    // // ---------- One-to-Many Common Child Tables ----------
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationBankDetail> bankDetails = new ArrayList<>();
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationDeductionDetail> deductionDetails = new ArrayList<>();
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationLoanDetail> loanDetails = new ArrayList<>();
+
+    // // ---------- Calculation ----------
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationCalculationSummary> calculationSummaries = new ArrayList<>();
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationRuleEvaluation> ruleEvaluations = new ArrayList<>();
+
+    // // ---------- Payment ----------
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationPayment> payments = new ArrayList<>();
+
+    // ---------- Work Flow ----------
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationVerification> verifications = new ArrayList<>();
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationApproval> approvals = new ArrayList<>();
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationWorkflow> workflows = new ArrayList<>();
+
+
+    // ---------- Posting ----------
+
+    // @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    // @Builder.Default
+    // private List<ClaimApplicationPosting> postings = new ArrayList<>();
+
+    
     @PrePersist
     public void prePersist() {
         createdAt = new Timestamp(System.currentTimeMillis());

@@ -11,6 +11,7 @@ import lombok.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "CLAIM_APPLICATION_RULE_EVALUATION", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
@@ -45,16 +46,19 @@ public class ClaimApplicationRuleEvaluation {
         private Long evaluationTriggerTypeId;
 
         @Column(name = "IS_RULE_MATCHED", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isRuleMatched = "N";
+        private ActivityEnum isRuleMatched = ActivityEnum.N;
 
         @Column(name = "IS_RULE_APPLIED", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isRuleApplied = "N";
+        private ActivityEnum isRuleApplied = ActivityEnum.N;
 
         @Column(name = "IS_MANUAL_OVERRIDE", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isManualOverride = "N";
+        private ActivityEnum isManualOverride = ActivityEnum.N;
 
         @Column(name = "OVERRIDE_REASON", length = 1000)
         private String overrideReason;

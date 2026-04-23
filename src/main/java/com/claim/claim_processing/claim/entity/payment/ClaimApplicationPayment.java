@@ -99,8 +99,9 @@ public class ClaimApplicationPayment {
         private String financeRemarks;
 
         @Column(name = "IS_REVERSAL_REQUIRED", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isReversalRequired = "N";
+        private ActivityEnum isReversalRequired = ActivityEnum.N;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "REVERSAL_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAP_REVERSAL_STATUS"))

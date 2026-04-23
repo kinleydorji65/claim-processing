@@ -7,8 +7,6 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
-import org.springframework.web.server.PayloadTooLargeException;
-
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
