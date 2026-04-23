@@ -76,4 +76,16 @@ public class SwaggerConfig {
                 .displayName("Refund Master APIs")
                 .build();
     }
+
+    @Bean
+    public GroupedOpenApi commonMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Common Master Management")
+                .pathsToMatch(
+                        "/api/claim/masters/claim-sources/**",
+                        "/api/claim/masters/submission-channels/**"
+                )
+                .displayName("Common Master APIs")
+                .build();
+    }
 }
