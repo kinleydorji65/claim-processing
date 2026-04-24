@@ -3,7 +3,7 @@ package com.claim.claim_processing.claim.entity.workFlow;
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.DecisionMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.status_master.ApprovalStatusMaster;
+import com.claim.claim_processing.common.entities.statusMaster.ApprovalStatusMaster;
 
 import jakarta.persistence.*;
 import lombok.*;

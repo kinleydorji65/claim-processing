@@ -1,9 +1,9 @@
 package com.claim.claim_processing.common.mapper.refund_master;
 
-import com.claim.claim_processing.common.DTO.request.refund_master.RefundScopeRequestDto;
-import com.claim.claim_processing.common.DTO.response.refund_master.RefundScopeResponseDto;
-import com.claim.claim_processing.common.DTO.update.refund_master.RefundScopeUpdateDto;
-import com.claim.claim_processing.common.entities.refund_master.RefundScopeMaster;
+import com.claim.claim_processing.common.DTO.request.refundMaster.RefundScopeRequestDto;
+import com.claim.claim_processing.common.DTO.response.refundMaster.RefundScopeResponseDto;
+import com.claim.claim_processing.common.DTO.update.refundMaster.RefundScopeUpdateDto;
+import com.claim.claim_processing.common.entities.refundMaster.RefundScopeMaster;
 import org.mapstruct.*;
 
 import java.util.List;

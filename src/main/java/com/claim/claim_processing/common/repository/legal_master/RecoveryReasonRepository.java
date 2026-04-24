@@ -1,7 +1,7 @@
 package com.claim.claim_processing.common.repository.legal_master;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.legal_master.RecoveryReasonMaster;
+import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

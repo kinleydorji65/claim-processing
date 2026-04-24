@@ -8,7 +8,7 @@ import java.sql.Timestamp;
 import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.BankType;
-import com.claim.claim_processing.common.entities.status_master.VerificationStatusMaster;
+import com.claim.claim_processing.common.entities.statusMaster.VerificationStatusMaster;
 
 @Entity
 @Table(name = "CLAIM_APPLICATION_BANK_DETAIL", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")

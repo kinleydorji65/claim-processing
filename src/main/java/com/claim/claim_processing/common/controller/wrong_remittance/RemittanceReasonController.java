@@ -1,8 +1,8 @@
 package com.claim.claim_processing.common.controller.wrong_remittance;
 
-import com.claim.claim_processing.common.DTO.request.wrong_remittance.RemittanceReasonRequestDto;
-import com.claim.claim_processing.common.DTO.response.wrong_remittance.RemittanceReasonResponseDto;
-import com.claim.claim_processing.common.DTO.update.wrong_remittance.RemittanceReasonUpdateDto;
+import com.claim.claim_processing.common.DTO.request.wrongRemittance.RemittanceReasonRequestDto;
+import com.claim.claim_processing.common.DTO.response.wrongRemittance.RemittanceReasonResponseDto;
+import com.claim.claim_processing.common.DTO.update.wrongRemittance.RemittanceReasonUpdateDto;
 import com.claim.claim_processing.common.service.wrongRemittance.RemittanceReasonService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;

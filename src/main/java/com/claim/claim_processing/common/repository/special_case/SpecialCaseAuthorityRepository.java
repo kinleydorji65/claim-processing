@@ -1,7 +1,7 @@
 package com.claim.claim_processing.common.repository.special_case;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.special_case.SpecialCaseRefundAuthorityMaster;
+import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

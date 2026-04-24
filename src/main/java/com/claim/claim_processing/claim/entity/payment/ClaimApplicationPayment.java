@@ -7,7 +7,7 @@ import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantType
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.paymentMaster.PaymentModeMaster;
 import com.claim.claim_processing.common.entities.paymentMaster.PaymentStatusMaster;
-import com.claim.claim_processing.common.entities.status_master.ReversalStatusMaster;
+import com.claim.claim_processing.common.entities.statusMaster.ReversalStatusMaster;
 
 import jakarta.persistence.*;
 import lombok.*;

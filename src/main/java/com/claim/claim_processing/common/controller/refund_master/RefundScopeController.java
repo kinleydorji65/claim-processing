@@ -1,8 +1,8 @@
 package com.claim.claim_processing.common.controller.refund_master;
 
-import com.claim.claim_processing.common.DTO.request.refund_master.RefundScopeRequestDto;
-import com.claim.claim_processing.common.DTO.response.refund_master.RefundScopeResponseDto;
-import com.claim.claim_processing.common.DTO.update.refund_master.RefundScopeUpdateDto;
+import com.claim.claim_processing.common.DTO.request.refundMaster.RefundScopeRequestDto;
+import com.claim.claim_processing.common.DTO.response.refundMaster.RefundScopeResponseDto;
+import com.claim.claim_processing.common.DTO.update.refundMaster.RefundScopeUpdateDto;
 import com.claim.claim_processing.common.service.refundMaster.RefundScopeService;
 
 import jakarta.validation.Valid;

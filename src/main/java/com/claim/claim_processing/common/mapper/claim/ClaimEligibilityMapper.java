@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
-public abstract class ClaimEligibilityMapper {
+public interface ClaimEligibilityMapper {
 
     @Autowired
     protected ClaimCircumstanceRepository claimCircumstanceRepository;

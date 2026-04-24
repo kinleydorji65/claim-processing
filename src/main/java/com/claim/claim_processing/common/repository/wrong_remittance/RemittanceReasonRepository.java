@@ -1,7 +1,7 @@
 package com.claim.claim_processing.common.repository.wrong_remittance;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.wrong_remittance_master.WrongRemittanceReasonMaster;
+import com.claim.claim_processing.common.entities.wrongRemittanceMaster.WrongRemittanceReasonMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

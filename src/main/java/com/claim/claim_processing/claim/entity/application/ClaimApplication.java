@@ -20,7 +20,7 @@ import com.claim.claim_processing.common.entities.common.*;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
-import com.claim.claim_processing.common.entities.special_case.SpecialCaseRefundAuthorityMaster;
+import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
 
 @Entity
 @Table(

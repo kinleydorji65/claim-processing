@@ -1,7 +1,7 @@
 package com.claim.claim_processing.common.repository.refund_master;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.refund_master.RefundScopeMaster;
+import com.claim.claim_processing.common.entities.refundMaster.RefundScopeMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

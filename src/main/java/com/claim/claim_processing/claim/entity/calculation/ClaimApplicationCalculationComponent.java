@@ -2,7 +2,7 @@ package com.claim.claim_processing.claim.entity.calculation;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.status_master.CalculationStatusMaster;
+import com.claim.claim_processing.common.entities.statusMaster.CalculationStatusMaster;
 
 import jakarta.persistence.*;
 import lombok.*;

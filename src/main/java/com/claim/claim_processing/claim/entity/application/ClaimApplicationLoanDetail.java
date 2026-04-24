@@ -10,8 +10,8 @@ import java.time.LocalDate;
 import com.claim.claim_processing.common.entities.common.DecisionMaster;
 import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.loan_master.LoanStatusMaster;
-import com.claim.claim_processing.common.entities.loan_master.LoanTypeMaster;
+import com.claim.claim_processing.common.entities.loanMaster.LoanStatusMaster;
+import com.claim.claim_processing.common.entities.loanMaster.LoanTypeMaster;
 
 @Entity
 @Table(

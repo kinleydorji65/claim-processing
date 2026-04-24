@@ -1,10 +1,10 @@
 package com.claim.claim_processing.common.service.legalMaster.impl;
 
-import com.claim.claim_processing.common.DTO.request.legal_master.RecoveryReasonRequestDto;
-import com.claim.claim_processing.common.DTO.response.legal_master.RecoveryReasonResponseDto;
-import com.claim.claim_processing.common.DTO.update.legal_master.RecoveryReasonUpdateDto;
+import com.claim.claim_processing.common.DTO.request.legalMaster.RecoveryReasonRequestDto;
+import com.claim.claim_processing.common.DTO.response.legalMaster.RecoveryReasonResponseDto;
+import com.claim.claim_processing.common.DTO.update.legalMaster.RecoveryReasonUpdateDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.legal_master.RecoveryReasonMaster;
+import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;
 import com.claim.claim_processing.common.mapper.legal_master.RecoveryReasonMapper;
 import com.claim.claim_processing.common.repository.legal_master.RecoveryReasonRepository;
 import com.claim.claim_processing.common.service.legalMaster.RecoveryReasonService;

@@ -11,8 +11,8 @@ import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.ContributionTypeMaster;
-import com.claim.claim_processing.common.entities.wrong_remittance_master.WrongRemittanceErrorTypeMaster;
-import com.claim.claim_processing.common.entities.wrong_remittance_master.WrongRemittanceReasonMaster;
+import com.claim.claim_processing.common.entities.wrongRemittanceMaster.WrongRemittanceErrorTypeMaster;
+import com.claim.claim_processing.common.entities.wrongRemittanceMaster.WrongRemittanceReasonMaster;
 
 @Entity
 @Table(
