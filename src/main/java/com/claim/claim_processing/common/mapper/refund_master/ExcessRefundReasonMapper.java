@@ -12,14 +12,13 @@ import java.util.List;
 public interface ExcessRefundReasonMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "isActive", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     ExcessRefundReasonMaster toEntity(ExcessRefundReasonRequestDto dto);
 
-    @Mapping(target = "isActive", expression = "java(entity.getIsActive() != null ? String.valueOf(entity.getIsActive()) : null)")
     ExcessRefundReasonResponseDto toResponseDto(ExcessRefundReasonMaster entity);
 
     List<ExcessRefundReasonResponseDto> toResponseDtoList(List<ExcessRefundReasonMaster> entities);
@@ -31,10 +30,8 @@ public interface ExcessRefundReasonMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(
-            target = "isActive",
-            expression = "java(dto.getIsActive() != null && !dto.getIsActive().isBlank() ? dto.getIsActive().charAt(0) : entity.getIsActive())"
-    )
-    void updateEntityFromDto(ExcessRefundReasonUpdateDto dto,
-                             @MappingTarget ExcessRefundReasonMaster entity);
+    void updateEntityFromDto(
+            ExcessRefundReasonUpdateDto dto,
+            @MappingTarget ExcessRefundReasonMaster entity
+    );
 }

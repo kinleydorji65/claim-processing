@@ -18,9 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RefundScopeServiceImpl implements RefundScopeService {
 
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
-
     private final RefundScopeRepository repository;
     private final RefundScopeMapper mapper;
 
@@ -62,7 +59,7 @@ public class RefundScopeServiceImpl implements RefundScopeService {
 
     @Override
     public List<RefundScopeResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActive(ACTIVE));
+        return mapper.toResponseDtoList(repository.findByIsActive(ActivityEnum.Y));
     }
 
     @Override

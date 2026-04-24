@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.refund_master;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.refund_master.ExcessRefundReasonMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,11 +15,11 @@ public interface ExcessRefundReasonRepository extends JpaRepository<ExcessRefund
 
     Optional<ExcessRefundReasonMaster> findByCode(String code);
 
-    List<ExcessRefundReasonMaster> findByIsActive(Character isActive);
+    List<ExcessRefundReasonMaster> findByIsActive(ActivityEnum isActive);
 
-    Optional<ExcessRefundReasonMaster> findByCodeAndIsActive(String code, Character isActive);
+    Optional<ExcessRefundReasonMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 
-    List<ExcessRefundReasonMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(Character isActive);
+    List<ExcessRefundReasonMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum isActive);
 
-    Optional<ExcessRefundReasonMaster> findByIdAndIsActive(Long id, Character isActive);
+    Optional<ExcessRefundReasonMaster> findByIdAndIsActive(Long id, ActivityEnum isActive);
 }

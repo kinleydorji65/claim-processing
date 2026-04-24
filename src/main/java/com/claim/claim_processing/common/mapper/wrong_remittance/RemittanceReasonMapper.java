@@ -11,36 +11,27 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface RemittanceReasonMapper {
 
-    // 🔹 Create
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "isActive", ignore = true) // handled by entity default
+    @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     WrongRemittanceReasonMaster toEntity(RemittanceReasonRequestDto dto);
 
-    // 🔹 Entity → Response
-    @Mapping(
-            target = "isActive",
-            expression = "java(entity.getIsActive() != null ? String.valueOf(entity.getIsActive()) : null)"
-    )
     RemittanceReasonResponseDto toResponseDto(WrongRemittanceReasonMaster entity);
 
     List<RemittanceReasonResponseDto> toResponseDtoList(List<WrongRemittanceReasonMaster> entities);
 
-    // 🔹 Update
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "code", ignore = true) // immutable
+    @Mapping(target = "code", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    @Mapping(
-            target = "isActive",
-            expression = "java(dto.getIsActive() != null ? dto.getIsActive().charAt(0) : entity.getIsActive())"
-    )
-    void updateEntityFromDto(RemittanceReasonUpdateDto dto,
-                             @MappingTarget WrongRemittanceReasonMaster entity);
+    void updateEntityFromDto(
+            RemittanceReasonUpdateDto dto,
+            @MappingTarget WrongRemittanceReasonMaster entity
+    );
 }

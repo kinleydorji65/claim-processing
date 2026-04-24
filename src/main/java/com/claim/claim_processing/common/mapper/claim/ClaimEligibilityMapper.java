@@ -18,7 +18,7 @@ public interface ClaimEligibilityMapper {
     @Mapping(target = "claimCircumstance", ignore = true)
     @Mapping(target = "cessationType", ignore = true)
     @Mapping(target = "schemeType", ignore = true)
-    @Mapping(target = "isActive", constant = "Y")
+    @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

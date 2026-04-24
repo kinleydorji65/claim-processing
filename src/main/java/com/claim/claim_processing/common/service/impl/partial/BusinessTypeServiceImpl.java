@@ -62,6 +62,7 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
     public List<BusinessTypeResponseDto> getAllActive() {
         return mapper.toResponseDtoList(
                 repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
+                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
         );
     }
 
