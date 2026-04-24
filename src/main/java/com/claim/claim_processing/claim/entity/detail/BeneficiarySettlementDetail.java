@@ -2,8 +2,6 @@ package com.claim.claim_processing.claim.entity.detail;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
-import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
-
 import jakarta.persistence.*;
 import lombok.*;
 

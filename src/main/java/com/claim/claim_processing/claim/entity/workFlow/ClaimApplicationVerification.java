@@ -40,36 +40,44 @@ public class ClaimApplicationVerification {
         private DecisionMaster verificationDecision;
 
         @Column(name = "IS_ELIGIBLE", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isEligible = "N";
+        private ActivityEnum isEligible = ActivityEnum.N;
 
         @Column(name = "IS_RULE_MATCHED", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isRuleMatched = "N";
+        private ActivityEnum isRuleMatched = ActivityEnum.N;
 
         @Column(name = "IS_DOCUMENT_VERIFIED", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isDocumentVerified = "N";
+        private ActivityEnum isDocumentVerified = ActivityEnum.N;
 
         @Column(name = "IS_BANK_VERIFIED", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isBankVerified = "N";
+        private ActivityEnum isBankVerified = ActivityEnum.N;
 
         @Column(name = "IS_CALCULATION_VERIFIED", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isCalculationVerified = "N";
+        private ActivityEnum isCalculationVerified = ActivityEnum.N;
 
         @Column(name = "IS_DEDUCTION_CHECKED", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String isDeductionChecked = "N";
+        private ActivityEnum isDeductionChecked = ActivityEnum.N;
 
         @Column(name = "REQUIRES_RECALCULATION", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String requiresRecalculation = "N";
+        private ActivityEnum requiresRecalculation = ActivityEnum.N;
 
         @Column(name = "REQUIRES_MANUAL_REVIEW", length = 1)
+        @Enumerated(EnumType.STRING)
         @Builder.Default
-        private String requiresManualReview = "N";
+        private ActivityEnum requiresManualReview = ActivityEnum.N;
 
         @Column(name = "RETURN_REASON", length = 1000)
         private String returnReason;

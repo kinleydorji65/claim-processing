@@ -53,16 +53,19 @@ public class ClaimApplicationCalculationComponent {
     private Integer displayOrder;
 
     @Column(name = "IS_PENSION_RELATED", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String isPensionRelated = "N";
+    private ActivityEnum isPensionRelated = ActivityEnum.N;
 
     @Column(name = "IS_INTEREST_COMPONENT", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String isInterestComponent = "N";
+    private ActivityEnum isInterestComponent = ActivityEnum.N;
 
     @Column(name = "IS_DEDUCTION_COMPONENT", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String isDeductionComponent = "N";
+    private ActivityEnum isDeductionComponent = ActivityEnum.N;
 
     @Column(name = "BASE_AMOUNT", precision = 15, scale = 2)
     private BigDecimal baseAmount;

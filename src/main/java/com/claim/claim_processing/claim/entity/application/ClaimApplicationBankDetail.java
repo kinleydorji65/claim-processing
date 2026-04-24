@@ -48,13 +48,15 @@ public class ClaimApplicationBankDetail {
         @Column(name = "IFSC_OR_ROUTING_CODE", length = 100)
         private String ifscOrRoutingCode;
 
+        @Enumerated(EnumType.STRING)
         @Column(name = "IS_DEFAULT_BANK", length = 1)
         @Builder.Default
-        private String isDefaultBank = "N";
+        private ActivityEnum isDefaultBank = ActivityEnum.N;
 
+        @Enumerated(EnumType.STRING)
         @Column(name = "IS_SELECTED_BANK", length = 1)
         @Builder.Default
-        private String isSelectedBank = "N";
+        private ActivityEnum isSelectedBank = ActivityEnum.N;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "BANK_VERIFICATION_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CABD_VER_STATUS"))

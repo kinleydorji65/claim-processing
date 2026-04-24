@@ -9,6 +9,7 @@ import java.time.LocalDate;
 
 import com.claim.claim_processing.common.entities.common.DecisionMaster;
 import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.loan_master.LoanStatusMaster;
 import com.claim.claim_processing.common.entities.loan_master.LoanTypeMaster;
 
@@ -34,11 +35,15 @@ public class ClaimApplicationLoanDetail {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "DEDUCTION_DETAIL_ID",
-            nullable = false,
+            nullable = true,
             unique = true,
             foreignKey = @ForeignKey(name = "FK_CALD_DEDUCTION_DETAIL")
     )
     private ClaimApplicationDeductionDetail deductionDetail;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = true, foreignKey = @ForeignKey(name = "FK_CADD_DED_CLAIM_APP"))
+        private ClaimApplication claimApplication;
 
     @Column(name = "LOAN_ACCOUNT_NUMBER", length = 100)
     private String loanAccountNumber;
@@ -60,8 +65,9 @@ public class ClaimApplicationLoanDetail {
     private LocalDate emiEndDate;
 
     @Column(name = "IS_GUARANTEE", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String isGuarantee = "N";
+    private ActivityEnum isGuarantee = ActivityEnum.N;
 
     @Column(name = "OUTSTANDING_PRINCIPAL", precision = 15, scale = 2)
     private BigDecimal outstandingPrincipal;

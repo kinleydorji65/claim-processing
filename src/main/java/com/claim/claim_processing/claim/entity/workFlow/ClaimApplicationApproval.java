@@ -61,12 +61,14 @@ public class ClaimApplicationApproval {
     private BigDecimal finalNetPayableAmount;
 
     @Column(name = "REQUIRES_FINANCE_ACTION", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String requiresFinanceAction = "N";
+    private ActivityEnum requiresFinanceAction = ActivityEnum.N;
 
     @Column(name = "REQUIRES_MANUAL_REVIEW", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String requiresManualReview = "N";
+    private ActivityEnum requiresManualReview = ActivityEnum.N;
 
     @Column(name = "APPROVAL_REASON_CODE", length = 100)
     private String approvalReasonCode;
@@ -112,10 +114,10 @@ public class ClaimApplicationApproval {
         updatedAt = new Timestamp(System.currentTimeMillis());
 
         if (this.requiresFinanceAction == null) {
-            this.requiresFinanceAction = "N";
+            this.requiresFinanceAction = ActivityEnum.N;
         }
         if (this.requiresManualReview == null) {
-            this.requiresManualReview = "N";
+            this.requiresManualReview = ActivityEnum.N;
         }
         if (this.isActive == null) {
             this.isActive = ActivityEnum.Y;

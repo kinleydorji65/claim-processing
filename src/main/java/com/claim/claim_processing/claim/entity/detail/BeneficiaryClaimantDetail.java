@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 import com.claim.claim_processing.common.entities.beneficiary_master.ClaimantTypeMaster;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.member.MemberFamily;
 import com.claim.claim_processing.common.entities.others.member.MemberNominee;
 
@@ -66,12 +67,14 @@ public class BeneficiaryClaimantDetail {
     private Integer priorityOrder;
 
     @Column(name = "IS_MEMBER_FAMILY", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private Character isMemberFamily = 'N';
+    private ActivityEnum isMemberFamily = ActivityEnum.N;
 
     @Column(name = "IS_MINOR", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private Character isMinor = 'N';
+    private ActivityEnum isMinor = ActivityEnum.N;
 
     @Column(name = "GUARDIAN_NAME", length = 200)
     private String guardianName;
@@ -83,12 +86,14 @@ public class BeneficiaryClaimantDetail {
     private BigDecimal benefitAmount;
 
     @Column(name = "IS_ELIGIBLE", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private Character isEligible = 'Y';
+    private ActivityEnum isEligible = ActivityEnum.Y;
 
     @Column(name = "IS_SELECTED", length = 1)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private Character isSelected = 'Y';
+    private ActivityEnum isSelected = ActivityEnum.Y;
 
     @Column(name = "REMARKS", length = 1000)
     private String remarks;
@@ -111,16 +116,16 @@ public class BeneficiaryClaimantDetail {
         updatedAt = LocalDateTime.now();
 
         if (isMemberFamily == null) {
-            isMemberFamily = 'N';
+            isMemberFamily = ActivityEnum.N;
         }
         if (isMinor == null) {
-            isMinor = 'N';
+            isMinor = ActivityEnum.N;
         }
         if (isEligible == null) {
-            isEligible = 'Y';
+            isEligible = ActivityEnum.Y;
         }
         if (isSelected == null) {
-            isSelected = 'Y';
+            isSelected = ActivityEnum.Y;
         }
     }
 

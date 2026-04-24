@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.List;
 
 import com.claim.claim_processing.common.entities.common.DeductionReferenceTypeMaster;
 import com.claim.claim_processing.common.entities.common.DeductionTypeMaster;
@@ -58,13 +59,15 @@ public class ClaimApplicationDeductionDetail {
         @JoinColumn(name = "DEDUCTION_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CADD_DED_REVIEW_STATUS"))
         private ReviewStatusMaster deductionReviewStatus;
 
+        @Enumerated(EnumType.STRING)
         @Column(name = "IS_AUTO_APPLIED", length = 1)
         @Builder.Default
-        private String isAutoApplied = "N";
+        private ActivityEnum isAutoApplied = ActivityEnum.N;
 
+        @Enumerated(EnumType.STRING)
         @Column(name = "IS_MANUAL_OVERRIDE", length = 1)
         @Builder.Default
-        private String isManualOverride = "N";
+        private ActivityEnum isManualOverride = ActivityEnum.N;
 
         @Column(name = "OVERRIDE_REASON", length = 1000)
         private String overrideReason;
@@ -88,6 +91,19 @@ public class ClaimApplicationDeductionDetail {
         @Column(name = "IS_ACTIVE", length = 1)
         @Builder.Default
         private ActivityEnum isActive = ActivityEnum.Y;
+
+        @OneToMany(mappedBy = "deductionDetail", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<ClaimApplicationLoanDetail> loanDetails = new java.util.ArrayList<>();
+
+        @OneToMany(mappedBy = "deductionDetail", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<ClaimApplicationRentalDeductionDetail> rentalDetails = new java.util.ArrayList<>();
+
+
+        @OneToOne(mappedBy = "deductionDetail", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private ClaimApplicationTdsTaxDetail tdsTaxDetail = new ClaimApplicationTdsTaxDetail();
 
         @PrePersist
         public void prePersist() {
