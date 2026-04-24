@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.others;
 import com.claim.claim_processing.common.DTO.request.others.NppfOfficeRequestDto;
 import com.claim.claim_processing.common.DTO.response.others.NppfOfficeResponseDto;
 import com.claim.claim_processing.common.DTO.update.others.NppfOfficeUpdateDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.NppfOfficeMaster;
 import com.claim.claim_processing.common.mapper.others.NppfOfficeMapper;
 import com.claim.claim_processing.common.repository.others.NppfOfficeRepository;
@@ -79,7 +80,7 @@ public class NppfOfficeServiceImpl implements NppfOfficeService {
     public void delete(Long id) {
         NppfOfficeMaster entity = findById(id);
 
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);

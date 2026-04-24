@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.entities.contribution;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,9 +29,10 @@ public class ComponentInterestMaster {
     @Column(name = "BASE_COMPONENT_CODE", length = 30)
     private String baseComponentCode;
 
-    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private String isActive = "Y";
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -47,7 +49,7 @@ public class ComponentInterestMaster {
     @PrePersist
     public void prePersist() {
         if (isActive == null) {
-            isActive = "Y";
+            isActive = ActivityEnum.Y;
         }
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();

@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.DTO.response.partial;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.sql.Timestamp;
@@ -15,7 +16,7 @@ public class PartialCauseResponseDto {
     private String code;
     private String name;
     private String description;
-    private String isActive;
+    private ActivityEnum isActive;
 
     private Timestamp createdAt;
     private String createdBy;

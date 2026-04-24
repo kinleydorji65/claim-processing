@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.others;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.NppfOfficeMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,11 +15,11 @@ public interface NppfOfficeRepository extends JpaRepository<NppfOfficeMaster, Lo
 
     Optional<NppfOfficeMaster> findByCode(Long code);
 
-    List<NppfOfficeMaster> findByIsActive(String isActive);
+    List<NppfOfficeMaster> findByIsActive(ActivityEnum isActive);
 
-    Optional<NppfOfficeMaster> findByCodeAndIsActive(Long code, String isActive);
+    Optional<NppfOfficeMaster> findByCodeAndIsActive(Long code, ActivityEnum isActive);
 
-    List<NppfOfficeMaster> findByIsActiveOrderByNameAsc(String isActive);
+    List<NppfOfficeMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
 
-    Optional<NppfOfficeMaster> findByIdAndIsActive(Long id, String isActive);
+    Optional<NppfOfficeMaster> findByIdAndIsActive(Long id, ActivityEnum isActive);
 }

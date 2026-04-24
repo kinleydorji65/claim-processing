@@ -4,6 +4,7 @@ import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
 import com.claim.claim_processing.common.DTO.request.claim.AccountTypeCreateRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.AccountTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.AccountTypeUpdateRequestDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.claim.AccountTypeMapper;
 import com.claim.claim_processing.common.repository.claim.AccountTypeRepository;
 import com.claim.claim_processing.common.service.claim.AccountTypeService;
@@ -25,7 +26,7 @@ public class AccountTypeServiceImpl implements AccountTypeService {
     @Transactional(readOnly = true)
     public List<AccountTypeResponseDto> getAllActive() {
         List<AccountTypeMaster> accountTypes =
-                accountTypeRepository.findByIsActiveOrderByNameAsc("Y");
+                accountTypeRepository.findByIsActiveOrderByNameAsc(ActivityEnum.Y);
 
         return accountTypeMapper.toResponseDtoList(accountTypes);
     }
@@ -69,7 +70,7 @@ public class AccountTypeServiceImpl implements AccountTypeService {
         AccountTypeMaster existingAccountType = accountTypeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Account type not found with id: " + id));
 
-        existingAccountType.setIsActive("N");
+        existingAccountType.setIsActive(ActivityEnum.N);
         existingAccountType.setUpdatedBy("SYSTEM");
 
         accountTypeRepository.save(existingAccountType);

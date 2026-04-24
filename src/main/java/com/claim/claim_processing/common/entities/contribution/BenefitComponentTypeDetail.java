@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.entities.contribution;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,7 +28,8 @@ public class BenefitComponentTypeDetail {
         @JoinColumn(name = "COMPONENT_ID", referencedColumnName = "ID", nullable = false, foreignKey = @ForeignKey(name = "FK_COMPONENT"))
         private ComponentMaster component;
 
-        @Column(name = "IS_ACTIVE", nullable = false, length = 1)
-        @Builder.Default
-        private String isActive = "Y";
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_ACTIVE", length = 1)
+    @Builder.Default
+    private ActivityEnum isActive = ActivityEnum.Y;
 }

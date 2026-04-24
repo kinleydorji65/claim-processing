@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.repository.common;
 
 import com.claim.claim_processing.common.entities.common.ClaimSourceMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,11 +15,11 @@ public interface ClaimSourceRepository extends JpaRepository<ClaimSourceMaster, 
 
     Optional<ClaimSourceMaster> findByCode(String code);
 
-    List<ClaimSourceMaster> findByIsActive(String isActive);
+    List<ClaimSourceMaster> findByIsActive(ActivityEnum isActive);
 
-    Optional<ClaimSourceMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<ClaimSourceMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 
-    List<ClaimSourceMaster> findByIsActiveOrderByNameAsc(String isActive);
+    List<ClaimSourceMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
 
-    Optional<ClaimSourceMaster> findByIdAndIsActive(Long id, String isActive);
+    Optional<ClaimSourceMaster> findByIdAndIsActive(Long id, ActivityEnum isActive);
 }

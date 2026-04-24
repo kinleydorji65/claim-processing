@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.refund_master;
 import com.claim.claim_processing.common.DTO.request.refund_master.ExcessRefundReasonRequestDto;
 import com.claim.claim_processing.common.DTO.response.refund_master.ExcessRefundReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.refund_master.ExcessRefundReasonUpdateDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.refund_master.ExcessRefundReasonMaster;
 import com.claim.claim_processing.common.mapper.refund_master.ExcessRefundReasonMapper;
 import com.claim.claim_processing.common.repository.refund_master.ExcessRefundReasonRepository;
@@ -84,7 +85,7 @@ public class ExcessRefundReasonServiceImpl implements ExcessRefundReasonService 
 
         ExcessRefundReasonMaster entity = findById(id);
 
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);

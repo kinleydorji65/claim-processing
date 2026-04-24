@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.repository.claim;
 
 import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +12,6 @@ import java.util.Optional;
 public interface AccountTypeRepository extends JpaRepository<AccountTypeMaster, Long> {
     Optional<AccountTypeMaster> findByCode(String code);
     boolean existsByCode(String code);
-    List<AccountTypeMaster> findByIsActiveOrderByNameAsc(String isActive);
-    Optional<AccountTypeMaster> findByCodeAndIsActive(String code, String isActive);
+    List<AccountTypeMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
+    Optional<AccountTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 }

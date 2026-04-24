@@ -1,4 +1,5 @@
 package com.claim.claim_processing.common.DTO.response.claim;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -30,5 +31,5 @@ public class ClaimEligibilityResponseDto {
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
 
-    private String isActive;
+    private ActivityEnum isActive;
 }

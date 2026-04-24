@@ -26,7 +26,7 @@ public class ClaimantTypeServiceImpl implements ClaimantTypeService {
     @Transactional(readOnly = true)
     public List<ClaimantTypeResponseDto> getAllActive() {
         List<ClaimantTypeMaster> claimantTypes =
-                claimantTypeRepository.findByIsActiveOrderByDisplayOrderAsc("Y");
+                claimantTypeRepository.findByIsActiveOrderByDisplayOrderAsc(ActivityEnum.Y);
 
         return claimantTypeMapper.toResponseDtoList(claimantTypes);
     }

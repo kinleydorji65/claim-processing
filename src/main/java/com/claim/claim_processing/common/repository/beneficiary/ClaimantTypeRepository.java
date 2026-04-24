@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.repository.beneficiary;
 
 import com.claim.claim_processing.common.entities.beneficiary_master.ClaimantTypeMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,6 +13,6 @@ public interface ClaimantTypeRepository extends JpaRepository<ClaimantTypeMaster
 
     Optional<ClaimantTypeMaster> findByCode(String code);
     boolean existsByCode(String code);
-    List<ClaimantTypeMaster> findByIsActiveOrderByDisplayOrderAsc(String isActive);
-    Optional<ClaimantTypeMaster> findByCodeAndIsActive(String code, String isActive);
+    List<ClaimantTypeMaster> findByIsActiveOrderByDisplayOrderAsc(ActivityEnum isActive);
+    Optional<ClaimantTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 }

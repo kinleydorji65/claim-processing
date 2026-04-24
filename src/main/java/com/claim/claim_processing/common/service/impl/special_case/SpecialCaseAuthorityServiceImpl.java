@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.special_case;
 import com.claim.claim_processing.common.DTO.request.special_case.SpecialCaseAuthorityRequestDto;
 import com.claim.claim_processing.common.DTO.response.special_case.SpecialCaseAuthorityResponseDto;
 import com.claim.claim_processing.common.DTO.update.special_case.SpecialCaseAuthorityUpdateRequestDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.special_case.SpecialCaseRefundAuthorityMaster;
 import com.claim.claim_processing.common.mapper.special_case.SpecialCaseAuthorityMapper;
 import com.claim.claim_processing.common.repository.special_case.SpecialCaseAuthorityRepository;
@@ -73,7 +74,7 @@ public class SpecialCaseAuthorityServiceImpl implements SpecialCaseAuthorityServ
     @Override
     public void delete(Long id) {
         SpecialCaseRefundAuthorityMaster entity = findEntityById(id);
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
         repository.save(entity);
     }

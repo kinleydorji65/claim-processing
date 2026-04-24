@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.legal_master;
 import com.claim.claim_processing.common.DTO.request.legal_master.RecoveryReasonRequestDto;
 import com.claim.claim_processing.common.DTO.response.legal_master.RecoveryReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.legal_master.RecoveryReasonUpdateDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.legal_master.RecoveryReasonMaster;
 import com.claim.claim_processing.common.mapper.legal_master.RecoveryReasonMapper;
 import com.claim.claim_processing.common.repository.legal_master.RecoveryReasonRepository;
@@ -62,7 +63,7 @@ public class RecoveryReasonServiceImpl implements RecoveryReasonService {
     @Override
     public List<RecoveryReasonResponseDto> getAllActive() {
         return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ACTIVE)
+                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
         );
     }
 
@@ -81,7 +82,7 @@ public class RecoveryReasonServiceImpl implements RecoveryReasonService {
     public void delete(Long id) {
         RecoveryReasonMaster entity = findById(id);
 
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);

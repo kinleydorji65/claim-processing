@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.partial;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalReasonMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,9 +15,9 @@ public interface PartialReasonRepository extends JpaRepository<PartialWithdrawal
 
     Optional<PartialWithdrawalReasonMaster> findByCode(String code);
 
-    List<PartialWithdrawalReasonMaster> findByIsActive(String isActive);
+    List<PartialWithdrawalReasonMaster> findByIsActive(ActivityEnum isActive);
 
-    Optional<PartialWithdrawalReasonMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<PartialWithdrawalReasonMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 
-    List<PartialWithdrawalReasonMaster> findByIsActiveOrderByNameAsc(String isActive);
+    List<PartialWithdrawalReasonMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
 }

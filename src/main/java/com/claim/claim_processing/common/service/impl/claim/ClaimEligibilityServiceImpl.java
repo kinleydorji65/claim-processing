@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.claim;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimCircumstanceMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.DTO.request.claim.ClaimEligibilityCreateRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimEligibilityResponseDto;
@@ -35,7 +36,7 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
     @Transactional(readOnly = true)
     public List<ClaimEligibilityResponseDto> getAllActive() {
         List<ClaimEligibilityMaster> entities =
-                claimEligibilityRepository.findByIsActiveOrderByRuleNameAsc("Y");
+                claimEligibilityRepository.findByIsActiveOrderByRuleNameAsc(ActivityEnum.Y);
 
         return claimEligibilityMapper.toResponseDtoList(entities);
     }
@@ -119,7 +120,7 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
         ClaimEligibilityMaster entity = claimEligibilityRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Claim eligibility rule not found with id: " + id));
 
-        entity.setIsActive("N");
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         claimEligibilityRepository.save(entity);

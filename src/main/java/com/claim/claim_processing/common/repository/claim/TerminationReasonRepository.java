@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.repository.claim;
 
 import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +15,7 @@ public interface TerminationReasonRepository extends JpaRepository<TerminationRe
 
     boolean existsByCode(String code);
 
-    List<TerminationReasonMaster> findByIsActiveOrderByDisplayOrderAsc(Character isActive);
+    List<TerminationReasonMaster> findByIsActiveOrderByDisplayOrderAsc(ActivityEnum isActive);
 
-    Optional<TerminationReasonMaster> findByCodeAndIsActive(String code, Character isActive);
+    Optional<TerminationReasonMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 }

@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.special_case;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.special_case.SpecialCaseRefundAuthorityMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -17,11 +18,11 @@ public interface SpecialCaseAuthorityRepository extends JpaRepository<SpecialCas
     Optional<SpecialCaseRefundAuthorityMaster> findByCode(String code);
 
     // Active records (for dropdowns / master usage)
-    List<SpecialCaseRefundAuthorityMaster> findByIsActive(String isActive);
+    List<SpecialCaseRefundAuthorityMaster> findByIsActive(ActivityEnum isActive);
 
     // Active + by code (safe lookup)
-    Optional<SpecialCaseRefundAuthorityMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<SpecialCaseRefundAuthorityMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 
     // Optional: for sorting UI dropdowns later
-    List<SpecialCaseRefundAuthorityMaster> findByIsActiveOrderByNameAsc(String isActive);
+    List<SpecialCaseRefundAuthorityMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
 }

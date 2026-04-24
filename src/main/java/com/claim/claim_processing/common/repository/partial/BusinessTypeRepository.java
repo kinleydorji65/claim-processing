@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.partial;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.BusinessTypeMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,9 +15,9 @@ public interface BusinessTypeRepository extends JpaRepository<BusinessTypeMaster
 
     Optional<BusinessTypeMaster> findByCode(String code);
 
-    List<BusinessTypeMaster> findByIsActive(String isActive);
+    List<BusinessTypeMaster> findByIsActive(ActivityEnum isActive);
 
-    Optional<BusinessTypeMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<BusinessTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 
-    List<BusinessTypeMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(String isActive);
+    List<BusinessTypeMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum isActive);
 }

@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.partial;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.DisasterTypeMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,9 +15,9 @@ public interface DisasterTypeRepository extends JpaRepository<DisasterTypeMaster
 
     Optional<DisasterTypeMaster> findByCode(String code);
 
-    List<DisasterTypeMaster> findByIsActive(String isActive);
+    List<DisasterTypeMaster> findByIsActive(ActivityEnum isActive);
 
-    Optional<DisasterTypeMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<DisasterTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 
-    List<DisasterTypeMaster> findByIsActiveOrderByNameAsc(String isActive);
+    List<DisasterTypeMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
 }

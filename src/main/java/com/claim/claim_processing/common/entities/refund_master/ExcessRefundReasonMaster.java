@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.entities.refund_master;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -36,9 +37,10 @@ public class ExcessRefundReasonMaster {
     @Column(name = "DISPLAY_ORDER")
     private Integer displayOrder;
 
-    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private Character isActive = 'Y';
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
@@ -57,7 +59,7 @@ public class ExcessRefundReasonMaster {
         createdAt = new Timestamp(System.currentTimeMillis());
         updatedAt = new Timestamp(System.currentTimeMillis());
         if (isActive == null) {
-            isActive = 'Y';
+            isActive = ActivityEnum.Y;
         }
     }
 

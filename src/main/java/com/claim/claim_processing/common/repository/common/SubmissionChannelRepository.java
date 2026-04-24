@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.repository.common;
 
 import com.claim.claim_processing.common.entities.common.SubmissionChannelMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,11 +15,11 @@ public interface SubmissionChannelRepository extends JpaRepository<SubmissionCha
 
     Optional<SubmissionChannelMaster> findByCode(String code);
 
-    List<SubmissionChannelMaster> findByIsActive(String isActive);
+    List<SubmissionChannelMaster> findByIsActive(ActivityEnum isActive);
 
-    List<SubmissionChannelMaster> findByIsActiveOrderByNameAsc(String isActive);
+    List<SubmissionChannelMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
 
-    Optional<SubmissionChannelMaster> findByIdAndIsActive(Long id, String isActive);
+    Optional<SubmissionChannelMaster> findByIdAndIsActive(Long id, ActivityEnum isActive);
 
-    Optional<SubmissionChannelMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<SubmissionChannelMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 }

@@ -4,6 +4,7 @@ import com.claim.claim_processing.common.DTO.request.common.SubmissionChannelReq
 import com.claim.claim_processing.common.DTO.response.common.SubmissionChannelResponseDto;
 import com.claim.claim_processing.common.DTO.update.common.SubmissionChannelUpdateDto;
 import com.claim.claim_processing.common.entities.common.SubmissionChannelMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.common.SubmissionChannelMapper;
 import com.claim.claim_processing.common.repository.common.SubmissionChannelRepository;
 import com.claim.claim_processing.common.service.common.SubmissionChannelService;
@@ -81,7 +82,7 @@ public class SubmissionChannelServiceImpl implements SubmissionChannelService {
     public void deactivate(Long id) {
         SubmissionChannelMaster entity = findById(id);
 
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);

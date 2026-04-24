@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.wrong_remittance;
 import com.claim.claim_processing.common.DTO.request.wrong_remittance.RemittanceReasonRequestDto;
 import com.claim.claim_processing.common.DTO.response.wrong_remittance.RemittanceReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.wrong_remittance.RemittanceReasonUpdateDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.wrong_remittance_master.WrongRemittanceReasonMaster;
 import com.claim.claim_processing.common.mapper.wrong_remittance.RemittanceReasonMapper;
 import com.claim.claim_processing.common.repository.wrong_remittance.RemittanceReasonRepository;
@@ -81,7 +82,7 @@ public class RemittanceReasonServiceImpl implements RemittanceReasonService {
     public void deactivate(Long id) {
         WrongRemittanceReasonMaster entity = findById(id);
 
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);

@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.partial;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.HousePurchaseTypeMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,9 +15,9 @@ public interface HousePurchaseTypeRepository extends JpaRepository<HousePurchase
 
     Optional<HousePurchaseTypeMaster> findByCode(String code);
 
-    List<HousePurchaseTypeMaster> findByIsActive(String isActive);
+    List<HousePurchaseTypeMaster> findByIsActive(ActivityEnum isActive);
 
-    Optional<HousePurchaseTypeMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<HousePurchaseTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 
-    List<HousePurchaseTypeMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(String isActive);
+    List<HousePurchaseTypeMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum isActive);
 }

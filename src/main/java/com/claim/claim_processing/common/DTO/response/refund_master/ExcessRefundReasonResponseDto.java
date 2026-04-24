@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.DTO.response.refund_master;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.sql.Timestamp;
@@ -16,7 +17,7 @@ public class ExcessRefundReasonResponseDto {
     private String name;
     private String description;
     private Integer displayOrder;
-    private String isActive; // convert from Character
+    private ActivityEnum isActive;
 
     private String createdBy;
     private Timestamp createdAt;

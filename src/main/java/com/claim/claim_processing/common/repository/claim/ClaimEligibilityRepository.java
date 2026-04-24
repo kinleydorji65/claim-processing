@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.claim;
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,8 +13,8 @@ public interface ClaimEligibilityRepository extends JpaRepository<ClaimEligibili
 
     Optional<ClaimEligibilityMaster> findByRuleCode(String ruleCode);
     boolean existsByRuleCode(String ruleCode);
-    List<ClaimEligibilityMaster> findByIsActiveOrderByRuleNameAsc(String isActive);
-    Optional<ClaimEligibilityMaster> findByRuleCodeAndIsActive(String ruleCode, String isActive);
+    List<ClaimEligibilityMaster> findByIsActiveOrderByRuleNameAsc(ActivityEnum isActive);
+    Optional<ClaimEligibilityMaster> findByRuleCodeAndIsActive(String ruleCode, ActivityEnum isActive);
     List<ClaimEligibilityMaster> findByClaimCategoryCodeAndIsActiveOrderByRuleNameAsc(
             String claimCategoryCode,
             String isActive

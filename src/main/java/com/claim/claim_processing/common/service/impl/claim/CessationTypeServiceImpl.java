@@ -4,6 +4,7 @@ import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import com.claim.claim_processing.common.DTO.request.claim.CessationTypeCreateRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.CessationTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.CessationTypeUpdateRequestDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.claim.CessationTypeMapper;
 import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
 import com.claim.claim_processing.common.service.claim.CessationTypeService;
@@ -25,7 +26,7 @@ public class CessationTypeServiceImpl implements CessationTypeService {
     @Transactional(readOnly = true)
     public List<CessationTypeResponseDto> getAllActive() {
         List<CessationTypeMaster> list =
-                cessationTypeRepository.findByIsActiveOrderByNameAsc("Y");
+                cessationTypeRepository.findByIsActiveOrderByNameAsc(ActivityEnum.Y);
 
         return cessationTypeMapper.toResponseDtoList(list);
     }
@@ -72,7 +73,7 @@ public class CessationTypeServiceImpl implements CessationTypeService {
         CessationTypeMaster entity = cessationTypeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cessation type not found with id: " + id));
 
-        entity.setIsActive("N");
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         cessationTypeRepository.save(entity);

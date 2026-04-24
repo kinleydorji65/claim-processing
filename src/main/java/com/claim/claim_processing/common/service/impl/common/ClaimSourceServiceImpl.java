@@ -4,6 +4,7 @@ import com.claim.claim_processing.common.DTO.request.common.ClaimSourceRequestDt
 import com.claim.claim_processing.common.DTO.response.common.ClaimSourceResponseDto;
 import com.claim.claim_processing.common.DTO.update.common.ClaimSourceUpdateDto;
 import com.claim.claim_processing.common.entities.common.ClaimSourceMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.common.ClaimSourceMapper;
 import com.claim.claim_processing.common.repository.common.ClaimSourceRepository;
 import com.claim.claim_processing.common.service.common.ClaimSourceService;
@@ -57,7 +58,7 @@ public class ClaimSourceServiceImpl implements ClaimSourceService {
 
     @Override
     public List<ClaimSourceResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ACTIVE));
+        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
     }
 
     @Override
@@ -74,7 +75,7 @@ public class ClaimSourceServiceImpl implements ClaimSourceService {
     @Override
     public void deactivate(Long id) {
         ClaimSourceMaster entity = findById(id);
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
         repository.save(entity);
     }

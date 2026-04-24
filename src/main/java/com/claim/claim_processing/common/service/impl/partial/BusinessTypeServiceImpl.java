@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.partial;
 import com.claim.claim_processing.common.DTO.request.partial.BusinessTypeRequestDto;
 import com.claim.claim_processing.common.DTO.response.partial.BusinessTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.BusinessTypeUpdateDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.BusinessTypeMaster;
 import com.claim.claim_processing.common.mapper.partial.BusinessTypeMapper;
 import com.claim.claim_processing.common.repository.partial.BusinessTypeRepository;
@@ -85,7 +86,7 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
         BusinessTypeMaster entity = findById(id);
 
         // Soft delete
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);

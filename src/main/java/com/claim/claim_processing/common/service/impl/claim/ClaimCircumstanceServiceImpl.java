@@ -4,6 +4,7 @@ import com.claim.claim_processing.common.entities.claim.ClaimCircumstanceMaster;
 import com.claim.claim_processing.common.DTO.request.claim.ClaimCircumstanceCreateRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimCircumstanceResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.ClaimCircumstanceUpdateRequestDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.claim.ClaimCircumstanceMapper;
 import com.claim.claim_processing.common.repository.claim.ClaimCircumstanceRepository;
 import com.claim.claim_processing.common.service.claim.ClaimCircumstanceService;
@@ -25,7 +26,7 @@ public class ClaimCircumstanceServiceImpl implements ClaimCircumstanceService {
     @Transactional(readOnly = true)
     public List<ClaimCircumstanceResponseDto> getAllActive() {
         List<ClaimCircumstanceMaster> list =
-                repository.findByIsActiveOrderByNameAsc("Y");
+                repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y);
 
         return mapper.toResponseDtoList(list);
     }
@@ -72,7 +73,7 @@ public class ClaimCircumstanceServiceImpl implements ClaimCircumstanceService {
         ClaimCircumstanceMaster entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Claim circumstance not found with id: " + id));
 
-        entity.setIsActive("N");
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);

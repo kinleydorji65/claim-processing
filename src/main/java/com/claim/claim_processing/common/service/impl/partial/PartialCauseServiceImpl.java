@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.partial;
 import com.claim.claim_processing.common.DTO.request.partial.PartialCauseRequestDto;
 import com.claim.claim_processing.common.DTO.response.partial.PartialCauseResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.PartialCauseUpdateDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalCauseMaster;
 import com.claim.claim_processing.common.mapper.partial.PartialCauseMapper;
 import com.claim.claim_processing.common.repository.partial.PartialCauseRepository;
@@ -73,7 +74,7 @@ public class PartialCauseServiceImpl implements PartialCauseService {
     @Override
     public void delete(Long id) {
         PartialWithdrawalCauseMaster entity = findEntityById(id);
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
         repository.save(entity);
     }

@@ -4,6 +4,7 @@ import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
 import com.claim.claim_processing.common.DTO.request.claim.TerminationReasonCreateRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.TerminationReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.TerminationReasonUpdateRequestDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.claim.TerminationReasonMapper;
 import com.claim.claim_processing.common.repository.claim.TerminationReasonRepository;
 import com.claim.claim_processing.common.service.claim.TerminationReasonService;
@@ -25,7 +26,7 @@ public class TerminationReasonServiceImpl implements TerminationReasonService {
     @Transactional(readOnly = true)
     public List<TerminationReasonResponseDto> getAllActive() {
         List<TerminationReasonMaster> reasons =
-                terminationReasonRepository.findByIsActiveOrderByDisplayOrderAsc('Y');
+                terminationReasonRepository.findByIsActiveOrderByDisplayOrderAsc(ActivityEnum.Y);
 
         return terminationReasonMapper.toResponseDtoList(reasons);
     }
@@ -69,7 +70,7 @@ public class TerminationReasonServiceImpl implements TerminationReasonService {
         TerminationReasonMaster existingReason = terminationReasonRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Termination reason not found with id: " + id));
 
-        existingReason.setIsActive('N');
+        existingReason.setIsActive(ActivityEnum.N);
         existingReason.setUpdatedBy("SYSTEM");
 
         terminationReasonRepository.save(existingReason);

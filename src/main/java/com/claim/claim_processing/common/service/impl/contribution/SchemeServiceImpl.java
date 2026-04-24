@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.service.impl.contribution;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.DTO.request.contribution.SchemeCreateRequestDto;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeResponseDto;
@@ -67,7 +68,7 @@ public class SchemeServiceImpl implements SchemeService {
         SchemeMaster existingScheme = schemeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Scheme not found with id: " + id));
 
-        existingScheme.setIsActive("N");
+        existingScheme.setIsActive(ActivityEnum.N);
         existingScheme.setUpdatedBy("SYSTEM");
 
         schemeRepository.save(existingScheme);

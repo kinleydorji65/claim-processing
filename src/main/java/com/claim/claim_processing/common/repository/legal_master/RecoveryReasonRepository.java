@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.legal_master;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.legal_master.RecoveryReasonMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,11 +15,11 @@ public interface RecoveryReasonRepository extends JpaRepository<RecoveryReasonMa
 
     Optional<RecoveryReasonMaster> findByCode(String code);
 
-    List<RecoveryReasonMaster> findByIsActive(String isActive);
+    List<RecoveryReasonMaster> findByIsActive(ActivityEnum isActive);
 
-    Optional<RecoveryReasonMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<RecoveryReasonMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 
-    List<RecoveryReasonMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(String isActive);
+    List<RecoveryReasonMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum isActive);
 
-    Optional<RecoveryReasonMaster> findByIdAndIsActive(Long id, String isActive);
+    Optional<RecoveryReasonMaster> findByIdAndIsActive(Long id, ActivityEnum isActive);
 }

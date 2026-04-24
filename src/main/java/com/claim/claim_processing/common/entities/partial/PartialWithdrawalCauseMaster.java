@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.entities.partial;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,9 +30,10 @@ public class PartialWithdrawalCauseMaster {
         @Column(name = "DESCRIPTION", length = 500)
         private String description;
 
+        @Enumerated(EnumType.STRING)
         @Column(name = "IS_ACTIVE", length = 1)
         @Builder.Default
-        private String isActive = "Y";
+        private ActivityEnum isActive = ActivityEnum.Y;
 
         @Column(name = "CREATED_AT", insertable = false, updatable = false)
         private Timestamp createdAt;

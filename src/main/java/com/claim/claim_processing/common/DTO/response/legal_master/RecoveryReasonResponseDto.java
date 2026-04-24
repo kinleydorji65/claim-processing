@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.DTO.response.legal_master;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -16,7 +17,7 @@ public class RecoveryReasonResponseDto {
     private String name;
     private String description;
     private Integer displayOrder;
-    private String isActive;
+    private ActivityEnum isActive;
 
     private String createdBy;
     private LocalDateTime createdAt;

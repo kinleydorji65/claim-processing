@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.entities.common;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,9 +26,10 @@ public class SubmissionChannelMaster {
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private String isActive = "Y";
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -44,7 +46,7 @@ public class SubmissionChannelMaster {
     @PrePersist
     public void prePersist() {
         if (this.isActive == null) {
-            this.isActive = "Y";
+            this.isActive = ActivityEnum.Y;
         }
         this.updatedAt = LocalDateTime.now();
     }

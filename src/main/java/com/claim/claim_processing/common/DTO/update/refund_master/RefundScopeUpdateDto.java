@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.DTO.update.refund_master;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 @Getter
@@ -10,5 +11,5 @@ import lombok.*;
 public class RefundScopeUpdateDto {
 
     private String name;
-    private String isActive;
+    private ActivityEnum isActive;
 }

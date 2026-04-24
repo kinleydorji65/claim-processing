@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.entities.claim;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -35,9 +36,10 @@ public class TerminationReasonMaster {
     @Column(name = "DISPLAY_ORDER")
     private Integer displayOrder;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
-    private Character isActive = 'Y';
+    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
@@ -60,7 +62,7 @@ public class TerminationReasonMaster {
             updatedAt = LocalDateTime.now();
         }
         if (isActive == null) {
-            isActive = 'Y';
+            isActive = ActivityEnum.Y;
         }
     }
 

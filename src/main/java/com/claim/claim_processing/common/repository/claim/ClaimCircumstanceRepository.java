@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.repository.claim;
 
 import com.claim.claim_processing.common.entities.claim.ClaimCircumstanceMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +15,7 @@ public interface ClaimCircumstanceRepository extends JpaRepository<ClaimCircumst
 
     boolean existsByCode(String code);
 
-    List<ClaimCircumstanceMaster> findByIsActiveOrderByNameAsc(String isActive);
+    List<ClaimCircumstanceMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
 
-    Optional<ClaimCircumstanceMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<ClaimCircumstanceMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 }

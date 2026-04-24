@@ -1,4 +1,5 @@
 package com.claim.claim_processing.common.DTO.response.special_case;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -13,7 +14,7 @@ public class SpecialCaseAuthorityResponseDto {
     private Long id;
     private String code;
     private String name;
-    private String isActive;
+    private ActivityEnum isActive;
 
     private LocalDateTime createdAt;
     private String createdBy;

@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.service.impl.partial;
 import com.claim.claim_processing.common.DTO.request.partial.HousePurchaseTypeRequestDto;
 import com.claim.claim_processing.common.DTO.response.partial.HousePurchaseTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.HousePurchaseTypeUpdateDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.HousePurchaseTypeMaster;
 import com.claim.claim_processing.common.mapper.partial.HousePurchaseTypeMapper;
 import com.claim.claim_processing.common.repository.partial.HousePurchaseTypeRepository;
@@ -84,7 +85,7 @@ public class HousePurchaseTypeServiceImpl implements HousePurchaseTypeService {
 
         HousePurchaseTypeMaster entity = findById(id);
 
-        entity.setIsActive(INACTIVE);
+        entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);
