@@ -8,7 +8,9 @@ import com.claim.claim_processing.common.DTO.update.claim.ClaimEligibilityUpdate
 import com.claim.claim_processing.common.entities.claim.*;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
+import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategoryRepository;
 import com.claim.claim_processing.common.repository.claim.*;
+import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
 import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -24,7 +26,7 @@ public abstract class ClaimEligibilityMapper {
     protected CessationTypeRepository cessationTypeRepository;
 
     @Autowired
-    protected SchemeMasterRepository schemeMasterRepository;
+    protected SchemeTypeRepository schemeMasterRepository;
 
     @Autowired
     protected AgencyCategoryRepository agencyCategoryRepository;

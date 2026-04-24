@@ -6,7 +6,7 @@ import com.claim.claim_processing.common.DTO.request.contribution.SchemeCreateRe
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.contribution.SchemeUpdateRequestDto;
 import com.claim.claim_processing.common.mapper.contribution.SchemeMapper;
-import com.claim.claim_processing.common.repository.contribution.SchemeRepository;
+import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
 import com.claim.claim_processing.common.service.contribution.SchemeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ import java.util.List;
 @Transactional
 public class SchemeServiceImpl implements SchemeService {
 
-    private final SchemeRepository schemeRepository;
+    private final SchemeTypeRepository schemeRepository;
     private final SchemeMapper schemeMapper;
 
     @Override

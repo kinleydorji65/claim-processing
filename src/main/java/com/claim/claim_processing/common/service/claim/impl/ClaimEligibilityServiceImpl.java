@@ -12,8 +12,8 @@ import com.claim.claim_processing.common.mapper.claim.ClaimEligibilityMapper;
 import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimCircumstanceRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityRepository;
+import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
 import com.claim.claim_processing.common.service.claim.ClaimEligibilityService;
-import com.claim.claim_processing.common.repository.contribution.SchemeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +30,7 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
 
     private final ClaimCircumstanceRepository claimCircumstanceRepository;
     private final CessationTypeRepository cessationTypeRepository;
-    private final SchemeRepository schemeRepository;
+    private final SchemeTypeRepository schemeRepository;
 
     @Override
     @Transactional(readOnly = true)
