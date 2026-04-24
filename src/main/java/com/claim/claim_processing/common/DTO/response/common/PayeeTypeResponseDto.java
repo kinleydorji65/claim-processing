@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.DTO.response.contribution;
+package com.claim.claim_processing.common.DTO.response.common;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BenefitComponentTypeResponseDto {
+public class PayeeTypeResponseDto {
 
     private Long id;
 
@@ -18,6 +18,7 @@ public class BenefitComponentTypeResponseDto {
     // -------------------------------
     private String code;
     private String name;
+    private String description;
 
     // -------------------------------
     // STATUS

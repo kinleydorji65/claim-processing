@@ -1,4 +1,8 @@
-package com.claim.claim_processing.common.entities.loanMaster;
+<<<<<<<< HEAD:src/main/java/com/claim/claim_processing/common/entities/rorMaster/CreditMethodMaster.java
+package com.claim.claim_processing.common.entities.rorMaster;
+========
+package com.claim.claim_processing.common.entities.arrMaster;
+>>>>>>>> b4d6508a6c394933134d296412d24e7321c33ea5:src/main/java/com/claim/claim_processing/common/entities/arrMaster/CreditMethodMaster.java
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
@@ -7,13 +11,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "LOAN_ADJUSTMENT_DECISION_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
+@Table(name = "CREDIT_METHOD_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoanAdjustmentDecisionMaster {
+public class CreditMethodMaster {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +27,7 @@ public class LoanAdjustmentDecisionMaster {
     @Column(name = "CODE", nullable = false, unique = true, length = 50)
     private String code;
 
-    @Column(name = "NAME", nullable = false, length = 150)
+    @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
     @Column(name = "DESCRIPTION", length = 255)

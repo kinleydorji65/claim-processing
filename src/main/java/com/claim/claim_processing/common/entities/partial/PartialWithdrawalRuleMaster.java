@@ -70,6 +70,8 @@ public class PartialWithdrawalRuleMaster {
     public void prePersist() {
         handleDefaults();
         validateAccumulation();
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
@@ -81,9 +83,6 @@ public class PartialWithdrawalRuleMaster {
     private void handleDefaults() {
         if (isActive == null) {
             isActive = ActivityEnum.Y;
-        }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
         }
     }
 

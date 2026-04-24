@@ -1,28 +1,23 @@
-
-package com.claim.claim_processing.common.DTO.response.specialCase;
+package com.claim.claim_processing.common.DTO.response.contribution;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.Column;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class SpecialCaseAuthorityResponseDto {
+public class BenefitComponentTypeDetailResponseDto {
 
     private Long id;
-    private String code;
-    private String name;
+    private List<BenefitComponentTypeResponseDto> benefitComponentType;
+    private List<ComponentResponseDto> components;
     private ActivityEnum isActive;
-
     private LocalDateTime createdAt;
     private String createdBy;
     private LocalDateTime updatedAt;

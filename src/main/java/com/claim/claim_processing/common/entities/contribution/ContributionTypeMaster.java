@@ -8,7 +8,7 @@ import java.sql.Timestamp;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 
 @Entity
-@Table(name = "CONTRIBUTION_TYPE_MASTER", schema = "PPFMS_CONTRIBUTION_SERVICE_SCHEMA", uniqueConstraints = {
+@Table(name = "CONTRIBUTION_TYPE_MASTER", schema = "PPFMS_CONTRIBUTION_PAYMENTS_SERVICE_SCHEMA", uniqueConstraints = {
         @UniqueConstraint(name = "UK_CONTRIBUTION_TYPE_CODE", columnNames = { "CODE" })
 })
 @Data

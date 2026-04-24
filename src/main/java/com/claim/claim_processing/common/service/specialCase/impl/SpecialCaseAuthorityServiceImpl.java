@@ -1,8 +1,8 @@
 package com.claim.claim_processing.common.service.specialCase.impl;
 
-import com.claim.claim_processing.common.DTO.request.specialCase.SpecialCaseAuthorityRequestDto;
+import com.claim.claim_processing.common.DTO.request.special_case.SpecialCaseAuthorityRequestDto;
 import com.claim.claim_processing.common.DTO.response.specialCase.SpecialCaseAuthorityResponseDto;
-import com.claim.claim_processing.common.DTO.update.specialCase.SpecialCaseAuthorityUpdateRequestDto;
+import com.claim.claim_processing.common.DTO.update.special_case.SpecialCaseAuthorityUpdateRequestDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
 import com.claim.claim_processing.common.mapper.special_case.SpecialCaseAuthorityMapper;

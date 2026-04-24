@@ -7,7 +7,16 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "COMPONENT_INTEREST_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(
+        name = "COMPONENT_INTEREST_MASTER",
+        schema = "PPFMS_CONTRIBUTION_PAYMENTS_SERVICE_SCHEMA",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "UK_COMPONENT_INTEREST_CODE",
+                        columnNames = {"CODE"}
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,20 +29,38 @@ public class ComponentInterestMaster {
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "CODE", nullable = false, unique = true, length = 30)
+    // -------------------------------
+    // BASIC INFO
+    // -------------------------------
+    @Column(name = "CODE", nullable = false, length = 30)
     private String code;
 
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "BASE_COMPONENT_CODE", length = 30)
-    private String baseComponentCode;
+    // -------------------------------
+    // FK → COMPONENT_MASTER
+    // -------------------------------
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "BASE_COMPONENT_ID",
+            referencedColumnName = "ID",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_COMPONENT_INTEREST_BASE")
+    )
+    private ComponentMaster baseComponent;
 
+    // -------------------------------
+    // STATUS
+    // -------------------------------
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default
     private ActivityEnum isActive = ActivityEnum.Y;
 
+    // -------------------------------
+    // AUDIT
+    // -------------------------------
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -46,18 +73,21 @@ public class ComponentInterestMaster {
     @Column(name = "UPDATED_BY", length = 100)
     private String updatedBy;
 
+    // -------------------------------
+    // LIFECYCLE
+    // -------------------------------
     @PrePersist
     public void prePersist() {
-        if (isActive == null) {
-            isActive = ActivityEnum.Y;
+        if (this.isActive == null) {
+            this.isActive = ActivityEnum.Y;
         }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
+        if (this.updatedAt == null) {
+            this.updatedAt = LocalDateTime.now();
         }
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }
