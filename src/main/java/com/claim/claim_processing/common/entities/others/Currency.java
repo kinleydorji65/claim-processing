@@ -33,20 +33,5 @@ public class Currency {
 
     @Column(name = "CURRENCY_CODE")
     private String currencyCode;
-
-    @Column(name = "CREATED_AT")
-    private LocalDateTime createdAt;
-
-    @Column(name = "CREATED_BY")
-    private String createdBy;
-
-    @Column(name = "UPDATED_AT")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "UPDATED_BY")
-    private String updatedBy;
-
-    @Column(name= "STATUS")
-    private  String status;
 }
 

@@ -17,9 +17,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PartialCauseServiceImpl implements PartialCauseService {
-
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
     private static final String NOT_FOUND_MESSAGE = "Partial withdrawal cause not found with id: ";
 
     private final PartialCauseRepository repository;
@@ -57,7 +54,7 @@ public class PartialCauseServiceImpl implements PartialCauseService {
 
     @Override
     public List<PartialCauseResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ACTIVE));
+        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
     }
 
     @Override

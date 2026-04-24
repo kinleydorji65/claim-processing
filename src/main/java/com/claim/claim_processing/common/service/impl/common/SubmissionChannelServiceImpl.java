@@ -18,9 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SubmissionChannelServiceImpl implements SubmissionChannelService {
 
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
-
     private final SubmissionChannelRepository repository;
     private final SubmissionChannelMapper mapper;
 
@@ -63,7 +60,7 @@ public class SubmissionChannelServiceImpl implements SubmissionChannelService {
     @Override
     public List<SubmissionChannelResponseDto> getAllActive() {
         return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByNameAsc(ACTIVE)
+                repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y)
         );
     }
 

@@ -3,7 +3,8 @@ package com.claim.claim_processing.common.mapper.others;
 import com.claim.claim_processing.common.DTO.request.others.NppfOfficeRequestDto;
 import com.claim.claim_processing.common.DTO.response.others.NppfOfficeResponseDto;
 import com.claim.claim_processing.common.DTO.update.others.NppfOfficeUpdateDto;
-import com.claim.claim_processing.common.entities.others.NppfOfficeMaster;
+import com.claim.claim_processing.common.entities.common.NppfOfficeMaster;
+
 import org.mapstruct.*;
 
 import java.util.List;

@@ -1,7 +1,8 @@
 package com.claim.claim_processing.common.repository.others;
 
+import com.claim.claim_processing.common.entities.common.NppfOfficeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.others.NppfOfficeMaster;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

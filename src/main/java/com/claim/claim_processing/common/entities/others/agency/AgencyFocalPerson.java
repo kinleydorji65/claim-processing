@@ -33,9 +33,6 @@ public class AgencyFocalPerson {
     @Column(name = "TITLE_ID")
     private Long titleId;
 
-    // @Column(name = "AGENCY_CODE")
-    // private String agencyCode;
-
     @Column(name = "FIRST_NAME")
     private String firstName;
 
@@ -44,9 +41,6 @@ public class AgencyFocalPerson {
 
     @Column(name = "LAST_NAME")
     private String lastName;
-
-    @Column(name = "NATIONALITY_ID")
-    private Long nationalityId;
 
     @Column(name = "IDENTITY_TYPE_ID")
     private Long identityTypeId;
@@ -60,31 +54,8 @@ public class AgencyFocalPerson {
     @Column(name = "CONTACT_NUMBER")
     private Long contactNumber;
 
-    @Column(name = "CREATED_AT")
-    private Timestamp createdAt;
-
-    @Column(name = "UPDATED_AT")
-    private Timestamp updatedAt;
-
-    @Column(name = "CREATED_BY")
-    private String createdBy;
-
-    @Column(name = "UPDATED_BY")
-    private String updatedBy;
-
     @OneToOne(optional = false, fetch = FetchType.LAZY)
     @JsonIgnore
     @JoinColumn(name = "AGENCY_CODE", referencedColumnName = "AGENCY_CODE", nullable = false, unique = true)
     private AgencyDetail agency;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = new Timestamp(System.currentTimeMillis());
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
 }

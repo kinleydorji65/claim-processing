@@ -3,8 +3,8 @@ package com.claim.claim_processing.common.service.impl.others;
 import com.claim.claim_processing.common.DTO.request.others.NppfOfficeRequestDto;
 import com.claim.claim_processing.common.DTO.response.others.NppfOfficeResponseDto;
 import com.claim.claim_processing.common.DTO.update.others.NppfOfficeUpdateDto;
+import com.claim.claim_processing.common.entities.common.NppfOfficeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.others.NppfOfficeMaster;
 import com.claim.claim_processing.common.mapper.others.NppfOfficeMapper;
 import com.claim.claim_processing.common.repository.others.NppfOfficeRepository;
 import com.claim.claim_processing.common.service.others.NppfOfficeService;
@@ -17,9 +17,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class NppfOfficeServiceImpl implements NppfOfficeService {
-
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
 
     private final NppfOfficeRepository repository;
     private final NppfOfficeMapper mapper;
@@ -62,7 +59,7 @@ public class NppfOfficeServiceImpl implements NppfOfficeService {
 
     @Override
     public List<NppfOfficeResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ACTIVE));
+        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
     }
 
     @Override

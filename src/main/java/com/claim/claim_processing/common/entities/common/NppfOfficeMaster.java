@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.entities.others;
+package com.claim.claim_processing.common.entities.common;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;

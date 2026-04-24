@@ -28,7 +28,4 @@ public class BankType {
 
     @Column(name = "BANK_TYPE_NAME")
     private String bankTypeName;
-
-    @Column(name = "BANK_SHORT_DESC")
-    private String bankShortDesc;
 }

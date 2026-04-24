@@ -18,8 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ClaimSourceServiceImpl implements ClaimSourceService {
 
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
 
     private final ClaimSourceRepository repository;
     private final ClaimSourceMapper mapper;

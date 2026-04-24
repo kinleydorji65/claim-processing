@@ -11,7 +11,6 @@ import lombok.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.util.List;
 
 @Entity
 @Table(name = "CLAIM_APPLICATION_RULE_EVALUATION", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")

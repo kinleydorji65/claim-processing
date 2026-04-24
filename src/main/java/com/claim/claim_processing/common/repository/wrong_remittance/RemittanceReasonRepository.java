@@ -19,7 +19,7 @@ public interface RemittanceReasonRepository extends JpaRepository<WrongRemittanc
 
     Optional<WrongRemittanceReasonMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 
-    List<WrongRemittanceReasonMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(Character isActive);
+    List<WrongRemittanceReasonMaster> findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum isActive);
 
     Optional<WrongRemittanceReasonMaster> findByIdAndIsActive(Long id, ActivityEnum isActive);
 }

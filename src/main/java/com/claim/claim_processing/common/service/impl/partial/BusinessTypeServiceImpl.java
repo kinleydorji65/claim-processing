@@ -18,9 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BusinessTypeServiceImpl implements BusinessTypeService {
 
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
-
     private final BusinessTypeRepository repository;
     private final BusinessTypeMapper mapper;
 
@@ -64,7 +61,7 @@ public class BusinessTypeServiceImpl implements BusinessTypeService {
     @Override
     public List<BusinessTypeResponseDto> getAllActive() {
         return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ACTIVE)
+                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
         );
     }
 

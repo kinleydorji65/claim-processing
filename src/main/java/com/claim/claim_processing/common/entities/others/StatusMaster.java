@@ -18,7 +18,4 @@ public class StatusMaster {
 
     @Column(name = "statuse_name", nullable = false, length = 100)
     private String statuseName;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
 }

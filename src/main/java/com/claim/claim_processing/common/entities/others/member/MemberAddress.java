@@ -1,7 +1,5 @@
 package com.claim.claim_processing.common.entities.others.member;
 
-import java.sql.Timestamp;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
@@ -83,31 +81,8 @@ public class MemberAddress {
     @Column(name = "FLOOR_NO")
     private String floorNo;
 
-    @Column(name="CREATED_BY")
-    private String createdBy;
-
-    @Column(name="UPDATED_BY")
-    private String updatedBy;
-
-    @Column(name = "CREATED_AT")
-    private Timestamp createdAt;
-
-    @Column(name = "UPDATED_AT")
-    private Timestamp updatedAt;
-
     @OneToOne(optional = false, fetch = FetchType.LAZY)
     @JsonIgnore
     @JoinColumn(name = "MEMBER_CODE", referencedColumnName = "MEMBER_CODE", nullable = false)
     private MemberDetail member;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = new Timestamp(System.currentTimeMillis());
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
 }

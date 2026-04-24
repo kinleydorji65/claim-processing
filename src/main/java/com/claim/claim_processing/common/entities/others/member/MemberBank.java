@@ -22,9 +22,6 @@ public class MemberBank {
     
     @Column(name = "ACCOUNT_NUMBER", nullable = true, length = 50)
     private String actNumber;
-
-    // @Column(name = "MEMBER_CODE")
-    // private String memberCode;
     
     @Column(name = "ACCOUNT_HOLDER_NAME", nullable = true, length = 200)
     private String holderName;
@@ -38,29 +35,6 @@ public class MemberBank {
     @Column(name = "IS_DEFAULT", nullable = true)
     @Builder.Default
     private Boolean isDefault = false;
-    
-    @Column(name = "CREATED_AT")
-    private Timestamp createdAt;
-
-    @Column(name = "UPDATED_AT")
-    private Timestamp updatedAt;
-
-    @Column(name = "CREATED_BY")
-    private String createdBy;
-
-    @Column(name = "UPDATED_BY")
-    private String updatedBy;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = new Timestamp(System.currentTimeMillis());
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
     
     @ManyToOne(fetch = FetchType.EAGER)
     @JsonBackReference

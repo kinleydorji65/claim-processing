@@ -45,34 +45,10 @@ public class MemberNominee {
     @Column(name = "SHARE_PERCENTAGE", precision = 5, scale = 2)
     private BigDecimal sharePercentage;
 
-    @Column(name = "NATIONALITY_ID")
-    private Long nationalityId;
-
-    @Column(name = "CREATED_AT", updatable = false)
-    private Timestamp createdAt;
-
-    @Column(name = "UPDATED_AT")
-    private Timestamp updatedAt;
-
-    @Column(name = "CREATED_BY")
-    private String createdBy;
-
-    @Column(name = "UPDATED_BY")
-    private String updatedBy;
+    
 
     @ManyToOne
     @JsonBackReference
     @JoinColumn(name = "MEMBER_CODE", referencedColumnName = "MEMBER_CODE", nullable = false)
     private MemberDetail member;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = new Timestamp(System.currentTimeMillis());
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
 }

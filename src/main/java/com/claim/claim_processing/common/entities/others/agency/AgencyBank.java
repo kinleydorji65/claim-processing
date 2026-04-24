@@ -32,9 +32,6 @@ public class AgencyBank {
     @Column(name = "ACCOUNT_NUMBER")
     private String actNumber;
 
-    // @Column(name = "AGENCY_CODE")
-    // private String agencyCode;
-
     @Column(name = "ACCOUNT_HOLDER_NAME")
     private String holderName;
 
@@ -54,32 +51,8 @@ public class AgencyBank {
     @Builder.Default
     private Boolean isDefault = false;
 
-    @Column(name = "CREATED_AT")
-    private Timestamp createdAt;
-
-    @Column(name = "UPDATED_AT")
-    private Timestamp updatedAt;
-
-    @Column(name = "CREATED_BY")
-    private String createdBy;
-
-    @Column(name = "UPDATED_BY")
-    private String updatedBy;
-
     @ManyToOne
     @JsonBackReference  
     @JoinColumn(name = "AGENCY_CODE", referencedColumnName = "AGENCY_CODE", nullable = true)
     private AgencyDetail agency;
-
-    
-    @PrePersist
-    protected void onCreate() {
-        createdAt = new Timestamp(System.currentTimeMillis());
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
 }

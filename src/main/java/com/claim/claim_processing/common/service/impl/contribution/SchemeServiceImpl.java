@@ -25,7 +25,7 @@ public class SchemeServiceImpl implements SchemeService {
     @Override
     @Transactional(readOnly = true)
     public List<SchemeResponseDto> getAllActive() {
-        List<SchemeMaster> schemes = schemeRepository.findByIsActiveOrderByNameAsc("Y");
+        List<SchemeMaster> schemes = schemeRepository.findByIsActiveOrderByNameAsc(ActivityEnum.Y);
         return schemeMapper.toResponseDtoList(schemes);
     }
 
