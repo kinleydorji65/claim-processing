@@ -18,9 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HousePurchaseTypeServiceImpl implements HousePurchaseTypeService {
 
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
-
     private final HousePurchaseTypeRepository repository;
     private final HousePurchaseTypeMapper mapper;
 
@@ -64,7 +61,7 @@ public class HousePurchaseTypeServiceImpl implements HousePurchaseTypeService {
     @Override
     public List<HousePurchaseTypeResponseDto> getAllActive() {
         return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ACTIVE)
+                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
         );
     }
 

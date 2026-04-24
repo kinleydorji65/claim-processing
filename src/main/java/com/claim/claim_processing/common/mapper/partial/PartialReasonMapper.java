@@ -12,7 +12,7 @@ import java.util.List;
 public interface PartialReasonMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "isActive", constant = "Y")
+    @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

@@ -17,9 +17,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class SpecialCaseAuthorityServiceImpl implements SpecialCaseAuthorityService {
-
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
     private static final String NOT_FOUND_MESSAGE = "Special case authority not found with id: ";
 
     private final SpecialCaseAuthorityRepository repository;
@@ -57,7 +54,7 @@ public class SpecialCaseAuthorityServiceImpl implements SpecialCaseAuthorityServ
 
     @Override
     public List<SpecialCaseAuthorityResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ACTIVE));
+        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
     }
 
     @Override

@@ -17,9 +17,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class DisasterTypeServiceImpl implements DisasterTypeService {
-
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
     private static final String NOT_FOUND = "Disaster type not found with id: ";
 
     private final DisasterTypeRepository repository;
@@ -59,7 +56,7 @@ public class DisasterTypeServiceImpl implements DisasterTypeService {
 
     @Override
     public List<DisasterTypeResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ACTIVE));
+        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
     }
 
     @Override

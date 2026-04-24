@@ -18,9 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ExcessRefundReasonServiceImpl implements ExcessRefundReasonService {
 
-    private static final Character ACTIVE = 'Y';
-    private static final Character INACTIVE = 'N';
-
     private final ExcessRefundReasonRepository repository;
     private final ExcessRefundReasonMapper mapper;
 
@@ -64,7 +61,7 @@ public class ExcessRefundReasonServiceImpl implements ExcessRefundReasonService 
     @Override
     public List<ExcessRefundReasonResponseDto> getAllActive() {
         return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ACTIVE)
+                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
         );
     }
 

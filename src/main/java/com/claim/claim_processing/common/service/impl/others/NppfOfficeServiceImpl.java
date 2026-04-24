@@ -18,9 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NppfOfficeServiceImpl implements NppfOfficeService {
 
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
-
     private final NppfOfficeRepository repository;
     private final NppfOfficeMapper mapper;
 
@@ -62,7 +59,7 @@ public class NppfOfficeServiceImpl implements NppfOfficeService {
 
     @Override
     public List<NppfOfficeResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ACTIVE));
+        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
     }
 
     @Override

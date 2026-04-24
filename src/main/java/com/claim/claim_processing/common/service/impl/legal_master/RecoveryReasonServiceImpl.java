@@ -18,9 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RecoveryReasonServiceImpl implements RecoveryReasonService {
 
-    private static final String ACTIVE = "Y";
-    private static final String INACTIVE = "N";
-
     private final RecoveryReasonRepository repository;
     private final RecoveryReasonMapper mapper;
 

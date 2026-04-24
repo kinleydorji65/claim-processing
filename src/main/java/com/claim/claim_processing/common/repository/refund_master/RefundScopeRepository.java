@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.refund_master;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.refund_master.RefundScopeMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,7 +15,7 @@ public interface RefundScopeRepository extends JpaRepository<RefundScopeMaster, 
 
     Optional<RefundScopeMaster> findByCode(String code);
 
-    List<RefundScopeMaster> findByIsActive(String isActive);
+    List<RefundScopeMaster> findByIsActive(ActivityEnum isActive);
 
-    Optional<RefundScopeMaster> findByCodeAndIsActive(String code, String isActive);
+    Optional<RefundScopeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 }

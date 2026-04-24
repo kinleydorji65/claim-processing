@@ -18,9 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RemittanceReasonServiceImpl implements RemittanceReasonService {
 
-    private static final Character ACTIVE = 'Y';
-    private static final Character INACTIVE = 'N';
-
     private final RemittanceReasonRepository repository;
     private final RemittanceReasonMapper mapper;
 
@@ -63,7 +60,7 @@ public class RemittanceReasonServiceImpl implements RemittanceReasonService {
     @Override
     public List<RemittanceReasonResponseDto> getAllActive() {
         return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ACTIVE)
+                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
         );
     }
 
