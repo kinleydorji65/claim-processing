@@ -3,10 +3,10 @@ package com.claim.claim_processing.claim.entity.payment;
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.claim.entity.application.ClaimApplicationBankDetail;
 import com.claim.claim_processing.claim.entity.calculation.ClaimApplicationCalculationSummary;
-import com.claim.claim_processing.common.entities.beneficiary_master.ClaimantTypeMaster;
+import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.payment_master.PaymentModeMaster;
-import com.claim.claim_processing.common.entities.payment_master.PaymentStatusMaster;
+import com.claim.claim_processing.common.entities.paymentMaster.PaymentModeMaster;
+import com.claim.claim_processing.common.entities.paymentMaster.PaymentStatusMaster;
 import com.claim.claim_processing.common.entities.status_master.ReversalStatusMaster;
 
 import jakarta.persistence.*;

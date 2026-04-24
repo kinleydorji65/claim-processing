@@ -1,9 +1,10 @@
 package com.claim.claim_processing.common.mapper.beneficiary;
 
-import com.claim.claim_processing.common.entities.beneficiary_master.ClaimantTypeMaster;
 import com.claim.claim_processing.common.DTO.request.beneficiary.ClaimantTypeCreateRequestDto;
 import com.claim.claim_processing.common.DTO.response.beneficiary.ClaimantTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.beneficiary.ClaimantTypeUpdateRequestDto;
+import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
+
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

@@ -1,7 +1,7 @@
 package com.claim.claim_processing.claim.entity.calculation;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
-import com.claim.claim_processing.common.entities.calculation_master.CalculationTriggerTypeMaster;
+import com.claim.claim_processing.common.entities.calculationMaster.CalculationTriggerTypeMaster;
 import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.StageMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;

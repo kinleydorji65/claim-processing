@@ -2,7 +2,7 @@ package com.claim.claim_processing.common.mapper.contribution;
 
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.DTO.request.contribution.SchemeCreateRequestDto;
-import com.claim.claim_processing.common.DTO.response.contribution.SchemeResponseDto;
+import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.contribution.SchemeUpdateRequestDto;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
@@ -23,9 +23,9 @@ public interface SchemeMapper {
     @Mapping(target = "updatedBy", ignore = true)
     SchemeMaster toEntity(SchemeCreateRequestDto dto);
 
-    SchemeResponseDto toResponseDto(SchemeMaster entity);
+    SchemeTypeResponseDto toResponseDto(SchemeMaster entity);
 
-    List<SchemeResponseDto> toResponseDtoList(List<SchemeMaster> entities);
+    List<SchemeTypeResponseDto> toResponseDtoList(List<SchemeMaster> entities);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
