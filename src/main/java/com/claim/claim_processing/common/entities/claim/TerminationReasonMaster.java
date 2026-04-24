@@ -33,9 +33,6 @@ public class TerminationReasonMaster {
     @Column(name = "DESCRIPTION", length = 300)
     private String description;
 
-    @Column(name = "DISPLAY_ORDER")
-    private Integer displayOrder;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default

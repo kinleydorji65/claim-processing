@@ -1,5 +1,7 @@
 package com.claim.claim_processing.common.entities.claim;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,8 +25,13 @@ public class ClaimVestingRuleMaster {
     @Column(name = "RULE_CODE", nullable = false, unique = true, length = 50)
     private String ruleCode;
 
-    @Column(name = "MEMBER_CATEGORY", length = 50)
-    private String memberCategory;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "CLAIM_CATEGORY_ID",
+            referencedColumnName = "CATEGORY_ID",
+            foreignKey = @ForeignKey(name = "FK_VESTING_RULE_CATEGORY")
+    )
+    private AgencyCategory memberCategory;
 
     @Column(name = "EFFECTIVE_FROM")
     private LocalDate effectiveFrom;
