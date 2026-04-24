@@ -56,7 +56,6 @@ public class SpecialCaseAuthorityServiceImpl implements SpecialCaseAuthorityServ
     @Override
     public List<SpecialCaseAuthorityResponseDto> getAllActive() {
         return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
-        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
     }
 
     @Override

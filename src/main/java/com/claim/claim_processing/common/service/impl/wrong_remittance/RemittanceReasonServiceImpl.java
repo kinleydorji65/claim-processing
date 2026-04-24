@@ -63,7 +63,6 @@ public class RemittanceReasonServiceImpl implements RemittanceReasonService {
     public List<RemittanceReasonResponseDto> getAllActive() {
         return mapper.toResponseDtoList(
                 repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
-                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
         );
     }
 

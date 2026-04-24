@@ -63,7 +63,6 @@ public class HousePurchaseTypeServiceImpl implements HousePurchaseTypeService {
     public List<HousePurchaseTypeResponseDto> getAllActive() {
         return mapper.toResponseDtoList(
                 repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
-                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
         );
     }
 
