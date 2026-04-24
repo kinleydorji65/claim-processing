@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.DTO.others.agency;
+package com.claim.claim_processing.common.DTO.response.others.agency;
 
 
 import lombok.*;

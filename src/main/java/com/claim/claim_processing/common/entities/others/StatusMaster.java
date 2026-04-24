@@ -3,7 +3,6 @@ package com.claim.claim_processing.common.entities.others;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "status_master", schema = "PPFMS_MASTER_SERVICE_SCHEMA")

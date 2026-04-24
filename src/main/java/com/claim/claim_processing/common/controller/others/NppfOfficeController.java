@@ -1,7 +1,7 @@
 package com.claim.claim_processing.common.controller.others;
 
 import com.claim.claim_processing.common.DTO.request.others.NppfOfficeRequestDto;
-import com.claim.claim_processing.common.DTO.response.others.NppfOfficeResponseDto;
+import com.claim.claim_processing.common.DTO.response.common.NppfOfficeResponseDto;
 import com.claim.claim_processing.common.DTO.update.others.NppfOfficeUpdateDto;
 import com.claim.claim_processing.common.service.others.NppfOfficeService;
 import io.swagger.v3.oas.annotations.tags.Tag;

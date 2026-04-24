@@ -1,15 +1,14 @@
-package com.claim.claim_processing.common.DTO.others.member;
+package com.claim.claim_processing.common.DTO.response.others.member;
 
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.sql.Date;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MemberNomineeResponseDto {
+public class MemberFamilyResponseDto {
 
     private Long id;
 
@@ -22,28 +21,23 @@ public class MemberNomineeResponseDto {
     private String fullName;
 
     // -------------------------------
+    // IDENTITY
+    // -------------------------------
+    private Long identityTypeId;
+    private String identityTypeName; // optional (master)
+
+    private String identityNumber;
+
+    // -------------------------------
     // RELATION
     // -------------------------------
     private Long relationId;
     private String relationName; // optional (master)
 
     // -------------------------------
-    // IDENTITY
-    // -------------------------------
-    private Long identityTypeId;
-    private String identityTypeName; // optional
-
-    private String identityNumber;
-
-    // -------------------------------
     // DOB
     // -------------------------------
     private Date dateOfBirth;
-
-    // -------------------------------
-    // SHARE
-    // -------------------------------
-    private BigDecimal sharePercentage;
 
     // -------------------------------
     // MEMBER (FLATTENED)

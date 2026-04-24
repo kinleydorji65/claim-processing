@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.DTO.others.member;
+package com.claim.claim_processing.common.DTO.response.others.member;
 
 import lombok.*;
 

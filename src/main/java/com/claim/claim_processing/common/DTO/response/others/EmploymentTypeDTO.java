@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.DTO.others;
+package com.claim.claim_processing.common.DTO.response.others;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
