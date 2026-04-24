@@ -3,13 +3,13 @@ package com.claim.claim_processing.common.DTO.response.contribution;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BenefitComponentTypeResponseDto {
+public class ContributionTypeResponseDto {
 
     private Long id;
 
@@ -18,6 +18,7 @@ public class BenefitComponentTypeResponseDto {
     // -------------------------------
     private String code;
     private String name;
+    private String description;
 
     // -------------------------------
     // STATUS
@@ -27,9 +28,9 @@ public class BenefitComponentTypeResponseDto {
     // -------------------------------
     // AUDIT
     // -------------------------------
+    private Timestamp createdAt;
     private String createdBy;
-    private LocalDateTime createdAt;
 
+    private Timestamp updatedAt;
     private String updatedBy;
-    private LocalDateTime updatedAt;
 }

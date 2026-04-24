@@ -12,8 +12,8 @@ import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.entities.legal_master.LegalRecoveryMaster;
 import com.claim.claim_processing.common.entities.legal_master.RecoveryReasonMaster;
-import com.claim.claim_processing.common.entities.loan_master.LoanStatusMaster;
-import com.claim.claim_processing.common.entities.loan_master.LoanTypeMaster;
+import com.claim.claim_processing.common.entities.loanMaster.LoanStatusMaster;
+import com.claim.claim_processing.common.entities.loanMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 @Entity

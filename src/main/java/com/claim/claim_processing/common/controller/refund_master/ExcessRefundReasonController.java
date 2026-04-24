@@ -1,7 +1,7 @@
 package com.claim.claim_processing.common.controller.refund_master;
 
 import com.claim.claim_processing.common.DTO.request.refund_master.ExcessRefundReasonRequestDto;
-import com.claim.claim_processing.common.DTO.response.refund_master.ExcessRefundReasonResponseDto;
+import com.claim.claim_processing.common.DTO.response.refundMaster.ExcessRefundReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.refund_master.ExcessRefundReasonUpdateDto;
 import com.claim.claim_processing.common.service.refundMaster.ExcessRefundReasonService;
 

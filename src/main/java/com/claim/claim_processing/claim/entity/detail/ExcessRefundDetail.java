@@ -9,8 +9,8 @@ import java.time.LocalDate;
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.claim.entity.applicationEnum.MemberRefundScope;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
-import com.claim.claim_processing.common.entities.refund_master.ExcessRefundReasonMaster;
-import com.claim.claim_processing.common.entities.refund_master.RefundScopeMaster;
+import com.claim.claim_processing.common.entities.refundMaster.ExcessRefundReasonMaster;
+import com.claim.claim_processing.common.entities.refundMaster.RefundScopeMaster;
 
 @Entity
 @Table(name = "EXCESS_REFUND_DETAIL", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")

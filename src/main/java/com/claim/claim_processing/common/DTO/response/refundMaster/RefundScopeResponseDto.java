@@ -1,25 +1,24 @@
-package com.claim.claim_processing.common.DTO.response.partial;
+package com.claim.claim_processing.common.DTO.response.refundMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PartialCauseResponseDto {
+public class RefundScopeResponseDto {
 
     private Long id;
     private String code;
     private String name;
-    private String description;
     private ActivityEnum isActive;
 
-    private Timestamp createdAt;
+    private LocalDateTime createdAt;
     private String createdBy;
-    private Timestamp updatedAt;
+    private LocalDateTime updatedAt;
     private String updatedBy;
 }

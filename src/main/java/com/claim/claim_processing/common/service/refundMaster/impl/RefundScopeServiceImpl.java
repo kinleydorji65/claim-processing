@@ -1,10 +1,10 @@
 package com.claim.claim_processing.common.service.refundMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.refund_master.RefundScopeRequestDto;
-import com.claim.claim_processing.common.DTO.response.refund_master.RefundScopeResponseDto;
+import com.claim.claim_processing.common.DTO.response.refundMaster.RefundScopeResponseDto;
 import com.claim.claim_processing.common.DTO.update.refund_master.RefundScopeUpdateDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.refund_master.RefundScopeMaster;
+import com.claim.claim_processing.common.entities.refundMaster.RefundScopeMaster;
 import com.claim.claim_processing.common.mapper.refund_master.RefundScopeMapper;
 import com.claim.claim_processing.common.repository.refund_master.RefundScopeRepository;
 import com.claim.claim_processing.common.service.refundMaster.RefundScopeService;

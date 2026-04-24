@@ -48,9 +48,8 @@ public class PartialWithdrawalReasonMaster {
         if (isActive == null) {
             isActive = ActivityEnum.Y;
         }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate

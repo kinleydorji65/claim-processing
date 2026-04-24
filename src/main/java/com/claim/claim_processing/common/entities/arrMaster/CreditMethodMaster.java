@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.entities.loan_master;
+package com.claim.claim_processing.common.entities.arrMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
@@ -7,13 +7,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "LOAN_STATUS_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "CREDIT_METHOD_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoanStatusMaster {
+public class CreditMethodMaster {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +23,7 @@ public class LoanStatusMaster {
     @Column(name = "CODE", nullable = false, unique = true, length = 50)
     private String code;
 
-    @Column(name = "NAME", nullable = false, length = 150)
+    @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
     @Column(name = "DESCRIPTION", length = 255)

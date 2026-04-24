@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.entities.refund_master;
+package com.claim.claim_processing.common.entities.refundMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;

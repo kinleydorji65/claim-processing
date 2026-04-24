@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.DTO.response.contribution;
+package com.claim.claim_processing.common.DTO.response.specialCase;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BenefitComponentTypeResponseDto {
+public class SpecialCaseRefundReasonResponseDto {
 
     private Long id;
 

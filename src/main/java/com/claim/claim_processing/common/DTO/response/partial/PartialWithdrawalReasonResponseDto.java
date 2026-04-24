@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.DTO.response.refund_master;
+package com.claim.claim_processing.common.DTO.response.partial;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RefundScopeResponseDto {
+public class PartialWithdrawalReasonResponseDto {
 
     private Long id;
     private String code;

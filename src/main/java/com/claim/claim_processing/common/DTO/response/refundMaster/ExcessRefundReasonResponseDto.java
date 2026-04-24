@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.DTO.response.refund_master;
+package com.claim.claim_processing.common.DTO.response.refundMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;

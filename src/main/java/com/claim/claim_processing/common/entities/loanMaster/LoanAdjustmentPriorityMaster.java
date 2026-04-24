@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.entities.loan_master;
+package com.claim.claim_processing.common.entities.loanMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
@@ -7,31 +7,31 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "LOAN_ADJUSTMENT_DECISION_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
+@Table(name = "LOAN_ADJUSTMENT_PRIORITY_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA", uniqueConstraints = {
+        @UniqueConstraint(name = "UK_LOAN_ADJ_PRIORITY", columnNames = { "LOAN_TYPE_ID" })
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoanAdjustmentDecisionMaster {
+public class LoanAdjustmentPriorityMaster {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "CODE", nullable = false, unique = true, length = 50)
-    private String code;
+    // 🔥 FK → LOAN_TYPE_MASTER
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "LOAN_TYPE_ID", referencedColumnName = "ID", nullable = false, foreignKey = @ForeignKey(name = "FK_LOAN_ADJ_PRIORITY_LOAN_TYPE"))
+    private LoanTypeMaster loanType;
 
-    @Column(name = "NAME", nullable = false, length = 150)
-    private String name;
+    @Column(name = "PRIORITY_ORDER", nullable = false)
+    private Integer priorityOrder;
 
     @Column(name = "DESCRIPTION", length = 255)
     private String description;
-
-    @Column(name = "DISPLAY_ORDER")
-    @Builder.Default
-    private Integer displayOrder = 1;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
@@ -52,9 +52,6 @@ public class LoanAdjustmentDecisionMaster {
 
     @PrePersist
     public void prePersist() {
-        if (this.displayOrder == null) {
-            this.displayOrder = 1;
-        }
         if (this.isActive == null) {
             this.isActive = ActivityEnum.Y;
         }

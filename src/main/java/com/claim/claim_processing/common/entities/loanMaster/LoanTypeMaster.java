@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.entities.loan_master;
+package com.claim.claim_processing.common.entities.loanMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;

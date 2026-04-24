@@ -1,23 +1,25 @@
-package com.claim.claim_processing.common.DTO.response.special_case;
+package com.claim.claim_processing.common.DTO.response.partial;
+
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SpecialCaseAuthorityResponseDto {
+public class PartialWithdrawalCauseResponseDto {
 
     private Long id;
     private String code;
     private String name;
+    private String description;
     private ActivityEnum isActive;
 
-    private LocalDateTime createdAt;
+    private Timestamp createdAt;
     private String createdBy;
-    private LocalDateTime updatedAt;
+    private Timestamp updatedAt;
     private String updatedBy;
 }

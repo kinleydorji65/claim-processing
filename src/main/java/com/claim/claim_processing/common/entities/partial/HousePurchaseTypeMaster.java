@@ -58,6 +58,7 @@ public class HousePurchaseTypeMaster {
         if (this.isActive == null) {
             this.isActive = ActivityEnum.Y;
         }
+        this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 

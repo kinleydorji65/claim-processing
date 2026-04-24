@@ -7,7 +7,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "COMPONENT_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "COMPONENT_MASTER", schema = "PPFMS_CONTRIBUTION_PAYMENTS_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor

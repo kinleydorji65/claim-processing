@@ -4,12 +4,13 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BenefitComponentTypeResponseDto {
+public class ComponentInterestResponseDto {
 
     private Long id;
 
@@ -18,6 +19,11 @@ public class BenefitComponentTypeResponseDto {
     // -------------------------------
     private String code;
     private String name;
+
+    // -------------------------------
+    // BASE COMPONENT (FK)
+    // -------------------------------
+    private List<ComponentResponseDto> components;
 
     // -------------------------------
     // STATUS

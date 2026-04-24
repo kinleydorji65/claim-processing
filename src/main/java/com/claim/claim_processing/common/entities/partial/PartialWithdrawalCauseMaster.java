@@ -46,4 +46,18 @@ public class PartialWithdrawalCauseMaster {
 
         @Column(name = "UPDATED_BY", length = 100)
         private String updatedBy;
+
+        @PrePersist
+        public void prePersist() {
+                if (this.isActive == null) {
+                        this.isActive = ActivityEnum.Y;
+                }
+                this.createdAt = new Timestamp(System.currentTimeMillis());
+                this.updatedAt = new Timestamp(System.currentTimeMillis());
+        }
+
+        @PreUpdate
+        public void preUpdate() {
+                this.updatedAt = new Timestamp(System.currentTimeMillis());
+        }
 }

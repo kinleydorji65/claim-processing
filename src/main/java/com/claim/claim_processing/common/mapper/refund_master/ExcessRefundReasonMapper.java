@@ -1,9 +1,10 @@
 package com.claim.claim_processing.common.mapper.refund_master;
 
 import com.claim.claim_processing.common.DTO.request.refund_master.ExcessRefundReasonRequestDto;
-import com.claim.claim_processing.common.DTO.response.refund_master.ExcessRefundReasonResponseDto;
+import com.claim.claim_processing.common.DTO.response.refundMaster.ExcessRefundReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.refund_master.ExcessRefundReasonUpdateDto;
-import com.claim.claim_processing.common.entities.refund_master.ExcessRefundReasonMaster;
+import com.claim.claim_processing.common.entities.refundMaster.ExcessRefundReasonMaster;
+
 import org.mapstruct.*;
 
 import java.util.List;
