@@ -15,7 +15,7 @@ public interface TerminationReasonRepository extends JpaRepository<TerminationRe
 
     boolean existsByCode(String code);
 
-    List<TerminationReasonMaster> findByIsActiveOrderByDisplayOrderAsc(ActivityEnum isActive);
+    List<TerminationReasonMaster> findAllByOrderByIsActiveAsc(ActivityEnum isActive);
 
     Optional<TerminationReasonMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 }

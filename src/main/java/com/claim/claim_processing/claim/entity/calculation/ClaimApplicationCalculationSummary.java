@@ -8,8 +8,6 @@ import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.StageMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.Currency;
-import com.claim.claim_processing.common.entities.rorMaster.ArrRuleMaster;
-import com.claim.claim_processing.common.entities.rorMaster.CreditMethodMaster;
 import com.claim.claim_processing.common.entities.statusMaster.CalculationStatusMaster;
 
 import jakarta.persistence.*;

@@ -10,8 +10,7 @@ import java.time.LocalDate;
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
-import com.claim.claim_processing.common.entities.legal_master.LegalRecoveryMaster;
-import com.claim.claim_processing.common.entities.legal_master.RecoveryReasonMaster;
+import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;
 import com.claim.claim_processing.common.entities.loanMaster.LoanStatusMaster;
 import com.claim.claim_processing.common.entities.loanMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
@@ -36,10 +35,6 @@ public class LegalRecoveryDetail {
 
         @Column(name = "LEGAL_CASE_REFERENCE_NUMBER", length = 100)
         private String legalCaseReferenceNumber;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "RECOVERY_TYPE_ID", foreignKey = @ForeignKey(name = "FK_LRD_RECOVERY_TYPE"))
-        private LegalRecoveryMaster recoveryType;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "RECOVERY_REASON_ID", foreignKey = @ForeignKey(name = "FK_LEGAL_RECOVERY_REASON"))

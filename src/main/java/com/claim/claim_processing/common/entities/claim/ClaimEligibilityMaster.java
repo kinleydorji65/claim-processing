@@ -29,9 +29,6 @@ public class ClaimEligibilityMaster {
     @Column(name = "RULE_NAME", nullable = false, length = 200)
     private String ruleName;
 
-    @Column(name = "CLAIM_CATEGORY_CODE", length = 50)
-    private String claimCategoryCode;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "CLAIM_CIRCUMSTANCE_ID",

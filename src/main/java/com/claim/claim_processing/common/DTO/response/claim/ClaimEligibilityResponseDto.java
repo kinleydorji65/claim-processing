@@ -1,6 +1,5 @@
 package com.claim.claim_processing.common.DTO.response.claim;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
-import com.claim.claim_processing.common.DTO.response.others.agency.agencyRelated.AgencyCategoryDTO;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
@@ -16,7 +15,6 @@ public class ClaimEligibilityResponseDto {
 
     private String ruleCode;
     private String ruleName;
-    private String claimCategoryCode;
 
     private ClaimCircumstanceResponseDto claimCircumstance;
 

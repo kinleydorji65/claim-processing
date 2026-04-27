@@ -1,6 +1,8 @@
 
 package com.claim.claim_processing.common.entities.arrMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,8 +29,9 @@ public class ArrRuleMaster {
     @Column(name = "RULE_NAME", nullable = false, length = 200)
     private String ruleName;
 
-    @Column(name = "SCHEME_TYPE_ID")
-    private Long schemeTypeId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "ID", nullable = false, foreignKey = @ForeignKey(name = "FK_ARR_SCHEME_TYPE"))
+    private SchemeMaster schemeType;
 
     @Column(name = "MEMBER_CATEGORY_ID", length = 50)
     private String memberCategoryId;

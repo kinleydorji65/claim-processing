@@ -26,7 +26,7 @@ public class TerminationReasonServiceImpl implements TerminationReasonService {
     @Transactional(readOnly = true)
     public List<TerminationReasonResponseDto> getAllActive() {
         List<TerminationReasonMaster> reasons =
-                terminationReasonRepository.findByIsActiveOrderByDisplayOrderAsc(ActivityEnum.Y);
+                terminationReasonRepository.findAllByOrderByIsActiveAsc(ActivityEnum.Y);
 
         return terminationReasonMapper.toResponseDtoList(reasons);
     }

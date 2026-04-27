@@ -3,12 +3,15 @@ package com.claim.claim_processing.common.mapper.partial;
 import com.claim.claim_processing.common.DTO.request.partial.PartialWithdrawalReasonRequestDto;
 import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.PartialWithdrawalReasonUpdateDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalReasonMaster;
 import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+    componentModel = "spring",
+    imports = {ActivityEnum.class})
 public interface PartialReasonMapper {
 
     // ================= CREATE =================

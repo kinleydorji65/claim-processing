@@ -12,8 +12,6 @@ public class ClaimEligibilityCreateRequestDto {
     private String ruleCode;
     private String ruleName;
 
-    private String claimCategoryCode;
-
     private Long claimCircumstanceId;
     private Long cessationTypeId;
     private Long schemeTypeId;

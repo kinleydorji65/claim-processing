@@ -15,10 +15,6 @@ public interface ClaimEligibilityRepository extends JpaRepository<ClaimEligibili
     boolean existsByRuleCode(String ruleCode);
     List<ClaimEligibilityMaster> findByIsActiveOrderByRuleNameAsc(ActivityEnum isActive);
     Optional<ClaimEligibilityMaster> findByRuleCodeAndIsActive(String ruleCode, ActivityEnum isActive);
-    List<ClaimEligibilityMaster> findByClaimCategoryCodeAndIsActiveOrderByRuleNameAsc(
-            String claimCategoryCode,
-            String isActive
-    );
 
     List<ClaimEligibilityMaster> findByIsActiveAndEffectiveFromLessThanEqualAndEffectiveToGreaterThanEqual(
             String isActive,
