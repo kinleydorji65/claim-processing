@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.List;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.claim.entity.applicationEnum.MemberRefundScope;
@@ -28,6 +29,10 @@ public class ExcessRefundDetail {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true)
     private ClaimApplication claimApplication;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "EXCESS_REFUND_MEMBER_DETAIL_ID", nullable = false)
+    private List<ExcessRefundMemberDetail> excessRefundMemberDetails;
 
     @Column(name = "WALK_IN_RECEIVED_BY", length = 100)
     private String walkInReceivedBy;

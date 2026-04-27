@@ -31,14 +31,6 @@ public class BeneficiaryClaimantDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "BENEFICIARY_SETTLEMENT_DETAIL_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_BCD_SETTLEMENT")
-    )
-    private BeneficiarySettlementDetail beneficiarySettlementDetail;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
             name = "NOMINEE_ID",
             foreignKey = @ForeignKey(name = "FK_BCD_NOMINEE")
     )

@@ -26,10 +26,6 @@ public class ExcessRefundMemberDetail {
     @Column(name = "ID")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "EXCESS_REFUND_DETAIL_ID", nullable = false)
-    private ExcessRefundDetail excessRefundDetail;
-
     @Column(name = "MEMBER_CODE", length = 100)
     private String memberCode;
 

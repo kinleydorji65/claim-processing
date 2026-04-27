@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.ActionMaster;
 import com.claim.claim_processing.common.entities.common.DecisionMaster;
+import com.claim.claim_processing.common.entities.common.NppfOfficeMaster;
 import com.claim.claim_processing.common.entities.common.StageMaster;
 import com.claim.claim_processing.common.entities.common.WorkflowReasonMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
@@ -93,8 +94,12 @@ public class ClaimApplicationWorkflow {
     @Column(name = "ACTION_AT")
     private Timestamp actionAt;
 
-    @Column(name = "OFFICE_ID")
-    private Long officeId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "OFFICE_ID",
+            foreignKey = @ForeignKey(name = "FK_CACS_NPPF_OFFICE")
+    )
+    private NppfOfficeMaster offices;
 
     @Column(name = "REFERENCE_NUMBER", length = 100)
     private String referenceNumber;

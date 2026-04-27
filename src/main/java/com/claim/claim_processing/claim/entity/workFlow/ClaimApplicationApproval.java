@@ -70,14 +70,14 @@ public class ClaimApplicationApproval {
     @Builder.Default
     private ActivityEnum requiresManualReview = ActivityEnum.N;
 
-    @Column(name = "APPROVAL_REASON_CODE", length = 100)
-    private String approvalReasonCode;
+    @Column(name = "APPROVAL_REASON", length = 100)
+    private String approvalReason;
 
-    @Column(name = "RETURNED_REASON_CODE", length = 100)
-    private String returnedReasonCode;
+    @Column(name = "RETURNED_REASON", length = 100)
+    private String returnedReason;
 
-    @Column(name = "REJECTED_REASON_CODE", length = 100)
-    private String rejectedReasonCode;
+    @Column(name = "REJECTED_REASON", length = 100)
+    private String rejectedReason;
 
     @Column(name = "APPROVER_REMARKS", length = 2000)
     private String approverRemarks;

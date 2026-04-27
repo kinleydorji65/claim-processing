@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(
@@ -30,6 +31,13 @@ public class BeneficiarySettlementDetail {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true)
     private ClaimApplication claimApplication;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "BENEFICIARY_CLAIMANT_DETAIL_ID",
+            nullable = false
+    )
+    private List<BeneficiaryClaimantDetail> beneficiaryClaimantDetails;
     
     @Column(name = "PF_JOINING_DATE")
     private LocalDate pfJoiningDate;
@@ -77,5 +85,4 @@ public class BeneficiarySettlementDetail {
     public void preUpdate() {
         updatedAt = new Timestamp(System.currentTimeMillis());
     }
-
 }
