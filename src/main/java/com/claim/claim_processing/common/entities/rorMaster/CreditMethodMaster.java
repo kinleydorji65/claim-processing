@@ -1,9 +1,4 @@
-<<<<<<<< HEAD:src/main/java/com/claim/claim_processing/common/entities/rorMaster/CreditMethodMaster.java
 package com.claim.claim_processing.common.entities.rorMaster;
-========
-package com.claim.claim_processing.common.entities.arrMaster;
->>>>>>>> b4d6508a6c394933134d296412d24e7321c33ea5:src/main/java/com/claim/claim_processing/common/entities/arrMaster/CreditMethodMaster.java
-
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
 import lombok.*;

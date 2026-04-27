@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.repository.wrong_remittance;
+package com.claim.claim_processing.common.repository.wrongRemittance;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.wrongRemittanceMaster.WrongRemittanceReasonMaster;

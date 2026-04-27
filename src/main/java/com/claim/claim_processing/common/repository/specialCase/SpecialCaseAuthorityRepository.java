@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.repository.special_case;
+package com.claim.claim_processing.common.repository.specialCase;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;

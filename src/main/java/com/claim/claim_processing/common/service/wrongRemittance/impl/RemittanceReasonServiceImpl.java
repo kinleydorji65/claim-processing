@@ -5,8 +5,8 @@ import com.claim.claim_processing.common.DTO.response.wrongRemittance.Remittance
 import com.claim.claim_processing.common.DTO.update.wrongRemittance.RemittanceReasonUpdateDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.wrongRemittanceMaster.WrongRemittanceReasonMaster;
-import com.claim.claim_processing.common.mapper.wrong_remittance.RemittanceReasonMapper;
-import com.claim.claim_processing.common.repository.wrong_remittance.RemittanceReasonRepository;
+import com.claim.claim_processing.common.mapper.wrongRemittance.RemittanceReasonMapper;
+import com.claim.claim_processing.common.repository.wrongRemittance.RemittanceReasonRepository;
 import com.claim.claim_processing.common.service.wrongRemittance.RemittanceReasonService;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;

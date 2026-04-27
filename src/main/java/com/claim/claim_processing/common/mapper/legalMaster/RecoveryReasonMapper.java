@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.mapper.legal_master;
+package com.claim.claim_processing.common.mapper.legalMaster;
 
 import com.claim.claim_processing.common.DTO.request.legalMaster.RecoveryReasonRequestDto;
 import com.claim.claim_processing.common.DTO.response.legalMaster.RecoveryReasonResponseDto;

@@ -1,7 +1,7 @@
 package com.claim.claim_processing.common.service.partial.impl;
 
 import com.claim.claim_processing.common.DTO.request.partial.PartialCauseRequestDto;
-import com.claim.claim_processing.common.DTO.response.partial.PartialCauseResponseDto;
+import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalCauseResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.PartialCauseUpdateDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalCauseMaster;
@@ -23,7 +23,7 @@ public class PartialCauseServiceImpl implements PartialCauseService {
     private final PartialCauseMapper mapper;
 
     @Override
-    public PartialCauseResponseDto create(PartialCauseRequestDto requestDto) {
+    public PartialWithdrawalCauseResponseDto create(PartialCauseRequestDto requestDto) {
         validateDuplicateCode(requestDto.getCode());
 
         PartialWithdrawalCauseMaster entity = mapper.toEntity(requestDto);
@@ -35,30 +35,30 @@ public class PartialCauseServiceImpl implements PartialCauseService {
     }
 
     @Override
-    public PartialCauseResponseDto getById(Long id) {
+    public PartialWithdrawalCauseResponseDto getById(Long id) {
         PartialWithdrawalCauseMaster entity = findEntityById(id);
         return mapper.toResponseDto(entity);
     }
 
     @Override
-    public PartialCauseResponseDto getByCode(String code) {
+    public PartialWithdrawalCauseResponseDto getByCode(String code) {
         PartialWithdrawalCauseMaster entity = repository.findByCode(code)
                 .orElseThrow(() -> new EntityNotFoundException("Partial withdrawal cause not found with code: " + code));
         return mapper.toResponseDto(entity);
     }
 
     @Override
-    public List<PartialCauseResponseDto> getAll() {
+    public List<PartialWithdrawalCauseResponseDto> getAll() {
         return mapper.toResponseDtoList(repository.findAll());
     }
 
     @Override
-    public List<PartialCauseResponseDto> getAllActive() {
+    public List<PartialWithdrawalCauseResponseDto> getAllActive() {
         return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
     }
 
     @Override
-    public PartialCauseResponseDto update(Long id, PartialCauseUpdateDto updateDto) {
+    public PartialWithdrawalCauseResponseDto update(Long id, PartialCauseUpdateDto updateDto) {
         PartialWithdrawalCauseMaster entity = findEntityById(id);
 
         mapper.updateEntityFromDto(updateDto, entity);

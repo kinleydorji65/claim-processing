@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.controller.wrong_remittance;
+package com.claim.claim_processing.common.controller.wrongRemittance;
 
 import com.claim.claim_processing.common.DTO.request.wrongRemittance.RemittanceReasonRequestDto;
 import com.claim.claim_processing.common.DTO.response.wrongRemittance.RemittanceReasonResponseDto;

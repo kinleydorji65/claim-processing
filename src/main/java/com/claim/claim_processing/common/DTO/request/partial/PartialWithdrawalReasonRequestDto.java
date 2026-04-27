@@ -7,7 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PartialReasonRequestDto {
+public class PartialWithdrawalReasonRequestDto {
 
     private String code;
     private String name;

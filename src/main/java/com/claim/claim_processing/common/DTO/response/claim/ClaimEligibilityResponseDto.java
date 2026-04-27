@@ -16,7 +16,7 @@ public class ClaimEligibilityResponseDto {
 
     private String ruleCode;
     private String ruleName;
-    private AgencyCategoryDTO category;
+    private String claimCategoryCode;
 
     private ClaimCircumstanceResponseDto claimCircumstance;
 

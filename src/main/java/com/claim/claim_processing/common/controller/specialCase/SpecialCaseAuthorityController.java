@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.controller.special_case;
+package com.claim.claim_processing.common.controller.specialCase;
 
 import com.claim.claim_processing.common.DTO.request.special_case.SpecialCaseAuthorityRequestDto;
 import com.claim.claim_processing.common.DTO.response.specialCase.SpecialCaseAuthorityResponseDto;

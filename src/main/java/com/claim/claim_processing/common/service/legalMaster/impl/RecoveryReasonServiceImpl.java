@@ -5,7 +5,7 @@ import com.claim.claim_processing.common.DTO.response.legalMaster.RecoveryReason
 import com.claim.claim_processing.common.DTO.update.legalMaster.RecoveryReasonUpdateDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;
-import com.claim.claim_processing.common.mapper.legal_master.RecoveryReasonMapper;
+import com.claim.claim_processing.common.mapper.legalMaster.RecoveryReasonMapper;
 import com.claim.claim_processing.common.repository.legal_master.RecoveryReasonRepository;
 import com.claim.claim_processing.common.service.legalMaster.RecoveryReasonService;
 import com.claim.claim_processing.exceptions.ClaimException;

@@ -1,24 +1,24 @@
 package com.claim.claim_processing.common.service.partial;
 
 import com.claim.claim_processing.common.DTO.request.partial.PartialCauseRequestDto;
-import com.claim.claim_processing.common.DTO.response.partial.PartialCauseResponseDto;
+import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalCauseResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.PartialCauseUpdateDto;
 
 import java.util.List;
 
 public interface PartialCauseService {
 
-    PartialCauseResponseDto create(PartialCauseRequestDto requestDto);
+    PartialWithdrawalCauseResponseDto create(PartialCauseRequestDto requestDto);
 
-    PartialCauseResponseDto getById(Long id);
+    PartialWithdrawalCauseResponseDto getById(Long id);
 
-    PartialCauseResponseDto getByCode(String code);
+    PartialWithdrawalCauseResponseDto getByCode(String code);
 
-    List<PartialCauseResponseDto> getAll();
+    List<PartialWithdrawalCauseResponseDto> getAll();
 
-    List<PartialCauseResponseDto> getAllActive();
+    List<PartialWithdrawalCauseResponseDto> getAllActive();
 
-    PartialCauseResponseDto update(Long id, PartialCauseUpdateDto updateDto);
+    PartialWithdrawalCauseResponseDto update(Long id, PartialCauseUpdateDto updateDto);
 
     void delete(Long id);
 }

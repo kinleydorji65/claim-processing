@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.repository.refund_master;
+package com.claim.claim_processing.common.repository.refundMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.refundMaster.RefundScopeMaster;

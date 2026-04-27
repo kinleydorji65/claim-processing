@@ -1,8 +1,8 @@
-package com.claim.claim_processing.common.mapper.refund_master;
+package com.claim.claim_processing.common.mapper.refundMaster;
 
-import com.claim.claim_processing.common.DTO.request.refund_master.ExcessRefundReasonRequestDto;
+import com.claim.claim_processing.common.DTO.request.refundMaster.ExcessRefundReasonRequestDto;
 import com.claim.claim_processing.common.DTO.response.refundMaster.ExcessRefundReasonResponseDto;
-import com.claim.claim_processing.common.DTO.update.refund_master.ExcessRefundReasonUpdateDto;
+import com.claim.claim_processing.common.DTO.update.refundMaster.ExcessRefundReasonUpdateDto;
 import com.claim.claim_processing.common.entities.refundMaster.ExcessRefundReasonMaster;
 
 import org.mapstruct.*;

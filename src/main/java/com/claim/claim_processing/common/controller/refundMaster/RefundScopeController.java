@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.controller.refund_master;
+package com.claim.claim_processing.common.controller.refundMaster;
 import com.claim.claim_processing.common.DTO.request.refundMaster.RefundScopeRequestDto;
 import com.claim.claim_processing.common.DTO.response.refundMaster.RefundScopeResponseDto;
 import com.claim.claim_processing.common.DTO.update.refundMaster.RefundScopeUpdateDto;

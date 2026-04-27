@@ -5,8 +5,8 @@ import com.claim.claim_processing.common.DTO.response.specialCase.SpecialCaseAut
 import com.claim.claim_processing.common.DTO.update.special_case.SpecialCaseAuthorityUpdateRequestDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
-import com.claim.claim_processing.common.mapper.special_case.SpecialCaseAuthorityMapper;
-import com.claim.claim_processing.common.repository.special_case.SpecialCaseAuthorityRepository;
+import com.claim.claim_processing.common.mapper.specialCase.SpecialCaseAuthorityMapper;
+import com.claim.claim_processing.common.repository.specialCase.SpecialCaseAuthorityRepository;
 import com.claim.claim_processing.common.service.specialCase.SpecialCaseAuthorityService;
 
 import jakarta.persistence.EntityNotFoundException;
