@@ -1,4 +1,4 @@
-package com.claim.claim_processing.claim.DTO.workFlow;
+package com.claim.claim_processing.claim.DTO.response.workFlow;
 
 import java.time.LocalDateTime;
 

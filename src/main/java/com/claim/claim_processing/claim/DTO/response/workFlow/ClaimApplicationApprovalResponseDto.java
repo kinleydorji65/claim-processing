@@ -1,4 +1,4 @@
-package com.claim.claim_processing.claim.DTO.workFlow;
+package com.claim.claim_processing.claim.DTO.response.workFlow;
 
 import com.claim.claim_processing.common.DTO.response.common.DecisionResponseDto;
 import com.claim.claim_processing.common.DTO.response.statusMaster.ApprovalStatusResponseDto;

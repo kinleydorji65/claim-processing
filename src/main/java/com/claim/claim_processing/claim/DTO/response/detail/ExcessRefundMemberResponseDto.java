@@ -1,4 +1,4 @@
-package com.claim.claim_processing.claim.DTO.detail;
+package com.claim.claim_processing.claim.DTO.response.detail;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

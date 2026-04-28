@@ -1,4 +1,4 @@
-package com.claim.claim_processing.claim.DTO.detail;
+package com.claim.claim_processing.claim.DTO.response.detail;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;

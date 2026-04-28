@@ -1,7 +1,5 @@
 package com.claim.claim_processing.common.entities.others.member;
 
-import java.sql.Timestamp;
-
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.*;
