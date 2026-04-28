@@ -17,6 +17,7 @@ import com.claim.claim_processing.claim.entity.payment.ClaimApplicationPayment;
 import com.claim.claim_processing.claim.entity.workFlow.*;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.common.*;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
@@ -60,6 +61,18 @@ public class ClaimApplication {
     @JoinColumn(name = "SCHEME_TYPE_ID")
     private SchemeMaster schemeType;
 
+    @Column(name = "TOTAL_CONTRIBUTION_MONTHS")
+    private Integer totalContributionMonths;
+
+    @Column(name = "TOTAL_CONTRIBUTION_YEARS")
+    private Integer totalContributionYears;
+
+    @Column(name = "CONTRIBUTION_START_DATE")
+    private LocalDate contributionStartDate;
+
+    @Column(name = "CONTRIBUTION_END_DATE")
+    private LocalDate contributionEndDate;
+
     /**
      * MEMBER_CATEGORY_ID is VARCHAR2(50) and references AGENCY_CATEGORIES(CATEGORY_ID)
      * So map this only if CATEGORY_ID in AGENCY_CATEGORIES is also String/VARCHAR.
@@ -95,20 +108,25 @@ public class ClaimApplication {
     @Column(name = "REMARKS", length = 1000)
     private String remarks;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_SPECIAL_CASE", length = 1)
-    private Character isSpecialCase;
+    private ActivityEnum isSpecialCase;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "REQUIRES_MANUAL_REVIEW", length = 1)
-    private Character requiresManualReview;
+    private ActivityEnum requiresManualReview;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_FINANCIAL_CASE", length = 1)
-    private Character isFinancialCase;
+    private ActivityEnum isFinancialCase;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_PAYMENT_REQUIRED", length = 1)
-    private Character isPaymentRequired;
+    private ActivityEnum isPaymentRequired;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_POSTING_REQUIRED", length = 1)
-    private Character isPostingRequired;
+    private ActivityEnum isPostingRequired;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PARENT_CLAIM_APPLICATION_ID")
@@ -121,8 +139,9 @@ public class ClaimApplication {
     @Column(name = "CURRENCY_CODE", length = 10)
     private String currencyCode;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "REQUIRES_MANUAL_APPROVAL", length = 1)
-    private Character requiresManualApproval;
+    private ActivityEnum requiresManualApproval;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CURRENT_STAGE_ID")
@@ -139,8 +158,9 @@ public class ClaimApplication {
     @JoinColumn(name = "ACTION_ID")
     private ActionMaster action;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
-    private Character isActive;
+    private ActivityEnum isActive;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
@@ -231,25 +251,25 @@ public class ClaimApplication {
         updatedAt = new Timestamp(System.currentTimeMillis());
 
         if (this.isSpecialCase == null) {
-            this.isSpecialCase = 'N';
+            this.isSpecialCase = ActivityEnum.N;
         }
         if (this.requiresManualReview == null) {
-            this.requiresManualReview = 'N';
+            this.requiresManualReview = ActivityEnum.N;
         }
         if (this.isFinancialCase == null) {
-            this.isFinancialCase = 'N';
+            this.isFinancialCase = ActivityEnum.N;
         }
         if (this.isPaymentRequired == null) {
-            this.isPaymentRequired = 'N';
+            this.isPaymentRequired = ActivityEnum.N;
         }
         if (this.isPostingRequired == null) {
-            this.isPostingRequired = 'N';
+            this.isPostingRequired = ActivityEnum.N;
         }
         if (this.requiresManualApproval == null) {
-            this.requiresManualApproval = 'N';
+            this.requiresManualApproval = ActivityEnum.N;
         }
         if (this.isActive == null) {
-            this.isActive = 'Y';
+            this.isActive = ActivityEnum.Y;
         }
         if (this.currencyCode == null) {
             this.currencyCode = "BTN";

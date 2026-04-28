@@ -14,6 +14,8 @@ import com.claim.claim_processing.claim.DTO.response.workFlow.ClaimApplicationWo
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import jakarta.persistence.Column;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -66,9 +68,13 @@ public class ClaimApplicationResponseDto {
     private String submittedBy;
     private String initiatedBy;
 
-    // ---------------------------------
-    // Flags
-    // ---------------------------------
+    private Integer totalContributionMonths;
+    private Integer totalContributionYears;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate contributionStartDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate contributionEndDate;
+
     private ActivityEnum isSpecialCase;
     private ActivityEnum requiresManualReview;
     private ActivityEnum isFinancialCase;
@@ -77,9 +83,6 @@ public class ClaimApplicationResponseDto {
     private ActivityEnum requiresManualApproval;
     private ActivityEnum isActive;
 
-    // ---------------------------------
-    // Parent Relationship
-    // ---------------------------------
     private Long parentClaimApplicationId;
 
     // ---------------------------------

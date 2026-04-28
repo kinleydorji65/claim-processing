@@ -64,13 +64,6 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
                     .orElseThrow(() -> new RuntimeException("Claim circumstance not found with id: " + requestDto.getClaimCircumstanceId()));
             entity.setClaimCircumstance(claimCircumstance);
         }
-
-        if (requestDto.getCessationTypeId() != null) {
-            CessationTypeMaster cessationType = cessationTypeRepository.findById(requestDto.getCessationTypeId())
-                    .orElseThrow(() -> new RuntimeException("Cessation type not found with id: " + requestDto.getCessationTypeId()));
-            entity.setCessationType(cessationType);
-        }
-
         if (requestDto.getSchemeTypeId() != null) {
             SchemeMaster schemeType = schemeRepository.findById(requestDto.getSchemeTypeId())
                     .orElseThrow(() -> new RuntimeException("Scheme type not found with id: " + requestDto.getSchemeTypeId()));
@@ -95,12 +88,6 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
             ClaimCircumstanceMaster claimCircumstance = claimCircumstanceRepository.findById(requestDto.getClaimCircumstanceId())
                     .orElseThrow(() -> new RuntimeException("Claim circumstance not found with id: " + requestDto.getClaimCircumstanceId()));
             entity.setClaimCircumstance(claimCircumstance);
-        }
-
-        if (requestDto.getCessationTypeId() != null) {
-            CessationTypeMaster cessationType = cessationTypeRepository.findById(requestDto.getCessationTypeId())
-                    .orElseThrow(() -> new RuntimeException("Cessation type not found with id: " + requestDto.getCessationTypeId()));
-            entity.setCessationType(cessationType);
         }
 
         if (requestDto.getSchemeTypeId() != null) {

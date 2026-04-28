@@ -38,9 +38,6 @@ public class MemberDetail {
     @Column(name = "EMPLOYER_TYPE")
     private String employerType;
 
-    @Column(name = "AGENCY_TYPE_ID")
-    private Long agencyTypeId;
-
     @Column(name = "AGENCY_CATEGORY_ID")
     private String agencyCategoryId;
 
@@ -79,9 +76,6 @@ public class MemberDetail {
 
     @Column(name = "EFFECTIVE_FROM")
     private Date effectiveFrom;
-
-    @Column(name = "REMARKS")
-    private String remarks;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @JsonManagedReference

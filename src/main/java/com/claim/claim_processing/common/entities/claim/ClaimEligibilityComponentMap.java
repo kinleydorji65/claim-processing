@@ -37,6 +37,15 @@ public class ClaimEligibilityComponentMap {
     )
     private BenefitComponentTypeMaster benefitComponentType;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "CATEGORY_ID",
+            referencedColumnName = "ID",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_CATEGORY_MAP")
+    )
+    private ClaimEligibilityCategoryMap claimEligibilityCategoryMap;
+
     @Column(name = "IS_ACTIVE", nullable = false, length = 1)
         @Builder.Default
     private String isActive = "Y";

@@ -31,7 +31,6 @@ public abstract class ClaimEligibilityMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "claimCircumstance", ignore = true)
-    @Mapping(target = "cessationType", ignore = true)
     @Mapping(target = "schemeType", ignore = true)
     @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -48,12 +47,6 @@ public abstract class ClaimEligibilityMapper {
                             .orElse(null));
         }
 
-        if (dto.getCessationTypeId() != null) {
-            entity.setCessationType(
-                    cessationTypeRepository.findById(dto.getCessationTypeId())
-                            .orElse(null));
-        }
-
         if (dto.getSchemeTypeId() != null) {
             entity.setSchemeType(
                     schemeMasterRepository.findById(dto.getSchemeTypeId())
@@ -64,7 +57,6 @@ public abstract class ClaimEligibilityMapper {
 
 
     @Mapping(target = "claimCircumstance", source = "claimCircumstance")
-    @Mapping(target = "cessationType", source = "cessationType")
     @Mapping(target = "schemeType", source = "schemeType")
     public abstract ClaimEligibilityResponseDto toResponseDto(ClaimEligibilityMaster entity);
 
@@ -74,7 +66,6 @@ public abstract class ClaimEligibilityMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ruleCode", ignore = true)
     @Mapping(target = "claimCircumstance", ignore = true)
-    @Mapping(target = "cessationType", ignore = true)
     @Mapping(target = "schemeType", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
@@ -92,12 +83,6 @@ public abstract class ClaimEligibilityMapper {
             entity.setClaimCircumstance(
                     claimCircumstanceRepository.findById(dto.getClaimCircumstanceId())
                             .orElseThrow(() -> new RuntimeException("Claim Circumstance not found")));
-        }
-
-        if (dto.getCessationTypeId() != null) {
-            entity.setCessationType(
-                    cessationTypeRepository.findById(dto.getCessationTypeId())
-                            .orElseThrow(() -> new RuntimeException("Cessation Type not found")));
         }
 
         if (dto.getSchemeTypeId() != null) {

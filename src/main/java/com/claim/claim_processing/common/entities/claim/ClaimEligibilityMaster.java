@@ -39,14 +39,6 @@ public class ClaimEligibilityMaster {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "CESSATION_TYPE_ID",
-            referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_CESSATION_TYPE")
-    )
-    private CessationTypeMaster cessationType;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
             name = "SCHEME_TYPE_ID",
             referencedColumnName = "ID",
             foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_SCHEME_TYPE")

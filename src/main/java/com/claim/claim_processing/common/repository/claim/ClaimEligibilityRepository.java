@@ -2,6 +2,8 @@ package com.claim.claim_processing.common.repository.claim;
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -22,8 +24,10 @@ public interface ClaimEligibilityRepository extends JpaRepository<ClaimEligibili
             LocalDate effectiveDate2
     );
 
+
     List<ClaimEligibilityMaster> findByIsActiveAndEffectiveFromLessThanEqualAndEffectiveToIsNull(
             String isActive,
             LocalDate effectiveDate
     );
+    List<ClaimEligibilityMaster> findByIsActive(ActivityEnum isActive);
 }

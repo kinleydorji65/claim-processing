@@ -1,6 +1,8 @@
 package com.claim.claim_processing.common.repository.claim;
 
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityCategoryMap;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -30,4 +32,6 @@ public interface ClaimEligibilityCategoryMapRepository
     // FIND BY CATEGORY
     // -------------------------
     List<ClaimEligibilityCategoryMap> findByCategory_CategoryId(String categoryId);
+    
+    List<ClaimEligibilityCategoryMap> findByRule_Id(Long ruleId, ActivityEnum isActive);
 }
