@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 
-import jakarta.persistence.Column;
 import lombok.*;
 
 @Data
