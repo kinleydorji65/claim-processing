@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.repository.legal_master;
+package com.claim.claim_processing.common.repository.legalMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;

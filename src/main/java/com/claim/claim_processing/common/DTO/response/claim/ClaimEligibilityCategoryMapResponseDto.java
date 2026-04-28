@@ -1,7 +1,6 @@
 package com.claim.claim_processing.common.DTO.response.claim;
 
 import com.claim.claim_processing.common.DTO.response.others.agency.agencyRelated.AgencyCategoryDTO;
-import com.claim.claim_processing.common.entities.claim.ClaimEligibilityMaster;
 import lombok.*;
 
 @Data
@@ -15,7 +14,7 @@ public class ClaimEligibilityCategoryMapResponseDto {
     // -------------------------------
     // RULE DETAILS
     // -------------------------------
-    private ClaimEligibilityMaster rule;
+    private ClaimEligibilityResponseDto rule;
 
     // -------------------------------
     // CATEGORY DETAILS

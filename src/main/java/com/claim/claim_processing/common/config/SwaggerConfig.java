@@ -44,7 +44,8 @@ public class SwaggerConfig {
                         "/api/claim/masters/cessation-types/**",
                         "/api/claim/masters/claim-circumstances/**",
                         "/api/claim/masters/claim-eligibilities/**",
-                        "/api/claim/masters/termination-reasons/**"
+                        "/api/claim/masters/termination-reasons/**",
+                        "/api/claim-eligibility-category-map/**"
                 )
                 .displayName("Claim Master APIs")
                 .build();
@@ -86,6 +87,18 @@ public class SwaggerConfig {
                         "/api/claim/masters/submission-channels/**"
                 )
                 .displayName("Common Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi contributionApi() {
+        return GroupedOpenApi.builder()
+                .group("contribution Master management")
+                .pathsToMatch(
+                        "/api/claim/masters/schemes/**",
+                        "/api/benefit-component-types/**"
+                )
+                .displayName("Contribution Master APIs")
                 .build();
     }
 }

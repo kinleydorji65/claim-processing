@@ -43,7 +43,7 @@ public class ClaimEligibilityCategoryMap {
             name = "CATEGORY_ID",
             referencedColumnName = "CATEGORY_ID",
             nullable = false,
-            foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_CATEGORY")
+            foreignKey = @ForeignKey(name = "FK_AGENCY_CATEGORIES")
     )
     private AgencyCategory category;
 }
