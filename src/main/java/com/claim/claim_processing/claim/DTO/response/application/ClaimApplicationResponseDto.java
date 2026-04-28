@@ -52,10 +52,12 @@ public class ClaimApplicationResponseDto {
     private String nppfNumber;
     private String agencyCode;
     private Long officeId;
+    private String officeName;
 
     // ---------------------------------
     // Dates
     // ---------------------------------
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate applicationDate;
 
     // ---------------------------------
@@ -84,28 +86,25 @@ public class ClaimApplicationResponseDto {
     // Special Case
     // ---------------------------------
     private Long specialCaseAuthorityId;
-    private String specialCaseAuthorityCode;
     private String specialCaseAuthorityName;
 
     // ---------------------------------
     // Workflow
     // ---------------------------------
     private Long currentStageId;
-    private String currentStageCode;
     private String currentStageName;
 
     private Long statusId;
-    private String statusCode;
     private String statusName;
 
     private Long actionId;
-    private String actionCode;
     private String actionName;
 
     // ---------------------------------
     // Misc
     // ---------------------------------
-    private String currencyCode;
+    private Long currencyId;
+    private String currencyName;
     private String remarks;
 
     // ---------------------------------
