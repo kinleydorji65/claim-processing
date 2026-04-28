@@ -1,4 +1,4 @@
-package com.claim.claim_processing.claim.DTO.calculation;
+package com.claim.claim_processing.claim.DTO.response.calculation;
 
 import lombok.*;
 
