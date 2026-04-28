@@ -1,4 +1,6 @@
-package com.claim.claim_processing.common.DTO.update.claim;
+package com.claim.claim_processing.common.DTO.request.claim;
+
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -7,12 +9,14 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ClaimEligibilityUpdateRequestDto {
+public class ClaimLapsedRefundRequestDto {
 
+    private String ruleCode;
     private String ruleName;
     private String claimCategoryCode;
 
     private Long claimCircumstanceId;
+    private Long cessationTypeId;
     private Long schemeTypeId;
 
     private Integer minContributionMonths;
@@ -21,5 +25,8 @@ public class ClaimEligibilityUpdateRequestDto {
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
 
-    private String isActive;
+    private String remarks;
+
+    @Builder.Default
+    private ActivityEnum isActive = ActivityEnum.Y;
 }

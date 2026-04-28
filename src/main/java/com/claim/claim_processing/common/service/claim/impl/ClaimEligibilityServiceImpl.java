@@ -65,11 +65,6 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
             entity.setClaimCircumstance(claimCircumstance);
         }
 
-        if (requestDto.getCessationTypeId() != null) {
-            CessationTypeMaster cessationType = cessationTypeRepository.findById(requestDto.getCessationTypeId())
-                    .orElseThrow(() -> new RuntimeException("Cessation type not found with id: " + requestDto.getCessationTypeId()));
-            entity.setCessationType(cessationType);
-        }
 
         if (requestDto.getSchemeTypeId() != null) {
             SchemeMaster schemeType = schemeRepository.findById(requestDto.getSchemeTypeId())
@@ -97,11 +92,6 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
             entity.setClaimCircumstance(claimCircumstance);
         }
 
-        if (requestDto.getCessationTypeId() != null) {
-            CessationTypeMaster cessationType = cessationTypeRepository.findById(requestDto.getCessationTypeId())
-                    .orElseThrow(() -> new RuntimeException("Cessation type not found with id: " + requestDto.getCessationTypeId()));
-            entity.setCessationType(cessationType);
-        }
 
         if (requestDto.getSchemeTypeId() != null) {
             SchemeMaster schemeType = schemeRepository.findById(requestDto.getSchemeTypeId())
@@ -124,5 +114,22 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
         entity.setUpdatedBy("SYSTEM");
 
         claimEligibilityRepository.save(entity);
+    }
+
+    @Override
+    public List<ClaimEligibilityResponseDto> getByClaimCircumstanceId(Long claimCircumstanceId) {
+        return claimEligibilityRepository.findByClaimCircumstance_Id(claimCircumstanceId)
+                .stream()
+                .map(claimEligibilityMapper::toResponseDto)
+                .toList();
+    }
+
+
+    @Override
+    public List<ClaimEligibilityResponseDto> getBySchemeTypeId(Long schemeTypeId) {
+        return claimEligibilityRepository.findBySchemeType_Id(schemeTypeId)
+                .stream()
+                .map(claimEligibilityMapper::toResponseDto)
+                .toList();
     }
 }

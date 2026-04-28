@@ -13,12 +13,12 @@ public interface ClaimEligibilityComponentMapRepository
     // -------------------------------
     // FIND BY RULE ID
     // -------------------------------
-    List<ClaimEligibilityComponentMap> findByRuleId(Long ruleId);
+    List<ClaimEligibilityComponentMap> findByRule_Id(Long ruleId);
 
     // -------------------------------
     // FIND BY BENEFIT COMPONENT TYPE ID
     // -------------------------------
-    List<ClaimEligibilityComponentMap> findByBenefitComponentTypeId(Long benefitComponentTypeId);
+    List<ClaimEligibilityComponentMap> findByBenefitComponentType_Id(Long benefitComponentTypeId);
 
     // -------------------------------
     // FIND ACTIVE RECORDS ONLY
@@ -26,7 +26,7 @@ public interface ClaimEligibilityComponentMapRepository
     List<ClaimEligibilityComponentMap> findByIsActive(String isActive);
 
     // -------------------------------
-    // CHECK EXISTENCE (DUPLICATE PREVENTION)
+    // DUPLICATE CHECK
     // -------------------------------
-    boolean existsByRuleIdAndBenefitComponentTypeId(Long ruleId, Long benefitComponentTypeId);
+    boolean existsByRule_IdAndBenefitComponentType_Id(Long ruleId, Long benefitComponentTypeId);
 }

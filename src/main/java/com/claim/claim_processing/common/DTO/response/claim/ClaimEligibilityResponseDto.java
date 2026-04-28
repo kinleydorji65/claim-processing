@@ -18,8 +18,6 @@ public class ClaimEligibilityResponseDto {
 
     private ClaimCircumstanceResponseDto claimCircumstance;
 
-    private CessationTypeResponseDto cessationType;
-
     private SchemeTypeResponseDto schemeType;
 
     private Integer minContributionMonths;

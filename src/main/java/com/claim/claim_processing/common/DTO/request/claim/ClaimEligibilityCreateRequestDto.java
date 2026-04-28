@@ -13,7 +13,6 @@ public class ClaimEligibilityCreateRequestDto {
     private String ruleName;
 
     private Long claimCircumstanceId;
-    private Long cessationTypeId;
     private Long schemeTypeId;
 
     private Integer minContributionMonths;

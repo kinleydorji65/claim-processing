@@ -45,7 +45,14 @@ public class SwaggerConfig {
                         "/api/claim/masters/claim-circumstances/**",
                         "/api/claim/masters/claim-eligibilities/**",
                         "/api/claim/masters/termination-reasons/**",
-                        "/api/claim-eligibility-category-map/**"
+                        "/api/claim-eligibility-category-map/**",
+                        "/api/master/claim-eligibility-component-map/**",
+                        "/api/master/claim/lapsed-refund/**",
+                        "/api/master/claims/lapsed-refund-component-map/**",
+                        "/api/claims/lapsed-refund-category-map/**",
+                        "/api/master/claims/type-master/**",
+                        "/api/claim/master/vesting-rules/**",
+                        "/api/claims/reserve-accounts/**"
                 )
                 .displayName("Claim Master APIs")
                 .build();
