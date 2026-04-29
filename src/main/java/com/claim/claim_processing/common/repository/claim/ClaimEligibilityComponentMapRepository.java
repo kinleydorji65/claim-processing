@@ -49,7 +49,7 @@ public interface ClaimEligibilityComponentMapRepository
     List<ClaimEligibilityComponentMap> findByIsActive(String isActive);
 
     // -------------------------------
-    // CHECK EXISTENCE (DUPLICATE PREVENTION)
+    // DUPLICATE CHECK
     // -------------------------------
     boolean existsByRule_IdAndBenefitComponentType_Id(Long ruleId, Long benefitComponentTypeId);
     

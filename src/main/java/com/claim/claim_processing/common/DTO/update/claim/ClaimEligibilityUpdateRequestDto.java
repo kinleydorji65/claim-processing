@@ -10,10 +10,9 @@ import java.time.LocalDate;
 public class ClaimEligibilityUpdateRequestDto {
 
     private String ruleName;
-    private String claimCategoryCode;
+    private String claimCategoryId;
 
     private Long claimCircumstanceId;
-    private Long cessationTypeId;
     private Long schemeTypeId;
 
     private Integer minContributionMonths;

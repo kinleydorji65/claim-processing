@@ -112,4 +112,21 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
 
         claimEligibilityRepository.save(entity);
     }
+
+    @Override
+    public List<ClaimEligibilityResponseDto> getByClaimCircumstanceId(Long claimCircumstanceId) {
+        return claimEligibilityRepository.findByClaimCircumstance_Id(claimCircumstanceId)
+                .stream()
+                .map(claimEligibilityMapper::toResponseDto)
+                .toList();
+    }
+
+
+    @Override
+    public List<ClaimEligibilityResponseDto> getBySchemeTypeId(Long schemeTypeId) {
+        return claimEligibilityRepository.findBySchemeType_Id(schemeTypeId)
+                .stream()
+                .map(claimEligibilityMapper::toResponseDto)
+                .toList();
+    }
 }

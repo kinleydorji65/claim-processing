@@ -27,11 +27,11 @@ public class ClaimVestingRuleMaster {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "CLAIM_CATEGORY_ID",
+            name = "MEMBER_CATEGORY_ID",
             referencedColumnName = "CATEGORY_ID",
             foreignKey = @ForeignKey(name = "FK_VESTING_RULE_CATEGORY")
     )
-    private AgencyCategory memberCategory;
+    private AgencyCategory category;
 
     @Column(name = "EFFECTIVE_FROM")
     private LocalDate effectiveFrom;

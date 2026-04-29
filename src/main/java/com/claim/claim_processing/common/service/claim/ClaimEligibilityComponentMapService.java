@@ -17,5 +17,7 @@ public interface ClaimEligibilityComponentMapService {
 
     List<ClaimEligibilityComponentMapResponseDto> getByRuleId(Long ruleId);
 
+    List<ClaimEligibilityComponentMapResponseDto> getByBenefitComponentTypeId(Long benefitComponentTypeId);
+
     void delete(Long id);
 }

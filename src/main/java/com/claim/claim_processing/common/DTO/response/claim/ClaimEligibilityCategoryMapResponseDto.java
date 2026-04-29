@@ -10,25 +10,8 @@ import lombok.*;
 public class ClaimEligibilityCategoryMapResponseDto {
 
     private Long id;
-
-    // -------------------------------
-    // RULE DETAILS
-    // -------------------------------
     private ClaimEligibilityResponseDto rule;
-
-    // -------------------------------
-    // CATEGORY DETAILS
-    // -------------------------------
     private AgencyCategoryDTO category;
-
-    // -------------------------------
-    // STATUS (Future Safe)
-    // -------------------------------
-    private String isActive;
-
-    // -------------------------------
-    // AUDIT (Future Safe)
-    // -------------------------------
     private String createdBy;
     private String createdAt;
 

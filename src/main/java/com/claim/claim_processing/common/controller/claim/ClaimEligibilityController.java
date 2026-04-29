@@ -54,4 +54,14 @@ public class ClaimEligibilityController {
         claimEligibilityService.deactivate(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/by-circumstance/{id}")
+    public ResponseEntity<List<ClaimEligibilityResponseDto>> getByCircumstance(@PathVariable Long id) {
+        return ResponseEntity.ok(claimEligibilityService.getByClaimCircumstanceId(id));
+    }
+
+    @GetMapping("/by-scheme/{id}")
+    public ResponseEntity<List<ClaimEligibilityResponseDto>> getByScheme(@PathVariable Long id) {
+        return ResponseEntity.ok(claimEligibilityService.getBySchemeTypeId(id));
+    }
 }

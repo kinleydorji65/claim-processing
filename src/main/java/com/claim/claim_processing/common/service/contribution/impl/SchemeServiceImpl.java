@@ -5,7 +5,7 @@ import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.DTO.request.contribution.SchemeCreateRequestDto;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.contribution.SchemeUpdateRequestDto;
-import com.claim.claim_processing.common.mapper.contribution.SchemeMapper;
+import com.claim.claim_processing.common.mapper.contribution.SchemeTypeMapper;
 import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
 import com.claim.claim_processing.common.service.contribution.SchemeService;
 import lombok.RequiredArgsConstructor;
@@ -20,13 +20,13 @@ import java.util.List;
 public class SchemeServiceImpl implements SchemeService {
 
     private final SchemeTypeRepository schemeRepository;
-    private final SchemeMapper schemeMapper;
+    private final SchemeTypeMapper SchemeTypeMapper;
 
     @Override
     @Transactional(readOnly = true)
     public List<SchemeTypeResponseDto> getAllActive() {
         List<SchemeMaster> schemes = schemeRepository.findByIsActiveOrderByNameAsc(ActivityEnum.Y);
-        return schemeMapper.toResponseDtoList(schemes);
+        return SchemeTypeMapper.toResponseDtoList(schemes);
     }
 
     @Override
@@ -35,7 +35,7 @@ public class SchemeServiceImpl implements SchemeService {
         SchemeMaster scheme = schemeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Scheme not found with id: " + id));
 
-        return schemeMapper.toResponseDto(scheme);
+        return SchemeTypeMapper.toResponseDto(scheme);
     }
 
     @Override
@@ -44,11 +44,11 @@ public class SchemeServiceImpl implements SchemeService {
             throw new RuntimeException("Scheme code already exists: " + requestDto.getCode());
         }
 
-        SchemeMaster scheme = schemeMapper.toEntity(requestDto);
+        SchemeMaster scheme = SchemeTypeMapper.toEntity(requestDto);
         scheme.setCreatedBy("SYSTEM");
 
         SchemeMaster savedScheme = schemeRepository.save(scheme);
-        return schemeMapper.toResponseDto(savedScheme);
+        return SchemeTypeMapper.toResponseDto(savedScheme);
     }
 
     @Override
@@ -56,11 +56,11 @@ public class SchemeServiceImpl implements SchemeService {
         SchemeMaster existingScheme = schemeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Scheme not found with id: " + id));
 
-        schemeMapper.updateEntityFromDto(requestDto, existingScheme);
+        SchemeTypeMapper.updateEntityFromDto(requestDto, existingScheme);
         existingScheme.setUpdatedBy("SYSTEM");
 
         SchemeMaster updatedScheme = schemeRepository.save(existingScheme);
-        return schemeMapper.toResponseDto(updatedScheme);
+        return SchemeTypeMapper.toResponseDto(updatedScheme);
     }
 
     @Override

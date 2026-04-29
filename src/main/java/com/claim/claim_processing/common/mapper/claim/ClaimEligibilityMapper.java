@@ -1,7 +1,6 @@
 package com.claim.claim_processing.common.mapper.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimEligibilityCreateRequestDto;
-import com.claim.claim_processing.common.DTO.response.claim.CessationTypeResponseDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimCircumstanceResponseDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimEligibilityResponseDto;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
@@ -107,15 +106,6 @@ public abstract class ClaimEligibilityMapper {
                 .updatedAt(entity.getUpdatedAt())
                 .updatedBy(entity.getUpdatedBy())
                 .build();
-    }
-
-    protected CessationTypeResponseDto map(CessationTypeMaster entity) {
-        if (entity == null)
-            return null;
-        CessationTypeResponseDto dto = new CessationTypeResponseDto();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        return dto;
     }
 
     protected SchemeTypeResponseDto map(SchemeMaster entity) {

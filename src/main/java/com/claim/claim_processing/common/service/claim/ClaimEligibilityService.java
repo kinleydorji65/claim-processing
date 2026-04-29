@@ -16,5 +16,9 @@ public interface ClaimEligibilityService {
 
     ClaimEligibilityResponseDto update(Long id, ClaimEligibilityUpdateRequestDto requestDto);
 
+    List<ClaimEligibilityResponseDto> getByClaimCircumstanceId(Long claimCircumstanceId);
+
+    List<ClaimEligibilityResponseDto> getBySchemeTypeId(Long schemeTypeId);
+
     void deactivate(Long id);
 }
