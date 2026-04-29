@@ -54,6 +54,14 @@ public class ClaimVestingRuleMaster {
     @Column(name = "PAYOUT_RESULT", length = 50)
     private String payoutResult;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "CUTOFF_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_VESTING_RULE_CUTOFF")
+    )
+    private ClaimVestingCutoffMaster cutoff;
+
     @Column(name = "REMARKS", length = 500)
     private String remarks;
 
