@@ -1,6 +1,5 @@
 package com.claim.claim_processing.common.service.claim.impl;
 
-import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimCircumstanceMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -9,7 +8,6 @@ import com.claim.claim_processing.common.DTO.request.claim.ClaimEligibilityCreat
 import com.claim.claim_processing.common.DTO.response.claim.ClaimEligibilityResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.ClaimEligibilityUpdateRequestDto;
 import com.claim.claim_processing.common.mapper.claim.ClaimEligibilityMapper;
-import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimCircumstanceRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityRepository;
 import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
@@ -29,7 +27,6 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
     private final ClaimEligibilityMapper claimEligibilityMapper;
 
     private final ClaimCircumstanceRepository claimCircumstanceRepository;
-    private final CessationTypeRepository cessationTypeRepository;
     private final SchemeTypeRepository schemeRepository;
 
     @Override
