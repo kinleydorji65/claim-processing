@@ -91,7 +91,8 @@ public class SwaggerConfig {
                 .group("Common Master Management")
                 .pathsToMatch(
                         "/api/claim/masters/claim-sources/**",
-                        "/api/claim/masters/submission-channels/**"
+                        "/api/claim/masters/submission-channels/**",
+                        "/api/claim/master/action-master/**"
                 )
                 .displayName("Common Master APIs")
                 .build();
@@ -106,6 +107,18 @@ public class SwaggerConfig {
                         "/api/benefit-component-types/**"
                 )
                 .displayName("Contribution Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi calculationMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("calculation Master management")
+                .pathsToMatch(
+                        "/api/claim/master/calculation-stage/**",
+                        "/api/claim/master/calculation-trigger-type/**"
+                )
+                .displayName("Calculation Master APIs")
                 .build();
     }
 }
