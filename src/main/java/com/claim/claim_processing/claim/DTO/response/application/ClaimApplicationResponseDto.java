@@ -14,8 +14,6 @@ import com.claim.claim_processing.claim.DTO.response.workFlow.ClaimApplicationWo
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import jakarta.persistence.Column;
-
 @Data
 @Builder
 @NoArgsConstructor
