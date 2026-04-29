@@ -15,11 +15,12 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityCategoryMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityComponentMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityRepository;
+import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 import com.claim.claim_processing.rule.claim.DTO.contribution.EligibleBenefitComponentDTO;
 import com.claim.claim_processing.rule.claim.DTO.contribution.MemberContributionSummary;
-import com.claim.claim_processing.rule.claim.DTO.request.ClaimEligibilityPreviewRequest;
+import com.claim.claim_processing.rule.claim.DTO.request.EligibilityPreviewRequest;
 import com.claim.claim_processing.rule.claim.DTO.response.CategoryBenefitsDTO;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimEligibilityPreviewResponse;
 import com.claim.claim_processing.rule.claim.eligibility.service.ClaimEligibilityRuleService;
@@ -38,7 +39,7 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
     private final MemberContributionService memberContributionService;
 
     @Override
-    public ClaimEligibilityPreviewResponse previewEligibility(ClaimEligibilityPreviewRequest request) {
+    public ClaimEligibilityPreviewResponse previewEligibility(EligibilityPreviewRequest request) {
 
         // 1. Fetch contribution summary (snapshot-based)
         MemberContributionSummary contributionSummary = memberContributionService
@@ -56,7 +57,7 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
                 .filter(rule -> matchesContributionMonths(rule, totalMonths))
                 .filter(rule -> matchesEffectiveDate(rule, terminationDate))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("No matching eligibility rule found"));
+                .orElseThrow(() ->  ClaimException.notFound("No matching eligibility rule found"));
 
         // 3. Get category mappings for this rule
         List<ClaimEligibilityCategoryMap> categoryMappings = categoryMapRepository
@@ -121,7 +122,7 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
             ClaimEligibilityComponentMap component,
             ClaimEligibilityMaster matchingRule,
             MemberContributionSummary contributionSummary,
-            ClaimEligibilityPreviewRequest request) {
+            EligibilityPreviewRequest request) {
 
         String benefitCode = component.getBenefitComponentType().getCode();
 
@@ -182,7 +183,7 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
             ClaimEligibilityComponentMap component,
             ClaimEligibilityMaster matchingRule,
             MemberContributionSummary contributionSummary,
-            ClaimEligibilityPreviewRequest request) {
+            EligibilityPreviewRequest request) {
 
         String benefitCode = component.getBenefitComponentType().getCode();
 

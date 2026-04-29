@@ -1,6 +1,5 @@
 package com.claim.claim_processing.common.DTO.response.claim;
 
-
 import com.claim.claim_processing.common.DTO.response.contribution.BenefitComponentTypeResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
@@ -28,6 +27,16 @@ public class ClaimLapsedRefundComponentMapResponseDto {
     private BenefitComponentTypeResponseDto benefitComponentType;
 
     // -------------------------------
+    // CATEGORY MAP (Links to category)
+    // -------------------------------
+    private ClaimLapsedRefundCategoryMapResponseDto categoryMap;  // This was missing
+
+    // Or if you want just the category info:
+    private Long categoryId;
+    private String agencyCategoryId;
+    private String agencyCategoryName;
+
+    // -------------------------------
     // STATUS
     // -------------------------------
     private ActivityEnum isActive;
@@ -37,7 +46,6 @@ public class ClaimLapsedRefundComponentMapResponseDto {
     // -------------------------------
     private String createdBy;
     private LocalDateTime createdAt;
-
     private String updatedBy;
     private LocalDateTime updatedAt;
 }

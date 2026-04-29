@@ -50,4 +50,6 @@ public interface ClaimLapsedRefundComponentMapRepository
             Long ruleId,
             ActivityEnum isActive
     );
+
+    List<ClaimLapsedRefundComponentMap> findByRule_IdAndClaimLapsedRefundCategoryMap_IdAndIsActive(Long ruleId, Long categoryId, ActivityEnum isActive);
 }

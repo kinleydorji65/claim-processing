@@ -129,14 +129,6 @@ public class ClaimLapsedRefundServiceImpl implements ClaimLapsedRefundService {
     }
 
     @Override
-    public List<ClaimLapsedRefundResponseDto> getByCessationType(Long cessationTypeId) {
-
-        return mapper.toResponseDtoList(
-                repository.findByCessationType_Id(cessationTypeId)
-        );
-    }
-
-    @Override
     public List<ClaimLapsedRefundResponseDto> getBySchemeType(Long schemeTypeId) {
 
         return mapper.toResponseDtoList(

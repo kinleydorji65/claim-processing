@@ -13,10 +13,8 @@ public class ClaimLapsedRefundRequestDto {
 
     private String ruleCode;
     private String ruleName;
-    private String claimCategoryCode;
 
     private Long claimCircumstanceId;
-    private Long cessationTypeId;
     private Long schemeTypeId;
 
     private Integer minContributionMonths;
@@ -29,4 +27,7 @@ public class ClaimLapsedRefundRequestDto {
 
     @Builder.Default
     private ActivityEnum isActive = ActivityEnum.Y;
+
+    private String createdBy;
+    private String updatedBy;
 }

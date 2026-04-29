@@ -21,13 +21,10 @@ public class ClaimLapsedRefundResponseDto {
     private String ruleCode;
     private String ruleName;
 
-    private String claimCategoryCode;
-
     // -------------------------------
     // FK MASTERS
     // -------------------------------
     private ClaimCircumstanceResponseDto claimCircumstance;
-    private CessationTypeResponseDto cessationType;
     private SchemeTypeResponseDto schemeType;
 
     // -------------------------------

@@ -48,6 +48,14 @@ public class ClaimLapsedRefundComponentMap {
     )
     private BenefitComponentTypeMaster benefitComponentType;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "CATEGORY_ID",
+            referencedColumnName = "ID",
+            nullable = false
+    )
+    private ClaimLapsedRefundCategoryMap claimLapsedRefundCategoryMap;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     @Builder.Default

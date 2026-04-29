@@ -34,8 +34,5 @@ public interface ClaimLapsedRefundService {
     // FK FILTER METHODS (ADMIN/UI)
     // -------------------------------
     List<ClaimLapsedRefundResponseDto> getByClaimCircumstance(Long claimCircumstanceId);
-
-    List<ClaimLapsedRefundResponseDto> getByCessationType(Long cessationTypeId);
-
     List<ClaimLapsedRefundResponseDto> getBySchemeType(Long schemeTypeId);
 }

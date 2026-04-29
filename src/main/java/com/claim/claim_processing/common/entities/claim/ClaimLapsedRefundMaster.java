@@ -28,9 +28,6 @@ public class ClaimLapsedRefundMaster {
     @Column(name = "RULE_NAME", nullable = false, length = 200)
     private String ruleName;
 
-    @Column(name = "CLAIM_CATEGORY_CODE", length = 50)
-    private String claimCategoryCode;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "CLAIM_CIRCUMSTANCE_ID",
@@ -38,14 +35,6 @@ public class ClaimLapsedRefundMaster {
             foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_CIRCUMSTANCE")
     )
     private ClaimCircumstanceMaster claimCircumstance;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "CESSATION_TYPE_ID",
-            referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_CESSATION_TYPE")
-    )
-    private CessationTypeMaster cessationType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(

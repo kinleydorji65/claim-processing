@@ -21,12 +21,6 @@ public interface ClaimLapsedRefundRepository extends JpaRepository<ClaimLapsedRe
     // FIND ACTIVE RULES
     // -------------------------------
     List<ClaimLapsedRefundMaster> findByIsActive(ActivityEnum isActive);
-
-    // -------------------------------
-    // FIND BY CLAIM CATEGORY
-    // -------------------------------
-    List<ClaimLapsedRefundMaster> findByClaimCategoryCode(String claimCategoryCode);
-
     // -------------------------------
     // VALID EFFECTIVE RULES (date range)
     // -------------------------------
@@ -39,12 +33,6 @@ public interface ClaimLapsedRefundRepository extends JpaRepository<ClaimLapsedRe
     // FIND BY SCHEME TYPE
     // -------------------------------
     List<ClaimLapsedRefundMaster> findBySchemeType_Id(Long schemeTypeId);
-
-    // -------------------------------
-    // FIND BY CESSATION TYPE
-    // -------------------------------
-    List<ClaimLapsedRefundMaster> findByCessationType_Id(Long cessationTypeId);
-
     // -------------------------------
     // FIND BY CLAIM CIRCUMSTANCE
     // -------------------------------

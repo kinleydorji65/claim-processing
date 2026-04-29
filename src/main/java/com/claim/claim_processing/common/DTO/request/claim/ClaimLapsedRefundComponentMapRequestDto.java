@@ -14,6 +14,7 @@ public class ClaimLapsedRefundComponentMapRequestDto {
     private Long ruleId;
 
     private Long benefitComponentTypeId;
+    private Long claimLapsedRefundCategoryMapId;
 
     private ActivityEnum isActive;
 

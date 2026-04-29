@@ -100,13 +100,6 @@ public class ClaimLapsedRefundController {
         return ResponseEntity.ok(service.getByClaimCircumstance(id));
     }
 
-    @GetMapping("/cessation-type/{id}")
-    public ResponseEntity<List<ClaimLapsedRefundResponseDto>> getByCessationType(
-            @PathVariable Long id) {
-
-        return ResponseEntity.ok(service.getByCessationType(id));
-    }
-
     @GetMapping("/scheme-type/{id}")
     public ResponseEntity<List<ClaimLapsedRefundResponseDto>> getBySchemeType(
             @PathVariable Long id) {
