@@ -92,7 +92,11 @@ public class SwaggerConfig {
                 .pathsToMatch(
                         "/api/claim/masters/claim-sources/**",
                         "/api/claim/masters/submission-channels/**",
-                        "/api/claim/master/action-master/**"
+                        "/api/claim/master/action-master/**",
+                        "/api/claim/master/deduction-types/**",
+                        "/api/claim/master/claim-type-deduction-map/**",
+                        "/api/claim/master/common/decisions/**",
+                        "/api/common/deduction-reference-types/**"
                 )
                 .displayName("Common Master APIs")
                 .build();
