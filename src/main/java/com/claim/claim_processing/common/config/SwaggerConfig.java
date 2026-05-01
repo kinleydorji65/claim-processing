@@ -96,7 +96,12 @@ public class SwaggerConfig {
                         "/api/claim/master/deduction-types/**",
                         "/api/claim/master/claim-type-deduction-map/**",
                         "/api/claim/master/common/decisions/**",
-                        "/api/common/deduction-reference-types/**"
+                        "/api/common/deduction-reference-types/**",
+                        "/api/claim/common/interest-method/**",
+                        "/api/claim/common/payee-type/**",
+                        "/api/claim/common/review-status/**",
+                        "/api/claim/common/rule-type/**",
+                        "/api/claim/common/stage/**"
                 )
                 .displayName("Common Master APIs")
                 .build();
