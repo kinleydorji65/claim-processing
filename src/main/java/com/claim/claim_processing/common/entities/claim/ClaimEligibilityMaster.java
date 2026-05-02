@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.entities.claim;
 
+import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,6 +45,14 @@ public class ClaimEligibilityMaster {
             foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_SCHEME_TYPE")
     )
     private SchemeMaster schemeType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "RULE_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_RULE_TYPE")
+    )
+    private RuleTypeMaster ruleType;
 
     @Column(name = "MIN_CONTRIBUTION_MONTHS")
     private Integer minContributionMonths;

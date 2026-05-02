@@ -64,4 +64,9 @@ public class ClaimEligibilityController {
     public ResponseEntity<List<ClaimEligibilityResponseDto>> getByScheme(@PathVariable Long id) {
         return ResponseEntity.ok(claimEligibilityService.getBySchemeTypeId(id));
     }
+
+    @GetMapping("/by-rule-type/{id}")
+    public ResponseEntity<List<ClaimEligibilityResponseDto>> getByRuleType(@PathVariable Long id) {
+        return ResponseEntity.ok(claimEligibilityService.getByRuleTypeId(id));
+    }
 }

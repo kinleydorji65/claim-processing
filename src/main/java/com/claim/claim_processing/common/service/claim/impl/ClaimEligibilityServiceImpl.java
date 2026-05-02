@@ -126,4 +126,13 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
                 .map(claimEligibilityMapper::toResponseDto)
                 .toList();
     }
+
+    @Override
+    public List<ClaimEligibilityResponseDto> getByRuleTypeId(Long ruleTypeId) {
+        return claimEligibilityRepository.findByRuleType_Id(ruleTypeId)
+                .stream()
+                .map(claimEligibilityMapper::toResponseDto)
+                .toList();
+    }
+
 }

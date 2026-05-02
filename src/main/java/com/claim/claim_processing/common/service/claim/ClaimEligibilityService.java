@@ -20,5 +20,7 @@ public interface ClaimEligibilityService {
 
     List<ClaimEligibilityResponseDto> getBySchemeTypeId(Long schemeTypeId);
 
+    List<ClaimEligibilityResponseDto> getByRuleTypeId(Long ruleTypeId);
+
     void deactivate(Long id);
 }
