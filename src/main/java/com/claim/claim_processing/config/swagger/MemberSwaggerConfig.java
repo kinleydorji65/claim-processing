@@ -1,0 +1,31 @@
+package com.claim.claim_processing.config.swagger;
+
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import io.swagger.v3.oas.models.OpenAPI;
+
+@Configuration
+public class MemberSwaggerConfig implements SwaggerConfig {
+    // @Bean
+    // public OpenAPI customOpenAPI() {
+    //     return createOpenAPI(
+    //         "NPPF Claim Processing Service API",
+    //         "1.0.0",
+    //         "Claim processing for agency and member",
+    //         "NPPF Development Team",
+    //         "dev@nppf.org.bt"
+    //     );
+    // }
+
+    @Bean
+    public GroupedOpenApi memberRegistrationApi() {
+        return createGroupedApi(
+            "Member Management",
+            "Member Detail APIs",
+            "/api/claim-processing/members/**",
+            "Member Registration"
+        );
+    }
+}

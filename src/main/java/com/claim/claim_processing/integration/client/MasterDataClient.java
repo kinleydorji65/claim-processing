@@ -1,3 +1,4 @@
+package com.claim.claim_processing.integration.client;
 // package com.claim.claim_processing.client;
 
 // import lombok.RequiredArgsConstructor;

@@ -15,23 +15,12 @@ public class MemberFamilyResponseDto {
     // -------------------------------
     // NAME
     // -------------------------------
-    private String firstName;
-    private String middleName;
-    private String lastName;
     private String fullName;
 
-    // -------------------------------
-    // IDENTITY
-    // -------------------------------
-    private Long identityTypeId;
     private String identityTypeName; // optional (master)
 
     private String identityNumber;
 
-    // -------------------------------
-    // RELATION
-    // -------------------------------
-    private Long relationId;
     private String relationName; // optional (master)
 
     // -------------------------------
@@ -43,5 +32,4 @@ public class MemberFamilyResponseDto {
     // MEMBER (FLATTENED)
     // -------------------------------
     private String memberCode;
-    private String memberName; // optional
 }

@@ -12,32 +12,11 @@ import java.sql.Date;
 public class MemberNomineeResponseDto {
 
     private Long id;
-
-    // -------------------------------
-    // NAME
-    // -------------------------------
-    private String firstName;
-    private String middleName;
-    private String lastName;
     private String fullName;
-
-    // -------------------------------
-    // RELATION
-    // -------------------------------
-    private Long relationId;
-    private String relationName; // optional (master)
-
-    // -------------------------------
-    // IDENTITY
-    // -------------------------------
-    private Long identityTypeId;
+    private String relationName; 
     private String identityTypeName; // optional
 
     private String identityNumber;
-
-    // -------------------------------
-    // DOB
-    // -------------------------------
     private Date dateOfBirth;
 
     // -------------------------------

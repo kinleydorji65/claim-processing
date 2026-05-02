@@ -7,14 +7,10 @@ import lombok.*;
 @Data
 @Builder
 public class EligibleBenefitComponentDTO {
-
-    private Long benefitComponentTypeId;
     private String code;
-    private String name;
+    private String benifitComponentName;
 
-    private EligibilityEnum isEligible;
+    private EligibilityEnum isPensionEligible;
 
     private boolean selectable;
-
-    private String ineligibilityReason;
 }
