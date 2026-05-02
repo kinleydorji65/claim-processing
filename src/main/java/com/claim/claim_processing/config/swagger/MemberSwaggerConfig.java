@@ -8,16 +8,6 @@ import io.swagger.v3.oas.models.OpenAPI;
 
 @Configuration
 public class MemberSwaggerConfig implements SwaggerConfig {
-    // @Bean
-    // public OpenAPI customOpenAPI() {
-    //     return createOpenAPI(
-    //         "NPPF Claim Processing Service API",
-    //         "1.0.0",
-    //         "Claim processing for agency and member",
-    //         "NPPF Development Team",
-    //         "dev@nppf.org.bt"
-    //     );
-    // }
 
     @Bean
     public GroupedOpenApi memberRegistrationApi() {

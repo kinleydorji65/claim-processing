@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import org.springdoc.core.models.GroupedOpenApi;
 import java.util.Collections;
+import java.util.List;
 
 public interface SwaggerConfig {
     
@@ -20,7 +21,7 @@ public interface SwaggerConfig {
                                 .email(contactEmail)));
     }
     
-    default GroupedOpenApi createGroupedApi(String groupName, String displayName, 
+    default GroupedOpenApi createGroupedApi(String groupName,String displayName, 
                                             String pathsToMatch, String tagName) {
         return GroupedOpenApi.builder()
                 .group(groupName)
