@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.DTO.response.common;
 
+import com.claim.claim_processing.common.DTO.response.claim.ClaimTypeMasterResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
@@ -16,9 +17,7 @@ public class ClaimTypeDeductionMapResponseDto {
     // -------------------------------
     // CLAIM TYPE
     // -------------------------------
-    private Long claimTypeId;
-    private String claimTypeCode;
-    private String claimTypeName;
+    private ClaimTypeMasterResponseDto claimType;
 
     // -------------------------------
     // DEDUCTION TYPE

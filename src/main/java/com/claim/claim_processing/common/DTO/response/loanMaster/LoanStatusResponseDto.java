@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.DTO.response.loan;
+package com.claim.claim_processing.common.DTO.response.loanMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
@@ -9,22 +9,18 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoanAdjustmentPriorityResponseDto {
+public class LoanStatusResponseDto {
 
     private Long id;
 
     // -------------------------------
-    // LOAN TYPE (FK)
+    // BASIC INFO
     // -------------------------------
-    private Long loanTypeId;
-    private String loanTypeCode;
-    private String loanTypeName;
-
-    // -------------------------------
-    // PRIORITY INFO
-    // -------------------------------
-    private Integer priorityOrder;
+    private String code;
+    private String name;
     private String description;
+
+    private Integer displayOrder;
 
     // -------------------------------
     // STATUS
