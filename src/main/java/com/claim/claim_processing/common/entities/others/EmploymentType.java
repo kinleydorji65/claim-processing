@@ -17,6 +17,6 @@ public class EmploymentType {
     @Column(name = "EMPLOYMENT_TYPE_ID")
     private Long employmentTypeId;
 
-    @Column(name = "EMPLOYMENT_TYPE_NAME", nullable = false, length = 200)
+    @Column(name = "EMPLOYMENT_TYPE_NAME", nullable = false)
     private String employmentTypeName;
 }

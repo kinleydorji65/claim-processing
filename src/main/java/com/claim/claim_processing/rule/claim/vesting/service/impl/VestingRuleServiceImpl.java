@@ -13,7 +13,7 @@ import com.claim.claim_processing.common.repository.claim.ClaimVestingRuleMaster
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.rule.claim.DTO.contribution.MemberContributionSummary;
-import com.claim.claim_processing.rule.claim.DTO.request.VestingRuleRequest;
+import com.claim.claim_processing.rule.claim.DTO.request.ClaimPreviewRequest;
 import com.claim.claim_processing.rule.claim.DTO.response.VestingRuleResponseDTO;
 import com.claim.claim_processing.rule.claim.vesting.service.VestingRuleService;
 
@@ -29,7 +29,7 @@ public class VestingRuleServiceImpl implements VestingRuleService {
     private final ClaimVestingRuleMasterRepository vestingRuleRepository;
 
     @Override
-    public VestingRuleResponseDTO determineVestingEligibility(VestingRuleRequest request) {
+    public VestingRuleResponseDTO determineVestingEligibility(ClaimPreviewRequest request) {
 
         // 1. Get contribution summary
         MemberContributionSummary contributionSummary = memberContributionService
@@ -80,7 +80,7 @@ public class VestingRuleServiceImpl implements VestingRuleService {
                 .sorted(Comparator.comparing((ClaimVestingRuleMaster r) -> r.getCutoff() == null ? 1 : 0))
                 // Find first matching rule
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> ClaimException.notFound("No matching vesting rule found for the given criteria"));
     }
 
     private boolean matchesEffectiveDate(ClaimVestingRuleMaster rule, LocalDate cessationDate) {

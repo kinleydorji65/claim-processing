@@ -5,11 +5,12 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
-public class EligibilityPreviewRequest {
+public class ClaimPreviewRequest {
     private String memberCode;
     private Long circumtancesId;
-    private Long categoryId;
-    private Long memberCategoryId;
+    private String memberCategoryId;
     private LocalDate terminationDate;
+    private LocalDate cessationDate;
+    private LocalDate serviceJoiningDate; 
     private Boolean isSpecialCase;
 }

@@ -14,10 +14,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CategoryBenefitsDTO {
-    private String agencyCategoryId;
+    private String ruleName;
+    private String ruleCode;
     private String agencyCategoryName;
     private List<EligibleBenefitComponentDTO> allBenefits;
-    private List<EligibleBenefitComponentDTO> pensionBenefits;
-    private List<EligibleBenefitComponentDTO> pfBenefits;
-    private List<EligibleBenefitComponentDTO> fullFormulaBenefits;
 }

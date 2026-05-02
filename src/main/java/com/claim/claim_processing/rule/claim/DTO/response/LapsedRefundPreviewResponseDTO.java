@@ -10,10 +10,8 @@ import lombok.*;
 @Data
 @Builder
 public class LapsedRefundPreviewResponseDTO {
-    private boolean eligible;
     private String matchingRuleCode;
     private String matchingRuleName;
     private MemberContributionSummary contributionSummary;
     private List<EligibleBenefitComponentDTO> lapsedBenefits;
-    private String remarks;
 }

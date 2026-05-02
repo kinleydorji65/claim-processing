@@ -4,8 +4,6 @@ import java.util.List;
 
 import com.claim.claim_processing.rule.claim.DTO.contribution.EligibleBenefitComponentDTO;
 import com.claim.claim_processing.rule.claim.DTO.contribution.MemberContributionSummary;
-import com.claim.claim_processing.rule.claim.DTO.result.RuleEvaluationResultDto;
-
 import lombok.Data;
 
 @Data
@@ -15,5 +13,4 @@ public class ClaimEligibilityPreviewResponse {
     private String matchingRuleName;
     private MemberContributionSummary contributionSummary;
     private List<EligibleBenefitComponentDTO> eligibleBenefits;
-    private List<RuleEvaluationResultDto> ruleEvaluations;
 }
