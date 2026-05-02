@@ -33,6 +33,14 @@ public class PartialWithdrawalRuleMaster {
     )
     private AgencyCategory category;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "REASON_ID",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_PARTIAL_WITHDRAWAL_RULE_REASON")
+    )
+    private PartialWithdrawalReasonMaster reason;
+
     @Column(name = "MAX_WITHDRAWAL_PERCENTAGE", precision = 5, scale = 2)
     private BigDecimal maxWithdrawalPercentage;
 

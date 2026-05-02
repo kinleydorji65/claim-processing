@@ -67,7 +67,9 @@ public class SwaggerConfig {
                         "/api/claim/masters/partial-causes/**",
                         "/api/claim/masters/disaster-types/**",
                         "/api/claim/masters/business-types/**",
-                        "/api/claim/masters/house-purchase-types/**"
+                        "/api/claim/masters/house-purchase-types/**",
+                        "/api/partial-withdrawal/reason-cause-map/**",
+                        "/api/claim/partial-withdrawal-rule/**"
                 )
                 .displayName("Partial Master APIs")
                 .build();
@@ -128,6 +130,43 @@ public class SwaggerConfig {
                         "/api/claim/master/calculation-trigger-type/**"
                 )
                 .displayName("Calculation Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi loanTypeMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("loan Master management")
+                .pathsToMatch(
+                        "/api/claim/loan-master/loan-type/**",
+                        "/api/claim/loan-master/loan-adjustment-priority/**",
+                        "/api/claim/loan-master/loan-status/**"
+                )
+                .displayName("loan Type Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi paymentMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("payment Master management")
+                .pathsToMatch(
+                        "/api/claim/master/payment-mode/**",
+                        "/api/claim/master/payment-status/**"
+                )
+                .displayName("payment Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi specialCaseMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("special case Master management")
+                .pathsToMatch(
+                        "/api/claim/masters/special-case-authorities/**",
+                        "/api/claim/masters/special-case-reasons/**"
+                )
+                .displayName("special case Master APIs")
                 .build();
     }
 }
