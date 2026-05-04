@@ -19,6 +19,8 @@ public class PartialWithdrawalRuleResponseDto {
 
     private PartialWithdrawalReasonResponseDto reason;
 
+    private PartialWithdrawalAccumulationResponseDto accumulation;
+
     private BigDecimal maxWithdrawalPercentage;
 
     private Integer numberOfContributionMonths;

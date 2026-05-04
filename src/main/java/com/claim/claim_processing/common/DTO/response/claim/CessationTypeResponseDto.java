@@ -18,6 +18,7 @@ public class CessationTypeResponseDto {
     private Long id;
     private String code;
     private String name;
+    private ClaimCircumstanceResponseDto claimCircumstance;
     private ActivityEnum isActive;
     private LocalDateTime createdAt;
     private String createdBy;

@@ -1,26 +1,22 @@
-package com.claim.claim_processing.common.DTO.response.partial;
+package com.claim.claim_processing.common.DTO.request.partial;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
-
-import java.sql.Timestamp;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PartialWithdrawalCauseResponseDto {
+public class PartialWithdrawalAccumulationRequestDto {
 
-    private Long id;
     private String code;
-    private PartialWithdrawalReasonResponseDto reason;
+
     private String name;
-    private String description;
+
     private ActivityEnum isActive;
 
-    private Timestamp createdAt;
     private String createdBy;
-    private Timestamp updatedAt;
+
     private String updatedBy;
 }

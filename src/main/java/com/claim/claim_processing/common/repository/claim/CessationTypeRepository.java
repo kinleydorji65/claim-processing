@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.repository.claim;
 
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
+import com.claim.claim_processing.common.entities.claim.ClaimCircumstanceMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,4 +16,6 @@ public interface CessationTypeRepository extends JpaRepository<CessationTypeMast
     boolean existsByCode(String code);
     List<CessationTypeMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
     Optional<CessationTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
+    List<CessationTypeMaster> findByClaimCircumstance(ClaimCircumstanceMaster claimCircumstance);
+    List<CessationTypeMaster> findByIsActive(ActivityEnum isActive);
 }

@@ -37,4 +37,6 @@ public interface ClaimLapsedRefundRepository extends JpaRepository<ClaimLapsedRe
     // FIND BY CLAIM CIRCUMSTANCE
     // -------------------------------
     List<ClaimLapsedRefundMaster> findByClaimCircumstance_Id(Long claimCircumstanceId);
+
+    List<ClaimLapsedRefundMaster> findByRuleType_Id(Long ruleTypeId);
 }

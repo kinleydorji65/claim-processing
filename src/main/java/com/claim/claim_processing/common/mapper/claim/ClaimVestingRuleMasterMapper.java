@@ -1,41 +1,62 @@
 package com.claim.claim_processing.common.mapper.claim;
 
-import com.claim.claim_processing.common.DTO.request.claim.ClaimVestingRuleMasterRequestDto;
-import com.claim.claim_processing.common.DTO.response.claim.ClaimVestingRuleMasterResponseDto;
+import com.claim.claim_processing.common.DTO.request.claim.ClaimVestingRuleRequestDto;
+import com.claim.claim_processing.common.DTO.response.claim.ClaimVestingRuleResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimVestingRuleMaster;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+import java.util.List;
+
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface ClaimVestingRuleMasterMapper {
 
-    // -----------------------------
+    // =========================
     // ENTITY → RESPONSE DTO
-    // -----------------------------
-    // No need for @Mapping when source and target have the same name
-    ClaimVestingRuleMasterResponseDto toResponseDto(ClaimVestingRuleMaster entity);
+    // =========================
+    @Mapping(source = "category", target = "category")
+    @Mapping(source = "cutoff", target = "cutoff")
+    @Mapping(source = "refund", target = "refund")
+    @Mapping(source = "ruleType", target = "ruleType")
+    ClaimVestingRuleResponseDto toDto(ClaimVestingRuleMaster entity);
 
-    // -----------------------------
+    List<ClaimVestingRuleResponseDto> toDto(List<ClaimVestingRuleMaster> entities);
+
+    // =========================
     // REQUEST DTO → ENTITY
-    // -----------------------------
-    @Mapping(target = "category", ignore = true) // FK handled in service
-    @Mapping(target = "id", ignore = true)       // for create safety
+    // (FKs handled in service)
+    // =========================
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "cutoff", ignore = true)
+    @Mapping(target = "refund", ignore = true)
+    @Mapping(target = "ruleType", ignore = true)
+
+    @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "createdBy", source = "createdBy")
-    @Mapping(target = "updatedBy", source = "updatedBy")
-    ClaimVestingRuleMaster toEntity(ClaimVestingRuleMasterRequestDto dto);
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    ClaimVestingRuleMaster toEntity(ClaimVestingRuleRequestDto dto);
 
-    // -----------------------------
-    // UPDATE EXISTING ENTITY
-    // -----------------------------
+    // =========================
+    // PATCH UPDATE
+    // =========================
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "category", ignore = true) // FK handled in service
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "cutoff", ignore = true)
+    @Mapping(target = "refund", ignore = true)
+    @Mapping(target = "ruleType", ignore = true)
+
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedBy", source = "updatedBy")
+    @Mapping(target = "isActive", ignore = true)
     void updateEntityFromDto(
-            ClaimVestingRuleMasterRequestDto dto,
+            ClaimVestingRuleRequestDto dto,
             @MappingTarget ClaimVestingRuleMaster entity
     );
 }

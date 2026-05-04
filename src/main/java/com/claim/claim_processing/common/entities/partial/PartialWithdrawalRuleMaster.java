@@ -41,6 +41,15 @@ public class PartialWithdrawalRuleMaster {
     )
     private PartialWithdrawalReasonMaster reason;
 
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "ACCUMULATION_ID",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_ACCUMULATION_TYPE")
+    )
+    private PartialWithdrawalAccumulationMaster accumulation;
+
     @Column(name = "MAX_WITHDRAWAL_PERCENTAGE", precision = 5, scale = 2)
     private BigDecimal maxWithdrawalPercentage;
 

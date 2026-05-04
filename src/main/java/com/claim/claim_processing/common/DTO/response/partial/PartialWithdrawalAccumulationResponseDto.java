@@ -10,17 +10,21 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PartialWithdrawalCauseResponseDto {
+public class PartialWithdrawalAccumulationResponseDto {
 
     private Long id;
+
     private String code;
-    private PartialWithdrawalReasonResponseDto reason;
+
     private String name;
-    private String description;
+
     private ActivityEnum isActive;
 
     private Timestamp createdAt;
+
     private String createdBy;
+
     private Timestamp updatedAt;
+
     private String updatedBy;
 }

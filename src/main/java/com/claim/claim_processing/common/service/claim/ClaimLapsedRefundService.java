@@ -35,4 +35,5 @@ public interface ClaimLapsedRefundService {
     // -------------------------------
     List<ClaimLapsedRefundResponseDto> getByClaimCircumstance(Long claimCircumstanceId);
     List<ClaimLapsedRefundResponseDto> getBySchemeType(Long schemeTypeId);
+    List<ClaimLapsedRefundResponseDto> getByRuleType(Long ruleTypeId);
 }

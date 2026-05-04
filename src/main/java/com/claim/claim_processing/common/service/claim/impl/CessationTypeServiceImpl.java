@@ -1,12 +1,15 @@
 package com.claim.claim_processing.common.service.claim.impl;
 
-import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import com.claim.claim_processing.common.DTO.request.claim.CessationTypeCreateRequestDto;
-import com.claim.claim_processing.common.DTO.response.claim.CessationTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.CessationTypeUpdateRequestDto;
+import com.claim.claim_processing.common.DTO.response.claim.CessationTypeResponseDto;
+import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
+import com.claim.claim_processing.common.entities.claim.ClaimCircumstanceMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.common.mapper.claim.CessationTypeMapper;
 import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
+import com.claim.claim_processing.common.repository.claim.ClaimCircumstanceRepository;
 import com.claim.claim_processing.common.service.claim.CessationTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,63 +22,110 @@ import java.util.List;
 @Transactional
 public class CessationTypeServiceImpl implements CessationTypeService {
 
-    private final CessationTypeRepository cessationTypeRepository;
-    private final CessationTypeMapper cessationTypeMapper;
+    private final CessationTypeRepository repository;
+    private final ClaimCircumstanceRepository circumstanceRepository;
+    private final CessationTypeMapper mapper;
 
+    // =========================
+    // CREATE
+    // =========================
     @Override
-    @Transactional(readOnly = true)
-    public List<CessationTypeResponseDto> getAllActive() {
-        List<CessationTypeMaster> list =
-                cessationTypeRepository.findByIsActiveOrderByNameAsc(ActivityEnum.Y);
+    public CessationTypeResponseDto create(CessationTypeCreateRequestDto dto) {
 
-        return cessationTypeMapper.toResponseDtoList(list);
+        if (repository.existsByCode(dto.getCode())) {
+            throw ClaimException.conflict("Cessation type already exists: " + dto.getCode());
+        }
+
+        CessationTypeMaster entity = mapper.toEntity(dto);
+
+        entity.setClaimCircumstance(getCircumstance(dto.getClaimCircumstanceId()));
+        entity.setIsActive(ActivityEnum.Y);
+
+        return mapper.toResponseDto(repository.save(entity));
     }
 
+    // =========================
+    // UPDATE
+    // =========================
+    @Override
+    public CessationTypeResponseDto update(Long id, CessationTypeUpdateRequestDto dto) {
+
+        CessationTypeMaster entity = repository.findById(id)
+                .orElseThrow(() -> ClaimException.notFound("CessationType not found: " + id));
+
+        mapper.updateEntityFromDto(dto, entity);
+
+        if (dto.getClaimCircumstanceId() != null) {
+            entity.setClaimCircumstance(getCircumstance(dto.getClaimCircumstanceId()));
+        }
+
+        return mapper.toResponseDto(repository.save(entity));
+    }
+
+    // =========================
+    // GET BY ID
+    // =========================
     @Override
     @Transactional(readOnly = true)
     public CessationTypeResponseDto getById(Long id) {
-        CessationTypeMaster entity = cessationTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cessation type not found with id: " + id));
 
-        return cessationTypeMapper.toResponseDto(entity);
+        return mapper.toResponseDto(
+                repository.findById(id)
+                        .orElseThrow(() -> ClaimException.notFound("CessationType not found: " + id))
+        );
     }
 
+    // =========================
+    // GET ALL
+    // =========================
     @Override
-    public CessationTypeResponseDto create(CessationTypeCreateRequestDto requestDto) {
-
-        if (cessationTypeRepository.existsByCode(requestDto.getCode())) {
-            throw new RuntimeException("Cessation type code already exists: " + requestDto.getCode());
-        }
-
-        CessationTypeMaster entity = cessationTypeMapper.toEntity(requestDto);
-        entity.setCreatedBy("SYSTEM");
-
-        CessationTypeMaster saved = cessationTypeRepository.save(entity);
-        return cessationTypeMapper.toResponseDto(saved);
+    @Transactional(readOnly = true)
+    public List<CessationTypeResponseDto> getAll() {
+        return mapper.toResponseDtoList(repository.findAll());
     }
 
+    // =========================
+    // GET ACTIVE
+    // =========================
     @Override
-    public CessationTypeResponseDto update(Long id, CessationTypeUpdateRequestDto requestDto) {
-
-        CessationTypeMaster entity = cessationTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cessation type not found with id: " + id));
-
-        cessationTypeMapper.updateEntityFromDto(requestDto, entity);
-        entity.setUpdatedBy("SYSTEM");
-
-        CessationTypeMaster updated = cessationTypeRepository.save(entity);
-        return cessationTypeMapper.toResponseDto(updated);
+    @Transactional(readOnly = true)
+    public List<CessationTypeResponseDto> getActive() {
+        return mapper.toResponseDtoList(
+                repository.findByIsActive(ActivityEnum.Y)
+        );
     }
 
+    // =========================
+    // GET BY CLAIM CIRCUMSTANCE
+    // =========================
     @Override
-    public void deactivate(Long id) {
+    @Transactional(readOnly = true)
+    public List<CessationTypeResponseDto> getByClaimCircumstance(Long circumstanceId) {
 
-        CessationTypeMaster entity = cessationTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cessation type not found with id: " + id));
+        ClaimCircumstanceMaster circumstance = getCircumstance(circumstanceId);
 
-        entity.setIsActive(ActivityEnum.N);
-        entity.setUpdatedBy("SYSTEM");
+        return mapper.toResponseDtoList(
+                repository.findByClaimCircumstance(circumstance)
+        );
+    }
 
-        cessationTypeRepository.save(entity);
+    // =========================
+    // DELETE
+    // =========================
+    @Override
+    public void delete(Long id) {
+
+        CessationTypeMaster entity = repository.findById(id)
+                .orElseThrow(() -> ClaimException.notFound("CessationType not found: " + id));
+
+        repository.delete(entity);
+    }
+
+    // =========================
+    // FK HELPER
+    // =========================
+    private ClaimCircumstanceMaster getCircumstance(Long id) {
+        return circumstanceRepository.findById(id)
+                .orElseThrow(() -> ClaimException.notFound("ClaimCircumstance not found: " + id));
     }
 }

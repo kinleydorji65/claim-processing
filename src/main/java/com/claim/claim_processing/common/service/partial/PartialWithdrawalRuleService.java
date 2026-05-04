@@ -19,5 +19,7 @@ public interface PartialWithdrawalRuleService {
 
     List<PartialWithdrawalRuleResponseDto> getByReason(Long reasonId);
 
+    List<PartialWithdrawalRuleResponseDto> getByAccumulation(Long accumulationId);
+
     void delete(Long id);
 }

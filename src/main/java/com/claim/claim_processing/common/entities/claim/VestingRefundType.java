@@ -7,43 +7,36 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "CESSATION_TYPE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(
+        name = "VESTING_REFUND_TYPE",
+        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CessationTypeMaster {
+public class VestingRefundType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
     private Long id;
 
-    @Column(name = "CODE", nullable = false, unique = true, length = 50)
+    @Column(name = "CODE", nullable = false, unique = true, length = 40)
     private String code;
 
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "CIRCUMTANCES_ID",
-            referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_CLAIM_CIRCUMSTANCES")
-    )
-    private ClaimCircumstanceMaster claimCircumstance;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
-
-    @Column(name = "CREATED_AT", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private ActivityEnum isActive;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
+
+    @Column(name = "CREATED_AT")
+    private LocalDateTime createdAt;
 
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
@@ -51,19 +44,15 @@ public class CessationTypeMaster {
     @Column(name = "UPDATED_BY", length = 100)
     private String updatedBy;
 
+    // Optional: Auto lifecycle handling
     @PrePersist
     public void prePersist() {
-        if (isActive == null) {
-            isActive = ActivityEnum.Y;
-        }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
+        this.createdAt = LocalDateTime.now();
+        this.isActive = this.isActive == null ? ActivityEnum.Y : this.isActive;
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }
-

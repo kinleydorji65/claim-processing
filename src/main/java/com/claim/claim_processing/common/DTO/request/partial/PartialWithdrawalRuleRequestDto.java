@@ -17,6 +17,8 @@ public class PartialWithdrawalRuleRequestDto {
 
     private Long reasonId;
 
+    private Long accumulationId;
+
     private BigDecimal maxWithdrawalPercentage;
 
     private Integer numberOfContributionMonths;

@@ -1,21 +1,27 @@
 package com.claim.claim_processing.common.service.claim;
 
-import com.claim.claim_processing.common.DTO.request.claim.ClaimVestingRuleMasterRequestDto;
-import com.claim.claim_processing.common.DTO.response.claim.ClaimVestingRuleMasterResponseDto;
+import com.claim.claim_processing.common.DTO.request.claim.ClaimVestingRuleRequestDto;
+import com.claim.claim_processing.common.DTO.response.claim.ClaimVestingRuleResponseDto;
 
 import java.util.List;
 
 public interface ClaimVestingRuleMasterService {
 
-    ClaimVestingRuleMasterResponseDto createRule(ClaimVestingRuleMasterRequestDto requestDto);
+    ClaimVestingRuleResponseDto createRule(ClaimVestingRuleRequestDto requestDto);
 
-    ClaimVestingRuleMasterResponseDto updateRule(Long id, ClaimVestingRuleMasterRequestDto requestDto);
+    ClaimVestingRuleResponseDto updateRule(Long id, ClaimVestingRuleRequestDto requestDto);
 
-    ClaimVestingRuleMasterResponseDto getById(Long id);
+    ClaimVestingRuleResponseDto getById(Long id);
 
-    List<ClaimVestingRuleMasterResponseDto> getAll();
+    List<ClaimVestingRuleResponseDto> getAll();
 
-    List<ClaimVestingRuleMasterResponseDto> getByCategoryId(String categoryId);
+    List<ClaimVestingRuleResponseDto> getByCategoryId(String categoryId);
+
+    List<ClaimVestingRuleResponseDto> getByRefundId(Long refundId);
+
+    List<ClaimVestingRuleResponseDto> getByRuleTypeId(Long ruleTypeId);
+
+    List<ClaimVestingRuleResponseDto> getByCutoffId(Long cutoffId);
 
     void deleteRule(Long id);
 }

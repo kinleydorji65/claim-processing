@@ -1,4 +1,5 @@
 package com.claim.claim_processing.common.entities.claim;
+import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
 
@@ -61,6 +62,22 @@ public class ClaimVestingRuleMaster {
             foreignKey = @ForeignKey(name = "FK_VESTING_RULE_CUTOFF")
     )
     private ClaimVestingCutoffMaster cutoff;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "REFUND_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_REFUND_TYPE_TYPE"))
+    private VestingRefundType refund;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "RULE_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_VESTING_RULE_TYPE")
+    )
+    private RuleTypeMaster ruleType;
+
 
     @Column(name = "REMARKS", length = 500)
     private String remarks;

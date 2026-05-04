@@ -106,4 +106,10 @@ public class ClaimLapsedRefundController {
 
         return ResponseEntity.ok(service.getBySchemeType(id));
     }
+
+    @GetMapping("/rule-type/{id}")
+    public ResponseEntity<List<ClaimLapsedRefundResponseDto>> getByRuleType(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(service.getByRuleType(id));
+    }
 }

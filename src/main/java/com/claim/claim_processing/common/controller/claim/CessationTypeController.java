@@ -16,35 +16,70 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CessationTypeController {
 
-    private final CessationTypeService cessationTypeService;
+    private final CessationTypeService service;
 
+    // =========================
+    // GET ALL
+    // =========================
     @GetMapping
-    public ResponseEntity<List<CessationTypeResponseDto>> getAllActive() {
-        return ResponseEntity.ok(cessationTypeService.getAllActive());
+    public ResponseEntity<List<CessationTypeResponseDto>> getAll() {
+        return ResponseEntity.ok(service.getAll());
     }
 
+    // =========================
+    // GET ACTIVE
+    // =========================
+    @GetMapping("/active")
+    public ResponseEntity<List<CessationTypeResponseDto>> getActive() {
+        return ResponseEntity.ok(service.getActive());
+    }
+
+    // =========================
+    // GET BY ID
+    // =========================
     @GetMapping("/{id}")
     public ResponseEntity<CessationTypeResponseDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(cessationTypeService.getById(id));
+        return ResponseEntity.ok(service.getById(id));
     }
 
+    // =========================
+    // GET BY CLAIM CIRCUMSTANCE
+    // =========================
+    @GetMapping("/circumstance/{circumstanceId}")
+    public ResponseEntity<List<CessationTypeResponseDto>> getByClaimCircumstance(
+            @PathVariable Long circumstanceId
+    ) {
+        return ResponseEntity.ok(service.getByClaimCircumstance(circumstanceId));
+    }
+
+    // =========================
+    // CREATE
+    // =========================
     @PostMapping
     public ResponseEntity<CessationTypeResponseDto> create(
-            @RequestBody CessationTypeCreateRequestDto requestDto) {
+            @RequestBody CessationTypeCreateRequestDto requestDto
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(cessationTypeService.create(requestDto));
+                .body(service.create(requestDto));
     }
 
+    // =========================
+    // UPDATE
+    // =========================
     @PutMapping("/{id}")
     public ResponseEntity<CessationTypeResponseDto> update(
             @PathVariable Long id,
-            @RequestBody CessationTypeUpdateRequestDto requestDto) {
-        return ResponseEntity.ok(cessationTypeService.update(id, requestDto));
+            @RequestBody CessationTypeUpdateRequestDto requestDto
+    ) {
+        return ResponseEntity.ok(service.update(id, requestDto));
     }
 
-    @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<Void> deactivate(@PathVariable Long id) {
-        cessationTypeService.deactivate(id);
+    // =========================
+    // DELETE
+    // =========================
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        service.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

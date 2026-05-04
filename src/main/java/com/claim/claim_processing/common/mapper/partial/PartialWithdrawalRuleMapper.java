@@ -13,6 +13,7 @@ public interface PartialWithdrawalRuleMapper {
     // -----------------------
     @Mapping(source = "category.categoryId", target = "category.categoryId")
     @Mapping(source = "reason.id", target = "reason.id")
+    @Mapping(source = "accumulation.id", target = "accumulation.id")
     PartialWithdrawalRuleResponseDto toResponseDto(PartialWithdrawalRuleMaster entity);
 
     // -----------------------
@@ -20,6 +21,7 @@ public interface PartialWithdrawalRuleMapper {
     // -----------------------
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "reason", ignore = true)
+    @Mapping(target = "accumulation", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "id", ignore = true)
@@ -31,6 +33,7 @@ public interface PartialWithdrawalRuleMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "reason", ignore = true)
+    @Mapping(target = "accumulation", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     void updateEntityFromDto(

@@ -2,9 +2,11 @@ package com.claim.claim_processing.common.service.partial.impl;
 
 import com.claim.claim_processing.common.DTO.request.partial.PartialWithdrawalRuleRequestDto;
 import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalRuleResponseDto;
+import com.claim.claim_processing.common.entities.partial.PartialWithdrawalAccumulationMaster;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalReasonMaster;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalRuleMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
+import com.claim.claim_processing.common.repository.partial.PartialWithdrawalAccumulationRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.common.mapper.partial.PartialWithdrawalRuleMapper;
 import com.claim.claim_processing.common.repository.partial.PartialWithdrawalRuleRepository;
@@ -23,6 +25,7 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
     private final PartialWithdrawalRuleRepository ruleRepository;
     private final AgencyCategoryRepository categoryRepository;
     private final PartialReasonRepository reasonRepository;
+    private final PartialWithdrawalAccumulationRepository accumulationRepository;
     private final PartialWithdrawalRuleMapper mapper;
 
     // -----------------------
@@ -124,6 +127,21 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
                 .toList();
     }
 
+
+    @Override
+    public List<PartialWithdrawalRuleResponseDto> getByAccumulation(Long accumulationId) {
+        List<PartialWithdrawalRuleMaster> list =
+                ruleRepository.findByAccumulation_Id(accumulationId);
+
+        if (list.isEmpty()) {
+            throw ClaimException.resourceNotFound("Rules for accumulationId", accumulationId.toString());
+        }
+
+        return list.stream()
+                .map(mapper::toResponseDto)
+                .toList();
+    }
+
     // -----------------------
     // DELETE
     // -----------------------
@@ -149,6 +167,13 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
         return reasonRepository.findById(reasonId)
                 .orElseThrow(() ->
                         ClaimException.resourceNotFound("PartialWithdrawalReason", reasonId.toString())
+                );
+    }
+
+    private PartialWithdrawalAccumulationMaster getAccumulation(Long accumulationId) {
+        return accumulationRepository.findById(accumulationId)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("PartialWithdrawalAccumulation", accumulationId.toString())
                 );
     }
 

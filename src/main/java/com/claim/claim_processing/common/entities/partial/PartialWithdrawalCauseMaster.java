@@ -24,6 +24,14 @@ public class PartialWithdrawalCauseMaster {
         @Column(name = "CODE", nullable = false, length = 50)
         private String code;
 
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(
+                name = "REASON_ID",
+                referencedColumnName = "ID",
+                foreignKey = @ForeignKey(name = "FK_REASON_CAUSE")
+        )
+        private PartialWithdrawalReasonMaster reason;
+
         @Column(name = "NAME", nullable = false, length = 150)
         private String name;
 

@@ -12,4 +12,8 @@ public interface AgencyCategoryRepository extends JpaRepository<AgencyCategory, 
     Optional<AgencyCategory> findByAgencyCategoryCode(String agencyCategoryCode);
 
     boolean existsByAgencyCategoryCode(String agencyCategoryCode);
+
+    Optional<AgencyCategory> findByCategoryId(String categoryId);
+
+
 }

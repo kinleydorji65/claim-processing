@@ -76,6 +76,13 @@ public class PartialWithdrawalRuleController {
         return ResponseEntity.ok(service.getByReason(reasonId));
     }
 
+    @GetMapping("/accumulation/{accumulationId}")
+    public ResponseEntity<List<PartialWithdrawalRuleResponseDto>> getByAccumulation(
+            @PathVariable Long accumulationId
+    ) {
+        return ResponseEntity.ok(service.getByAccumulation(accumulationId));
+    }
+
     // -----------------------
     // DELETE
     // -----------------------

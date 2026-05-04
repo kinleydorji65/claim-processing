@@ -135,4 +135,12 @@ public class ClaimLapsedRefundServiceImpl implements ClaimLapsedRefundService {
                 repository.findBySchemeType_Id(schemeTypeId)
         );
     }
+
+    @Override
+    public List<ClaimLapsedRefundResponseDto> getByRuleType(Long ruleTypeId) {
+
+        return mapper.toResponseDtoList(
+                repository.findByRuleType_Id(ruleTypeId)
+        );
+    }
 }

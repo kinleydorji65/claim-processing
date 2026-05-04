@@ -1,7 +1,7 @@
 package com.claim.claim_processing.common.controller.claim;
 
-import com.claim.claim_processing.common.DTO.request.claim.ClaimVestingRuleMasterRequestDto;
-import com.claim.claim_processing.common.DTO.response.claim.ClaimVestingRuleMasterResponseDto;
+import com.claim.claim_processing.common.DTO.request.claim.ClaimVestingRuleRequestDto;
+import com.claim.claim_processing.common.DTO.response.claim.ClaimVestingRuleResponseDto;
 import com.claim.claim_processing.common.service.claim.ClaimVestingRuleMasterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,64 +10,90 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/claim/master/vesting-rules")
+@RequestMapping("/api/claim/vesting-rules")
 @RequiredArgsConstructor
 public class ClaimVestingRuleMasterController {
 
     private final ClaimVestingRuleMasterService service;
 
-    // -----------------------------
-    // CREATE RULE
-    // -----------------------------
+    // =========================
+    // CREATE
+    // =========================
     @PostMapping
-    public ResponseEntity<ClaimVestingRuleMasterResponseDto> createRule(
-            @RequestBody ClaimVestingRuleMasterRequestDto requestDto) {
+    public ResponseEntity<ClaimVestingRuleResponseDto> createRule(
+            @RequestBody ClaimVestingRuleRequestDto requestDto) {
 
         return ResponseEntity.ok(service.createRule(requestDto));
     }
 
-    // -----------------------------
-    // UPDATE RULE
-    // -----------------------------
+    // =========================
+    // UPDATE
+    // =========================
     @PutMapping("/{id}")
-    public ResponseEntity<ClaimVestingRuleMasterResponseDto> updateRule(
+    public ResponseEntity<ClaimVestingRuleResponseDto> updateRule(
             @PathVariable Long id,
-            @RequestBody ClaimVestingRuleMasterRequestDto requestDto) {
+            @RequestBody ClaimVestingRuleRequestDto requestDto) {
 
         return ResponseEntity.ok(service.updateRule(id, requestDto));
     }
 
-    // -----------------------------
+    // =========================
     // GET BY ID
-    // -----------------------------
+    // =========================
     @GetMapping("/{id}")
-    public ResponseEntity<ClaimVestingRuleMasterResponseDto> getById(@PathVariable Long id) {
+    public ResponseEntity<ClaimVestingRuleResponseDto> getById(
+            @PathVariable Long id) {
+
         return ResponseEntity.ok(service.getById(id));
     }
 
-    // -----------------------------
-    // GET ALL RULES
-    // -----------------------------
+    // =========================
+    // GET ALL
+    // =========================
     @GetMapping
-    public ResponseEntity<List<ClaimVestingRuleMasterResponseDto>> getAll() {
+    public ResponseEntity<List<ClaimVestingRuleResponseDto>> getAll() {
+
         return ResponseEntity.ok(service.getAll());
     }
 
-    // -----------------------------
-    // GET BY CATEGORY ID
-    // -----------------------------
+    // =========================
+    // FILTERS
+    // =========================
+
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<List<ClaimVestingRuleMasterResponseDto>> getByCategoryId(
+    public ResponseEntity<List<ClaimVestingRuleResponseDto>> getByCategory(
             @PathVariable String categoryId) {
 
         return ResponseEntity.ok(service.getByCategoryId(categoryId));
     }
 
-    // -----------------------------
-    // DELETE RULE
-    // -----------------------------
+    @GetMapping("/refund/{refundId}")
+    public ResponseEntity<List<ClaimVestingRuleResponseDto>> getByRefund(
+            @PathVariable Long refundId) {
+
+        return ResponseEntity.ok(service.getByRefundId(refundId));
+    }
+
+    @GetMapping("/rule-type/{ruleTypeId}")
+    public ResponseEntity<List<ClaimVestingRuleResponseDto>> getByRuleType(
+            @PathVariable Long ruleTypeId) {
+
+        return ResponseEntity.ok(service.getByRuleTypeId(ruleTypeId));
+    }
+
+    @GetMapping("/cutoff/{cutoffId}")
+    public ResponseEntity<List<ClaimVestingRuleResponseDto>> getByCutoff(
+            @PathVariable Long cutoffId) {
+
+        return ResponseEntity.ok(service.getByCutoffId(cutoffId));
+    }
+
+    // =========================
+    // DELETE
+    // =========================
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRule(@PathVariable Long id) {
+
         service.deleteRule(id);
         return ResponseEntity.noContent().build();
     }

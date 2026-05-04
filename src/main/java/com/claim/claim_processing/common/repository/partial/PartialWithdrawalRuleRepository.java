@@ -15,5 +15,6 @@ public interface PartialWithdrawalRuleRepository
     List<PartialWithdrawalRuleMaster> findAll();
     List<PartialWithdrawalRuleMaster> findByCategory_CategoryId(String categoryId);
     List<PartialWithdrawalRuleMaster> findByReason_Id(Long reasonId);
+    List<PartialWithdrawalRuleMaster> findByAccumulation_Id(Long accumulationId);
     List<PartialWithdrawalRuleMaster> findByIsActive(ActivityEnum isActive);
 }

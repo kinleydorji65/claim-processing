@@ -16,6 +16,7 @@ public class ClaimLapsedRefundRequestDto {
 
     private Long claimCircumstanceId;
     private Long schemeTypeId;
+    private Long ruleTypeId;
 
     private Integer minContributionMonths;
     private Integer maxContributionMonths;

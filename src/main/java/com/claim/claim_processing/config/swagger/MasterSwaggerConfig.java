@@ -115,7 +115,7 @@ public class MasterSwaggerConfig implements SwaggerConfig {
         return createGroupedApi(
             "Master - Claim Vesting Rules Management V2",
             "Claim Vesting Rules APIs V2",
-            "/api/claim/master/vesting-rules/**",
+            "/api/claim/vesting-rules/**",
             "Claim Vesting Rules V2"
         );
     }
@@ -141,7 +141,9 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/masters/partial-causes/**",
                         "/api/claim/masters/disaster-types/**",
                         "/api/claim/masters/business-types/**",
-                        "/api/claim/masters/house-purchase-types/**"
+                        "/api/claim/masters/house-purchase-types/**",
+                        "/api/claim/partial-withdrawal-causes/**",
+                        "/api/claim/partial-withdrawal-accumulations/**"
                 )
                 .displayName("Partial Master APIs")
                 .addOperationCustomizer((operation, handlerMethod) -> {
@@ -218,5 +220,16 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                     return operation;
                 })
                 .build();
+    }
+
+    // Claim Vesting Rules Management API (Second one)
+    @Bean
+    public GroupedOpenApi claimVestingRulesApiV3() {
+        return createGroupedApi(
+                "Master - Claim Vesting Rules Management V3",
+                "Claim Vesting Rules APIs V3",
+                "/api/master/vesting-refund-type/**",
+                "Claim Vesting Rules V2"
+        );
     }
 }
