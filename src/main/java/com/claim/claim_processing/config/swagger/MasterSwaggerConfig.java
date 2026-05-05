@@ -143,7 +143,8 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/masters/business-types/**",
                         "/api/claim/masters/house-purchase-types/**",
                         "/api/claim/partial-withdrawal-causes/**",
-                        "/api/claim/partial-withdrawal-accumulations/**"
+                        "/api/claim/partial-withdrawal-accumulations/**",
+                        "/api/partial-withdrawal-benefit-map/**"
                 )
                 .displayName("Partial Master APIs")
                 .addOperationCustomizer((operation, handlerMethod) -> {

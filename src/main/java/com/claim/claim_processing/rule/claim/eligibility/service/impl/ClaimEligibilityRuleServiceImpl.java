@@ -3,7 +3,6 @@ package com.claim.claim_processing.rule.claim.eligibility.service.impl;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -18,7 +17,7 @@ import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategory
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityCategoryMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityComponentMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityRepository;
-import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeDetailRepository;
+import com.claim.claim_processing.common.repository.contribution.BenefitComponentDetailRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
@@ -41,7 +40,7 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
     private final ClaimEligibilityComponentMapRepository componentMapRepository;
     private final ClaimEligibilityPreviewMapper previewMapper;
     private final MemberContributionService memberContributionService;
-    private final BenefitComponentTypeDetailRepository benefitComponentTypeDetailRepository;
+    private final BenefitComponentDetailRepository benefitComponentTypeDetailRepository;
     private final AgencyCategoryRepository agencyCategoryRepository;
     private static final String PENSION_CODE = "PENSION";
 

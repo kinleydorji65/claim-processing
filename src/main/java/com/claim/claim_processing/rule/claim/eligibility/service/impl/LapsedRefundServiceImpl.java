@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.claim.claim_processing.common.entities.claim.ClaimEligibilityComponentMap;
 import com.claim.claim_processing.common.entities.claim.ClaimLapsedRefundCategoryMap;
 import com.claim.claim_processing.common.entities.claim.ClaimLapsedRefundComponentMap;
 import com.claim.claim_processing.common.entities.claim.ClaimLapsedRefundMaster;
@@ -18,10 +17,9 @@ import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategory
 import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundCategoryMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundComponentMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundRepository;
-import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeDetailRepository;
+import com.claim.claim_processing.common.repository.contribution.BenefitComponentDetailRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
-import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 import com.claim.claim_processing.rule.claim.DTO.contribution.EligibleBenefitComponentDTO;
 import com.claim.claim_processing.rule.claim.DTO.contribution.MemberContributionSummary;
 import com.claim.claim_processing.rule.claim.DTO.request.ClaimPreviewRequest;
@@ -40,7 +38,7 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
     private final ClaimLapsedRefundCategoryMapRepository categoryMapRepository;
     private final ClaimLapsedRefundComponentMapRepository componentMapRepository;
     private final MemberContributionService memberContributionService;
-    private final BenefitComponentTypeDetailRepository benefitComponentTypeDetailRepository;
+    private final BenefitComponentDetailRepository benefitComponentTypeDetailRepository;
     private final AgencyCategoryRepository agencyCategoryRepository;
     private final LapsedRefundPreviewMapper lapsedRefundPreviewMapper;
 
