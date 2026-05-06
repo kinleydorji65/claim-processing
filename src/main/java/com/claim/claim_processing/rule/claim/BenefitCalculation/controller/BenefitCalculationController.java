@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.rule.claim.BenefitCalculation.BenefitCalculationService;
 import com.claim.claim_processing.rule.claim.DTO.request.ClaimPreviewRequest;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
@@ -22,8 +23,8 @@ public class BenefitCalculationController {
     private final BenefitCalculationService benefitCalculationService;
 
     @PostMapping
-    public ResponseEntity<ClaimCalculationResponseDTO> getCalculationPreview(@RequestBody ClaimPreviewRequest request) {
-        ClaimCalculationResponseDTO response = benefitCalculationService.calculateBenefit(request);
+    public ResponseEntity<?> getCalculationPreview(@RequestBody ClaimPreviewRequest request) {
+        ApiResponseDTO<ClaimCalculationResponseDTO> response = benefitCalculationService.calculateBenefit(request);
         return ResponseEntity.ok(response);
     }
 }

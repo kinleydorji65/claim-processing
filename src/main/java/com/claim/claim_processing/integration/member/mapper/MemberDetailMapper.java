@@ -18,6 +18,7 @@ import com.claim.claim_processing.common.entities.others.member.MemberBank;
 import com.claim.claim_processing.common.entities.others.member.MemberDetail;
 import com.claim.claim_processing.common.entities.others.member.MemberFamily;
 import com.claim.claim_processing.common.entities.others.member.MemberNominee;
+import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategoryRepository;
 import com.claim.claim_processing.common.repository.others.BankTypeRepository;
 import com.claim.claim_processing.common.repository.others.EmploymentTypeRepository;
 import com.claim.claim_processing.common.repository.others.PersonIdentityRepository;
@@ -34,6 +35,8 @@ public abstract class MemberDetailMapper {
     protected BankTypeRepository bankTypeRepository;
     @Autowired
     protected RelationTypeRepository relationTypeRepository;
+    @Autowired
+    protected AgencyCategoryRepository agencyCategoryRepository;
 
     @Mapping(target = "memberName", ignore = true) // We'll set this in @AfterMapping
     @Mapping(target = "identityNumber", source = "identityNumber")
@@ -47,6 +50,7 @@ protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberD
     String identityTypeName = personIdentityRepository.findById(memberDetail.getIdentityTypeId()).orElseThrow(()-> ClaimException.notFound("Identy type not found with ID: " + memberDetail.getId())).getName();
     String employmentTypeName = employmentTypeRepository.findById(memberDetail.getWorkInfo().getEmploymentTypeId()).orElseThrow(()-> ClaimException.notFound("Employment type not found with ID: " + memberDetail.getId())).getEmploymentTypeName();
     responseDto.setDateOfServiceJoiningDate(memberDetail.getEffectiveFrom());
+    responseDto.setMemberCategory(getAgencyCategoryName(memberDetail.getAgencyCategoryId()));
     responseDto.setIdentityTypeName(identityTypeName);
     responseDto.setEmploymentTypeName(employmentTypeName);
     responseDto.setMemberStatus(memberDetail.getStatus());
@@ -54,6 +58,12 @@ protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberD
     responseDto.setMemberBanks(toMemberBankResponseList(memberDetail.getMemberBanks()));
     responseDto.setMemberNominees(toMemberNomineeResponseList(memberDetail.getMemberNominees()));
     responseDto.setMemberFamilies(toMemberFamilyResponseList(memberDetail.getMemberFamilies()));
+}
+
+private String getAgencyCategoryName(String agencyCategoryId) {
+    return agencyCategoryRepository.findById(agencyCategoryId)
+            .orElseThrow(() -> ClaimException.notFound("Agency category not found with ID: " + agencyCategoryId))
+            .getCategoryName();
 }
 
 private String joinNonNullTrimmed(String... parts) {

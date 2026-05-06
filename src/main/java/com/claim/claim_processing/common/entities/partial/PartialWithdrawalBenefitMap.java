@@ -1,12 +1,9 @@
 package com.claim.claim_processing.common.entities.partial;
 
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeMaster;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "PARTIAL_WITHDRAWAL_BENEFIT_MAP", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")

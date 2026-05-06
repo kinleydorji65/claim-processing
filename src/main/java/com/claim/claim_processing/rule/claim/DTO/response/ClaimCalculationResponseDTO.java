@@ -6,38 +6,42 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
+
 @Data
 @Builder
 public class ClaimCalculationResponseDTO {
     private String memberCode;
-    private String memberName;
-    private String cidNo;
+    private BigDecimal noOfYearInService;
     
     // Service period
     private LocalDate contributionStartDate;
     private LocalDate contributionEndDate;
-    private LocalDate cessationDate;
-    private LocalDate lastInterestCalculationDate;
+
+    private Integer totalContributionMonths;
+    private Integer totalNonContributionMonths;
     
     private BigDecimal totalPfAmount;
     private BigDecimal totalPensionAmount;
+
+    private BigDecimal totalPensionInterestAmount;
+    private BigDecimal totalPfInterestAmount;
+
+    private EligibilityEnum pfIsEligible;
+    private EligibilityEnum pensionIsEligible;
     
     // Component balances (raw components from Table 1)
     private List<ComponentBalanceDTO> components;
     
-    // Summary
-    private LocalDate asOfDate;
 
     @Data
-@Builder
-public static class ComponentBalanceDTO {
-    private String code;        // PF_MC, PF_IMC, PF_EC, etc.
-    private String name;
-    private String type;        // CONTRIBUTION or INTEREST
-    private BigDecimal amount;
-    private BigDecimal rate;
-    private LocalDate lastUpdatedDate;
-}
+    @Builder
+    public static class ComponentBalanceDTO {
+        private String code;        // PF_MC, PF_IMC, PF_EC, etc.
+        private String name;
+        private String type;        // CONTRIBUTION or INTEREST
+        private BigDecimal amount;
+    }
 
 }
 

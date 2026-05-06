@@ -28,58 +28,66 @@ public class MemberContributionServiceImpl implements MemberContributionService 
     }
     
     private MemberContributionSummary emptySummary(String memberCode) {
-        // return MemberContributionSummary.builder()
-        //     .memberCode(memberCode)
-        //     .totalContributionMonths(0)
-        //     .totalContributionYears(0)
-        //     .build();
-        MemberContributionSummary summary = MemberContributionSummary.builder()
-        .memberCode("PPFMS20260316M00235")
-        .schemeTypeId(1L)
-        .totalContributionMonths(120)
-        .totalContributionYears(10)
-        .contributionStartDate(LocalDate.of(2015, 1, 1))
-        .contributionEndDate(LocalDate.of(2025, 1, 1))
-        .cessationDate(LocalDate.of(2025, 1, 1))
-        .balanceAsOfDate(LocalDate.now())
 
-        .componentGroups(List.of(
-                MemberContributionSummary.ComponentGroup.builder()
-                        .code("PF_MC")
-                        .name("Member Contribution")
-                        .principal(new BigDecimal("100000"))
-                        .interest(new BigDecimal("20000"))
-                        .totalBalance(new BigDecimal("120000"))
-                        .interestRate(new BigDecimal("0.08"))
-                        .lastInterestDate(LocalDate.of(2024, 12, 31))
-                        .lastUpdatedDate(LocalDate.now())
-                        .build(),
+    List<MemberContributionSummary.ComponentGroup> groups = List.of(
 
-                MemberContributionSummary.ComponentGroup.builder()
-                        .code("PF_EC")
-                        .name("Employer Contribution")
-                        .principal(new BigDecimal("150000"))
-                        .interest(new BigDecimal("30000"))
-                        .totalBalance(new BigDecimal("180000"))
-                        .interestRate(new BigDecimal("0.08"))
-                        .lastInterestDate(LocalDate.of(2024, 12, 31))
-                        .lastUpdatedDate(LocalDate.now())
-                        .build(),
+            // ================= PF (Member Contribution) =================
+            MemberContributionSummary.ComponentGroup.builder()
+                    .code("PF_MC")
+                    .name("PF Member Contribution")
+                    .principal(new BigDecimal("100000"))
+                    .interest(new BigDecimal("20000"))
+                    .totalBalance(new BigDecimal("120000"))
+                    .interestRate(new BigDecimal("0.08"))
+                    .lastInterestDate(LocalDate.of(2024, 12, 31))
+                    .lastUpdatedDate(LocalDate.now())
+                    .build(),
 
-                MemberContributionSummary.ComponentGroup.builder()
-                        .code("PC_MC")
-                        .name("Pension Contribution")
-                        .principal(new BigDecimal("50000"))
-                        .interest(new BigDecimal("10000"))
-                        .totalBalance(new BigDecimal("60000"))
-                        .interestRate(new BigDecimal("0.05"))
-                        .lastInterestDate(LocalDate.of(2024, 12, 31))
-                        .lastUpdatedDate(LocalDate.now())
-                        .build()
-        ))
+            // ================= PF (Employer Contribution) =================
+            MemberContributionSummary.ComponentGroup.builder()
+                    .code("PF_EC")
+                    .name("PF Employer Contribution")
+                    .principal(new BigDecimal("150000"))
+                    .interest(new BigDecimal("30000"))
+                    .totalBalance(new BigDecimal("180000"))
+                    .interestRate(new BigDecimal("0.08"))
+                    .lastInterestDate(LocalDate.of(2024, 12, 31))
+                    .lastUpdatedDate(LocalDate.now())
+                    .build(),
 
-        .totalBalance(new BigDecimal("360000"))
-        .build();
-        return summary;
-    }
+            // ================= Pension (Member Contribution) =================
+            MemberContributionSummary.ComponentGroup.builder()
+                    .code("PC_MC")
+                    .name("Pension Member Contribution")
+                    .principal(new BigDecimal("50000"))
+                    .interest(new BigDecimal("10000"))
+                    .totalBalance(new BigDecimal("60000"))
+                    .interestRate(new BigDecimal("0.05"))
+                    .lastInterestDate(LocalDate.of(2024, 12, 31))
+                    .lastUpdatedDate(LocalDate.now())
+                    .build()
+    );
+
+    // ================= totals =================
+    BigDecimal totalBalance = groups.stream()
+            .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    return MemberContributionSummary.builder()
+            .memberCode(memberCode) // KEEP SAME
+            .schemeTypeId(1L)
+
+            // service period
+            .totalContributionMonths(120)
+            .totalContributionYears(10)
+            .contributionStartDate(LocalDate.of(2015, 1, 1))
+            .contributionEndDate(LocalDate.of(2025, 1, 1))
+
+            // components
+            .componentGroups(groups)
+
+            // total
+            .totalBalance(totalBalance)
+            .build();
+}
 }

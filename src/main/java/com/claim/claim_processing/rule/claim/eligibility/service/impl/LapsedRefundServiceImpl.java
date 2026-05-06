@@ -3,6 +3,7 @@ package com.claim.claim_processing.rule.claim.eligibility.service.impl;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -53,16 +54,22 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
         LocalDate terminationDate = request.getCessationDate() != null ? request.getCessationDate()
                 : contributionSummary.getContributionEndDate();
 
+                List<ClaimLapsedRefundMaster> rules =
+        lapsedRefundRepository.findByIsActive(ActivityEnum.Y);
         // 2. Find matching rule
-        ClaimLapsedRefundMaster matchingRule = lapsedRefundRepository.findByIsActive(ActivityEnum.Y)
-                .stream()
-                .filter(rule -> rule.getClaimCircumstance().getId().equals(request.getCircumtancesId()))
-                .filter(rule -> rule.getSchemeType().getId().equals(contributionSummary.getSchemeTypeId()))
-                .filter(rule -> matchesContributionMonths(rule, totalMonths))
-                .filter(rule -> matchesEffectiveDate(rule, terminationDate))
-                .findFirst()
-                .orElseThrow(() -> ClaimException.notFound("No matching lapsed refund rule found"));
-
+    ClaimLapsedRefundMaster matchingRule = rules.stream()
+        .filter(rule -> Objects.equals(
+                rule.getClaimCircumstance().getId(),
+                request.getCircumtancesId()
+        ))
+        .filter(rule -> Objects.equals(
+                rule.getSchemeType().getId(),
+                contributionSummary.getSchemeTypeId()
+        ))
+        .filter(rule -> matchesContributionMonths(rule, totalMonths))
+        .filter(rule -> matchesEffectiveDate(rule, terminationDate))
+        .findFirst()
+        .orElseThrow(() -> ClaimException.notFound("No matching lapsed refund rule found"));
         // 3. Get category mappings for this rule
         ClaimLapsedRefundCategoryMap categoryMapping = categoryMapRepository
                 .findByRule_IdAndCategory_CategoryId(matchingRule.getId(), request.getMemberCategoryId().toString())
@@ -73,18 +80,24 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
         // 4. Filter by member's category
         ClaimLapsedRefundComponentMap categoryMap = componentMapRepository.findById(categoryMapping.getId())
                 .orElseThrow(() -> ClaimException.notFound("Lapsed refund not applicable for this agency category"));
-
+        System.out.println("Category kinley map found: " + categoryMap.getId() + " matching rule id: " + matchingRule.getId());
         // 5. Get benefit components for this rule + category map
         List<ClaimLapsedRefundComponentMap> componentMappings = componentMapRepository
                 .findByRule_IdAndClaimLapsedRefundCategoryMap_IdAndIsActive(
                         matchingRule.getId(),
                         categoryMap.getId(),
                         ActivityEnum.Y);
+                        
+        if (componentMappings.isEmpty()) {
+            throw ClaimException.notFound("No active benefit components found for this category");
+        }
 
         // 6. Convert to DTOs
         List<EligibleBenefitComponentDTO> lapsedBenefits = componentMappings.stream()
                 .map(component -> {
+                    System.out.println("Eligible Test component type: ");
                     String eligibleComponentType = getEligibleComponentType(component);
+                    System.out.println("Eligible Test component type: " + eligibleComponentType);
                     return EligibleBenefitComponentDTO.builder()
                     .benifitComponentName(component.getBenefitComponentType().getName())
                     .code(eligibleComponentType)
@@ -103,14 +116,15 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
                     .agencyCategoryName(agencyCategory)
                     .allBenefits(lapsedBenefits)
                     .build());
+                    System.out.println();
         return lapsedRefundPreviewMapper.toResponse(
-                contributionSummary,
-                categoryBenefitsList,
+                lapsedBenefits,
                 matchingRule
         );
     }
 
     private String getEligibleComponentType(ClaimLapsedRefundComponentMap component) {
+        System.out.println("Finding eligible component type for component id: " + component.getId());
         BenefitComponentTypeDetail componentDetail = benefitComponentTypeDetailRepository.findById(component.getId())
                                     .orElseThrow(() -> ClaimException.notFound("Benefit component details not found"));
 

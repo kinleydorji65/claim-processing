@@ -15,11 +15,10 @@ public class MemberContributionSummary {
     
     // Service period
     private Integer totalContributionMonths;
+    private Integer totalNonContributionMonths;
     private Integer totalContributionYears;
     private LocalDate contributionStartDate;
     private LocalDate contributionEndDate;
-    private LocalDate cessationDate;
-    private LocalDate balanceAsOfDate;
     
     // Component balances (principal + interest grouped)
     private List<ComponentGroup> componentGroups;

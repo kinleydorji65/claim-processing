@@ -3,6 +3,7 @@ package com.claim.claim_processing.rule.claim.eligibility.service.impl;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -56,29 +57,44 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
                 : contributionSummary.getContributionEndDate();
 
                 System.out.println("Total contribution months: " + totalMonths + ", claim circumstance: " + cessationDate);
-        // 2. Find matching rule
+
         List<ClaimEligibilityMaster> rules =
         ruleRepository.findByIsActive(ActivityEnum.Y);
 
-System.out.println("ACTIVE RULES SIZE = " + rules.size());
-        ClaimEligibilityMaster matchingRule = ruleRepository.findByIsActive(ActivityEnum.Y)
-                .stream()
-                .filter(rule -> rule.getClaimCircumstance().getId().equals(request.getCircumtancesId()))
-                .filter(rule -> rule.getSchemeType().getId().equals(contributionSummary.getSchemeTypeId()))
-                .filter(rule -> matchesContributionMonths(rule, totalMonths))
-                .filter(rule -> matchesEffectiveDate(rule, cessationDate))
-                .findFirst()
-                .orElseThrow(() ->  ClaimException.notFound("No matching eligibility rule found"));
-      
+System.out.println("TOTAL RULES = " + rules.size());
+
+for (ClaimEligibilityMaster rule : rules) {
+
+    boolean c1 = rule.getClaimCircumstance().getId().equals(request.getCircumtancesId());
+    boolean c2 = rule.getSchemeType().getId().equals(contributionSummary.getSchemeTypeId());
+    boolean c3 = matchesContributionMonths(rule, totalMonths);
+    boolean c4 = matchesEffectiveDate(rule, cessationDate);
+
+    System.out.println("RULE ID: " + rule.getId());
+    System.out.println("circumstance match = " + c1);
+    System.out.println("scheme match        = " + c2);
+    System.out.println("month match         = " + c3);
+    System.out.println("date match          = " + c4);
+    System.out.println("----------------------------------");
+}
+        ClaimEligibilityMaster matchingRule = rules.stream()
+        .filter(rule -> Objects.equals(rule.getClaimCircumstance().getId(), request.getCircumtancesId()))
+        .filter(rule -> Objects.equals(rule.getSchemeType().getId(), contributionSummary.getSchemeTypeId()))
+        .filter(rule -> matchesContributionMonths(rule, totalMonths))
+        .filter(rule -> matchesEffectiveDate(rule, cessationDate))
+        .findFirst()
+        .orElseThrow(() -> ClaimException.notFound("No matching eligibility rule found"));
+        System.out.println("Matching rule found: " + matchingRule.getId() + " - " + matchingRule.getRuleName());
         // 3. Get category mappings for this rule
         ClaimEligibilityCategoryMap categoryMapping = categoryMapRepository
                 .findByRule_IdAndCategory_CategoryId(matchingRule.getId(), request.getMemberCategoryId())
                 .orElseThrow(() ->  ClaimException.notFound("No matching category mapping found"));
-
+    System.out.println("Matching category mapping found: " + categoryMapping.getId() + " for category " + request.getMemberCategoryId());
         // 4. Build category benefits
         List<CategoryBenefitsDTO> categoryBenefitsList = new ArrayList<>();
         List<ClaimEligibilityComponentMap> componentMappings = new ArrayList<>();
         // Get benefit components for this specific rule + category map
+        System.out.println("Fetching component mappings for rule " + matchingRule.getId() + " and category map " + categoryMapping.getId());
         componentMappings = componentMapRepository
                 .findByRule_IdAndClaimEligibilityCategoryMap_IdAndIsActive(
                         matchingRule.getId(),
@@ -89,10 +105,10 @@ System.out.println("ACTIVE RULES SIZE = " + rules.size());
             List<EligibleBenefitComponentDTO> benefits = componentMappings.stream()
                     .map(component -> {
                         // Determine if this specific benefit component is eligible based on the rule
-                        boolean isPensionEligible = PENSION_CODE.equals(component.getBenefitComponentType().getCode());
+                        boolean isPensionEligible = PENSION_CODE.contains(component.getBenefitComponentType().getCode());
 
                         String eligibleComponentType = getEligibleComponentType(component);
-
+                        System.out.println("Component ID: " + component.getId() + ", eligibleComponentType Code: " + eligibleComponentType + ", isPensionEligible: " + isPensionEligible);
                         return EligibleBenefitComponentDTO.builder()
                                 .code(eligibleComponentType)
                                 .benifitComponentName(component.getBenefitComponentType().getName())
@@ -105,18 +121,18 @@ System.out.println("ACTIVE RULES SIZE = " + rules.size());
             // Group benefits by type (Pension, PF, Full Formula)
             AgencyCategory agencyCategory = agencyCategoryRepository.findById(request.getMemberCategoryId())
                     .orElseThrow(() -> ClaimException.notFound("Agency category not found"));
-
+                    
             categoryBenefitsList.add(CategoryBenefitsDTO.builder()
                     .ruleName(matchingRule.getRuleName())
                     .ruleCode(matchingRule.getRuleCode())
                     .agencyCategoryName(agencyCategory.getCategoryName())
                     .allBenefits(benefits)
                     .build());
+                    System.out.println("categoryBenefitsList Total benefits mapped for category " + agencyCategory.getCategoryName() + ": " + benefits.size());
 
         // 5. Build and return response
         return previewMapper.toResponse(
-                contributionSummary,
-                categoryBenefitsList,
+                benefits,
                 matchingRule
             );
     }
@@ -124,7 +140,7 @@ System.out.println("ACTIVE RULES SIZE = " + rules.size());
     private String getEligibleComponentType(ClaimEligibilityComponentMap component) {
         BenefitComponentTypeDetail componentDetail = benefitComponentTypeDetailRepository.findById(component.getId())
                                     .orElseThrow(() -> ClaimException.notFound("Benefit component details not found"));
-
+        System.out.println("Component code for component map ID " + component.getId() + " is " + componentDetail.getComponent().getCode());
         return componentDetail.getComponent().getCode();
     }
 
