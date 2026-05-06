@@ -16,7 +16,7 @@ public interface ClaimVestingRuleMasterRepository
 
     List<ClaimVestingRuleMaster> findByCategory(AgencyCategory category);
 
-    List<ClaimVestingRuleMaster> findByRefund(VestingRefundType refund);
+    List<ClaimVestingRuleMaster> findByRefundType(VestingRefundType refund);
 
     List<ClaimVestingRuleMaster> findByRuleType(RuleTypeMaster ruleType);
 

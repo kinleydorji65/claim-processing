@@ -9,5 +9,5 @@ import com.claim.claim_processing.common.entities.claim.VestingRefundBenefitMap;
 
 @Repository
 public interface VestingRefundBenefitMapRepository extends JpaRepository<VestingRefundBenefitMap, Long> {
-    List<VestingRefundBenefitMap> findByRefundType_Id(Long refundTypeId);
+    List<VestingRefundBenefitMap> findByVestingRefundType_Id(Long refundTypeId);
 }

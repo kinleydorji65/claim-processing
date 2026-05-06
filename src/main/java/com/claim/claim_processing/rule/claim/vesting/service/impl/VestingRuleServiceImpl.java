@@ -205,7 +205,7 @@ public class VestingRuleServiceImpl implements VestingRuleService {
 
     // 1. Get Benefit mappings for this refund type
     List<VestingRefundBenefitMap> mappings =
-            vestingRefundBenefitMapRepository.findByRefundType_Id(refundId);
+            vestingRefundBenefitMapRepository.findByVestingRefundType_Id(refundId);
 
     return mappings.stream()
             .map(map -> {

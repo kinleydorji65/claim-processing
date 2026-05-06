@@ -107,7 +107,7 @@ public class ClaimVestingRuleMasterServiceImpl implements ClaimVestingRuleMaster
     @Override
     @Transactional(readOnly = true)
     public List<ClaimVestingRuleResponseDto> getByRefundId(Long refundId) {
-        return mapper.toDto(repository.findByRefund(getRefund(refundId)));
+        return mapper.toDto(repository.findByRefundType(getRefund(refundId)));
     }
 
     @Override
