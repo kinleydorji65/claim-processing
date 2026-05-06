@@ -234,4 +234,20 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                 "Claim Vesting Rules V2"
         );
     }
+
+    // Status Master Management APIs
+    @Bean
+    public GroupedOpenApi statusMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Master - Status Master Management")
+                .pathsToMatch(
+                        "/api/claim/approval-status/**"
+                )
+                .displayName("Status Master APIs")
+                .addOperationCustomizer((operation, handlerMethod) -> {
+                    operation.setTags(Collections.singletonList("Status Master"));
+                    return operation;
+                })
+                .build();
+    }
 }
