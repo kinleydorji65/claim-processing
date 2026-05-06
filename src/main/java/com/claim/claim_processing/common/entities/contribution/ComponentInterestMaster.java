@@ -7,16 +7,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "COMPONENT_INTEREST_MASTER",
-        schema = "PPFMS_CONTRIBUTION_PAYMENTS_SERVICE_SCHEMA",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "UK_COMPONENT_INTEREST_CODE",
-                        columnNames = {"CODE"}
-                )
-        }
-)
+@Table(name = "COMPONENT_INTEREST_MASTER", schema = "PPFMS_CONTRIBUTIONS_PAYMENTS_SERVICE_SCHEMA", uniqueConstraints = {
+        @UniqueConstraint(name = "UK_COMPONENT_INTEREST_CODE", columnNames = { "CODE" })
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -42,12 +35,7 @@ public class ComponentInterestMaster {
     // FK → COMPONENT_MASTER
     // -------------------------------
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "BASE_COMPONENT_ID",
-            referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_COMPONENT_INTEREST_BASE")
-    )
+    @JoinColumn(name = "BASE_COMPONENT_ID", referencedColumnName = "ID", nullable = false, foreignKey = @ForeignKey(name = "FK_COMPONENT_INTEREST_BASE"))
     private ComponentMaster baseComponent;
 
     // -------------------------------

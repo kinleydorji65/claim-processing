@@ -98,19 +98,25 @@ public class BenefitComponentTypeDetailServiceImpl implements BenefitComponentTy
     @Override
     @Transactional(readOnly = true)
     public List<BenefitComponentDetailResponseDto> getByBenefitComponentTypeId(Long id) {
-
-        return mapper.toResponseDtoList(
+        List<BenefitComponentDetailResponseDto> responseDtos = mapper.toResponseDtoList(
                 repository.findByBenefitComponentType_Id(id)
         );
+        if (responseDtos == null || responseDtos.isEmpty()) {
+            throw ClaimException.notFound("No Component Details found for BenefitComponentType ID: " + id);
+        }
+        return responseDtos;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<BenefitComponentDetailResponseDto> getByComponentId(Long id) {
-
-        return mapper.toResponseDtoList(
+        List<BenefitComponentDetailResponseDto> responseDtos = mapper.toResponseDtoList(
                 repository.findByComponent_Id(id)
         );
+        if (responseDtos == null || responseDtos.isEmpty()) {
+            throw ClaimException.notFound("No Component Details found for Component ID: " + id);
+        }
+        return responseDtos;
     }
 
     // =========================
