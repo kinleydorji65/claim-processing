@@ -1,6 +1,8 @@
 package com.claim.claim_processing.common.entities.claim;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnumConverter;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,7 +30,7 @@ public class VestingRefundType {
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ActivityEnumConverter.class)
     @Column(name = "IS_ACTIVE", length = 1)
     private ActivityEnum isActive;
 

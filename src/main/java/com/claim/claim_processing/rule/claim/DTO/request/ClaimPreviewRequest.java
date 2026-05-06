@@ -9,7 +9,6 @@ public class ClaimPreviewRequest {
     private String memberCode;
     private Long circumtancesId;
     private String memberCategoryId;
-    private LocalDate terminationDate;
     private LocalDate cessationDate;
     private LocalDate serviceJoiningDate; 
     private Boolean isSpecialCase;

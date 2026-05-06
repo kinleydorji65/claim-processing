@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.entities.claim;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnumConverter;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
 
 import jakarta.persistence.*;
@@ -62,7 +63,7 @@ public class ClaimVestingRuleMaster {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "RULE_ID",
+            name = "RULE_TYPE_ID",
             referencedColumnName = "ID",
             foreignKey = @ForeignKey(name = "FK_VESTING_RULE_TYPE")
     )
@@ -72,10 +73,9 @@ public class ClaimVestingRuleMaster {
     @Column(name = "REMARKS", length = 500)
     private String remarks;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ActivityEnumConverter.class)
     @Column(name = "IS_ACTIVE", length = 1)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
+    private ActivityEnum isActive;
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -46,22 +46,27 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
 
     @Override
     public ClaimEligibilityPreviewResponse previewEligibility(ClaimPreviewRequest request) {
-
+        System.out.println("request received in service: " + request);
         // 1. Fetch contribution summary (snapshot-based)
         MemberContributionSummary contributionSummary = memberContributionService
                 .getContributionSummary(request.getMemberCode());
 
         Integer totalMonths = contributionSummary.getTotalContributionMonths();
-        LocalDate terminationDate = request.getTerminationDate() != null ? request.getTerminationDate()
+        LocalDate cessationDate = request.getCessationDate() != null ? request.getCessationDate()
                 : contributionSummary.getContributionEndDate();
 
+                System.out.println("Total contribution months: " + totalMonths + ", claim circumstance: " + cessationDate);
         // 2. Find matching rule
+        List<ClaimEligibilityMaster> rules =
+        ruleRepository.findByIsActive(ActivityEnum.Y);
+
+System.out.println("ACTIVE RULES SIZE = " + rules.size());
         ClaimEligibilityMaster matchingRule = ruleRepository.findByIsActive(ActivityEnum.Y)
                 .stream()
                 .filter(rule -> rule.getClaimCircumstance().getId().equals(request.getCircumtancesId()))
                 .filter(rule -> rule.getSchemeType().getId().equals(contributionSummary.getSchemeTypeId()))
                 .filter(rule -> matchesContributionMonths(rule, totalMonths))
-                .filter(rule -> matchesEffectiveDate(rule, terminationDate))
+                .filter(rule -> matchesEffectiveDate(rule, cessationDate))
                 .findFirst()
                 .orElseThrow(() ->  ClaimException.notFound("No matching eligibility rule found"));
       

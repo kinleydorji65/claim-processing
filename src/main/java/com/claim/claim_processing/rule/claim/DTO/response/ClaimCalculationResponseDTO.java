@@ -19,6 +19,9 @@ public class ClaimCalculationResponseDTO {
     private LocalDate cessationDate;
     private LocalDate lastInterestCalculationDate;
     
+    private BigDecimal totalPfAmount;
+    private BigDecimal totalPensionAmount;
+    
     // Component balances (raw components from Table 1)
     private List<ComponentBalanceDTO> components;
     

@@ -3,7 +3,6 @@ package com.claim.claim_processing.rule.claim.eligibility.service.impl;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -51,7 +50,7 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
                 .getContributionSummary(request.getMemberCode());
 
         Integer totalMonths = contributionSummary.getTotalContributionMonths();
-        LocalDate terminationDate = request.getTerminationDate() != null ? request.getTerminationDate()
+        LocalDate terminationDate = request.getCessationDate() != null ? request.getCessationDate()
                 : contributionSummary.getContributionEndDate();
 
         // 2. Find matching rule
@@ -92,7 +91,7 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
                     .build();
                 })
                 .collect(Collectors.toList());
-        Map<String, List<EligibleBenefitComponentDTO>> benefitsByType = groupBenefitsByType(lapsedBenefits);
+        // Map<String, List<EligibleBenefitComponentDTO>> benefitsByType = groupBenefitsByType(lapsedBenefits);
         String agencyCategory = agencyCategoryRepository.findById(request.getMemberCategoryId())
                     .orElseThrow(() -> ClaimException.notFound("Agency category not found"))
                     .getCategoryName();
@@ -116,23 +115,6 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
                                     .orElseThrow(() -> ClaimException.notFound("Benefit component details not found"));
 
         return componentDetail.getComponent().getCode();
-    }
-
-    private Map<String, List<EligibleBenefitComponentDTO>> groupBenefitsByType(
-            List<EligibleBenefitComponentDTO> benefits) {
-
-        return benefits.stream()
-                .collect(Collectors.groupingBy(benefit -> {
-                    String code = benefit.getCode();
-
-                    if (code.startsWith("PENSION")) {
-                        return "PENSION";
-                    } else if (code.startsWith("PF")) {
-                        return "PF";
-                    } else {
-                        return "FULL_FORMULA";
-                    }
-                }));
     }
 
     private boolean matchesContributionMonths(ClaimLapsedRefundMaster rule, Integer months) {

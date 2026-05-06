@@ -24,7 +24,7 @@ public class VestingRefundBenefitMap {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
-            name = "BENEFITE_ID",
+            name = "BENEFIT_ID",
             referencedColumnName = "ID",
             nullable = false,
             foreignKey = @ForeignKey(name = "FK_BENEFIT_TYPE_MAP")

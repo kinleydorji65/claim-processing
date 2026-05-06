@@ -1,5 +1,7 @@
 package com.claim.claim_processing.common.entities.claim;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnumConverter;
 import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeMaster;
 
 import jakarta.persistence.*;
@@ -46,7 +48,7 @@ public class ClaimEligibilityComponentMap {
     )
     private ClaimEligibilityCategoryMap claimEligibilityCategoryMap;
 
-    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
-        @Builder.Default
-    private String isActive = "Y";
+    @Convert(converter = ActivityEnumConverter.class)
+    @Column(name = "IS_ACTIVE", length = 1)
+    private ActivityEnum isActive;
 }

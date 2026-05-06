@@ -4,6 +4,7 @@ import com.claim.claim_processing.common.DTO.request.claim.ClaimEligibilityCompo
 import com.claim.claim_processing.common.DTO.response.claim.ClaimEligibilityComponentMapResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityComponentMap;
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeMaster;
 import com.claim.claim_processing.common.mapper.claim.ClaimEligibilityComponentMapMapper;
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityComponentMapRepository;
@@ -75,7 +76,7 @@ public class ClaimEligibilityComponentMapServiceImpl
 
         entity.setRule(rule);
         entity.setBenefitComponentType(benefit);
-        entity.setIsActive(dto.getIsActive());
+        entity.setIsActive(ActivityEnum.valueOf(dto.getIsActive()));
 
         return mapper.toResponseDto(repository.save(entity));
     }

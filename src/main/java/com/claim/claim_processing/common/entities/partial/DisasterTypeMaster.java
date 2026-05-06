@@ -6,6 +6,7 @@ import lombok.*;
 import java.sql.Timestamp;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnumConverter;
 
 @Entity
 @Table(name = "DISASTER_TYPE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA", uniqueConstraints = {
@@ -43,10 +44,9 @@ public class DisasterTypeMaster {
     /**
      * Active flag
      */
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ActivityEnumConverter.class)
     @Column(name = "IS_ACTIVE", length = 1)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
+    private ActivityEnum isActive;
 
     /**
      * Audit fields

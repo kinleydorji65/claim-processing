@@ -1,6 +1,8 @@
 package com.claim.claim_processing.common.entities.statusMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnumConverter;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,10 +35,9 @@ public class FinalPayableReviewStatusMaster {
     @Builder.Default
     private Integer displayOrder = 1;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ActivityEnumConverter.class)
     @Column(name = "IS_ACTIVE", length = 1)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
+    private ActivityEnum isActive;
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;

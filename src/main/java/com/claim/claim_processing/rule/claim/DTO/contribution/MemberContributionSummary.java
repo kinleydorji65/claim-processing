@@ -32,14 +32,12 @@ public class MemberContributionSummary {
     public static class ComponentGroup {
         private String code;        // PF_MC, PF_EC, PC_MC, etc.
     private String name;
-    private String groupType;   // EMPLOYEE, EMPLOYER, VOLUNTARY, PENSION
     
     // Principal amount (no interest)
     private BigDecimal principal;
     
     // Interest amount (separate component)
     private BigDecimal interest;
-    private String interestComponentCode;  // PF_IMC, PF_IEC, etc.
     
     // Total = Principal + Interest
     private BigDecimal totalBalance;

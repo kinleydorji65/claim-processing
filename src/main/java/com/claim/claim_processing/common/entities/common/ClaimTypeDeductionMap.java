@@ -2,6 +2,8 @@ package com.claim.claim_processing.common.entities.common;
 
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnumConverter;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -56,10 +58,9 @@ public class ClaimTypeDeductionMap {
     @Column(name = "REMARKS", length = 300)
     private String remarks;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ActivityEnumConverter.class)
     @Column(name = "IS_ACTIVE", length = 1)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
+    private ActivityEnum isActive;
 
     // -------------------------------
     // AUDIT FIELDS
