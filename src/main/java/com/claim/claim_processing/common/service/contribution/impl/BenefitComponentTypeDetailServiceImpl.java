@@ -7,7 +7,7 @@ import com.claim.claim_processing.common.entities.contribution.BenefitComponentT
 import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
 import com.claim.claim_processing.common.mapper.contribution.BenefitComponentTypeDetailMapper;
-import com.claim.claim_processing.common.repository.contribution.BenefitComponentDetailRepository;
+import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeDetailRepository;
 import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeMasterRepository;
 import com.claim.claim_processing.common.repository.contribution.ComponentMasterRepository;
 import com.claim.claim_processing.common.service.contribution.BenefitComponentTypeDetailService;
@@ -23,7 +23,7 @@ import java.util.List;
 @Transactional
 public class BenefitComponentTypeDetailServiceImpl implements BenefitComponentTypeDetailService {
 
-    private final BenefitComponentDetailRepository repository;
+    private final BenefitComponentTypeDetailRepository repository;
     private final BenefitComponentTypeMasterRepository benefitRepo;
     private final ComponentMasterRepository componentRepo;
     private final BenefitComponentTypeDetailMapper mapper;
