@@ -21,7 +21,5 @@ public interface ClaimVestingRuleMasterService {
 
     List<ClaimVestingRuleResponseDto> getByRuleTypeId(Long ruleTypeId);
 
-    List<ClaimVestingRuleResponseDto> getByCutoffId(Long cutoffId);
-
     void deleteRule(Long id);
 }

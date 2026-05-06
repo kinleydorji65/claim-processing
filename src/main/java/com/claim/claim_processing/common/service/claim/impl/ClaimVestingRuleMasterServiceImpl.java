@@ -9,7 +9,6 @@ import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.common.mapper.claim.ClaimVestingRuleMasterMapper;
 import com.claim.claim_processing.common.repository.claim.ClaimVestingRuleMasterRepository;
 import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategoryRepository;
-import com.claim.claim_processing.common.repository.claim.ClaimVestingCutoffRepository;
 import com.claim.claim_processing.common.repository.claim.VestingRefundTypeRepository;
 import com.claim.claim_processing.common.repository.common.RuleTypeRepository;
 import com.claim.claim_processing.common.service.claim.ClaimVestingRuleMasterService;
@@ -26,7 +25,6 @@ public class ClaimVestingRuleMasterServiceImpl implements ClaimVestingRuleMaster
 
     private final ClaimVestingRuleMasterRepository repository;
     private final AgencyCategoryRepository categoryRepository;
-    private final ClaimVestingCutoffRepository cutoffRepository;
     private final VestingRefundTypeRepository refundRepository;
     private final RuleTypeRepository ruleTypeRepository;
 
@@ -46,8 +44,7 @@ public class ClaimVestingRuleMasterServiceImpl implements ClaimVestingRuleMaster
         ClaimVestingRuleMaster entity = mapper.toEntity(dto);
 
         entity.setCategory(getCategory(dto.getCategoryId()));
-        entity.setCutoff(getCutoff(dto.getCutoffId()));
-        entity.setRefund(getRefund(dto.getRefundId()));
+        entity.setRefundType(getRefund(dto.getRefundId()));
         entity.setRuleType(getRuleType(dto.getRuleTypeId()));
 
         return mapper.toDto(repository.save(entity));
@@ -67,11 +64,9 @@ public class ClaimVestingRuleMasterServiceImpl implements ClaimVestingRuleMaster
         if (dto.getCategoryId() != null)
             entity.setCategory(getCategory(dto.getCategoryId()));
 
-        if (dto.getCutoffId() != null)
-            entity.setCutoff(getCutoff(dto.getCutoffId()));
 
         if (dto.getRefundId() != null)
-            entity.setRefund(getRefund(dto.getRefundId()));
+            entity.setRefundType(getRefund(dto.getRefundId()));
 
         if (dto.getRuleTypeId() != null)
             entity.setRuleType(getRuleType(dto.getRuleTypeId()));
@@ -121,12 +116,6 @@ public class ClaimVestingRuleMasterServiceImpl implements ClaimVestingRuleMaster
         return mapper.toDto(repository.findByRuleType(getRuleType(ruleTypeId)));
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<ClaimVestingRuleResponseDto> getByCutoffId(Long cutoffId) {
-        return mapper.toDto(repository.findByCutoff(getCutoff(cutoffId)));
-    }
-
     // =========================
     // DELETE
     // =========================
@@ -149,11 +138,6 @@ public class ClaimVestingRuleMasterServiceImpl implements ClaimVestingRuleMaster
     private AgencyCategory getCategoryByCode(String code) {
         return categoryRepository.findByCategoryId(code)
                 .orElseThrow(() -> ClaimException.notFound("Category not found: " + code));
-    }
-
-    private ClaimVestingCutoffMaster getCutoff(Long id) {
-        return cutoffRepository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound("Cutoff not found: " + id));
     }
 
     private VestingRefundType getRefund(Long id) {

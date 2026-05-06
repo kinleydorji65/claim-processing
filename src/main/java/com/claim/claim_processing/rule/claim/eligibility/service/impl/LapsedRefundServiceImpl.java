@@ -17,7 +17,7 @@ import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategory
 import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundCategoryMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundComponentMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundRepository;
-import com.claim.claim_processing.common.repository.contribution.BenefitComponentDetailRepository;
+import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeDetailRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.rule.claim.DTO.contribution.EligibleBenefitComponentDTO;
@@ -38,7 +38,7 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
     private final ClaimLapsedRefundCategoryMapRepository categoryMapRepository;
     private final ClaimLapsedRefundComponentMapRepository componentMapRepository;
     private final MemberContributionService memberContributionService;
-    private final BenefitComponentDetailRepository benefitComponentTypeDetailRepository;
+    private final BenefitComponentTypeDetailRepository benefitComponentTypeDetailRepository;
     private final AgencyCategoryRepository agencyCategoryRepository;
     private final LapsedRefundPreviewMapper lapsedRefundPreviewMapper;
 

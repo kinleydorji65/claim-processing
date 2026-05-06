@@ -4,14 +4,25 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.claim.claim_processing.common.DTO.response.claim.VestingRefundTypeResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimVestingRuleMaster;
+import com.claim.claim_processing.common.entities.claim.VestingRefundBenefitMap;
+import com.claim.claim_processing.common.entities.claim.VestingRefundType;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeDetail;
+import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeMaster;
+import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
 import com.claim.claim_processing.common.repository.claim.ClaimVestingRuleMasterRepository;
+import com.claim.claim_processing.common.repository.claim.VestingRefundBenefitMapRepository;
+import com.claim.claim_processing.common.repository.claim.VestingRefundTypeRepository;
+import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeDetailRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
+import com.claim.claim_processing.rule.claim.DTO.contribution.EligibleBenefitComponentDTO;
 import com.claim.claim_processing.rule.claim.DTO.contribution.MemberContributionSummary;
 import com.claim.claim_processing.rule.claim.DTO.request.ClaimPreviewRequest;
 import com.claim.claim_processing.rule.claim.DTO.response.VestingRuleResponseDTO;
@@ -27,6 +38,9 @@ public class VestingRuleServiceImpl implements VestingRuleService {
 
     private final MemberContributionService memberContributionService;
     private final ClaimVestingRuleMasterRepository vestingRuleRepository;
+    private final VestingRefundTypeRepository vestingRefundTypeRepository;
+    private final VestingRefundBenefitMapRepository vestingRefundBenefitMapRepository;
+    private final BenefitComponentTypeDetailRepository benefitComponentTypeDetailRepository;
 
     @Override
     public VestingRuleResponseDTO determineVestingEligibility(ClaimPreviewRequest request) {
@@ -66,21 +80,17 @@ public class VestingRuleServiceImpl implements VestingRuleService {
 
         List<ClaimVestingRuleMaster> activeRules = vestingRuleRepository.findByIsActive(ActivityEnum.Y);
 
-        // Log all rules being considered
-        log.info("Finding matching rule for Category: {}, Total Months: {}, Cessation Date: {}",
-                memberCategoryId, totalMonths, cessationDate);
-
         return activeRules.stream()
-                // Filter by member category
                 .filter(rule -> rule.getCategory().getCategoryId().equals(memberCategoryId))
-                // Filter by effective date range
                 .filter(rule -> matchesEffectiveDate(rule, cessationDate))
-                // Filter by vesting months with cutoff logic
-                .filter(rule -> matchesVestingMonths(rule, totalMonths, contributionStartDate))
-                .sorted(Comparator.comparing((ClaimVestingRuleMaster r) -> r.getCutoff() == null ? 1 : 0))
-                // Find first matching rule
+                .filter(rule -> matchesVestingMonths(rule, totalMonths))
+                .filter(rule -> ActivityEnum.Y.equals(rule.getIsActive()))
+                .sorted(Comparator
+                        .comparing((ClaimVestingRuleMaster r) -> Optional.ofNullable(r.getMinVestingMonths()).orElse(0))
+                        .reversed()
+                        .thenComparing(ClaimVestingRuleMaster::getRuleCode)) // tie-breaker
                 .findFirst()
-                .orElseThrow(() -> ClaimException.notFound("No matching vesting rule found for the given criteria"));
+                .orElseThrow(() -> ClaimException.notFound("No matching vesting rule found"));
     }
 
     private boolean matchesEffectiveDate(ClaimVestingRuleMaster rule, LocalDate cessationDate) {
@@ -91,8 +101,6 @@ public class VestingRuleServiceImpl implements VestingRuleService {
         LocalDate effectiveTo = rule.getEffectiveTo();
 
         if (effectiveFrom != null && cessationDate.isBefore(effectiveFrom)) {
-            log.debug("Rule {} rejected: Cessation date {} is before effective from {}",
-                    rule.getRuleCode(), cessationDate, effectiveFrom);
             return false;
         }
         if (effectiveTo != null && cessationDate.isAfter(effectiveTo)) {
@@ -103,66 +111,37 @@ public class VestingRuleServiceImpl implements VestingRuleService {
         return true;
     }
 
-    private boolean matchesVestingMonths(ClaimVestingRuleMaster rule,
-            Integer totalMonths,
-            LocalDate contributionStartDate) {
+    private boolean matchesVestingMonths(ClaimVestingRuleMaster rule, Integer totalMonths) {
 
-        // SPECIAL HANDLING: For rules with cutoff (Grandfather rules)
-        if (rule.getCutoff() != null) {
-            log.info("Rule {} has cutoff - checking grandfather condition", rule.getRuleCode());
-
-            LocalDate cutoffDate = rule.getCutoff().getCutoffDate();
-            Integer requiredMonthsBeforeCutoff = rule.getCutoff().getRequiredMonths();
-
-            // Calculate months contributed BEFORE the cutoff date
-            Integer monthsBeforeCutoff = calculateMonthsBetween(contributionStartDate, cutoffDate);
-            boolean attainedRequiredBeforeCutoff = monthsBeforeCutoff >= requiredMonthsBeforeCutoff;
-
-            log.info("Rule {} - Months before cutoff: {}, Required: {}, Attained: {}",
-                    rule.getRuleCode(), monthsBeforeCutoff, requiredMonthsBeforeCutoff, attainedRequiredBeforeCutoff);
-
-            // For grandfather rule to apply, member MUST have attained required months
-            // BEFORE cutoff
-            if (!attainedRequiredBeforeCutoff) {
-                log.info("Rule {} rejected: Member did not attain {} months before {}",
-                        rule.getRuleCode(), requiredMonthsBeforeCutoff, cutoffDate);
-                return false;
-            }
-
-            // If cutoff condition passed, then check the range condition
-            // For CIVIL_GRANDFATHER_240: total months between 240-275
-            Integer minMonths = rule.getMinVestingMonths();
-            Integer maxMonths = rule.getMaxVestingMonths();
-
-            boolean matchesRange = totalMonths >= minMonths && totalMonths <= maxMonths;
-            log.info("Rule {} - Total months: {}, Range: {}-{}, Matches: {}",
-                    rule.getRuleCode(), totalMonths, minMonths, maxMonths, matchesRange);
-
-            return matchesRange;
+        if (totalMonths == null) {
+            return false;
         }
 
-        // NORMAL HANDLING: For rules without cutoff
         String comparisonType = rule.getComparisonType();
-        Integer minMonths = rule.getMinVestingMonths();
-        Integer maxMonths = rule.getMaxVestingMonths();
+        Integer min = rule.getMinVestingMonths();
+        Integer max = rule.getMaxVestingMonths();
 
-        log.debug("Rule {} - Comparison: {}, Total Months: {}, Min: {}, Max: {}",
-                rule.getRuleCode(), comparisonType, totalMonths, minMonths, maxMonths);
+        log.debug("Rule {} - Comparison: {}, Total: {}, Min: {}, Max: {}",
+                rule.getRuleCode(), comparisonType, totalMonths, min, max);
 
         switch (comparisonType) {
-            case "LT":
-                return totalMonths < minMonths;
-            case "GTE":
-                return totalMonths >= minMonths;
+
+            case "LESS_THAN":
+                return max != null && totalMonths < max;
+
+            case "LESS_THAN_OR_EQUAL":
+                return max != null && totalMonths <= max;
+
+            case "GREATER_THAN":
+                return min != null && totalMonths > min;
+
+            case "GREATER_THAN_OR_EQUAL":
+                return min != null && totalMonths >= min;
+
             case "RANGE":
-                if (minMonths != null && maxMonths != null) {
-                    return totalMonths >= minMonths && totalMonths <= maxMonths;
-                } else if (minMonths != null) {
-                    return totalMonths >= minMonths;
-                } else if (maxMonths != null) {
-                    return totalMonths <= maxMonths;
-                }
-                return false;
+                return (min == null || totalMonths >= min) &&
+                        (max == null || totalMonths <= max);
+
             default:
                 log.warn("Unknown comparison type: {}", comparisonType);
                 return false;
@@ -174,138 +153,88 @@ public class VestingRuleServiceImpl implements VestingRuleService {
             Integer totalServiceMonths) {
 
         if (rule == null) {
-            return VestingRuleResponseDTO.builder()
-                    .eligible(false)
-                    .totalVestingMonths(totalMonths)
-                    .message("No matching vesting rule found")
-                    .build();
+            return null;
         }
 
-        // Determine available options based on refund type and payout result
-        List<String> availableOptions = getAvailableOptions(rule);
-
-        // Determine vesting status
-        String vestingStatus = determineVestingStatus(rule, totalMonths);
-
         return VestingRuleResponseDTO.builder()
-                .eligible(true)
                 .ruleCode(rule.getRuleCode())
-                .ruleName(getRuleDisplayName(rule))
-                .refundType(rule.getRefundType())
-                .payoutResult(rule.getPayoutResult())
-                .vestingStatus(vestingStatus)
-                .totalVestingMonths(totalMonths)
-                .requiredVestingMonths(rule.getMinVestingMonths())
-                .message(getMessage(rule))
                 .remarks(rule.getRemarks())
-                .availableOptions(availableOptions)
+                .refundType(getRefundType(rule))
+                .payoutResult(rule.getPayoutResult())
+                .payoutResult(rule.getPayoutResult())
+                .totalVestingMonths(totalMonths)
+                .requiredVestingMonths(
+                        rule.getMinVestingMonths() == null ? rule.getMaxVestingMonths() : rule.getMinVestingMonths())
+                .remarks(rule.getRemarks())
+                .categoryBenefits(getCategoryBenefits(rule))
                 .build();
     }
 
-    private List<String> getAvailableOptions(ClaimVestingRuleMaster rule) {
-        // For grandfather rules (with cutoff) - only Pension
-        if (rule.getCutoff() != null) {
-            return List.of("PENSION");
+    private List<VestingRefundTypeResponseDto> getRefundType(ClaimVestingRuleMaster rule) {
+
+        // CASE 1: OPTION → return all refund types
+        if ("OPTION".equals(rule.getPayoutResult())) {
+
+            return vestingRefundTypeRepository.findAll()
+                    .stream()
+                    .map(refundType -> VestingRefundTypeResponseDto.builder()
+                            .id(refundType.getId())
+                            .code(refundType.getCode())
+                            .name(refundType.getName())
+                            .build())
+                    .toList();
         }
 
-        // Based on refund type
-        switch (rule.getRefundType()) {
-            case "OPTION":
-                return List.of("PENSION", "LUMPSUM");
-            case "LUMPSUM":
-                return List.of("LUMPSUM");
-            case "PENSION":
-                return List.of("PENSION");
-            default:
-                return List.of();
-        }
+        // CASE 2: NORMAL → return by ID
+
+        VestingRefundType refundType = vestingRefundTypeRepository.findById(rule.getRefundType().getId())
+                .orElseThrow(() -> ClaimException.notFound("Refund type not found: " + rule.getRefundType().getId()));
+
+        return List.of(
+                VestingRefundTypeResponseDto.builder()
+                        .id(refundType.getId())
+                        .code(refundType.getCode())
+                        .name(refundType.getName())
+                        .build());
+
     }
 
-    private String determineVestingStatus(ClaimVestingRuleMaster rule, Integer totalMonths) {
-        // Grandfathered rules
-        if (rule.getCutoff() != null) {
-            return "GRANDFATHERED";
-        }
+    private List<EligibleBenefitComponentDTO> getCategoryBenefits(ClaimVestingRuleMaster rule) {
 
-        String comparisonType = rule.getComparisonType();
-        Integer minMonths = rule.getMinVestingMonths();
-        Integer maxMonths = rule.getMaxVestingMonths();
+    Long refundId = rule.getRefundType().getId();
 
-        switch (comparisonType) {
-            case "GTE":
-                if (totalMonths >= minMonths) {
-                    return "FULLY_VESTED";
-                }
-                break;
-            case "LT":
-                if (totalMonths < minMonths) {
-                    return "PARTIALLY_VESTED";
-                }
-                break;
-            case "RANGE":
-                if (totalMonths >= minMonths && totalMonths <= maxMonths) {
-                    return "PARTIALLY_VESTED";
-                } else if (totalMonths > maxMonths) {
-                    return "FULLY_VESTED";
-                }
-                break;
-        }
+    // 1. Get Benefit mappings for this refund type
+    List<VestingRefundBenefitMap> mappings =
+            vestingRefundBenefitMapRepository.findByRefundType_Id(refundId);
 
-        return "NOT_VESTED";
-    }
+    return mappings.stream()
+            .map(map -> {
 
-    private String getMessage(ClaimVestingRuleMaster rule) {
-        // Grandfather rules
-        if (rule.getCutoff() != null) {
-            return "Grandfathered member - Eligible for pension only (no lumpsum option)";
-        }
+                BenefitComponentTypeMaster benefit = map.getBenefitComponentType();
 
-        // Based on refund type
-        switch (rule.getRefundType()) {
-            case "OPTION":
-                return "You can choose between Pension or Lumpsum";
-            case "LUMPSUM":
-                return "You are eligible for lumpsum refund only";
-            case "PENSION":
-                return "You are eligible for pension only";
-            default:
-                return "Eligible for benefits as per vesting rules";
-        }
-    }
+                // 2. Get components under this benefit type
+                List<ComponentMaster> components =
+                        benefitComponentTypeDetailRepository
+                                .findByBenefitComponentType_Id(benefit.getId())
+                                .stream()
+                                .map(BenefitComponentTypeDetail::getComponent)
+                                .toList();
 
-    private String getRuleDisplayName(ClaimVestingRuleMaster rule) {
-        // Customize display name based on rule code
-        switch (rule.getRuleCode()) {
-            // CIVIL RULES
-            case "CIVIL_BEFORE_2019_LT_120":
-                return "Civil (Before Jul 2019) - Less than 10 years";
-            case "CIVIL_BEFORE_2019_GTE_120":
-                return "Civil (Before Jul 2019) - 10 years or more";
-            case "CIVIL_2019_2024_LT_240":
-                return "Civil (Jul 2019 - Oct 2024) - Less than 20 years";
-            case "CIVIL_2019_2024_GTE_240":
-                return "Civil (Jul 2019 - Oct 2024) - 20 years or more";
-            case "CIVIL_AFTER_2024_LT_276":
-                return "Civil (After Nov 2024) - Less than 23 years";
-            case "CIVIL_AFTER_2024_GTE_276":
-                return "Civil (After Nov 2024) - 23 years or more";
-            case "CIVIL_GRANDFATHER_240":
-                return "Civil Grandfather Rule (Pension Only)";
+                // 3. Build DTO per component
+                return components.stream()
+                        .map(component -> EligibleBenefitComponentDTO.builder()
+                                .code(component.getCode())
+                                .benifitComponentName(component.getName())
+                                .isPensionEligible(null) // map later if needed
+                                .selectable(true)
+                                .build()
+                        )
+                        .toList();
 
-            // AF RULES
-            case "AF_BEFORE_2022_LT_120":
-                return "AF (Before Dec 2022) - Less than 10 years";
-            case "AF_BEFORE_2022_GTE_120":
-                return "AF (Before Dec 2022) - 10 years or more";
-            case "AF_AFTER_2022_LT_240":
-                return "AF (After Dec 2022) - Less than 20 years";
-            case "AF_AFTER_2022_GTE_240":
-                return "AF (After Dec 2022) - 20 years or more";
-
-            default:
-                return rule.getRuleCode().replace("_", " ");
-        }
-    }
+            })
+            .flatMap(List::stream)
+            .toList();
+}
 
     private Integer calculateMonthsBetween(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null)

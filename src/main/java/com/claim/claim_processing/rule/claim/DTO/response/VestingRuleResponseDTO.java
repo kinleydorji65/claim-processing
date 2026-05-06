@@ -2,6 +2,9 @@ package com.claim.claim_processing.rule.claim.DTO.response;
 
 import java.util.List;
 
+import com.claim.claim_processing.common.DTO.response.claim.VestingRefundTypeResponseDto;
+import com.claim.claim_processing.rule.claim.DTO.contribution.EligibleBenefitComponentDTO;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,31 +15,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VestingRuleResponseDTO {
-    
-    // Basic Eligibility
-    private boolean eligible;
     private String ruleCode;
-    private String ruleName;
-    
-    // Core Result
-    private String refundType;                   // "LUMPSUM", "OPTION", "PENSION"
-    private String payoutResult;                 // "LUMPSUM", "PENSION_OR_LUMPSUM_OPTION", "PENSION_ONLY"
-    
-    // Vesting Details (for UI display)
-    private String vestingStatus;                // "FULLY_VESTED", "PARTIALLY_VESTED", "NOT_VESTED"
-    private Integer totalVestingMonths;
-    private Integer requiredVestingMonths;
-    
-    // Messages
-    private String message;
     private String remarks;
     
-    // For UI Decision Making
-    private List<String> availableOptions;       // ["LUMPSUM"] or ["PENSION", "LUMPSUM"]
+    // Core Result
+    private List<VestingRefundTypeResponseDto> refundType;                   // "LUMPSUM", "OPTION", "PENSION"
+    private String payoutResult;                 // "LUMPSUM", "PENSION_OR_LUMPSUM_OPTION", "PENSION_ONLY"
     
-    // Computed field (not stored, calculated on demand)
-    public boolean hasOption() {
-        return "OPTION".equals(refundType) || 
-               "PENSION_OR_LUMPSUM_OPTION".equals(payoutResult);
-    }
+    private Integer totalVestingMonths;
+    private Integer requiredVestingMonths;
+    private List<EligibleBenefitComponentDTO> categoryBenefits;   // For category-based rules
 }

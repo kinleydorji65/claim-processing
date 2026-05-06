@@ -81,13 +81,6 @@ public class ClaimVestingRuleMasterController {
         return ResponseEntity.ok(service.getByRuleTypeId(ruleTypeId));
     }
 
-    @GetMapping("/cutoff/{cutoffId}")
-    public ResponseEntity<List<ClaimVestingRuleResponseDto>> getByCutoff(
-            @PathVariable Long cutoffId) {
-
-        return ResponseEntity.ok(service.getByCutoffId(cutoffId));
-    }
-
     // =========================
     // DELETE
     // =========================

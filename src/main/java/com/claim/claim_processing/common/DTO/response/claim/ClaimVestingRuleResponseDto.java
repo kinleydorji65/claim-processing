@@ -22,8 +22,6 @@ public class ClaimVestingRuleResponseDto {
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
 
-    private String refundType;
-
     private Integer minVestingMonths;
     private Integer maxVestingMonths;
 
@@ -31,9 +29,7 @@ public class ClaimVestingRuleResponseDto {
 
     private String payoutResult;
 
-    private ClaimVestingCutoffResponseDto cutoff;
-
-    private VestingRefundTypeResponseDto refund;
+    private VestingRefundTypeResponseDto refundType;
     private RuleTypeResponseDto ruleType;
 
 

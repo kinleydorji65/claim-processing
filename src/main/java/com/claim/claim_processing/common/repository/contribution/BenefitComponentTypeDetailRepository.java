@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeDetail;
 
-public interface BenefitComponentDetailRepository extends JpaRepository<BenefitComponentTypeDetail, Long> {
+public interface BenefitComponentTypeDetailRepository extends JpaRepository<BenefitComponentTypeDetail, Long> {
 
     List<BenefitComponentTypeDetail> findByBenefitComponentType_Id(Long benefitComponentTypeId);
 

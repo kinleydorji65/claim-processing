@@ -40,8 +40,13 @@ public class ClaimVestingRuleMaster {
     @Column(name = "EFFECTIVE_TO")
     private LocalDate effectiveTo;
 
-    @Column(name = "REFUND_TYPE", length = 50)
-    private String refundType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "REFUND_ID",
+            referencedColumnName = "ID",
+            foreignKey = @ForeignKey(name = "FK_VESTING_RULE_REFUND_TYPE")
+    )
+    private VestingRefundType refundType;
 
     @Column(name = "MIN_VESTING_MONTHS")
     private Integer minVestingMonths;
@@ -54,21 +59,6 @@ public class ClaimVestingRuleMaster {
 
     @Column(name = "PAYOUT_RESULT", length = 50)
     private String payoutResult;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "CUTOFF_ID",
-            referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_VESTING_RULE_CUTOFF")
-    )
-    private ClaimVestingCutoffMaster cutoff;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "REFUND_ID",
-            referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_REFUND_TYPE_TYPE"))
-    private VestingRefundType refund;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(

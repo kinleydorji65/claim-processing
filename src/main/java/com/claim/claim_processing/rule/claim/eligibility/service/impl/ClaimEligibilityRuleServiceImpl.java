@@ -17,7 +17,7 @@ import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategory
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityCategoryMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityComponentMapRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimEligibilityRepository;
-import com.claim.claim_processing.common.repository.contribution.BenefitComponentDetailRepository;
+import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeDetailRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
@@ -40,7 +40,7 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
     private final ClaimEligibilityComponentMapRepository componentMapRepository;
     private final ClaimEligibilityPreviewMapper previewMapper;
     private final MemberContributionService memberContributionService;
-    private final BenefitComponentDetailRepository benefitComponentTypeDetailRepository;
+    private final BenefitComponentTypeDetailRepository benefitComponentTypeDetailRepository;
     private final AgencyCategoryRepository agencyCategoryRepository;
     private static final String PENSION_CODE = "PENSION";
 

@@ -18,8 +18,6 @@ public interface ClaimVestingRuleMasterMapper {
     // ENTITY → RESPONSE DTO
     // =========================
     @Mapping(source = "category", target = "category")
-    @Mapping(source = "cutoff", target = "cutoff")
-    @Mapping(source = "refund", target = "refund")
     @Mapping(source = "ruleType", target = "ruleType")
     ClaimVestingRuleResponseDto toDto(ClaimVestingRuleMaster entity);
 
@@ -31,8 +29,7 @@ public interface ClaimVestingRuleMasterMapper {
     // =========================
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", ignore = true)
-    @Mapping(target = "cutoff", ignore = true)
-    @Mapping(target = "refund", ignore = true)
+    @Mapping(target = "refundType", ignore = true)
     @Mapping(target = "ruleType", ignore = true)
 
     @Mapping(target = "isActive", ignore = true)
@@ -48,8 +45,7 @@ public interface ClaimVestingRuleMasterMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", ignore = true)
-    @Mapping(target = "cutoff", ignore = true)
-    @Mapping(target = "refund", ignore = true)
+    @Mapping(target = "refundType", ignore = true)
     @Mapping(target = "ruleType", ignore = true)
 
     @Mapping(target = "createdAt", ignore = true)
