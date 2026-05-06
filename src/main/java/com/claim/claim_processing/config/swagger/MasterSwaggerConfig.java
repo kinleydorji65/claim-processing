@@ -196,7 +196,8 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                 .group("Master - Contribution Master Management")
                 .pathsToMatch(
                         "/api/claim/masters/schemes/**",
-                        "/api/benefit-component-types/**"
+                        "/api/benefit-component-types/**",
+                        "/api/benefit-component-details/**"
                 )
                 .displayName("Contribution Master APIs")
                 .addOperationCustomizer((operation, handlerMethod) -> {
