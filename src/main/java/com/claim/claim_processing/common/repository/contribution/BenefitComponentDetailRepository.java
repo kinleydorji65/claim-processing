@@ -1,11 +1,10 @@
 package com.claim.claim_processing.common.repository.contribution;
 
-import java.util.List;
-
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeDetail;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeDetail;
+import java.util.List;
 
 public interface BenefitComponentDetailRepository extends JpaRepository<BenefitComponentTypeDetail, Long> {
 

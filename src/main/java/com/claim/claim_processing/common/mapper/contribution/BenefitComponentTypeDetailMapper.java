@@ -14,27 +14,27 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface BenefitComponentTypeDetailMapper {
 
-    // =============================================
-    // TO RESPONSE DTO
-    // =============================================
-    @Mapping(source = "benefitComponentType", target = "benefitComponentType", qualifiedByName = "mapBenefitComponentType")
-    @Mapping(source = "component", target = "components", qualifiedByName = "mapComponent")
+    // =========================
+    // ENTITY → RESPONSE DTO
+    // =========================
+    @Mapping(source = "benefitComponentType", target = "benefitComponentType")
+    @Mapping(source = "component", target = "components")
     BenefitComponentDetailResponseDto toResponseDto(BenefitComponentTypeDetail entity);
 
     List<BenefitComponentDetailResponseDto> toResponseDtoList(List<BenefitComponentTypeDetail> entities);
 
-    // =============================================
-    // TO ENTITY (CREATE)
-    // =============================================
+    // =========================
+    // DTO → ENTITY (CREATE)
+    // =========================
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "benefitComponentType", ignore = true)
     @Mapping(target = "component", ignore = true)
     @Mapping(target = "isActive", ignore = true)
     BenefitComponentTypeDetail toEntity(BenefitComponentDetailRequestDto dto);
 
-    // =============================================
+    // =========================
     // UPDATE ENTITY
-    // =============================================
+    // =========================
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "benefitComponentType", ignore = true)
@@ -43,11 +43,11 @@ public interface BenefitComponentTypeDetailMapper {
     void updateEntityFromDto(BenefitComponentDetailRequestDto dto,
                              @MappingTarget BenefitComponentTypeDetail entity);
 
-    // =============================================
-    // NAMED MAPPERS (FK HANDLING)
-    // =============================================
-    @Named("mapBenefitComponentType")
-    static BenefitComponentTypeResponseDto mapBenefitComponentType(BenefitComponentTypeMaster entity) {
+    // =========================
+    // FK MAPPERS (AUTO USED BY MAPSTRUCT)
+    // =========================
+
+    default BenefitComponentTypeResponseDto map(BenefitComponentTypeMaster entity) {
         if (entity == null) return null;
 
         return BenefitComponentTypeResponseDto.builder()
@@ -56,8 +56,7 @@ public interface BenefitComponentTypeDetailMapper {
                 .build();
     }
 
-    @Named("mapComponent")
-    static ComponentResponseDto mapComponent(ComponentMaster entity) {
+    default ComponentResponseDto map(ComponentMaster entity) {
         if (entity == null) return null;
 
         return ComponentResponseDto.builder()
