@@ -241,11 +241,54 @@ public class MasterSwaggerConfig implements SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("Master - Status Master Management")
                 .pathsToMatch(
-                        "/api/claim/approval-status/**"
+                        "/api/claim/approval-status/**",
+                        "/api/claim/calculation-status/**",
+                        "/api/claim/final-payable-review-status/**",
+                        "/api/claim/payment-line-status/**",
+                        "/api/claim/posting-entry-status/**",
+                        "/api/claim/posting-status/**",
+                        "/api/claim/rent-clearance-status/**",
+                        "/api/claim/reversal-status/**",
+                        "/api/claim/rule-evaluation-status/**",
+                        "/api/claim/tax-deposit-status/**",
+                        "/api/claim/verification-status/**"
                 )
                 .displayName("Status Master APIs")
                 .addOperationCustomizer((operation, handlerMethod) -> {
                     operation.setTags(Collections.singletonList("Status Master"));
+                    return operation;
+                })
+                .build();
+    }
+
+    // Wrong remittance Master Management APIs
+    @Bean
+    public GroupedOpenApi remittanceMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Master - Remittance Master Management")
+                .pathsToMatch(
+                        "/api/claim/wrong-remittance-error-type/**",
+                        "/api/claim/masters/remittance-reasons/**"
+                )
+                .displayName("Remittance Master APIs")
+                .addOperationCustomizer((operation, handlerMethod) -> {
+                    operation.setTags(Collections.singletonList("Remittance Master"));
+                    return operation;
+                })
+                .build();
+    }
+
+    // Unclaimed Master Management APIs
+    @Bean
+    public GroupedOpenApi unclaimedMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Master - Unclaimed Master Management")
+                .pathsToMatch(
+                        "/api/claim/unclaimed-type/**"
+                )
+                .displayName("Unclaimed Master APIs")
+                .addOperationCustomizer((operation, handlerMethod) -> {
+                    operation.setTags(Collections.singletonList("Unclaimed Master"));
                     return operation;
                 })
                 .build();

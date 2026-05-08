@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.DTO.request.statusMaster;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 @Data
@@ -12,4 +13,5 @@ public class VerificationStatusRequestDto {
     private String name;
     private String description;
     private Integer displayOrder;
+    private ActivityEnum isActive;
 }
