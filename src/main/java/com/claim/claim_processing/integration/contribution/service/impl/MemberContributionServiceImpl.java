@@ -80,6 +80,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             // service period
             .totalContributionMonths(120)
             .totalContributionYears(10)
+            .totalNonContributionMonths(5)
             .contributionStartDate(LocalDate.of(2015, 1, 1))
             .contributionEndDate(LocalDate.of(2025, 1, 1))
 
