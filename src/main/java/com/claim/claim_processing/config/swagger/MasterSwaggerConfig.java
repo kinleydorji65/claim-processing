@@ -21,225 +21,195 @@ public class MasterSwaggerConfig implements SwaggerConfig {
         );
     }
 
-    // Beneficiary Management APIs
-    @Bean
-    public GroupedOpenApi beneficiaryMastersApi() {
-        return createGroupedApi(
-            "Master - Beneficiary Management",
-            "Beneficiary APIs",
-            "/api/claim/masters/claimant-types/**",
-            "Claimant Type"
-        );
-    }
-
-    // Claim Master Management APIs
-    @Bean
-    public GroupedOpenApi claimMasterApi() {
-        return createGroupedApi(
-            "Master - Claim Master Management",
-            "Claim Master APIs",
-            "/api/claim/masters/account-types/**",
-            "Claim Master"
-        );
-    }
-
-    // Claim Eligibility Management APIs
-    @Bean
-    public GroupedOpenApi claimEligibilityApi() {
-        return createGroupedApi(
-            "Master - Claim Eligibility Management",
-            "Claim Eligibility APIs",
-            "/api/claim-eligibility-category-map/**",
-            "Claim Eligibility"
-        );
-    }
-
-    // Claim Lapsed Refund Management APIs
-    @Bean
-    public GroupedOpenApi claimLapsedRefundApi() {
-        return createGroupedApi(
-            "Master - Claim Lapsed Refund Management",
-            "Claim Lapsed Refund APIs",
-            "/api/master/claim-eligibility-component-map/**",
-            "Claim Lapsed Refund"
-        );
-    }
-
-    // Claim Type Master Management API (First one - renamed)
-    @Bean
-    public GroupedOpenApi claimTypeMasterApiV1() {
-        return createGroupedApi(
-            "Master - Claim Type Master Management V1",
-            "Claim Type Master APIs V1",
-            "/api/master/claim/lapsed-refund/**",
-            "Claim Type Master V1"
-        );
-    }
-
-    // Claim Vesting Rules Management API (First one - renamed)
-    @Bean
-    public GroupedOpenApi claimVestingRulesApiV1() {
-        return createGroupedApi(
-            "Master - Claim Vesting Rules Management V1",
-            "Claim Vesting Rules APIs V1",
-            "/api/master/claims/lapsed-refund-component-map/**",
-            "Claim Vesting Rules V1"
-        );
-    }
-
-    // Claim Reserve Accounts Management API (First one - renamed)
-    @Bean
-    public GroupedOpenApi claimReserveAccountsApiV1() {
-        return createGroupedApi(
-            "Master - Claim Reserve Accounts Management V1",
-            "Claim Reserve Accounts APIs V1",
-            "/api/claims/lapsed-refund-category-map/**",
-            "Claim Reserve Accounts V1"
-        );
-    }
-
-    // Claim Type Master Management API (Second one)
-    @Bean
-    public GroupedOpenApi claimTypeMasterApiV2() {
-        return createGroupedApi(
-            "Master - Claim Type Master Management V2",
-            "Claim Type Master APIs V2",
-            "/api/master/claims/type-master/**",
-            "Claim Type Master V2"
-        );
-    }
-
-    // Claim Vesting Rules Management API (Second one)
-    @Bean
-    public GroupedOpenApi claimVestingRulesApiV2() {
-        return createGroupedApi(
-            "Master - Claim Vesting Rules Management V2",
-            "Claim Vesting Rules APIs V2",
-            "/api/claim/vesting-rules/**",
-            "Claim Vesting Rules V2"
-        );
-    }
-
-    // Claim Reserve Accounts Management API (Second one)
-    @Bean
-    public GroupedOpenApi claimReserveAccountsApiV2() {
-        return createGroupedApi(
-            "Master - Claim Reserve Accounts Management V2",
-            "Claim Reserve Accounts APIs V2",
-            "/api/claims/reserve-accounts/**",
-            "Claim Reserve Accounts V2"
-        );
-    }
-
-    // Partial Master Management APIs
     @Bean
     public GroupedOpenApi partialMasterApi() {
         return GroupedOpenApi.builder()
-                .group("Master - Partial Master Management")
+                .group("Partial Master Management")
                 .pathsToMatch(
-                        "/api/claim/masters/partial-reasons/**",
-                        "/api/claim/masters/partial-causes/**",
-                        "/api/claim/masters/disaster-types/**",
                         "/api/claim/masters/business-types/**",
+                        "/api/claim/masters/disaster-types/**",
                         "/api/claim/masters/house-purchase-types/**",
-                        "/api/claim/partial-withdrawal-causes/**",
+                        "/api/claim/masters/partial-causes/**",
+                        "/api/partial-reasons/**",
                         "/api/claim/partial-withdrawal-accumulations/**",
-                        "/api/partial-withdrawal-benefit-map/**"
+                        "/api/partial-withdrawal-benefit-map/**",
+                        "/api/claim/partial-withdrawal-causes/**",
+                        "/api/claim/partial-withdrawal-rule/**"
                 )
                 .displayName("Partial Master APIs")
-                .addOperationCustomizer((operation, handlerMethod) -> {
-                    operation.setTags(Collections.singletonList("Partial Master"));
-                    return operation;
-                })
                 .build();
     }
 
-    // Refund Master Management APIs
     @Bean
-    public GroupedOpenApi refundMasterApi() {
+    public GroupedOpenApi claimMasterApi() {
         return GroupedOpenApi.builder()
-                .group("Master - Refund Master Management")
+                .group("Claim Master Management")
                 .pathsToMatch(
-                        "/api/claim/masters/refund-scopes/**",
-                        "/api/claim/masters/excess-refund-reasons/**"
+                        "/api/claim/masters/account-types/**",
+                        "/api/claim/masters/cessation-types/**",
+                        "/api/claim/masters/claim-circumstances/**",
+                        "/api/claim-eligibility-category-map/**",
+                        "/api/master/claim-eligibility-component-map/**",
+                        "/api/claim/masters/claim-eligibilities/**",
+                        "/api/claims/lapsed-refund-category-map/**",
+                        "/api/master/claims/lapsed-refund-component-map/**",
+                        "/api/master/claim/lapsed-refund/**",
+                        "/api/master/claims/type-master/**",
+                        "/api/claim/master/claim-type-rule-map/**",
+                        "/api/claim/vesting-rules/**",
+                        "/api/claims/reserve-accounts/**",
+                        "/api/claim/masters/termination-reasons/**",
+                        "/api/master/vesting-refund-type/**"
                 )
-                .displayName("Refund Master APIs")
-                .addOperationCustomizer((operation, handlerMethod) -> {
-                    operation.setTags(Collections.singletonList("Refund Master"));
-                    return operation;
-                })
+                .displayName("Claim Master APIs")
                 .build();
     }
 
-    // Common Master Management APIs
     @Bean
     public GroupedOpenApi commonMasterApi() {
         return GroupedOpenApi.builder()
-                .group("Master - Common Master Management")
+                .group("Common Master Management")
                 .pathsToMatch(
+                        "/api/claim/master/action-master/**",
                         "/api/claim/masters/claim-sources/**",
-                        "/api/claim/masters/submission-channels/**",
-                        "/api/claim/master/action-master/**"
+                        "/api/claim/master/claim-type-deduction-map/**",
+                        "/api/claim/master/common/decisions/**",
+                        "/api/common/deduction-reference-types/**",
+                        "/api/claim/master/deduction-types/**",
+                        "/api/claim/common/interest-method/**",
+                        "/api/claim/common/payee-type/**",
+                        "/api/claim/common/review-status/**",
+                        "/api/claim/common/rule-type/**",
+                        "/api/claim/common/stage/**",
+                        "/api/claim/masters/submission-channels/**"
                 )
                 .displayName("Common Master APIs")
-                .addOperationCustomizer((operation, handlerMethod) -> {
-                    operation.setTags(Collections.singletonList("Common Master"));
-                    return operation;
-                })
                 .build();
     }
 
-    // Contribution Master Management APIs
     @Bean
-    public GroupedOpenApi contributionApi() {
+    public GroupedOpenApi contributionMasterApi() {
         return GroupedOpenApi.builder()
-                .group("Master - Contribution Master Management")
+                .group("Contribution Master Management")
                 .pathsToMatch(
-                        "/api/claim/masters/schemes/**",
+                        "/api/benefit-component-details/**",
                         "/api/benefit-component-types/**",
-                        "/api/benefit-component-details/**"
+                        "/api/claim/masters/schemes/**"
                 )
                 .displayName("Contribution Master APIs")
-                .addOperationCustomizer((operation, handlerMethod) -> {
-                    operation.setTags(Collections.singletonList("Contribution Master"));
-                    return operation;
-                })
                 .build();
     }
 
-    // Calculation Master Management APIs
+    @Bean
+    public GroupedOpenApi beneficiaryMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Beneficiary Master Management")
+                .pathsToMatch(
+                        "/api/claim/masters/claimant-types/**"
+                )
+                .displayName("Beneficiary Master APIs")
+                .build();
+    }
+
     @Bean
     public GroupedOpenApi calculationMasterApi() {
         return GroupedOpenApi.builder()
-                .group("Master - Calculation Master Management")
+                .group("Calculation Master Management")
                 .pathsToMatch(
                         "/api/claim/master/calculation-stage/**",
                         "/api/claim/master/calculation-trigger-type/**"
                 )
                 .displayName("Calculation Master APIs")
-                .addOperationCustomizer((operation, handlerMethod) -> {
-                    operation.setTags(Collections.singletonList("Calculation Master"));
-                    return operation;
-                })
                 .build();
     }
 
-    // Claim Vesting Rules Management API (Second one)
     @Bean
-    public GroupedOpenApi claimVestingRulesApiV3() {
-        return createGroupedApi(
-                "Master - Claim Vesting Rules Management V3",
-                "Claim Vesting Rules APIs V3",
-                "/api/master/vesting-refund-type/**",
-                "Claim Vesting Rules V2"
-        );
+    public GroupedOpenApi legalMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Legal Master Management")
+                .pathsToMatch(
+                        "/api/claim/masters/recovery-reasons/**"
+                )
+                .displayName("Legal Master APIs")
+                .build();
     }
 
-    // Status Master Management APIs
+    @Bean
+    public GroupedOpenApi paymentMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Payment Master Management")
+                .pathsToMatch(
+                        "/api/claim/master/payment-mode/**",
+                        "/api/claim/master/payment-status/**"
+                )
+                .displayName("Payment Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi loanMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Loan Master Management")
+                .pathsToMatch(
+                        "/api/claim/loan-master/loan-adjustment-priority/**",
+                        "/api/claim/loan-master/loan-status/**",
+                        "/api/claim/loan-master/loan-type/**"
+                )
+                .displayName("Loan Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi refundMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Refund Master Management")
+                .pathsToMatch(
+                        "/api/claim/masters/excess-refund-reasons/**",
+                        "/api/claim/masters/refund-scopes/**"
+                )
+                .displayName("Refund Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi specialCaseMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Special Case Master Management")
+                .pathsToMatch(
+                        "/api/claim/masters/special-case-authorities/**",
+                        "/api/claim/master/special-case-refund-reason/**"
+                )
+                .displayName("Special Case Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi wrongRemittanceMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("Wrong Remittance Master Management")
+                .pathsToMatch(
+                        "/api/claim/wrong-remittance-error-type/**",
+                        "/api/claim/masters/remittance-reasons/**"
+                )
+                .displayName("Wrong Remittance Master APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi arrRuleMasterApi() {
+        return GroupedOpenApi.builder()
+                .group("ARR RULE Management")
+                .pathsToMatch(
+                        "/api/claim/credit-methods/**"
+                )
+                .displayName("ARR RULE Master APIs")
+                .build();
+    }
+
     @Bean
     public GroupedOpenApi statusMasterApi() {
         return GroupedOpenApi.builder()
-                .group("Master - Status Master Management")
+                .group("Status Master Management")
                 .pathsToMatch(
                         "/api/claim/approval-status/**",
                         "/api/claim/calculation-status/**",
@@ -254,43 +224,6 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/verification-status/**"
                 )
                 .displayName("Status Master APIs")
-                .addOperationCustomizer((operation, handlerMethod) -> {
-                    operation.setTags(Collections.singletonList("Status Master"));
-                    return operation;
-                })
-                .build();
-    }
-
-    // Wrong remittance Master Management APIs
-    @Bean
-    public GroupedOpenApi remittanceMasterApi() {
-        return GroupedOpenApi.builder()
-                .group("Master - Remittance Master Management")
-                .pathsToMatch(
-                        "/api/claim/wrong-remittance-error-type/**",
-                        "/api/claim/masters/remittance-reasons/**"
-                )
-                .displayName("Remittance Master APIs")
-                .addOperationCustomizer((operation, handlerMethod) -> {
-                    operation.setTags(Collections.singletonList("Remittance Master"));
-                    return operation;
-                })
-                .build();
-    }
-
-    // Unclaimed Master Management APIs
-    @Bean
-    public GroupedOpenApi unclaimedMasterApi() {
-        return GroupedOpenApi.builder()
-                .group("Master - Unclaimed Master Management")
-                .pathsToMatch(
-                        "/api/claim/unclaimed-type/**"
-                )
-                .displayName("Unclaimed Master APIs")
-                .addOperationCustomizer((operation, handlerMethod) -> {
-                    operation.setTags(Collections.singletonList("Unclaimed Master"));
-                    return operation;
-                })
                 .build();
     }
 }
