@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 
@@ -119,28 +120,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
         List<MemberContributionSummary.ComponentGroup> groups = contributionSummary.getComponentGroups();
 
-        BigDecimal totalPfAmount = groups.stream()
-                .filter(g -> g.getCode().startsWith("PF_"))
-                .filter(g -> !g.getCode().contains("I"))
-                .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalPensionAmount = groups.stream()
-                .filter(g -> g.getCode().startsWith("PC_"))
-                .filter(g -> !g.getCode().contains("I"))
-                .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalPfInterestAmount = groups.stream()
-                .filter(g -> g.getCode().startsWith("PF_"))
-                .filter(g -> g.getCode().contains("I"))
-                .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalPensionInterestAmount = groups.stream()
-        .filter(g -> g.getCode().startsWith("PC_"))
-        .filter(g -> g.getCode().contains("I")) // include interest
-        .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
 
         // 2. Filter contribution components
         List<ClaimCalculationResponseDTO.ComponentBalanceDTO> components = groups
@@ -162,6 +142,30 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 .filter(c -> c.getCode().startsWith("PC_") && !c.getCode().contains("I"))
                 .findFirst()
                 .isPresent();
+        
+        BigDecimal totalPfAmount = components.stream()
+        .filter(c -> c.getCode().startsWith("PF_"))
+        .filter(c -> !c.getCode().contains("I"))
+        .map(ClaimCalculationResponseDTO.ComponentBalanceDTO::getAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalPensionAmount = components.stream()
+                .filter(c -> c.getCode().startsWith("PC_"))
+                .filter(c -> !c.getCode().contains("I"))
+                .map(ClaimCalculationResponseDTO.ComponentBalanceDTO::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalPfInterestAmount = groups.stream()
+                .filter(g -> g.getCode().startsWith("PF_"))
+                .filter(g -> g.getCode().contains("I"))
+                .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+        BigDecimal totalPensionInterestAmount = groups.stream()
+                .filter(g -> g.getCode().startsWith("PC_"))
+                .filter(g -> g.getCode().contains("I")) // include interest
+                .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return ClaimCalculationResponseDTO.builder()
                 .memberCode(contributionSummary.getMemberCode())
@@ -177,6 +181,15 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 .totalPensionInterestAmount(totalPensionInterestAmount)
                 .noOfYearInService(serviceYears)
                 .components(components)
+                .build();
+    }
+
+    public ApiResponseDTO<BigDecimal> getTotalAccumulationAmount(String memberCode){
+        MemberContributionSummary contributionSummary = memberContributionService
+                .getContributionSummary(memberCode);
+        BigDecimal totalAccumulationAmount = contributionSummary.getTotalBalance();
+        return ApiResponseDTO.<BigDecimal>builder()
+                .data(totalAccumulationAmount)
                 .build();
     }
 }

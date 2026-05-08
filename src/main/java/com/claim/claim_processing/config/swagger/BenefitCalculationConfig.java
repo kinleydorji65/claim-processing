@@ -11,7 +11,7 @@ public class BenefitCalculationConfig implements SwaggerConfig {
         return createGroupedApi(
             "Benefit Calculation Management",
             "Benefit Calculation Detail APIs",
-            "/api/claim-processing/benefit-calculation",
+            "/api/claim-processing/benefit-calculation/**",
             "Benefit Calculation"
         );
     }
