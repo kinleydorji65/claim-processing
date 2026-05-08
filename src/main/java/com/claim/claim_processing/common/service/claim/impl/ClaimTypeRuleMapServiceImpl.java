@@ -1,6 +1,5 @@
 package com.claim.claim_processing.common.service.claim.impl;
 
-import com.claim.claim_processing.common.DTO.request.claim.ClaimTypeRuleMapRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimTypeRuleMapResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
@@ -30,63 +29,50 @@ public class ClaimTypeRuleMapServiceImpl implements ClaimTypeRuleMapService {
     /* ========================= CREATE ========================= */
 
     @Override
-    public ClaimTypeRuleMapResponseDto create(ClaimTypeRuleMapRequestDto requestDto) {
-
-        validateRequest(requestDto);
-
-        validateDuplicate(requestDto.getClaimTypeId(), requestDto.getRuleId());
-
+    public ClaimTypeRuleMapResponseDto create(List<Long> ruleIds, Long claimTypeId) {
         ClaimTypeRuleMap entity = new ClaimTypeRuleMap();
-        entity.setClaimType(getClaimType(requestDto.getClaimTypeId()));
-        entity.setRuleType(getRuleType(requestDto.getRuleId()));
-
-        return mapper.toResponseDto(repository.save(entity));
+        for (Long ruleId : ruleIds) {
+            validateDuplicate(claimTypeId, ruleId);
+            validateRequest(ruleId, claimTypeId);
+            
+            entity.setClaimType(getClaimType(claimTypeId));
+            entity.setRuleType(getRuleType(ruleId));
+            repository.save(entity);
+        }
+        return mapper.toResponseDto(entity);
     }
 
     /* ========================= UPDATE ========================= */
 
     @Override
-    public ClaimTypeRuleMapResponseDto update(Long id, ClaimTypeRuleMapRequestDto requestDto) {
+    public ClaimTypeRuleMapResponseDto update(List<Long> ruleIds, Long claimTypeId) {
+        ClaimTypeRuleMap existing = null;
+                for (Long ruleId : ruleIds) {
+                    validateRequest(ruleId, claimTypeId);
 
-        validateRequest(requestDto);
+        existing = getEntity(ruleId, claimTypeId);
 
-        ClaimTypeRuleMap existing = getEntity(id);
-
-        boolean isDuplicate = repository.existsByClaimTypeIdAndRuleTypeId(
-                requestDto.getClaimTypeId(),
-                requestDto.getRuleId()
+            boolean isDuplicate = repository.existsByClaimTypeIdAndRuleTypeId(
+                claimTypeId,
+                ruleId
         );
 
         boolean isSameRecord =
-                existing.getClaimType().getId().equals(requestDto.getClaimTypeId()) &&
-                        existing.getRuleType().getId().equals(requestDto.getRuleId());
+                existing.getClaimType().getId().equals(claimTypeId) &&
+                        existing.getRuleType().getId().equals(ruleId);
 
         if (isDuplicate && !isSameRecord) {
             throw ClaimException.conflict("Mapping already exists");
         }
 
-        existing.setClaimType(getClaimType(requestDto.getClaimTypeId()));
-        existing.setRuleType(getRuleType(requestDto.getRuleId()));
+        existing.setClaimType(getClaimType(claimTypeId));
+        existing.setRuleType(getRuleType(ruleId));
+        }
+        
 
         return mapper.toResponseDto(repository.save(existing));
     }
 
-    /* ========================= READ ========================= */
-
-    @Override
-    @Transactional(readOnly = true)
-    public ClaimTypeRuleMapResponseDto getById(Long id) {
-        return mapper.toResponseDto(getEntity(id));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ClaimTypeRuleMapResponseDto> getAll() {
-        return repository.findAll()
-                .stream()
-                .map(mapper::toResponseDto)
-                .toList();
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -115,16 +101,16 @@ public class ClaimTypeRuleMapServiceImpl implements ClaimTypeRuleMapService {
     /* ========================= DELETE ========================= */
 
     @Override
-    public void delete(Long id) {
-        repository.delete(getEntity(id));
+    public void delete(Long ruleId, Long claimTypeId) {
+        repository.delete(getEntity(ruleId, claimTypeId));
     }
 
     /* ========================= PRIVATE HELPERS ========================= */
 
-    private ClaimTypeRuleMap getEntity(Long id) {
-        return repository.findById(id)
+    private ClaimTypeRuleMap getEntity(Long ruleId, Long claimTypeId) {
+        return repository.findByClaimType_IdAndRuleType_Id(claimTypeId, ruleId)
                 .orElseThrow(() ->
-                        ClaimException.resourceNotFound("Claim Type Rule Map", String.valueOf(id))
+                        ClaimException.resourceNotFound("Claim Type Rule Map", "Claim Type ID: " + claimTypeId + ", Rule ID: " + ruleId)
                 );
     }
 
@@ -160,18 +146,17 @@ public class ClaimTypeRuleMapServiceImpl implements ClaimTypeRuleMapService {
         }
     }
 
-    private void validateRequest(ClaimTypeRuleMapRequestDto dto) {
+    private void validateRequest(Long ruleId, Long claimTypeId) {
 
-        if (dto == null) {
-            throw ClaimException.badRequest("Request cannot be null");
+        if (ruleId == null) {
+            throw ClaimException.badRequest("Rule ID cannot be null");
         }
 
-        if (dto.getClaimTypeId() == null) {
-            throw ClaimException.singleValidationError("claimTypeId", "Required field");
+        if (claimTypeId == null) {
+            throw ClaimException.badRequest("Claim Type ID cannot be null");
         }
-
-        if (dto.getRuleId() == null) {
+    
             throw ClaimException.singleValidationError("ruleId", "Required field");
-        }
+        
     }
 }

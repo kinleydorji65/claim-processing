@@ -70,6 +70,7 @@ public class MasterSwaggerConfig implements SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("Common Master Management")
                 .pathsToMatch(
+                        "/api/claim/common/rule-type/**",
                         "/api/claim/master/action-master/**",
                         "/api/claim/masters/claim-sources/**",
                         "/api/claim/master/claim-type-deduction-map/**",
@@ -79,7 +80,6 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/common/interest-method/**",
                         "/api/claim/common/payee-type/**",
                         "/api/claim/common/review-status/**",
-                        "/api/claim/common/rule-type/**",
                         "/api/claim/common/stage/**",
                         "/api/claim/masters/submission-channels/**"
                 )

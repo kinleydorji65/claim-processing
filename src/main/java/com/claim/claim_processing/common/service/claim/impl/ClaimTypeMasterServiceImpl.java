@@ -2,11 +2,18 @@ package com.claim.claim_processing.common.service.claim.impl;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimTypeMasterRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimTypeMasterResponseDto;
+import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
+import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
+import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.claim.ClaimTypeMasterMapper;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeMasterRepository;
+import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
+import com.claim.claim_processing.common.repository.common.RuleTypeRepository;
 import com.claim.claim_processing.common.service.claim.ClaimTypeMasterService;
+import com.claim.claim_processing.common.service.claim.ClaimTypeRuleMapService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +25,7 @@ import java.util.List;
 public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
 
     private final ClaimTypeMasterRepository repository;
+    private final ClaimTypeRuleMapService claimTypeRuleMapService;
     private final ClaimTypeMasterMapper mapper;
 
     // -----------------------------
@@ -39,7 +47,9 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
             entity.setIsActive(ActivityEnum.Y);
         }
 
-        return mapper.toResponseDto(repository.save(entity));
+        repository.save(entity);
+        claimTypeRuleMapService.create(requestDto.getRuleTypeIds(), entity.getId());
+        return mapper.toResponseDto(entity);
     }
 
     // -----------------------------
@@ -54,7 +64,7 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
         mapper.updateEntityFromDto(requestDto, entity);
 
         entity.setUpdatedAt(LocalDateTime.now());
-
+        claimTypeRuleMapService.update(requestDto.getRuleTypeIds(), entity.getId());
         return mapper.toResponseDto(repository.save(entity));
     }
 

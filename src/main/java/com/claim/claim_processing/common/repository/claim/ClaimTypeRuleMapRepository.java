@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ClaimTypeRuleMapRepository extends JpaRepository<ClaimTypeRuleMap, Long> {
@@ -14,4 +15,5 @@ public interface ClaimTypeRuleMapRepository extends JpaRepository<ClaimTypeRuleM
     List<ClaimTypeRuleMap> findByRuleTypeId(Long ruleTypeId);
 
     boolean existsByClaimTypeIdAndRuleTypeId(Long claimTypeId, Long ruleTypeId);
+    Optional<ClaimTypeRuleMap> findByClaimType_IdAndRuleType_Id(Long claimTypeId, Long ruleTypeId);
 }
