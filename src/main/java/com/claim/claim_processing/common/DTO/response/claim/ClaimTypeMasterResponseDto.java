@@ -1,9 +1,11 @@
 package com.claim.claim_processing.common.DTO.response.claim;
 
+import com.claim.claim_processing.common.DTO.response.common.RuleTypeResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -28,4 +30,6 @@ public class ClaimTypeMasterResponseDto {
     private LocalDateTime updatedAt;
 
     private String updatedBy;
+
+    private List<RuleTypeResponseDto> ruleTypes;
 }

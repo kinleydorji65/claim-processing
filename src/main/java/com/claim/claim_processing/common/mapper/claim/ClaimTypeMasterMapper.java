@@ -2,22 +2,40 @@ package com.claim.claim_processing.common.mapper.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimTypeMasterRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimTypeMasterResponseDto;
+import com.claim.claim_processing.common.DTO.response.common.RuleTypeResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
+import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
 import org.mapstruct.*;
-
 import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface ClaimTypeMasterMapper {
-
-    // -----------------------------
+    
     // ENTITY -> RESPONSE DTO
-    // -----------------------------
-    @Mapping(source = "isActive", target = "isActive")
-    ClaimTypeMasterResponseDto toResponseDto(ClaimTypeMaster entity);
+    @Mapping(target = "ruleTypes", expression = "java(mapRuleTypes(entity, mappings))")
+    ClaimTypeMasterResponseDto toResponseDto(ClaimTypeMaster entity, @Context List<ClaimTypeRuleMap> mappings);
 
-    List<ClaimTypeMasterResponseDto> toResponseDtoList(List<ClaimTypeMaster> entities);
+    default List<RuleTypeResponseDto> mapRuleTypes(ClaimTypeMaster entity, @Context List<ClaimTypeRuleMap> mappings) {
+        return mappings.stream()
+                .filter(map -> map.getClaimType().getId().equals(entity.getId()))
+                .map(map -> RuleTypeResponseDto.builder()
+                        .id(map.getRuleType().getId())
+                        .code(map.getRuleType().getCode())
+                        .name(map.getRuleType().getName())
+                        .description(map.getRuleType().getDescription())
+                        .displayOrder(map.getRuleType().getDisplayOrder())
+                        .isActive(map.getRuleType().getIsActive())
+                        .createdAt(map.getRuleType().getCreatedAt())
+                        .createdBy(map.getRuleType().getCreatedBy())
+                        .updatedAt(map.getRuleType().getUpdatedAt())
+                        .updatedBy(map.getRuleType().getUpdatedBy())
+                        .build())
+                .toList();
+    }
 
+     // -----------------------------
+     // ENTITY -> RESPONSE DTO (without rules)
+     // -----------------------------
     // -----------------------------
     // REQUEST DTO -> ENTITY (CREATE)
     // -----------------------------
@@ -40,4 +58,6 @@ public interface ClaimTypeMasterMapper {
     @Mapping(target = "updatedBy", source = "updatedBy")
     @Mapping(source = "isActive", target = "isActive")
     void updateEntityFromDto(ClaimTypeMasterRequestDto dto, @MappingTarget ClaimTypeMaster entity);
+    
+    
 }

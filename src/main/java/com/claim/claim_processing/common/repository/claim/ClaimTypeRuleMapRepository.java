@@ -2,6 +2,8 @@ package com.claim.claim_processing.common.repository.claim;
 
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,4 +18,14 @@ public interface ClaimTypeRuleMapRepository extends JpaRepository<ClaimTypeRuleM
 
     boolean existsByClaimTypeIdAndRuleTypeId(Long claimTypeId, Long ruleTypeId);
     Optional<ClaimTypeRuleMap> findByClaimType_IdAndRuleType_Id(Long claimTypeId, Long ruleTypeId);
+    List<ClaimTypeRuleMap> findByClaimType_IdAndRuleType_IdIn(Long claimTypeId, List<Long> ruleTypeIds);
+
+    @Query("SELECT DISTINCT ctrm FROM ClaimTypeRuleMap ctrm " +
+           "LEFT JOIN FETCH ctrm.ruleType " +
+           "WHERE ctrm.claimType.id = :claimTypeId")
+    List<ClaimTypeRuleMap> findByClaimTypeIdWithRules(@Param("claimTypeId") Long claimTypeId);
+
+    @Query("SELECT ctrm FROM ClaimTypeRuleMap ctrm " +
+           "WHERE ctrm.claimType.id IN :claimTypeIds")
+    List<ClaimTypeRuleMap> findByClaimTypeIdIn(@Param("claimTypeIds") List<Long> claimTypeIds);
 }

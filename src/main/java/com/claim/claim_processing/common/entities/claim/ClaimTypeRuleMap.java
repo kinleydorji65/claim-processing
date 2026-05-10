@@ -4,8 +4,6 @@ import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(
         name = "CLAIM_TYPE_RULE_MAP",

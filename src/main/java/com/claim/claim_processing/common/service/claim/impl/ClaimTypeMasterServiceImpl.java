@@ -2,7 +2,6 @@ package com.claim.claim_processing.common.service.claim.impl;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimTypeMasterRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimTypeMasterResponseDto;
-import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
@@ -12,7 +11,7 @@ import com.claim.claim_processing.common.repository.claim.ClaimTypeMasterReposit
 import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
 import com.claim.claim_processing.common.repository.common.RuleTypeRepository;
 import com.claim.claim_processing.common.service.claim.ClaimTypeMasterService;
-import com.claim.claim_processing.common.service.claim.ClaimTypeRuleMapService;
+import com.claim.claim_processing.exceptions.ClaimException;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,8 @@ import java.util.List;
 public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
 
     private final ClaimTypeMasterRepository repository;
-    private final ClaimTypeRuleMapService claimTypeRuleMapService;
+    private final ClaimTypeRuleMapRepository claimTypeRuleMapRepository;
+    private final RuleTypeRepository ruleTypeRepository;
     private final ClaimTypeMasterMapper mapper;
 
     // -----------------------------
@@ -48,8 +48,8 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
         }
 
         repository.save(entity);
-        claimTypeRuleMapService.create(requestDto.getRuleTypeIds(), entity.getId());
-        return mapper.toResponseDto(entity);
+        List<ClaimTypeRuleMap> mappings = mapRulesToClaimType(entity, requestDto.getRuleTypeIds());
+        return mapper.toResponseDto(entity, mappings);
     }
 
     // -----------------------------
@@ -64,8 +64,8 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
         mapper.updateEntityFromDto(requestDto, entity);
 
         entity.setUpdatedAt(LocalDateTime.now());
-        claimTypeRuleMapService.update(requestDto.getRuleTypeIds(), entity.getId());
-        return mapper.toResponseDto(repository.save(entity));
+        List<ClaimTypeRuleMap> mappings = mapRulesToClaimType(entity, requestDto.getRuleTypeIds());
+        return mapper.toResponseDto(repository.save(entity), mappings);
     }
 
     // -----------------------------
@@ -76,7 +76,8 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
         ClaimTypeMaster entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Claim Type not found with id: " + id));
 
-        return mapper.toResponseDto(entity);
+        List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(entity.getId());
+        return mapper.toResponseDto(entity, mappings);
     }
 
     // -----------------------------
@@ -86,8 +87,9 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
     public ClaimTypeMasterResponseDto getByCode(String code) {
         ClaimTypeMaster entity = repository.findByCode(code)
                 .orElseThrow(() -> new RuntimeException("Claim Type not found with code: " + code));
-
-        return mapper.toResponseDto(entity);
+        
+        List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(entity.getId());
+        return mapper.toResponseDto(entity, mappings);
     }
 
     // -----------------------------
@@ -95,7 +97,11 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
     // -----------------------------
     @Override
     public List<ClaimTypeMasterResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
+        List<ClaimTypeMasterResponseDto> responseDtos = repository.findAll().stream().map(entity -> {
+            List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(entity.getId());
+            return mapper.toResponseDto(entity, mappings);
+        }).toList();
+        return responseDtos;
     }
 
     // -----------------------------
@@ -103,7 +109,11 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
     // -----------------------------
     @Override
     public List<ClaimTypeMasterResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActive(ActivityEnum.Y));
+        List<ClaimTypeMasterResponseDto> responseDtos = repository.findByIsActive(ActivityEnum.Y).stream().map(entity -> {
+            List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(entity.getId());
+            return mapper.toResponseDto(entity, mappings);
+        }).toList();
+        return responseDtos;
     }
 
     // -----------------------------
@@ -116,4 +126,48 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
 
         repository.delete(entity);
     }
+
+    private List<ClaimTypeRuleMap> mapRulesToClaimType(ClaimTypeMaster claimType, List<Long> ruleTypeIds) {
+        if (ruleTypeIds == null || ruleTypeIds.isEmpty()) {
+            throw ClaimException.notFound("Rule Type IDs cannot be null or empty");
+        }
+
+        List<ClaimTypeRuleMap> existingMappings = 
+        claimTypeRuleMapRepository.findByClaimType_IdAndRuleType_IdIn(claimType.getId(), ruleTypeIds);
+
+        List<ClaimTypeRuleMap> mappings;
+        if (existingMappings.isEmpty()) {
+            mappings = ruleTypeIds.stream().map(ruleId -> {
+                
+                validateDuplicate(claimType.getId(), ruleId);
+                return ClaimTypeRuleMap.builder()
+                        .claimType(claimType)
+                        .ruleType(getRuleType(ruleId))
+                        .build();
+            }).toList();
+        }else {
+            mappings = existingMappings.stream()
+                    .filter(map -> ruleTypeIds.contains(map.getRuleType().getId()))
+                    .map(map -> {
+                        map.setClaimType(map.getClaimType());
+                        map.setRuleType(getRuleType(map.getRuleType().getId()));
+                        return map;
+                    })
+                    .toList();
+        }
+        
+        return mappings;
+    }
+
+    private void validateDuplicate(Long claimTypeId, Long ruleId) {
+        if (claimTypeRuleMapRepository.existsByClaimTypeIdAndRuleTypeId(claimTypeId, ruleId)) {
+            throw ClaimException.conflict("Mapping already exists");
+        }
+    }
+
+    private RuleTypeMaster getRuleType(Long id) {
+        return ruleTypeRepository.findById(id)
+                .orElseThrow(() ->ClaimException.resourceNotFound("Rule Type", String.valueOf(id)));
+    }
+
 }

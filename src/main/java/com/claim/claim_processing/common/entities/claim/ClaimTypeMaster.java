@@ -45,7 +45,7 @@ public class ClaimTypeMaster {
 
     @Column(name = "UPDATED_BY", length = 100)
     private String updatedBy;
-
+    
     @PrePersist
     public void prePersist() {
         if (this.isActive == null) {
