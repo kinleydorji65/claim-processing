@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.claim.impl;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimTypeMasterRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimTypeMasterResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
@@ -32,7 +33,7 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
     // CREATE
     // -----------------------------
     @Override
-    public ClaimTypeMasterResponseDto create(ClaimTypeMasterRequestDto requestDto) {
+    public ApiResponseDTO<ClaimTypeMasterResponseDto> create(ClaimTypeMasterRequestDto requestDto) {
 
         if (repository.existsByCode(requestDto.getCode())) {
             throw new RuntimeException("Claim Type code already exists: " + requestDto.getCode());
@@ -49,14 +50,14 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
 
         repository.save(entity);
         List<ClaimTypeRuleMap> mappings = mapRulesToClaimType(entity, requestDto.getRuleTypeIds());
-        return mapper.toResponseDto(entity, mappings);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity, mappings));
     }
 
     // -----------------------------
     // UPDATE
     // -----------------------------
     @Override
-    public ClaimTypeMasterResponseDto update(Long id, ClaimTypeMasterRequestDto requestDto) {
+    public ApiResponseDTO<ClaimTypeMasterResponseDto> update(Long id, ClaimTypeMasterRequestDto requestDto) {
 
         ClaimTypeMaster entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Claim Type not found with id: " + id));
@@ -65,66 +66,68 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
 
         entity.setUpdatedAt(LocalDateTime.now());
         List<ClaimTypeRuleMap> mappings = mapRulesToClaimType(entity, requestDto.getRuleTypeIds());
-        return mapper.toResponseDto(repository.save(entity), mappings);
+        return ApiResponseDTO.success(mapper.toResponseDto(repository.save(entity), mappings));
     }
 
     // -----------------------------
     // GET BY ID
     // -----------------------------
     @Override
-    public ClaimTypeMasterResponseDto getById(Long id) {
+    public ApiResponseDTO<ClaimTypeMasterResponseDto> getById(Long id) {
         ClaimTypeMaster entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Claim Type not found with id: " + id));
 
         List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(entity.getId());
-        return mapper.toResponseDto(entity, mappings);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity, mappings));
     }
 
     // -----------------------------
     // GET BY CODE (IMPORTANT FOR RULE ENGINE)
     // -----------------------------
     @Override
-    public ClaimTypeMasterResponseDto getByCode(String code) {
+    public ApiResponseDTO<ClaimTypeMasterResponseDto> getByCode(String code) {
         ClaimTypeMaster entity = repository.findByCode(code)
                 .orElseThrow(() -> new RuntimeException("Claim Type not found with code: " + code));
         
         List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(entity.getId());
-        return mapper.toResponseDto(entity, mappings);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity, mappings));
     }
 
     // -----------------------------
     // GET ALL
     // -----------------------------
     @Override
-    public List<ClaimTypeMasterResponseDto> getAll() {
+    public ApiResponseDTO<List<ClaimTypeMasterResponseDto>> getAll() {
         List<ClaimTypeMasterResponseDto> responseDtos = repository.findAll().stream().map(entity -> {
             List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(entity.getId());
             return mapper.toResponseDto(entity, mappings);
         }).toList();
-        return responseDtos;
+        return ApiResponseDTO.success(responseDtos);
     }
 
     // -----------------------------
     // GET ALL ACTIVE
     // -----------------------------
     @Override
-    public List<ClaimTypeMasterResponseDto> getAllActive() {
+    public ApiResponseDTO<List<ClaimTypeMasterResponseDto>> getAllActive() {
         List<ClaimTypeMasterResponseDto> responseDtos = repository.findByIsActive(ActivityEnum.Y).stream().map(entity -> {
             List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(entity.getId());
             return mapper.toResponseDto(entity, mappings);
         }).toList();
-        return responseDtos;
+        return ApiResponseDTO.success(responseDtos);
     }
 
     // -----------------------------
     // DELETE (soft delete recommended in future)
     // -----------------------------
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
         ClaimTypeMaster entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Claim Type not found with id: " + id));
 
         repository.delete(entity);
+        return ApiResponseDTO.success("Claim Type Deactivated successfully");
+
     }
 
     private List<ClaimTypeRuleMap> mapRulesToClaimType(ClaimTypeMaster claimType, List<Long> ruleTypeIds) {

@@ -16,6 +16,9 @@ public class ClaimEligibilityCreateRequestDto {
     private Long schemeTypeId;
     private Long ruleTypeId;
 
+    private String memberCategoryId;
+    private Long benefitTypeId;
+
     private Integer minContributionMonths;
     private Integer maxContributionMonths;
 

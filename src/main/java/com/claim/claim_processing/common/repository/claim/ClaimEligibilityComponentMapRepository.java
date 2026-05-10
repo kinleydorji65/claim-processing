@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ClaimEligibilityComponentMapRepository
@@ -31,7 +32,8 @@ public interface ClaimEligibilityComponentMapRepository
     // -------------------------------
     // FIND BY RULE AND CATEGORY MAP (using relationships)
     // -------------------------------
-    List<ClaimEligibilityComponentMap> findByRule_IdAndClaimEligibilityCategoryMap_Id(Long ruleId, Long categoryMapId);
+    Optional<ClaimEligibilityComponentMap> findByRule_IdAndClaimEligibilityCategoryMap_Id(Long ruleId, Long categoryMapId);
+    List<ClaimEligibilityComponentMap> findByRule_IdAndClaimEligibilityCategoryMap_IdIn(Long ruleId, List<Long> categoryMapIds);
     
     List<ClaimEligibilityComponentMap> findByRule_IdAndClaimEligibilityCategoryMap_IdAndIsActive(
         Long ruleId, Long categoryMapId, ActivityEnum isActive);

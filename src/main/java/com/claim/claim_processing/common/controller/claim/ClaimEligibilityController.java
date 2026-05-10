@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimEligibilityCreateRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimEligibilityResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.ClaimEligibilityUpdateRequestDto;
 import com.claim.claim_processing.common.service.claim.ClaimEligibilityService;
@@ -26,47 +27,53 @@ public class ClaimEligibilityController {
     private final ClaimEligibilityService claimEligibilityService;
 
     @GetMapping
-    public ResponseEntity<List<ClaimEligibilityResponseDto>> getAllActive() {
-        return ResponseEntity.ok(claimEligibilityService.getAllActive());
+    public ResponseEntity<?> getAllActive() {
+        ApiResponseDTO<List<ClaimEligibilityResponseDto>> response = claimEligibilityService.getAllActive();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ClaimEligibilityResponseDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(claimEligibilityService.getById(id));
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        ApiResponseDTO<ClaimEligibilityResponseDto> response = claimEligibilityService.getById(id);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<ClaimEligibilityResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody ClaimEligibilityCreateRequestDto requestDto) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(claimEligibilityService.create(requestDto));
+        ApiResponseDTO<ClaimEligibilityResponseDto> response = claimEligibilityService.create(requestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ClaimEligibilityResponseDto> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody ClaimEligibilityUpdateRequestDto requestDto) {
-        return ResponseEntity.ok(claimEligibilityService.update(id, requestDto));
+        ApiResponseDTO<ClaimEligibilityResponseDto> response = claimEligibilityService.update(id, requestDto);
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<Void> deactivate(@PathVariable Long id) {
-        claimEligibilityService.deactivate(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deactivate(@PathVariable Long id) {
+        ApiResponseDTO<String> response = claimEligibilityService.deactivate(id);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/by-circumstance/{id}")
-    public ResponseEntity<List<ClaimEligibilityResponseDto>> getByCircumstance(@PathVariable Long id) {
-        return ResponseEntity.ok(claimEligibilityService.getByClaimCircumstanceId(id));
+    public ResponseEntity<?> getByCircumstance(@PathVariable Long id) {
+        ApiResponseDTO<List<ClaimEligibilityResponseDto>> response = claimEligibilityService.getByClaimCircumstanceId(id);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/by-scheme/{id}")
-    public ResponseEntity<List<ClaimEligibilityResponseDto>> getByScheme(@PathVariable Long id) {
-        return ResponseEntity.ok(claimEligibilityService.getBySchemeTypeId(id));
+    public ResponseEntity<?> getByScheme(@PathVariable Long id) {
+        ApiResponseDTO<List<ClaimEligibilityResponseDto>> response = claimEligibilityService.getBySchemeTypeId(id);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/by-rule-type/{id}")
-    public ResponseEntity<List<ClaimEligibilityResponseDto>> getByRuleType(@PathVariable Long id) {
-        return ResponseEntity.ok(claimEligibilityService.getByRuleTypeId(id));
+    public ResponseEntity<?> getByRuleType(@PathVariable Long id) {
+        ApiResponseDTO<List<ClaimEligibilityResponseDto>> response = claimEligibilityService.getByRuleTypeId(id);
+        return ResponseEntity.ok(response);
     }
 }
