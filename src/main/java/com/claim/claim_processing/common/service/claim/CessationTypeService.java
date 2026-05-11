@@ -1,24 +1,25 @@
 package com.claim.claim_processing.common.service.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.CessationTypeCreateRequestDto;
-import com.claim.claim_processing.common.DTO.update.claim.CessationTypeUpdateRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.CessationTypeResponseDto;
+import com.claim.claim_processing.common.DTO.update.claim.CessationTypeUpdateRequestDto;
 
 import java.util.List;
 
 public interface CessationTypeService {
 
-    CessationTypeResponseDto create(CessationTypeCreateRequestDto dto);
+    ApiResponseDTO<List<CessationTypeResponseDto>> getAll();
 
-    CessationTypeResponseDto update(Long id, CessationTypeUpdateRequestDto dto);
+    ApiResponseDTO<List<CessationTypeResponseDto>> getActive();
 
-    CessationTypeResponseDto getById(Long id);
+    ApiResponseDTO<CessationTypeResponseDto> getById(Long id);
 
-    List<CessationTypeResponseDto> getAll();
+    ApiResponseDTO<List<CessationTypeResponseDto>> getByClaimCircumstance(Long circumstanceId);
 
-    List<CessationTypeResponseDto> getActive();
+    ApiResponseDTO<CessationTypeResponseDto> create(CessationTypeCreateRequestDto requestDto);
 
-    List<CessationTypeResponseDto> getByClaimCircumstance(Long circumstanceId);
+    ApiResponseDTO<CessationTypeResponseDto> update(Long id, CessationTypeUpdateRequestDto requestDto);
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

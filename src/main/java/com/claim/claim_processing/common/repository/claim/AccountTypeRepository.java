@@ -14,4 +14,5 @@ public interface AccountTypeRepository extends JpaRepository<AccountTypeMaster, 
     boolean existsByCode(String code);
     List<AccountTypeMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
     Optional<AccountTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
+    List<AccountTypeMaster> findByIsActive(ActivityEnum isActive);
 }

@@ -16,6 +16,6 @@ public interface CessationTypeRepository extends JpaRepository<CessationTypeMast
     boolean existsByCode(String code);
     List<CessationTypeMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
     Optional<CessationTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
-    List<CessationTypeMaster> findByClaimCircumstance(ClaimCircumstanceMaster claimCircumstance);
+    List<CessationTypeMaster> findByClaimCircumstanceId(Long claimCircumstanceId);
     List<CessationTypeMaster> findByIsActive(ActivityEnum isActive);
 }

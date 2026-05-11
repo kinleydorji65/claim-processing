@@ -22,4 +22,3 @@ public interface ClaimEligibilityRepository extends JpaRepository<ClaimEligibili
     List<ClaimEligibilityMaster> findByRuleType_Id(Long ruleTypeId);
 
 }
-

@@ -1,11 +1,11 @@
 package com.claim.claim_processing.common.controller.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.AccountTypeCreateRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.AccountTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.AccountTypeUpdateRequestDto;
 import com.claim.claim_processing.common.service.claim.AccountTypeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,33 +18,66 @@ public class AccountTypeController {
 
     private final AccountTypeService accountTypeService;
 
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
     @GetMapping
-    public ResponseEntity<List<AccountTypeResponseDto>> getAllActive() {
-        return ResponseEntity.ok(accountTypeService.getAllActive());
+    public ResponseEntity<?> getAllActive() {
+
+        ApiResponseDTO<List<AccountTypeResponseDto>> response =
+                accountTypeService.getAllActive();
+
+        return ResponseEntity.ok(response);
     }
 
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<AccountTypeResponseDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(accountTypeService.getById(id));
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+
+        ApiResponseDTO<AccountTypeResponseDto> response =
+                accountTypeService.getById(id);
+
+        return ResponseEntity.ok(response);
     }
 
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @PostMapping
-    public ResponseEntity<AccountTypeResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody AccountTypeCreateRequestDto requestDto) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(accountTypeService.create(requestDto));
+
+        ApiResponseDTO<AccountTypeResponseDto> response =
+                accountTypeService.create(requestDto);
+
+        return ResponseEntity.ok(response);
     }
 
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
     @PutMapping("/{id}")
-    public ResponseEntity<AccountTypeResponseDto> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody AccountTypeUpdateRequestDto requestDto) {
-        return ResponseEntity.ok(accountTypeService.update(id, requestDto));
+
+        ApiResponseDTO<AccountTypeResponseDto> response =
+                accountTypeService.update(id, requestDto);
+
+        return ResponseEntity.ok(response);
     }
 
+    // -----------------------------
+    // DEACTIVATE
+    // -----------------------------
     @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<Void> deactivate(@PathVariable Long id) {
-        accountTypeService.deactivate(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deactivate(@PathVariable Long id) {
+
+        ApiResponseDTO<String> response =
+                accountTypeService.deactivate(id);
+
+        return ResponseEntity.ok(response);
     }
 }
