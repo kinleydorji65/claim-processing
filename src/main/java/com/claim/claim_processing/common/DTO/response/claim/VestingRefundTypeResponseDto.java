@@ -1,9 +1,12 @@
 package com.claim.claim_processing.common.DTO.response.claim;
 
+import com.claim.claim_processing.common.DTO.response.contribution.BenefitComponentTypeResponseDto;
+import com.claim.claim_processing.common.DTO.response.contribution.ComponentResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,4 +25,6 @@ public class VestingRefundTypeResponseDto {
 
     private String updatedBy;
     private LocalDateTime updatedAt;
+
+    private List<BenefitComponentTypeResponseDto> benefitComponentTypes;
 }

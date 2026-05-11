@@ -2,13 +2,19 @@ package com.claim.claim_processing.common.service.claim.impl;
 
 import com.claim.claim_processing.common.DTO.request.claim.VestingRefundTypeRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.VestingRefundTypeResponseDto;
+import com.claim.claim_processing.common.entities.claim.VestingRefundBenefitMap;
 import com.claim.claim_processing.common.entities.claim.VestingRefundType;
+import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeMaster;
 import com.claim.claim_processing.common.mapper.claim.VestingRefundTypeMapper;
+import com.claim.claim_processing.common.repository.claim.VestingRefundBenefitMapRepository;
 import com.claim.claim_processing.common.repository.claim.VestingRefundTypeRepository;
+import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeMasterRepository;
 import com.claim.claim_processing.common.service.claim.VestingRefundTypeService;
 import com.claim.claim_processing.exceptions.ClaimException;
 
 import lombok.RequiredArgsConstructor;
+
+import org.hibernate.mapping.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +25,8 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
 
     private final VestingRefundTypeRepository repository;
     private final VestingRefundTypeMapper mapper;
+    private final VestingRefundBenefitMapRepository benefitMapRepository;
+    private final BenefitComponentTypeMasterRepository benefitComponentTypeMasterRepository;
 
     @Override
     public VestingRefundTypeResponseDto create(VestingRefundTypeRequestDto requestDto) {
@@ -30,8 +38,39 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
         }
 
         VestingRefundType entity = mapper.toEntity(requestDto);
+        repository.save(entity);
+        List<BenefitComponentTypeMaster> benefitComponentTypeMasters = mapBenefitComponents(entity, requestDto.getBenefitComponentIds());
+        return mapper.toDto(entity, benefitComponentTypeMasters);
+    }
 
-        return mapper.toDto(repository.save(entity));
+    private List<BenefitComponentTypeMaster> mapBenefitComponents(VestingRefundType entity, List<Long> componentIds) {
+    return componentIds.stream().map(componentId -> {
+        VestingRefundBenefitMap benefitComponent = benefitMapRepository
+            .findByVestingRefundType_IdAndBenefitComponentType_Id(entity.getId(), componentId)
+            .orElse(null);
+            
+        BenefitComponentTypeMaster componentMaster;
+        
+        if (benefitComponent == null) {
+            componentMaster = getBenefitComponent(componentId);
+            benefitComponent = VestingRefundBenefitMap.builder()
+                    .vestingRefundType(entity)
+                    .benefitComponentType(componentMaster)
+                    .build();
+            benefitMapRepository.save(benefitComponent);
+        } else {
+            componentMaster = getBenefitComponent(componentId);
+            benefitComponent.setBenefitComponentType(componentMaster);
+            benefitMapRepository.save(benefitComponent);
+        }
+        
+        return componentMaster;  // ← This was missing!
+    }).toList();
+}
+
+    private BenefitComponentTypeMaster getBenefitComponent(Long componentId){
+        return benefitComponentTypeMasterRepository.findById(componentId)
+                .orElseThrow(() -> ClaimException.notFound("BenefitComponentTypeMaster not found: " + componentId));
     }
 
     @Override
@@ -52,8 +91,9 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
         }
 
         mapper.updateEntityFromDto(requestDto, existing);
-
-        return mapper.toDto(repository.save(existing));
+        VestingRefundType entity = repository.save(existing);
+        List<BenefitComponentTypeMaster> benefitComponentTypeMasters = mapBenefitComponents(entity, requestDto.getBenefitComponentIds());
+        return mapper.toDto(entity, benefitComponentTypeMasters);
     }
 
     @Override
@@ -63,8 +103,11 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
                 .orElseThrow(() ->
                         ClaimException.notFound("VestingRefundType not found: " + id)
                 );
-
-        return mapper.toDto(entity);
+        List<BenefitComponentTypeMaster> benefitComponentTypeMasters = benefitMapRepository.findByVestingRefundType_Id(entity.getId())
+                .stream()
+                .map(VestingRefundBenefitMap::getBenefitComponentType)
+                .toList();
+        return mapper.toDto(entity, benefitComponentTypeMasters);
     }
 
     @Override
@@ -72,7 +115,13 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
 
         return repository.findAll()
                 .stream()
-                .map(mapper::toDto)
+                .map(entity -> {
+                    List<BenefitComponentTypeMaster> benefitComponentTypeMasters = benefitMapRepository.findByVestingRefundType_Id(entity.getId())
+                            .stream()
+                            .map(VestingRefundBenefitMap::getBenefitComponentType)
+                            .toList();
+                    return mapper.toDto(entity, benefitComponentTypeMasters);
+                })
                 .toList();
     }
 

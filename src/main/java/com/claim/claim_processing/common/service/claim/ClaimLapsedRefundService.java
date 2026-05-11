@@ -4,7 +4,6 @@ import com.claim.claim_processing.common.DTO.request.claim.ClaimLapsedRefundRequ
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimLapsedRefundResponseDto;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public interface ClaimLapsedRefundService {
