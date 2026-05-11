@@ -1,78 +1,137 @@
 package com.claim.claim_processing.common.service.claim.impl;
 
-import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
 import com.claim.claim_processing.common.DTO.request.claim.AccountTypeCreateRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.AccountTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.AccountTypeUpdateRequestDto;
+import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.claim.AccountTypeMapper;
 import com.claim.claim_processing.common.repository.claim.AccountTypeRepository;
 import com.claim.claim_processing.common.service.claim.AccountTypeService;
+import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AccountTypeServiceImpl implements AccountTypeService {
 
-    private final AccountTypeRepository accountTypeRepository;
-    private final AccountTypeMapper accountTypeMapper;
+    private final AccountTypeRepository repository;
+    private final AccountTypeMapper mapper;
 
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public List<AccountTypeResponseDto> getAllActive() {
-        List<AccountTypeMaster> accountTypes =
-                accountTypeRepository.findByIsActiveOrderByNameAsc(ActivityEnum.Y);
+    public ApiResponseDTO<List<AccountTypeResponseDto>> getAllActive() {
 
-        return accountTypeMapper.toResponseDtoList(accountTypes);
+        List<AccountTypeResponseDto> responseDtos =
+                repository.findByIsActive(ActivityEnum.Y)
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
+
+        return ApiResponseDTO.success(responseDtos);
     }
 
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public AccountTypeResponseDto getById(Long id) {
-        AccountTypeMaster accountType = accountTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Account type not found with id: " + id));
+    public ApiResponseDTO<AccountTypeResponseDto> getById(Long id) {
 
-        return accountTypeMapper.toResponseDto(accountType);
+        AccountTypeMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Account Type",
+                                String.valueOf(id)
+                        ));
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
+        );
     }
 
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @Override
-    public AccountTypeResponseDto create(AccountTypeCreateRequestDto requestDto) {
-        if (accountTypeRepository.existsByCode(requestDto.getCode())) {
-            throw new RuntimeException("Account type code already exists: " + requestDto.getCode());
+    public ApiResponseDTO<AccountTypeResponseDto> create(
+            AccountTypeCreateRequestDto requestDto) {
+
+        if (repository.existsByCode(requestDto.getCode())) {
+            throw ClaimException.conflict(
+                    "Account Type code already exists: "
+                            + requestDto.getCode()
+            );
         }
 
-        AccountTypeMaster accountType = accountTypeMapper.toEntity(requestDto);
-        accountType.setCreatedBy("SYSTEM");
+        AccountTypeMaster entity = mapper.toEntity(requestDto);
 
-        AccountTypeMaster savedAccountType = accountTypeRepository.save(accountType);
-        return accountTypeMapper.toResponseDto(savedAccountType);
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        if (entity.getIsActive() == null) {
+            entity.setIsActive(ActivityEnum.Y);
+        }
+
+        AccountTypeMaster savedEntity = repository.save(entity);
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(savedEntity)
+        );
     }
 
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
     @Override
-    public AccountTypeResponseDto update(Long id, AccountTypeUpdateRequestDto requestDto) {
-        AccountTypeMaster existingAccountType = accountTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Account type not found with id: " + id));
+    public ApiResponseDTO<AccountTypeResponseDto> update(
+            Long id,
+            AccountTypeUpdateRequestDto requestDto) {
 
-        accountTypeMapper.updateEntityFromDto(requestDto, existingAccountType);
-        existingAccountType.setUpdatedBy("SYSTEM");
+        AccountTypeMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Account Type",
+                                String.valueOf(id)
+                        ));
 
-        AccountTypeMaster updatedAccountType = accountTypeRepository.save(existingAccountType);
-        return accountTypeMapper.toResponseDto(updatedAccountType);
+        mapper.updateEntityFromDto(requestDto, entity);
+
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        AccountTypeMaster updatedEntity = repository.save(entity);
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(updatedEntity)
+        );
     }
 
+    // -----------------------------
+    // DEACTIVATE
+    // -----------------------------
     @Override
-    public void deactivate(Long id) {
-        AccountTypeMaster existingAccountType = accountTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Account type not found with id: " + id));
+    public ApiResponseDTO<String> deactivate(Long id) {
 
-        existingAccountType.setIsActive(ActivityEnum.N);
-        existingAccountType.setUpdatedBy("SYSTEM");
+        AccountTypeMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Account Type",
+                                String.valueOf(id)
+                        ));
 
-        accountTypeRepository.save(existingAccountType);
+        entity.setIsActive(ActivityEnum.N);
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        repository.save(entity);
+
+        return ApiResponseDTO.success(
+                "Account Type deactivated successfully"
+        );
     }
 }
