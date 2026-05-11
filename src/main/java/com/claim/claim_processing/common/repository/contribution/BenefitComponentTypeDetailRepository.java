@@ -9,8 +9,10 @@ import java.util.List;
 public interface BenefitComponentTypeDetailRepository extends JpaRepository<BenefitComponentTypeDetail, Long> {
 
     List<BenefitComponentTypeDetail> findByBenefitComponentType_Id(Long benefitComponentTypeId);
+    List<BenefitComponentTypeDetail> findByBenefitComponentType_IdAndComponent_IdIn(Long benefitComponentTypeId, List<Long> componentIds);
 
     List<BenefitComponentTypeDetail> findByComponent_Id(Long componentId);
+    List<BenefitComponentTypeDetail> findByComponent_IdIn(List<Long> componentIds);
 
     List<BenefitComponentTypeDetail> findByIsActive(ActivityEnum isActive);
 }

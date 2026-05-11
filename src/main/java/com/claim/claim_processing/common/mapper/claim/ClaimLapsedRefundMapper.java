@@ -1,14 +1,11 @@
 package com.claim.claim_processing.common.mapper.claim;
 
-import com.claim.claim_processing.common.DTO.request.claim.ClaimEligibilityCreateRequestDto;
 import com.claim.claim_processing.common.DTO.request.claim.ClaimLapsedRefundRequestDto;
-import com.claim.claim_processing.common.DTO.response.claim.CessationTypeResponseDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimCircumstanceResponseDto;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimLapsedRefundResponseDto;
 import com.claim.claim_processing.common.DTO.response.common.RuleTypeResponseDto;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimCircumstanceMaster;
-import com.claim.claim_processing.common.entities.claim.ClaimEligibilityMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimLapsedRefundMaster;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeMaster;

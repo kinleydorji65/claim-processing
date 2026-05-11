@@ -1,5 +1,7 @@
 package com.claim.claim_processing.common.DTO.request.contribution;
 
+import java.util.List;
+
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
@@ -15,4 +17,6 @@ public class BenefitComponentTypeMasterRequestDto {
 
     private String createdBy;
     private String updatedBy;
+
+    private List<Long> componentIds;
 }

@@ -1,11 +1,11 @@
 package com.claim.claim_processing.common.controller.contribution;
 
 import com.claim.claim_processing.common.DTO.request.contribution.BenefitComponentTypeMasterRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.contribution.BenefitComponentTypeMasterResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.service.contribution.BenefitComponentTypeMasterService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,40 +22,43 @@ public class BenefitComponentTypeMasterController {
      * Create new record
      */
     @PostMapping
-    public ResponseEntity<BenefitComponentTypeMasterResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody BenefitComponentTypeMasterRequestDto requestDto
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(requestDto));
+        ApiResponseDTO<BenefitComponentTypeMasterResponseDto> response = service.create(requestDto);
+        return ResponseEntity.ok(response);
     }
 
     /**
      * Update existing record
      */
     @PutMapping("/{id}")
-    public ResponseEntity<BenefitComponentTypeMasterResponseDto> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody BenefitComponentTypeMasterRequestDto requestDto
     ) {
-        return ResponseEntity.ok(service.update(id, requestDto));
+        ApiResponseDTO<BenefitComponentTypeMasterResponseDto> response = service.update(id, requestDto);
+        return ResponseEntity.ok(response);
     }
 
     /**
      * Get by id
      */
     @GetMapping("/{id}")
-    public ResponseEntity<BenefitComponentTypeMasterResponseDto> getById(
+    public ResponseEntity<?> getById(
             @PathVariable Long id
     ) {
-        return ResponseEntity.ok(service.getById(id));
+        ApiResponseDTO<BenefitComponentTypeMasterResponseDto> response = service.getById(id);
+        return ResponseEntity.ok(response);
     }
 
     /**
      * Get all records
      */
     @GetMapping
-    public ResponseEntity<List<BenefitComponentTypeMasterResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+    public ResponseEntity<?> getAll() {
+        ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> response = service.getAll();
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -64,10 +67,11 @@ public class BenefitComponentTypeMasterController {
      * /api/benefit-component-types/status/Y
      */
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<BenefitComponentTypeMasterResponseDto>> getByStatus(
+    public ResponseEntity<?> getByStatus(
             @PathVariable ActivityEnum status
     ) {
-        return ResponseEntity.ok(service.getByStatus(status));
+        ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> response = service.getByStatus(status);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -76,20 +80,21 @@ public class BenefitComponentTypeMasterController {
      * /api/benefit-component-types/search?keyword=pension
      */
     @GetMapping("/search")
-    public ResponseEntity<List<BenefitComponentTypeMasterResponseDto>> searchByName(
+    public ResponseEntity<?> searchByName(
             @RequestParam String keyword
     ) {
-        return ResponseEntity.ok(service.searchByName(keyword));
+        ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> response = service.searchByName(keyword);
+        return ResponseEntity.ok(response);
     }
 
     /**
      * Soft delete (set inactive)
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(
+    public ResponseEntity<?> delete(
             @PathVariable Long id
     ) {
-        service.delete(id);
-        return ResponseEntity.ok("Record deactivated successfully.");
+        ApiResponseDTO<String> response = service.delete(id);
+        return ResponseEntity.ok(response);
     }
 }

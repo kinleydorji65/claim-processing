@@ -4,6 +4,9 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
+import org.hibernate.mapping.Component;
 
 @Data
 @NoArgsConstructor
@@ -21,4 +24,6 @@ public class BenefitComponentTypeMasterResponseDto {
 
     private LocalDateTime updatedAt;
     private String updatedBy;
+
+    private List<ComponentResponseDto> components;
 }
