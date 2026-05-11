@@ -76,7 +76,8 @@ public class MemberContributionServiceImpl implements MemberContributionService 
     return MemberContributionSummary.builder()
             .memberCode(memberCode) // KEEP SAME
             .schemeTypeId(1L)
-
+            .pfJoiningDate(LocalDate.of(2015, 1, 1))
+            .pensionJoiningDate(LocalDate.of(2015, 1, 1))
             // service period
             .totalContributionMonths(120)
             .totalContributionYears(10)

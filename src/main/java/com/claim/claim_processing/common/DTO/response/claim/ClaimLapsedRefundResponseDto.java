@@ -1,12 +1,15 @@
 package com.claim.claim_processing.common.DTO.response.claim;
 
+import com.claim.claim_processing.common.DTO.response.agency.AgencyCategoryResponseDto;
 import com.claim.claim_processing.common.DTO.response.common.RuleTypeResponseDto;
+import com.claim.claim_processing.common.DTO.response.contribution.BenefitComponentTypeMasterResponseDto;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -56,4 +59,7 @@ public class ClaimLapsedRefundResponseDto {
 
     private String updatedBy;
     private LocalDateTime updatedAt;
+
+    private List<AgencyCategoryResponseDto> agencyCategories;
+    private List<BenefitComponentTypeMasterResponseDto> benefitComponents;
 }

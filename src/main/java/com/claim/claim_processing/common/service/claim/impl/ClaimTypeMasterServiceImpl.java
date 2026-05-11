@@ -143,10 +143,12 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
             mappings = ruleTypeIds.stream().map(ruleId -> {
                 
                 validateDuplicate(claimType.getId(), ruleId);
-                return ClaimTypeRuleMap.builder()
+                ClaimTypeRuleMap claimTypeRuleMap = ClaimTypeRuleMap.builder()
                         .claimType(claimType)
                         .ruleType(getRuleType(ruleId))
                         .build();
+                claimTypeRuleMapRepository.save(claimTypeRuleMap);
+                return claimTypeRuleMap;
             }).toList();
         }else {
             mappings = existingMappings.stream()
@@ -154,6 +156,7 @@ public class ClaimTypeMasterServiceImpl implements ClaimTypeMasterService {
                     .map(map -> {
                         map.setClaimType(map.getClaimType());
                         map.setRuleType(getRuleType(map.getRuleType().getId()));
+                        claimTypeRuleMapRepository.save(map);
                         return map;
                     })
                     .toList();

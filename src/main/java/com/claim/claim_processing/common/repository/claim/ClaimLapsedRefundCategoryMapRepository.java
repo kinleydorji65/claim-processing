@@ -1,8 +1,6 @@
 package com.claim.claim_processing.common.repository.claim;
 
 import com.claim.claim_processing.common.entities.claim.ClaimLapsedRefundCategoryMap;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

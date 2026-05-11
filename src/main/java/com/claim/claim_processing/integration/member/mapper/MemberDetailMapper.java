@@ -49,7 +49,7 @@ protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberD
     responseDto.setMemberName(getFullName(memberDetail.getFirstName(), memberDetail.getMiddleName(), memberDetail.getLastName()));
     String identityTypeName = personIdentityRepository.findById(memberDetail.getIdentityTypeId()).orElseThrow(()-> ClaimException.notFound("Identy type not found with ID: " + memberDetail.getId())).getName();
     String employmentTypeName = employmentTypeRepository.findById(memberDetail.getWorkInfo().getEmploymentTypeId()).orElseThrow(()-> ClaimException.notFound("Employment type not found with ID: " + memberDetail.getId())).getEmploymentTypeName();
-    responseDto.setDateOfServiceJoiningDate(memberDetail.getEffectiveFrom());
+    responseDto.setDateOfServiceJoiningDate(memberDetail.getWorkInfo().getServiceJoiningDate());
     responseDto.setMemberCategory(getAgencyCategoryName(memberDetail.getAgencyCategoryId()));
     responseDto.setIdentityTypeName(identityTypeName);
     responseDto.setEmploymentTypeName(employmentTypeName);
@@ -58,6 +58,7 @@ protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberD
     responseDto.setMemberBanks(toMemberBankResponseList(memberDetail.getMemberBanks()));
     responseDto.setMemberNominees(toMemberNomineeResponseList(memberDetail.getMemberNominees()));
     responseDto.setMemberFamilies(toMemberFamilyResponseList(memberDetail.getMemberFamilies()));
+    responseDto.setSchemeTypeId(responseDto.getEmploymentTypeName().equals("Regular") ? 1L : 2L);
 }
 
 private String getAgencyCategoryName(String agencyCategoryId) {

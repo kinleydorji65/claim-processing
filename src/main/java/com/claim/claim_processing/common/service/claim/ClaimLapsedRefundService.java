@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimLapsedRefundRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimLapsedRefundResponseDto;
 
 import java.time.LocalDate;
@@ -11,29 +12,27 @@ public interface ClaimLapsedRefundService {
     // -------------------------------
     // CRUD
     // -------------------------------
-    ClaimLapsedRefundResponseDto create(ClaimLapsedRefundRequestDto dto);
+    ApiResponseDTO<ClaimLapsedRefundResponseDto> create(ClaimLapsedRefundRequestDto dto);
 
-    ClaimLapsedRefundResponseDto getById(Long id);
+    ApiResponseDTO<ClaimLapsedRefundResponseDto> getById(Long id);
 
-    List<ClaimLapsedRefundResponseDto> getAll();
+    ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> getAll();
 
-    ClaimLapsedRefundResponseDto update(Long id, ClaimLapsedRefundRequestDto dto);
+    ApiResponseDTO<ClaimLapsedRefundResponseDto> update(Long id, ClaimLapsedRefundRequestDto dto);
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 
     // -------------------------------
     // RULE ENGINE METHODS
     // -------------------------------
-    List<ClaimLapsedRefundResponseDto> getActiveRules();
+    ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> getActiveRules();
 
-    List<ClaimLapsedRefundResponseDto> getValidRulesByDate(LocalDate date);
-
-    ClaimLapsedRefundResponseDto getByRuleCode(String ruleCode);
+    ApiResponseDTO<ClaimLapsedRefundResponseDto> getByRuleCode(String ruleCode);
 
     // -------------------------------
     // FK FILTER METHODS (ADMIN/UI)
     // -------------------------------
-    List<ClaimLapsedRefundResponseDto> getByClaimCircumstance(Long claimCircumstanceId);
-    List<ClaimLapsedRefundResponseDto> getBySchemeType(Long schemeTypeId);
-    List<ClaimLapsedRefundResponseDto> getByRuleType(Long ruleTypeId);
+    ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> getByClaimCircumstance(Long claimCircumstanceId);
+    ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> getBySchemeType(Long schemeTypeId);
+    ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> getByRuleType(Long ruleTypeId);
 }

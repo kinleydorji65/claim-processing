@@ -30,7 +30,7 @@ public class ClaimTypeMasterController {
     // -----------------------------
     // UPDATE
     // -----------------------------
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody ClaimTypeMasterRequestDto requestDto) {

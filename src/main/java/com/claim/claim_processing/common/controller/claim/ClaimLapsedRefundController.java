@@ -1,13 +1,13 @@
 package com.claim.claim_processing.common.controller.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimLapsedRefundRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimLapsedRefundResponseDto;
 import com.claim.claim_processing.common.service.claim.ClaimLapsedRefundService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -21,40 +21,43 @@ public class ClaimLapsedRefundController {
     // CREATE
     // -------------------------------
     @PostMapping
-    public ResponseEntity<ClaimLapsedRefundResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody ClaimLapsedRefundRequestDto dto) {
 
-        return ResponseEntity.ok(service.create(dto));
+        ApiResponseDTO<ClaimLapsedRefundResponseDto> response = service.create(dto);
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // GET BY ID
     // -------------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<ClaimLapsedRefundResponseDto> getById(
+    public ResponseEntity<?> getById(
             @PathVariable Long id) {
 
-        return ResponseEntity.ok(service.getById(id));
+        ApiResponseDTO<ClaimLapsedRefundResponseDto> response = service.getById(id);
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // GET ALL
     // -------------------------------
     @GetMapping
-    public ResponseEntity<List<ClaimLapsedRefundResponseDto>> getAll() {
-
-        return ResponseEntity.ok(service.getAll());
+    public ResponseEntity<?> getAll() {
+        ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> response = service.getAll();
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // UPDATE
     // -------------------------------
-    @PutMapping("/{id}")
-    public ResponseEntity<ClaimLapsedRefundResponseDto> update(
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody ClaimLapsedRefundRequestDto dto) {
 
-        return ResponseEntity.ok(service.update(id, dto));
+        ApiResponseDTO<ClaimLapsedRefundResponseDto> response = service.update(id, dto);
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
@@ -71,45 +74,42 @@ public class ClaimLapsedRefundController {
     // RULE ENGINE APIs
     // -------------------------------
     @GetMapping("/active")
-    public ResponseEntity<List<ClaimLapsedRefundResponseDto>> getActiveRules() {
-
-        return ResponseEntity.ok(service.getActiveRules());
-    }
-
-    @GetMapping("/valid")
-    public ResponseEntity<List<ClaimLapsedRefundResponseDto>> getValidRulesByDate(
-            @RequestParam LocalDate date) {
-
-        return ResponseEntity.ok(service.getValidRulesByDate(date));
+    public ResponseEntity<?> getActiveRules() {
+        ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> response = service.getActiveRules();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/rule-code/{ruleCode}")
-    public ResponseEntity<ClaimLapsedRefundResponseDto> getByRuleCode(
+    public ResponseEntity<?> getByRuleCode(
             @PathVariable String ruleCode) {
 
-        return ResponseEntity.ok(service.getByRuleCode(ruleCode));
+        ApiResponseDTO<ClaimLapsedRefundResponseDto> response = service.getByRuleCode(ruleCode);
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // FK FILTER APIs (ADMIN/UI)
     // -------------------------------
     @GetMapping("/claim-circumstance/{id}")
-    public ResponseEntity<List<ClaimLapsedRefundResponseDto>> getByClaimCircumstance(
+    public ResponseEntity<?> getByClaimCircumstance(
             @PathVariable Long id) {
 
-        return ResponseEntity.ok(service.getByClaimCircumstance(id));
+        ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> response = service.getByClaimCircumstance(id);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/scheme-type/{id}")
-    public ResponseEntity<List<ClaimLapsedRefundResponseDto>> getBySchemeType(
+    public ResponseEntity<?> getBySchemeType(
             @PathVariable Long id) {
 
-        return ResponseEntity.ok(service.getBySchemeType(id));
+        ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> response = service.getBySchemeType(id);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/rule-type/{id}")
-    public ResponseEntity<List<ClaimLapsedRefundResponseDto>> getByRuleType(
+    public ResponseEntity<?> getByRuleType(
             @PathVariable Long id) {
-        return ResponseEntity.ok(service.getByRuleType(id));
+        ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> response = service.getByRuleType(id);
+        return ResponseEntity.ok(response);
     }
 }

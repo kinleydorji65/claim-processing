@@ -295,6 +295,7 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
             map.setRule(eligibility);
             category = map.getCategory();
             map.setCategory(category);
+            claimEligibilityCategoryMapRepository.save(map);
             return map;
         } else {
             map = ClaimEligibilityCategoryMap
@@ -302,6 +303,7 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
                     .rule(eligibility)
                     .category(getMemberCategory(memberCategoryId))
                     .build();
+            claimEligibilityCategoryMapRepository.save(map);
             return map;
         }
     }
@@ -312,8 +314,7 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
                 .findByRule_IdAndClaimEligibilityCategoryMap_Id(eligibility.getId(), categoryMap.getId())
                 .orElse(null);
         if (componentMap != null) {
-            componentMap.setClaimEligibilityCategoryMap(null);
-            ;
+            componentMap.setClaimEligibilityCategoryMap(categoryMap);
             componentMap.setRule(eligibility);
             componentMap.setBenefitComponentType(getBenefitTypeComponent(benefitTypeId));
             return componentMap.getBenefitComponentType();
@@ -322,6 +323,7 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
                     .builder()
                     .rule(eligibility)
                     .benefitComponentType(getBenefitTypeComponent(benefitTypeId))
+                    .claimEligibilityCategoryMap(categoryMap)
                     .build();
             return newMap.getBenefitComponentType();
         }

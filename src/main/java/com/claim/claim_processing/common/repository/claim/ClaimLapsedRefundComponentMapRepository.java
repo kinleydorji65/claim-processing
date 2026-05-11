@@ -34,6 +34,14 @@ public interface ClaimLapsedRefundComponentMapRepository
             Long ruleId,
             Long benefitComponentTypeId
     );
+    Optional<ClaimLapsedRefundComponentMap> findByRule_IdAndClaimLapsedRefundCategoryMap_Id(
+            Long ruleId,
+            Long categoryId
+    );
+    List<ClaimLapsedRefundComponentMap> findByRule_IdAndClaimLapsedRefundCategoryMap_IdIn(
+            Long ruleId,
+            List<Long> categoryId
+    );
 
     // -------------------------------
     // EXISTS CHECK (VERY IMPORTANT FOR UNIQUE CONSTRAINT HANDLING)

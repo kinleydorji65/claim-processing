@@ -12,6 +12,9 @@ import lombok.Data;
 public class MemberContributionSummary {
     private String memberCode;
     private Long schemeTypeId;
+
+    private LocalDate pfJoiningDate;
+    private LocalDate pensionJoiningDate;
     
     // Service period
     private Integer totalContributionMonths;
