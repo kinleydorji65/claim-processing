@@ -33,162 +33,169 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class BenefitCalculationServiceImpl implements BenefitCalculationService {
 
-    private final MemberContributionService memberContributionService;
-    private final ClaimEligibilityRuleService claimEligibilityRuleService;
-    private final LapsedRefundService lapsedRefundService;
-    private final VestingRuleService vestingRuleService;
+        private final MemberContributionService memberContributionService;
+        private final ClaimEligibilityRuleService claimEligibilityRuleService;
+        private final LapsedRefundService lapsedRefundService;
+        private final VestingRuleService vestingRuleService;
 
-    public ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(ClaimPreviewRequest request) {
+        public ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(ClaimPreviewRequest request) {
 
-        ClaimEligibilityPreviewResponse claimEligibilityPreviewResponse = claimEligibilityRuleService
-                .previewEligibility(request);
-        LapsedRefundPreviewResponseDTO previewLapsedRefund = lapsedRefundService.previewLapsedRefund(request);
+                MemberContributionSummary contributionSummary = memberContributionService
+                                .getContributionSummary(request.getMemberCode());
+                ClaimEligibilityPreviewResponse claimEligibilityPreviewResponse = claimEligibilityRuleService.previewEligibility(request);
+                LapsedRefundPreviewResponseDTO previewLapsedRefund = lapsedRefundService.previewLapsedRefund(request);
+                VestingRuleResponseDTO vestingResponse = vestingRuleService.determineVestingEligibility(request);
 
-        MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(request.getMemberCode());
-        VestingRuleResponseDTO vestingResponse = vestingRuleService.determineVestingEligibility(request);
-
-        BigDecimal serviceYears = calculateServiceYears(
-                contributionSummary.getContributionStartDate(),
-                contributionSummary.getContributionEndDate());
-        ClaimCalculationResponseDTO response = processComponentsWithRules(
-                contributionSummary,
-                vestingResponse,
-                claimEligibilityPreviewResponse,
-                previewLapsedRefund,
-                serviceYears);
-                System.out.println("vesting response component:" + vestingResponse.getCategoryBenefits());
-                System.out.println("claim response component:" + claimEligibilityPreviewResponse.getEligibleBenefits());
-                System.out.println("lapsed response component:" + previewLapsedRefund.getLapsedBenefits());
-        return ApiResponseDTO.success(response);
-    }
-
-    private BigDecimal calculateServiceYears(LocalDate startDate, LocalDate endDate) {
-        if (startDate == null || endDate == null) {
-            return BigDecimal.ZERO;
-        }
-        long days = ChronoUnit.DAYS.between(startDate, endDate);
-        return BigDecimal.valueOf(days)
-                .divide(BigDecimal.valueOf(365), 2, RoundingMode.HALF_UP);
-    }
-
-    private Set<String> collectAllComponentCodes(
-            VestingRuleResponseDTO vesting,
-            ClaimEligibilityPreviewResponse eligibility,
-            LapsedRefundPreviewResponseDTO lapsed) {
-
-        Set<String> codes = new HashSet<>();
-
-        if (vesting != null) {
-            codes.addAll(extractCodes(vesting.getCategoryBenefits()));
+                BigDecimal serviceYears = calculateServiceYears(
+                                contributionSummary.getContributionStartDate(),
+                                contributionSummary.getContributionEndDate());
+                ClaimCalculationResponseDTO response = processComponentsWithRules(
+                                contributionSummary,
+                                vestingResponse,
+                                claimEligibilityPreviewResponse,
+                                previewLapsedRefund,
+                                serviceYears);
+                return ApiResponseDTO.success(response);
         }
 
-        if (eligibility != null) {
-            codes.addAll(extractCodes(eligibility.getEligibleBenefits()));
-        }
+        private ClaimCalculationResponseDTO processComponentsWithRules(MemberContributionSummary contributionSummary,
+                        VestingRuleResponseDTO vestingResponse, ClaimEligibilityPreviewResponse eligibilityResponse,
+                        LapsedRefundPreviewResponseDTO lapsedResponse,
+                        BigDecimal serviceYears) {
 
-        if (lapsed != null) {
-            codes.addAll(extractCodes(lapsed.getLapsedBenefits()));
-        }
-
-        return codes;
-    }
-
-    private List<String> extractCodes(List<EligibleBenefitComponentDTO> list) {
-        if (list == null)
-            return Collections.emptyList();
-
-        return list.stream()
-                .map(EligibleBenefitComponentDTO::getCode)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    private ClaimCalculationResponseDTO processComponentsWithRules(
-            MemberContributionSummary contributionSummary,
-            VestingRuleResponseDTO vestingResponse,
-            ClaimEligibilityPreviewResponse eligibilityResponse,
-            LapsedRefundPreviewResponseDTO lapsedResponse,
-            BigDecimal serviceYears) {
-
-        // 1. Collect rule component codes
-        Set<String> validCodes = collectAllComponentCodes(
-                vestingResponse,
-                eligibilityResponse,
-                lapsedResponse);
-
-        List<MemberContributionSummary.ComponentGroup> groups = contributionSummary.getComponentGroups();
-
-        
-
-        // 2. Filter contribution components
-        List<ClaimCalculationResponseDTO.ComponentBalanceDTO> components = groups
-                .stream()
-                .filter(cg -> validCodes.contains(cg.getCode()))
-                .map((MemberContributionSummary.ComponentGroup cg) -> ComponentBalanceDTO.builder()
-                        .code(cg.getCode())
-                        .name(cg.getName())
-                        .type(cg.getCode().contains("I") ? "INTEREST" : "CONTRIBUTION")
-                        .amount(cg.getPrincipal())
-                        .build())
-                .toList();
-
-        Boolean pfEligible = components.stream()
-                .filter(c -> c.getCode().startsWith("PF_") && !c.getCode().contains("I"))
-                .findFirst()
-                .isPresent();
-        Boolean pensionEligible = components.stream()
-                .filter(c -> c.getCode().startsWith("PC_") && !c.getCode().contains("I"))
-                .findFirst()
-                .isPresent();
-        
-        BigDecimal totalPfAmount = components.stream()
-        .filter(c -> c.getCode().startsWith("PF_"))
-        .filter(c -> !c.getCode().contains("I"))
-        .map(ClaimCalculationResponseDTO.ComponentBalanceDTO::getAmount)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalPensionAmount = components.stream()
-                .filter(c -> c.getCode().startsWith("PC_"))
-                .filter(c -> !c.getCode().contains("I"))
-                .map(ClaimCalculationResponseDTO.ComponentBalanceDTO::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal totalPfInterestAmount = groups.stream()
-                .filter(g -> g.getCode().startsWith("PF_"))
-                .filter(g -> g.getCode().contains("I"))
-                .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                // 1. Collect rule component codes
+                Set<String> validCodes = collectEligibilityComponent(eligibilityResponse);
+                Set<String> forfeitedComponents = collectLapsedComponent(lapsedResponse);
+                Set<String> vestedComponents = collectVestingComponent(vestingResponse);
                 
-        BigDecimal totalPensionInterestAmount = groups.stream()
-                .filter(g -> g.getCode().startsWith("PC_"))
-                .filter(g -> g.getCode().contains("I")) // include interest
-                .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                Set<String> allValidCodes = new HashSet<>(validCodes);
 
-        return ClaimCalculationResponseDTO.builder()
-                .memberCode(contributionSummary.getMemberCode())
-                .contributionStartDate(contributionSummary.getContributionStartDate())
-                .contributionEndDate(contributionSummary.getContributionEndDate())
-                .totalContributionMonths(contributionSummary.getTotalContributionMonths())
-                .totalNonContributionMonths(contributionSummary.getTotalNonContributionMonths())
-                .pfIsEligible(pfEligible ? EligibilityEnum.ELIGIBLE : EligibilityEnum.NOT_ELIGIBLE)
-                .pensionIsEligible(pensionEligible ? EligibilityEnum.ELIGIBLE : EligibilityEnum.NOT_ELIGIBLE)
-                .totalPfAmount(totalPfAmount)
-                .totalPensionAmount(totalPensionAmount)
-                .totalPfInterestAmount(totalPfInterestAmount)
-                .totalPensionInterestAmount(totalPensionInterestAmount)
-                .noOfYearInService(serviceYears)
-                .components(components)
-                .build();
-    }
+                allValidCodes.addAll(vestedComponents);
+                if (forfeitedComponents != null) {
+                        allValidCodes.removeAll(forfeitedComponents);
+                }
+                // if (vestingResponse.getPayoutResult())
+                List<MemberContributionSummary.ComponentGroup> groups = contributionSummary.getComponentGroups();
 
-    public ApiResponseDTO<BigDecimal> getTotalAccumulationAmount(String memberCode){
-        MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(memberCode);
-        BigDecimal totalAccumulationAmount = contributionSummary.getTotalBalance();
-        return ApiResponseDTO.<BigDecimal>builder()
-                .data(totalAccumulationAmount)
-                .build();
-    }
+                // 2. Filter contribution components
+                List<ClaimCalculationResponseDTO.ComponentBalanceDTO> components = groups
+                                .stream()
+                                .filter(cg -> allValidCodes.contains(cg.getCode()))
+                                .map((MemberContributionSummary.ComponentGroup cg) -> ComponentBalanceDTO.builder()
+                                                .code(cg.getCode())
+                                                .name(cg.getName())
+                                                .type(cg.getCode().contains("I") ? "INTEREST" : "CONTRIBUTION")
+                                                .amount(cg.getPrincipal())
+                                                .build())
+                                .toList();
+
+                Boolean pfEligible = components.stream()
+                                .filter(c -> c.getCode().startsWith("PF_") && !c.getCode().contains("I"))
+                                .findFirst()
+                                .isPresent();
+                Boolean pensionEligible = components.stream()
+                                .filter(c -> c.getCode().startsWith("PC_") && !c.getCode().contains("I"))
+                                .findFirst()
+                                .isPresent();
+
+                BigDecimal totalPfAmount = components.stream()
+                                .filter(c -> c.getCode().startsWith("PF_"))
+                                .filter(c -> !c.getCode().contains("I"))
+                                .map(ClaimCalculationResponseDTO.ComponentBalanceDTO::getAmount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal totalPensionAmount = components.stream()
+                                .filter(c -> c.getCode().startsWith("PC_"))
+                                .filter(c -> !c.getCode().contains("I"))
+                                .map(ClaimCalculationResponseDTO.ComponentBalanceDTO::getAmount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal totalPfInterestAmount = groups.stream()
+                                .filter(g -> g.getCode().startsWith("PF_"))
+                                .filter(g -> g.getCode().contains("I"))
+                                .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal totalPensionInterestAmount = groups.stream()
+                                .filter(g -> g.getCode().startsWith("PC_"))
+                                .filter(g -> g.getCode().contains("I")) // include interest
+                                .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                return ClaimCalculationResponseDTO.builder()
+                                .memberCode(contributionSummary.getMemberCode())
+                                .contributionStartDate(contributionSummary.getContributionStartDate())
+                                .contributionEndDate(contributionSummary.getContributionEndDate())
+                                .totalContributionMonths(contributionSummary.getTotalContributionMonths())
+                                .totalNonContributionMonths(contributionSummary.getTotalNonContributionMonths())
+                                .pfIsEligible(pfEligible ? EligibilityEnum.ELIGIBLE : EligibilityEnum.NOT_ELIGIBLE)
+                                .pensionIsEligible(pensionEligible ? EligibilityEnum.ELIGIBLE
+                                                : EligibilityEnum.NOT_ELIGIBLE)
+                                .totalPfAmount(totalPfAmount)
+                                .totalPensionAmount(totalPensionAmount)
+                                .totalPfInterestAmount(totalPfInterestAmount)
+                                .totalPensionInterestAmount(totalPensionInterestAmount)
+                                .noOfYearInService(serviceYears)
+                                .eligibilityNote(vestingResponse.getEligibilityNote())
+                                .components(components)
+                                .build();
+        }
+
+        private Set<String> collectEligibilityComponent(ClaimEligibilityPreviewResponse eligibility) {
+                if (eligibility == null || eligibility.getEligibleBenefits() == null) {
+                        return Collections.emptySet();
+                }
+                Set<String> codes = new HashSet<>();
+                codes.addAll(extractCodes(eligibility.getEligibleBenefits()));
+                return codes;
+
+        }
+
+        private Set<String> collectLapsedComponent(LapsedRefundPreviewResponseDTO lapsed) {
+                if (lapsed == null || lapsed.getLapsedBenefits() == null) {
+                        return Collections.emptySet();
+                }
+                Set<String> codes = new HashSet<>();
+                codes.addAll(extractCodes(lapsed.getLapsedBenefits()));
+                return codes;
+
+        }
+
+        private Set<String> collectVestingComponent(VestingRuleResponseDTO vesting) {
+                if (vesting == null) {
+                        return Collections.emptySet();
+                }
+                Set<String> codes = new HashSet<>();
+                codes.addAll(extractCodes(vesting.getCategoryBenefits()));
+                return codes;
+
+        }
+
+        private BigDecimal calculateServiceYears(LocalDate startDate, LocalDate endDate) {
+                if (startDate == null || endDate == null) {
+                        return BigDecimal.ZERO;
+                }
+                long days = ChronoUnit.DAYS.between(startDate, endDate);
+                return BigDecimal.valueOf(days)
+                                .divide(BigDecimal.valueOf(365), 2, RoundingMode.HALF_UP);
+        }
+
+        private List<String> extractCodes(List<EligibleBenefitComponentDTO> list) {
+                if (list == null)
+                        return Collections.emptyList();
+
+                return list.stream()
+                                .map(EligibleBenefitComponentDTO::getCode)
+                                .filter(Objects::nonNull)
+                                .toList();
+        }
+
+        public ApiResponseDTO<BigDecimal> getTotalAccumulationAmount(String memberCode) {
+                MemberContributionSummary contributionSummary = memberContributionService
+                                .getContributionSummary(memberCode);
+                BigDecimal totalAccumulationAmount = contributionSummary.getTotalBalance();
+                return ApiResponseDTO.<BigDecimal>builder()
+                                .data(totalAccumulationAmount)
+                                .build();
+        }
 }

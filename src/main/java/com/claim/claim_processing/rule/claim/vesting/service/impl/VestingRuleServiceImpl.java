@@ -158,14 +158,13 @@ public class VestingRuleServiceImpl implements VestingRuleService {
 
         return VestingRuleResponseDTO.builder()
                 .ruleCode(rule.getRuleCode())
-                .remarks(rule.getRemarks())
                 .refundType(getRefundType(rule))
                 .payoutResult(rule.getPayoutResult())
                 .payoutResult(rule.getPayoutResult())
                 .totalVestingMonths(totalMonths)
                 .requiredVestingMonths(
                         rule.getMinVestingMonths() == null ? rule.getMaxVestingMonths() : rule.getMinVestingMonths())
-                .remarks(rule.getRemarks())
+                .eligibilityNote(buildEligibilityNote(rule, totalMonths))
                 .categoryBenefits(getCategoryBenefits(rule))
                 .build();
     }
@@ -243,4 +242,66 @@ public class VestingRuleServiceImpl implements VestingRuleService {
             return 0;
         return (int) ChronoUnit.MONTHS.between(startDate, endDate);
     }
+
+    private String buildEligibilityNote(ClaimVestingRuleMaster rule, Integer totalMonths) {
+
+    if (rule == null) {
+        return "No vesting rule found for your contribution period.";
+    }
+
+    String conditionText = buildConditionText(rule);
+    String payoutText = buildPayoutText(rule.getRefundType().getCode());
+
+    return "Based on your contribution of " + totalMonths + " months, "
+            + conditionText + " " + payoutText;
+}
+
+private String buildConditionText(ClaimVestingRuleMaster rule) {
+
+    Integer min = rule.getMinVestingMonths();
+    Integer max = rule.getMaxVestingMonths();
+
+    return switch (rule.getComparisonType()) {
+
+        case "LESS_THAN" ->
+                "your contribution is less than " + max + " months.";
+
+        case "LESS_THAN_OR_EQUAL" ->
+                "your contribution is less than or equal to " + max + " months.";
+
+        case "GREATER_THAN" ->
+                "your contribution is greater than " + min + " months.";
+
+        case "GREATER_THAN_OR_EQUAL" ->
+                "your contribution is greater than or equal to " + min + " months.";
+
+        case "RANGE" -> {
+            if (min != null && max != null) {
+                yield "your contribution is between " + min + " and " + max + " months.";
+            } else {
+                yield "your contribution meets the required range.";
+            }
+        }
+
+        default ->
+                "your contribution meets the vesting requirement.";
+    };
+}
+private String buildPayoutText(String payoutResult) {
+
+    return switch (payoutResult) {
+
+        case "PENSION" ->
+                "You are eligible for pension benefit only.";
+
+        case "LUMPSUM" ->
+                "You are eligible for lump sum benefit only.";
+
+        case "OPTION" ->
+                "You are eligible for both pension and lump sum (option available).";
+
+        default ->
+                "Benefit eligibility could not be determined.";
+    };
+}
 }

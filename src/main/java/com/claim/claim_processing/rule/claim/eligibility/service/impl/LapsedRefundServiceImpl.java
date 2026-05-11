@@ -89,7 +89,7 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
                         ActivityEnum.Y);
                         
         if (componentMappings.isEmpty()) {
-            throw ClaimException.notFound("No active benefit components found for this category");
+            return null; // or throw exception if no components found
         }
 
         // 6. Convert to DTOs

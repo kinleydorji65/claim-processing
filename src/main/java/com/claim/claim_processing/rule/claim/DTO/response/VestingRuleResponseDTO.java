@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class VestingRuleResponseDTO {
     private String ruleCode;
-    private String remarks;
+    private String eligibilityNote;
     
     // Core Result
     private List<VestingRefundTypeResponseDto> refundType;                   // "LUMPSUM", "OPTION", "PENSION"
