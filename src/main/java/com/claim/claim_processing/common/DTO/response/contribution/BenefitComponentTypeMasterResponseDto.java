@@ -6,8 +6,6 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.hibernate.mapping.Component;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

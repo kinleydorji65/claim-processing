@@ -19,6 +19,7 @@ public interface BenefitComponentTypeMasterMapper {
     /**
      * Entity -> Response DTO
      */
+    @Mapping(target = "components", expression = "java(mapComponents(entity, mappings))")
     BenefitComponentTypeMasterResponseDto toResponseDto(
             BenefitComponentTypeMaster entity, 
             List<BenefitComponentTypeDetail> mappings);

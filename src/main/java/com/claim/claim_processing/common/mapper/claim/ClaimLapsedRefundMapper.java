@@ -31,7 +31,7 @@ public abstract class ClaimLapsedRefundMapper {
     protected CessationTypeRepository cessationTypeRepository;
 
     @Autowired
-    protected SchemeTypeRepository schemeMasterRepository;
+    protected SchemeTypeRepository schemeTypeRepository;
 
     @Autowired
     protected RuleTypeRepository ruleTypeRepository;
@@ -61,7 +61,7 @@ public abstract class ClaimLapsedRefundMapper {
 
         if (dto.getSchemeTypeId() != null) {
             entity.setSchemeType(
-                    schemeMasterRepository.findById(dto.getSchemeTypeId())
+                    schemeTypeRepository.findById(dto.getSchemeTypeId())
                             .orElse(null));
         }
 
@@ -122,11 +122,6 @@ public abstract class ClaimLapsedRefundMapper {
     }
 
     public abstract List<ClaimLapsedRefundResponseDto> toResponseDtoList(List<ClaimLapsedRefundMaster> entities);
-
-    // =============================================
-    // TO ENTITY (CREATE)
-    // =============================================
-    
     // =============================================
     // UPDATE EXISTING ENTITY
     // =============================================

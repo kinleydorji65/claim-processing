@@ -115,7 +115,6 @@ public abstract class ClaimEligibilityMapper {
     }
     public abstract List<ClaimEligibilityResponseDto> toResponseDtoList(List<ClaimEligibilityMaster> entities);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ruleCode", ignore = true)
     @Mapping(target = "claimCircumstance", ignore = true)
