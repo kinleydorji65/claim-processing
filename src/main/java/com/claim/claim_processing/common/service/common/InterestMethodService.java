@@ -1,23 +1,56 @@
 package com.claim.claim_processing.common.service.common;
 
 import com.claim.claim_processing.common.DTO.request.common.InterestMethodRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.InterestMethodResponseDto;
 
 import java.util.List;
 
 public interface InterestMethodService {
 
-    InterestMethodResponseDto create(InterestMethodRequestDto dto);
+    // -----------------------------
+    // CREATE
+    // -----------------------------
+    ApiResponseDTO<InterestMethodResponseDto> create(
+            InterestMethodRequestDto dto
+    );
 
-    InterestMethodResponseDto update(Long id, InterestMethodRequestDto dto);
+    // -----------------------------
+    // PATCH UPDATE
+    // -----------------------------
+    ApiResponseDTO<InterestMethodResponseDto> patch(
+            Long id,
+            InterestMethodRequestDto dto
+    );
 
-    InterestMethodResponseDto getById(Long id);
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
+    ApiResponseDTO<InterestMethodResponseDto> getById(
+            Long id
+    );
 
-    InterestMethodResponseDto getByCode(String code);
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
+    ApiResponseDTO<InterestMethodResponseDto> getByCode(
+            String code
+    );
 
-    List<InterestMethodResponseDto> getAll();
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
+    ApiResponseDTO<List<InterestMethodResponseDto>> getAll();
 
-    List<InterestMethodResponseDto> getAllActive();
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
+    ApiResponseDTO<List<InterestMethodResponseDto>> getAllActive();
 
-    void delete(Long id);
+    // -----------------------------
+    // SOFT DELETE
+    // -----------------------------
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }

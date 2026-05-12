@@ -1,9 +1,11 @@
 package com.claim.claim_processing.common.service.common.impl;
 
 import com.claim.claim_processing.common.DTO.request.common.DeductionTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.DeductionTypeResponseDto;
 import com.claim.claim_processing.common.entities.common.DeductionTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.common.mapper.common.DeductionTypeMapper;
 import com.claim.claim_processing.common.repository.common.DeductionTypeRepository;
 import com.claim.claim_processing.common.service.common.DeductionTypeService;
@@ -23,88 +25,113 @@ public class DeductionTypeServiceImpl implements DeductionTypeService {
     // CREATE
     // -------------------------------
     @Override
-    public DeductionTypeResponseDto create(DeductionTypeRequestDto dto) {
+    public ApiResponseDTO<DeductionTypeResponseDto> create(DeductionTypeRequestDto dto) {
 
-        // duplicate check
         if (repository.existsByCode(dto.getCode())) {
-            throw new RuntimeException("Deduction type code already exists: " + dto.getCode());
+            throw ClaimException.conflict("Deduction Type code already exists: " + dto.getCode());
         }
 
         DeductionTypeMaster entity = mapper.toEntity(dto);
-
         DeductionTypeMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // -------------------------------
     // GET BY ID
     // -------------------------------
     @Override
-    public DeductionTypeResponseDto getById(Long id) {
+    public ApiResponseDTO<DeductionTypeResponseDto> getById(Long id) {
 
         DeductionTypeMaster entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Deduction type not found: " + id));
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Deduction Type", String.valueOf(id))
+                );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
+    }
+
+    // -------------------------------
+    // GET BY CODE
+    // -------------------------------
+    @Override
+    public ApiResponseDTO<DeductionTypeResponseDto> getByCode(String code) {
+
+        DeductionTypeMaster entity = repository.findByCode(code)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Deduction Type", code)
+                );
+
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // -------------------------------
     // GET ALL ACTIVE
     // -------------------------------
     @Override
-    public List<DeductionTypeResponseDto> getAllActive() {
+    public ApiResponseDTO<List<DeductionTypeResponseDto>> getAllActive() {
 
-        List<DeductionTypeMaster> list =
-                repository.findByIsActive(ActivityEnum.Y);
+        List<DeductionTypeResponseDto> list =
+                repository.findByIsActive(ActivityEnum.Y)
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(list);
     }
 
     // -------------------------------
-    // UPDATE (PATCH STYLE)
+    // UPDATE
     // -------------------------------
     @Override
-    public DeductionTypeResponseDto update(Long id, DeductionTypeRequestDto dto) {
+    public ApiResponseDTO<DeductionTypeResponseDto> patch(
+            Long id,
+            DeductionTypeRequestDto dto
+    ) {
 
-        DeductionTypeMaster entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Deduction type not found: " + id));
+        try {
 
-        // if code is changing → validate uniqueness
-        if (dto.getCode() != null &&
-                !dto.getCode().equals(entity.getCode()) &&
-                repository.existsByCode(dto.getCode())) {
+            DeductionTypeMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Deduction Type",
+                                    String.valueOf(id)
+                            )
+                    );
 
-            throw new RuntimeException("Deduction type code already exists: " + dto.getCode());
+            // PATCH -> update only non-null fields
+            mapper.updateEntityFromDto(dto, entity);
+
+            DeductionTypeMaster updated = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Deduction Type updated successfully",
+                    mapper.toResponseDto(updated)
+            );
+
+        } catch (ClaimException e) {
+            throw e;
+        } catch (Exception e) {
+            throw ClaimException.internalError(
+                    "Failed to update Deduction Type: " + e.getMessage()
+            );
         }
-
-        mapper.updateEntityFromDto(dto, entity);
-
-        DeductionTypeMaster updated = repository.save(entity);
-
-        return mapper.toResponseDto(updated);
     }
 
     // -------------------------------
-    // DELETE (soft delete style recommended)
+    // DELETE (SOFT DELETE)
     // -------------------------------
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         DeductionTypeMaster entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Deduction type not found: " + id));
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Deduction Type", String.valueOf(id))
+                );
 
         entity.setIsActive(ActivityEnum.N);
-
         repository.save(entity);
-    }
 
-    @Override
-    public DeductionTypeResponseDto getByCode(String code) {
-
-        DeductionTypeMaster entity = repository.findByCode(code)
-                .orElseThrow(() -> new RuntimeException("Deduction type not found: " + code));
-
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success("Deleted successfully");
     }
 }

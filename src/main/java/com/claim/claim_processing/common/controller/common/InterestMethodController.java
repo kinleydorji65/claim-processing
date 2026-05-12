@@ -1,10 +1,10 @@
 package com.claim.claim_processing.common.controller.common;
 
 import com.claim.claim_processing.common.DTO.request.common.InterestMethodRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.InterestMethodResponseDto;
 import com.claim.claim_processing.common.service.common.InterestMethodService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,58 +17,98 @@ public class InterestMethodController {
 
     private final InterestMethodService service;
 
-    // 🔹 Create
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @PostMapping
-    public ResponseEntity<InterestMethodResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody InterestMethodRequestDto dto
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(dto));
+
+        ApiResponseDTO<InterestMethodResponseDto> response =
+                service.create(dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Update
+    // -----------------------------
+    // PATCH UPDATE
+    // -----------------------------
     @PatchMapping("/{id}")
-    public ResponseEntity<InterestMethodResponseDto> update(
+    public ResponseEntity<?> patch(
             @PathVariable Long id,
             @RequestBody InterestMethodRequestDto dto
     ) {
-        return ResponseEntity.ok(service.update(id, dto));
+
+        ApiResponseDTO<InterestMethodResponseDto> response =
+                service.patch(id, dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Get By ID
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<InterestMethodResponseDto> getById(
+    public ResponseEntity<?> getById(
             @PathVariable Long id
     ) {
-        return ResponseEntity.ok(service.getById(id));
+
+        ApiResponseDTO<InterestMethodResponseDto> response =
+                service.getById(id);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Get By Code
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
     @GetMapping("/code/{code}")
-    public ResponseEntity<InterestMethodResponseDto> getByCode(
+    public ResponseEntity<?> getByCode(
             @PathVariable String code
     ) {
-        return ResponseEntity.ok(service.getByCode(code));
+
+        ApiResponseDTO<InterestMethodResponseDto> response =
+                service.getByCode(code);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Get All
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
     @GetMapping
-    public ResponseEntity<List<InterestMethodResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+    public ResponseEntity<?> getAll() {
+
+        ApiResponseDTO<List<InterestMethodResponseDto>> response =
+                service.getAll();
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Get All Active
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
     @GetMapping("/active")
-    public ResponseEntity<List<InterestMethodResponseDto>> getAllActive() {
-        return ResponseEntity.ok(service.getAllActive());
+    public ResponseEntity<?> getAllActive() {
+
+        ApiResponseDTO<List<InterestMethodResponseDto>> response =
+                service.getAllActive();
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Soft Delete
+    // -----------------------------
+    // SOFT DELETE
+    // -----------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(
+    public ResponseEntity<?> delete(
             @PathVariable Long id
     ) {
-        service.delete(id);
-        return ResponseEntity.ok("Interest Method deactivated successfully.");
+
+        ApiResponseDTO<String> response =
+                service.delete(id);
+
+        return ResponseEntity.ok(response);
     }
 }

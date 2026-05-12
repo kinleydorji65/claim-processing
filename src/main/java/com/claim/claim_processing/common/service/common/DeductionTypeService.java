@@ -1,21 +1,22 @@
 package com.claim.claim_processing.common.service.common;
 
 import com.claim.claim_processing.common.DTO.request.common.DeductionTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.DeductionTypeResponseDto;
 
 import java.util.List;
 
 public interface DeductionTypeService {
 
-    DeductionTypeResponseDto create(DeductionTypeRequestDto dto);
+    ApiResponseDTO<DeductionTypeResponseDto> create(DeductionTypeRequestDto dto);
 
-    DeductionTypeResponseDto getById(Long id);
+    ApiResponseDTO<DeductionTypeResponseDto> getById(Long id);
 
-    List<DeductionTypeResponseDto> getAllActive();
+    ApiResponseDTO<DeductionTypeResponseDto> getByCode(String code);
 
-    DeductionTypeResponseDto update(Long id, DeductionTypeRequestDto dto);
+    ApiResponseDTO<List<DeductionTypeResponseDto>> getAllActive();
 
-    DeductionTypeResponseDto getByCode(String code);
+    ApiResponseDTO<DeductionTypeResponseDto> patch(Long id, DeductionTypeRequestDto dto);
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }
