@@ -353,20 +353,13 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
                 ClaimEligibilityComponentMap componentMap = claimEligibilityComponentMapRepository
                                 .findByRule_IdAndClaimEligibilityCategoryMap_Id(eligibility.getId(),
                                                 categoryMap.getId())
-                                .orElse(null);
-                if (componentMap != null) {
+                                .orElseGet(ClaimEligibilityComponentMap::new);
+                
                         componentMap.setClaimEligibilityCategoryMap(categoryMap);
                         componentMap.setRule(eligibility);
                         componentMap.setBenefitComponentType(getBenefitTypeComponent(benefitTypeId));
-                        return componentMap.getBenefitComponentType();
-                } else {
-                        ClaimEligibilityComponentMap newMap = ClaimEligibilityComponentMap
-                                        .builder()
-                                        .rule(eligibility)
-                                        .benefitComponentType(getBenefitTypeComponent(benefitTypeId))
-                                        .claimEligibilityCategoryMap(categoryMap)
-                                        .build();
-                        return newMap.getBenefitComponentType();
-                }
+                        
+                claimEligibilityComponentMapRepository.save(componentMap);
+                return componentMap.getBenefitComponentType();
         }
 }

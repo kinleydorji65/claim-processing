@@ -24,9 +24,12 @@ import lombok.*;
 public class ClaimLapsedRefundCategoryMap {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
-    private Long id;
+@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "claim_refund_seq")
+@SequenceGenerator(name = "claim_refund_seq", 
+                   sequenceName = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA.ISEQ$$_92310",
+                   allocationSize = 1)
+@Column(name = "ID")
+private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
