@@ -25,8 +25,7 @@ public class ClaimEligibilityComponentMap {
     @JoinColumn(
             name = "RULE_ID",
             referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_RULE")
+            nullable = false
     )
     private ClaimEligibilityMaster rule;
 
@@ -34,8 +33,7 @@ public class ClaimEligibilityComponentMap {
     @JoinColumn(
             name = "BENEFIT_COMPONENT_TYPE_ID",
             referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_BENEFIT_TYPE_MAP")
+            nullable = false
     )
     private BenefitComponentTypeMaster benefitComponentType;
 
@@ -43,8 +41,7 @@ public class ClaimEligibilityComponentMap {
     @JoinColumn(
             name = "CATEGORY_ID",
             referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_CATEGORY_MAP")
+            nullable = false
     )
     private ClaimEligibilityCategoryMap claimEligibilityCategoryMap;
 

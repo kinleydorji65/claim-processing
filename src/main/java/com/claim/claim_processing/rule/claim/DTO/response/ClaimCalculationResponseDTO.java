@@ -13,6 +13,8 @@ import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 public class ClaimCalculationResponseDTO {
     private String memberCode;
     private BigDecimal noOfYearInService;
+    private Boolean loanCheck;
+    private Boolean rentalCheck;
     
     // Service period
     private LocalDate contributionStartDate;

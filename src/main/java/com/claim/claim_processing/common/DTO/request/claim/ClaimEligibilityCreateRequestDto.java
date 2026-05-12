@@ -24,4 +24,6 @@ public class ClaimEligibilityCreateRequestDto {
 
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
+
+    private String createdBy;
 }

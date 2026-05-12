@@ -12,6 +12,11 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
+import com.claim.claim_processing.common.DTO.response.common.RuleTypeResponseDto;
+import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
+import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
+import com.claim.claim_processing.common.mapper.common.RuleTypeMapper;
+import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 import com.claim.claim_processing.rule.claim.BenefitCalculation.BenefitCalculationService;
@@ -37,33 +42,53 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         private final ClaimEligibilityRuleService claimEligibilityRuleService;
         private final LapsedRefundService lapsedRefundService;
         private final VestingRuleService vestingRuleService;
+        private final ClaimTypeRuleMapRepository claimTypeRuleMapRepository;
+        private final RuleTypeMapper ruleTypeMapper;
+
 
         public ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(ClaimPreviewRequest request) {
-
+                List<RuleTypeResponseDto> ruleTypes = checkEligibleRules(request.getClaimTypeId());
                 MemberContributionSummary contributionSummary = memberContributionService
                                 .getContributionSummary(request.getMemberCode());
-                ClaimEligibilityPreviewResponse claimEligibilityPreviewResponse = claimEligibilityRuleService.previewEligibility(request);
-                LapsedRefundPreviewResponseDTO previewLapsedRefund = lapsedRefundService.previewLapsedRefund(request);
-                VestingRuleResponseDTO vestingResponse = vestingRuleService.determineVestingEligibility(request);
+                ClaimEligibilityPreviewResponse claimEligibilityPreviewResponse = null;
+                LapsedRefundPreviewResponseDTO previewLapsedRefund = null;
+                VestingRuleResponseDTO vestingResponse = null;
+                if(!ruleTypes.isEmpty() && ruleTypes.stream().anyMatch(rt -> rt.getCode().equals("ELIGIBILITY"))){
+                        claimEligibilityPreviewResponse = claimEligibilityRuleService.previewEligibility(request);
+                        previewLapsedRefund = lapsedRefundService.previewLapsedRefund(request);
+                }
+                if(!ruleTypes.isEmpty() && ruleTypes.stream().anyMatch(rt -> rt.getCode().equals("VESTING"))){
+                        vestingResponse = vestingRuleService.determineVestingEligibility(request);
 
+                }
+        
                 BigDecimal serviceYears = calculateServiceYears(
                                 contributionSummary.getContributionStartDate(),
                                 contributionSummary.getContributionEndDate());
+                
                 ClaimCalculationResponseDTO response = processComponentsWithRules(
                                 contributionSummary,
                                 vestingResponse,
                                 claimEligibilityPreviewResponse,
                                 previewLapsedRefund,
-                                serviceYears);
+                                serviceYears, ruleTypes);
                 return ApiResponseDTO.success(response);
         }
 
         private ClaimCalculationResponseDTO processComponentsWithRules(MemberContributionSummary contributionSummary,
                         VestingRuleResponseDTO vestingResponse, ClaimEligibilityPreviewResponse eligibilityResponse,
-                        LapsedRefundPreviewResponseDTO lapsedResponse,
-                        BigDecimal serviceYears) {
-
+                        LapsedRefundPreviewResponseDTO lapsedResponse, BigDecimal serviceYears, List<RuleTypeResponseDto> ruleTypes) {
+                Boolean pfEligible = false;
+                Boolean pensionEligible = false;
+                BigDecimal totalPfAmount = BigDecimal.ZERO;
+                BigDecimal totalPensionAmount = BigDecimal.ZERO;
+                BigDecimal totalPfInterestAmount = BigDecimal.ZERO;
+                BigDecimal totalPensionInterestAmount = BigDecimal.ZERO;
+                List<ClaimCalculationResponseDTO.ComponentBalanceDTO> components = Collections.emptyList();
                 // 1. Collect rule component codes
+                if (eligibilityResponse != null && vestingResponse != null) {
+                        
+                
                 Set<String> validCodes = collectEligibilityComponent(eligibilityResponse);
                 Set<String> forfeitedComponents = collectLapsedComponent(lapsedResponse);
                 Set<String> vestedComponents = collectVestingComponent(vestingResponse);
@@ -78,7 +103,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 List<MemberContributionSummary.ComponentGroup> groups = contributionSummary.getComponentGroups();
 
                 // 2. Filter contribution components
-                List<ClaimCalculationResponseDTO.ComponentBalanceDTO> components = groups
+                components = groups
                                 .stream()
                                 .filter(cg -> allValidCodes.contains(cg.getCode()))
                                 .map((MemberContributionSummary.ComponentGroup cg) -> ComponentBalanceDTO.builder()
@@ -89,39 +114,41 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                                                 .build())
                                 .toList();
 
-                Boolean pfEligible = components.stream()
+                pfEligible = components.stream()
                                 .filter(c -> c.getCode().startsWith("PF_") && !c.getCode().contains("I"))
                                 .findFirst()
                                 .isPresent();
-                Boolean pensionEligible = components.stream()
+                pensionEligible = components.stream()
                                 .filter(c -> c.getCode().startsWith("PC_") && !c.getCode().contains("I"))
                                 .findFirst()
                                 .isPresent();
 
-                BigDecimal totalPfAmount = components.stream()
+                totalPfAmount = components.stream()
                                 .filter(c -> c.getCode().startsWith("PF_"))
                                 .filter(c -> !c.getCode().contains("I"))
                                 .map(ClaimCalculationResponseDTO.ComponentBalanceDTO::getAmount)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                BigDecimal totalPensionAmount = components.stream()
+                totalPensionAmount = components.stream()
                                 .filter(c -> c.getCode().startsWith("PC_"))
                                 .filter(c -> !c.getCode().contains("I"))
                                 .map(ClaimCalculationResponseDTO.ComponentBalanceDTO::getAmount)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                BigDecimal totalPfInterestAmount = groups.stream()
+                totalPfInterestAmount = groups.stream()
                                 .filter(g -> g.getCode().startsWith("PF_"))
                                 .filter(g -> g.getCode().contains("I"))
                                 .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                BigDecimal totalPensionInterestAmount = groups.stream()
+                totalPensionInterestAmount = groups.stream()
                                 .filter(g -> g.getCode().startsWith("PC_"))
                                 .filter(g -> g.getCode().contains("I")) // include interest
                                 .map(MemberContributionSummary.ComponentGroup::getTotalBalance)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+        }
+        Boolean loanCheck = ruleTypes.stream().anyMatch(rt -> rt.getCode().equals("LOAN_ADJUSTMENT"));
+        Boolean rentalCheck = ruleTypes.stream().anyMatch(rt -> rt.getCode().equals("RENTAL_ADJUSTMENT"));
                 return ClaimCalculationResponseDTO.builder()
                                 .memberCode(contributionSummary.getMemberCode())
                                 .contributionStartDate(contributionSummary.getContributionStartDate())
@@ -136,10 +163,13 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                                 .totalPfInterestAmount(totalPfInterestAmount)
                                 .totalPensionInterestAmount(totalPensionInterestAmount)
                                 .noOfYearInService(serviceYears)
+                                .loanCheck(loanCheck)
+                                .rentalCheck(rentalCheck)
                                 .eligibilityNote(vestingResponse.getEligibilityNote())
                                 .components(components)
                                 .build();
         }
+        
 
         private Set<String> collectEligibilityComponent(ClaimEligibilityPreviewResponse eligibility) {
                 if (eligibility == null || eligibility.getEligibleBenefits() == null) {
@@ -197,5 +227,16 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 return ApiResponseDTO.<BigDecimal>builder()
                                 .data(totalAccumulationAmount)
                                 .build();
+        }
+
+        private List<RuleTypeResponseDto> checkEligibleRules(Long claimTypeId){
+                List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(claimTypeId);
+                if (!mappings.isEmpty()){
+                        List<RuleTypeMaster> ruleTypes = mappings.stream()
+                                .map(ClaimTypeRuleMap::getRuleType)
+                                .toList(); 
+                        return ruleTypeMapper.toResponseDtoList(ruleTypes);
+                }
+                return Collections.emptyList();
         }
 }

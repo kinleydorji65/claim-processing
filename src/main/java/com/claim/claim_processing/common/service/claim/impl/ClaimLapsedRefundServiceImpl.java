@@ -51,39 +51,28 @@ public class ClaimLapsedRefundServiceImpl implements ClaimLapsedRefundService {
 
     private ClaimLapsedRefundCategoryMap mapMemberCategory(ClaimLapsedRefundMaster rule, String categoryId) {
 
-        ClaimLapsedRefundCategoryMap map = categoryMapRepository.findByRule_IdAndCategory_CategoryId(rule.getId(), categoryId)
-                .orElse(null);
-        if (map != null) {
-            map.setCategory(getMemberCategory(categoryId));
-            map.setRule(rule);
-            categoryMapRepository.save(map);
-        }else {
-            map = ClaimLapsedRefundCategoryMap.builder()
-                    .rule(rule)
-                    .category(getMemberCategory(categoryId))
-                    .build();
-            categoryMapRepository.save(map);
-        }
-        return map;
-    }
+    AgencyCategory category = getMemberCategory(categoryId);
+
+    ClaimLapsedRefundCategoryMap map =
+            categoryMapRepository
+                    .findByRule_IdAndCategory_CategoryId(rule.getId(), categoryId)
+                    .orElseGet(ClaimLapsedRefundCategoryMap::new);
+
+    map.setRule(rule);
+    map.setCategory(category);
+
+    return categoryMapRepository.save(map);
+}
 
     private ClaimLapsedRefundComponentMap mapClaimLapsedBenefitComponent(ClaimLapsedRefundMaster rule, ClaimLapsedRefundCategoryMap categoryMap, Long benefitTypeId) {
-
+        
         ClaimLapsedRefundComponentMap map = componentMapRepository.findByRule_IdAndClaimLapsedRefundCategoryMap_Id(rule.getId(), categoryMap.getId())
-                .orElse(null);
-        if (map != null) {
+                .orElseGet(ClaimLapsedRefundComponentMap::new);
             map.setClaimLapsedRefundCategoryMap(categoryMap);
             map.setRule(rule);
             map.setBenefitComponentType(getBenefitTypeComponent(benefitTypeId));
             componentMapRepository.save(map);
-        } else {
-            map = ClaimLapsedRefundComponentMap.builder()
-                    .rule(rule)
-                    .benefitComponentType(getBenefitTypeComponent(benefitTypeId))
-                    .claimLapsedRefundCategoryMap(categoryMap)
-                    .build();
-            componentMapRepository.save(map);
-        }
+       
         return map;
     }
 

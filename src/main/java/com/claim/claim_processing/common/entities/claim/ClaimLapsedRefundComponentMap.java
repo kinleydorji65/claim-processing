@@ -36,8 +36,7 @@ public class ClaimLapsedRefundComponentMap {
     @JoinColumn(
             name = "RULE_ID",
             referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_COMPONENT_RULE")
+            nullable = false
     )
     private ClaimLapsedRefundMaster rule;
 
@@ -45,8 +44,7 @@ public class ClaimLapsedRefundComponentMap {
     @JoinColumn(
             name = "BENEFIT_COMPONENT_TYPE_ID",
             referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_COMPONENT_TYPE")
+            nullable = false
     )
     private BenefitComponentTypeMaster benefitComponentType;
 

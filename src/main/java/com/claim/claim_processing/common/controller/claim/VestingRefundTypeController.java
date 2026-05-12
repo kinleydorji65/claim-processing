@@ -60,9 +60,7 @@ public class VestingRefundTypeController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
-
         ApiResponseDTO<String> response = service.delete(id);
-
         return ResponseEntity.ok(response);
     }
 }

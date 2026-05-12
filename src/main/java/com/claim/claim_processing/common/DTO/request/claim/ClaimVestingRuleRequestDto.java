@@ -18,8 +18,6 @@ public class ClaimVestingRuleRequestDto {
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
 
-    private String refundType;
-
     private Integer minVestingMonths;
     private Integer maxVestingMonths;
 

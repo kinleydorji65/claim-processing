@@ -24,118 +24,120 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
 
-    private final VestingRefundTypeRepository repository;
-    private final VestingRefundTypeMapper mapper;
-    private final VestingRefundBenefitMapRepository benefitMapRepository;
-    private final BenefitComponentTypeMasterRepository benefitComponentTypeMasterRepository;
+        private final VestingRefundTypeRepository repository;
+        private final VestingRefundTypeMapper mapper;
+        private final VestingRefundBenefitMapRepository benefitMapRepository;
+        private final BenefitComponentTypeMasterRepository benefitComponentTypeMasterRepository;
 
-    @Override
-    public ApiResponseDTO<VestingRefundTypeResponseDto> create(VestingRefundTypeRequestDto requestDto) {
+        @Override
+        public ApiResponseDTO<VestingRefundTypeResponseDto> create(VestingRefundTypeRequestDto requestDto) {
+                try {
+                        if (repository.existsByCode(requestDto.getCode())) {
+                                throw ClaimException.conflict(
+                                                "VestingRefundType already exists with code: " + requestDto.getCode());
+                        }
 
-        if (repository.existsByCode(requestDto.getCode())) {
-            throw ClaimException.conflict(
-                    "VestingRefundType already exists with code: " + requestDto.getCode()
-            );
+                        VestingRefundType entity = mapper.toEntity(requestDto);
+                        repository.save(entity);
+                        List<BenefitComponentTypeMaster> benefitComponentTypeMasters = mapBenefitComponents(entity,
+                                        requestDto.getBenefitComponentIds());
+                        return ApiResponseDTO.success(mapper.toDto(entity, benefitComponentTypeMasters));
+                } catch (Exception e) {
+                        throw ClaimException.internalError("Error creating VestingRefundType: " + e.getMessage(), e);
+                }
         }
 
-        VestingRefundType entity = mapper.toEntity(requestDto);
-        repository.save(entity);
-        List<BenefitComponentTypeMaster> benefitComponentTypeMasters = mapBenefitComponents(entity, requestDto.getBenefitComponentIds());
-        return ApiResponseDTO.success(mapper.toDto(entity, benefitComponentTypeMasters));
-    }
+        private List<BenefitComponentTypeMaster> mapBenefitComponents(VestingRefundType entity,
+                        List<Long> componentIds) {
+                return componentIds.stream().map(componentId -> {
+                        VestingRefundBenefitMap benefitComponent = benefitMapRepository
+                                        .findByVestingRefundType_IdAndBenefitComponentType_Id(entity.getId(),
+                                                        componentId)
+                                        .orElse(null);
 
-    private List<BenefitComponentTypeMaster> mapBenefitComponents(VestingRefundType entity, List<Long> componentIds) {
-    return componentIds.stream().map(componentId -> {
-        VestingRefundBenefitMap benefitComponent = benefitMapRepository
-            .findByVestingRefundType_IdAndBenefitComponentType_Id(entity.getId(), componentId)
-            .orElse(null);
-            
-        BenefitComponentTypeMaster componentMaster;
-        
-        if (benefitComponent == null) {
-            componentMaster = getBenefitComponent(componentId);
-            benefitComponent = VestingRefundBenefitMap.builder()
-                    .vestingRefundType(entity)
-                    .benefitComponentType(componentMaster)
-                    .build();
-            benefitMapRepository.save(benefitComponent);
-        } else {
-            componentMaster = getBenefitComponent(componentId);
-            benefitComponent.setBenefitComponentType(componentMaster);
-            benefitMapRepository.save(benefitComponent);
-        }
-        
-        return componentMaster;  // ← This was missing!
-    }).toList();
-}
+                        BenefitComponentTypeMaster componentMaster;
 
-    private BenefitComponentTypeMaster getBenefitComponent(Long componentId){
-        return benefitComponentTypeMasterRepository.findById(componentId)
-                .orElseThrow(() -> ClaimException.notFound("BenefitComponentTypeMaster not found: " + componentId));
-    }
+                        if (benefitComponent == null) {
+                                componentMaster = getBenefitComponent(componentId);
+                                benefitComponent = VestingRefundBenefitMap.builder()
+                                                .vestingRefundType(entity)
+                                                .benefitComponentType(componentMaster)
+                                                .build();
+                                benefitMapRepository.save(benefitComponent);
+                        } else {
+                                componentMaster = getBenefitComponent(componentId);
+                                benefitComponent.setBenefitComponentType(componentMaster);
+                                benefitMapRepository.save(benefitComponent);
+                        }
 
-    @Override
-    public ApiResponseDTO<VestingRefundTypeResponseDto> update(Long id, VestingRefundTypeRequestDto requestDto) {
-
-        VestingRefundType existing = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.notFound("VestingRefundType not found: " + id)
-                );
-
-        if (requestDto.getCode() != null
-                && !requestDto.getCode().equals(existing.getCode())
-                && repository.existsByCode(requestDto.getCode())) {
-
-            throw ClaimException.conflict(
-                    "VestingRefundType already exists with code: " + requestDto.getCode()
-            );
+                        return componentMaster; // ← This was missing!
+                }).toList();
         }
 
-        mapper.updateEntityFromDto(requestDto, existing);
-        VestingRefundType entity = repository.save(existing);
-        List<BenefitComponentTypeMaster> benefitComponentTypeMasters = mapBenefitComponents(entity, requestDto.getBenefitComponentIds());
-        return ApiResponseDTO.success(mapper.toDto(entity, benefitComponentTypeMasters));
-    }
+        private BenefitComponentTypeMaster getBenefitComponent(Long componentId) {
+                return benefitComponentTypeMasterRepository.findById(componentId)
+                                .orElseThrow(() -> ClaimException
+                                                .notFound("BenefitComponentTypeMaster not found: " + componentId));
+        }
 
-    @Override
-    public ApiResponseDTO<VestingRefundTypeResponseDto> getById(Long id) {
+        @Override
+        public ApiResponseDTO<VestingRefundTypeResponseDto> update(Long id, VestingRefundTypeRequestDto requestDto) {
 
-        VestingRefundType entity = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.notFound("VestingRefundType not found: " + id)
-                );
-        List<BenefitComponentTypeMaster> benefitComponentTypeMasters = benefitMapRepository.findByVestingRefundType_Id(entity.getId())
-                .stream()
-                .map(VestingRefundBenefitMap::getBenefitComponentType)
-                .toList();
-        return ApiResponseDTO.success(mapper.toDto(entity, benefitComponentTypeMasters));
-    }
+                VestingRefundType existing = repository.findById(id)
+                                .orElseThrow(() -> ClaimException.notFound("VestingRefundType not found: " + id));
 
-    @Override
-    public ApiResponseDTO<List<VestingRefundTypeResponseDto>> getAll() {
+                if (requestDto.getCode() != null
+                                && !requestDto.getCode().equals(existing.getCode())
+                                && repository.existsByCode(requestDto.getCode())) {
 
-        List<VestingRefundTypeResponseDto> dtos = repository.findAll()
-                .stream()
-                .map(entity -> {
-                    List<BenefitComponentTypeMaster> benefitComponentTypeMasters = benefitMapRepository.findByVestingRefundType_Id(entity.getId())
-                            .stream()
-                            .map(VestingRefundBenefitMap::getBenefitComponentType)
-                            .toList();
-                    return mapper.toDto(entity, benefitComponentTypeMasters);
-                })
-                .toList();
-        return ApiResponseDTO.success(dtos);
-    }
+                        throw ClaimException.conflict(
+                                        "VestingRefundType already exists with code: " + requestDto.getCode());
+                }
 
-    @Override
-    public ApiResponseDTO<String> delete(Long id) {
+                mapper.updateEntityFromDto(requestDto, existing);
+                VestingRefundType entity = repository.save(existing);
+                List<BenefitComponentTypeMaster> benefitComponentTypeMasters = mapBenefitComponents(entity,
+                                requestDto.getBenefitComponentIds());
+                return ApiResponseDTO.success(mapper.toDto(entity, benefitComponentTypeMasters));
+        }
 
-        VestingRefundType entity = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.notFound("VestingRefundType not found: " + id)
-                );
+        @Override
+        public ApiResponseDTO<VestingRefundTypeResponseDto> getById(Long id) {
 
-        repository.delete(entity);
-        return ApiResponseDTO.success("VestingRefundType deleted successfully");
-    }
+                VestingRefundType entity = repository.findById(id)
+                                .orElseThrow(() -> ClaimException.notFound("VestingRefundType not found: " + id));
+                List<BenefitComponentTypeMaster> benefitComponentTypeMasters = benefitMapRepository
+                                .findByVestingRefundType_Id(entity.getId())
+                                .stream()
+                                .map(VestingRefundBenefitMap::getBenefitComponentType)
+                                .toList();
+                return ApiResponseDTO.success(mapper.toDto(entity, benefitComponentTypeMasters));
+        }
+
+        @Override
+        public ApiResponseDTO<List<VestingRefundTypeResponseDto>> getAll() {
+
+                List<VestingRefundTypeResponseDto> dtos = repository.findAll()
+                                .stream()
+                                .map(entity -> {
+                                        List<BenefitComponentTypeMaster> benefitComponentTypeMasters = benefitMapRepository
+                                                        .findByVestingRefundType_Id(entity.getId())
+                                                        .stream()
+                                                        .map(VestingRefundBenefitMap::getBenefitComponentType)
+                                                        .toList();
+                                        return mapper.toDto(entity, benefitComponentTypeMasters);
+                                })
+                                .toList();
+                return ApiResponseDTO.success(dtos);
+        }
+
+        @Override
+        public ApiResponseDTO<String> delete(Long id) {
+
+                VestingRefundType entity = repository.findById(id)
+                                .orElseThrow(() -> ClaimException.notFound("VestingRefundType not found: " + id));
+
+                repository.delete(entity);
+                return ApiResponseDTO.success("VestingRefundType deleted successfully");
+        }
 }

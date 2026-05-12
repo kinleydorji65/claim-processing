@@ -35,24 +35,21 @@ public class ClaimEligibilityMaster {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "CLAIM_CIRCUMSTANCE_ID",
-            referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_CIRCUMSTANCE")
+            referencedColumnName = "ID"
     )
     private ClaimCircumstanceMaster claimCircumstance;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "SCHEME_TYPE_ID",
-            referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_SCHEME_TYPE")
+            referencedColumnName = "ID"
     )
     private SchemeMaster schemeType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "RULE_ID",
-            referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_RULE_TYPE")
+            referencedColumnName = "ID"
     )
     private RuleTypeMaster ruleType;
 

@@ -32,8 +32,7 @@ public class ClaimEligibilityCategoryMap {
     @JoinColumn(
             name = "RULE_ID",
             referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_CLAIM_ELIGIBILITY_RULE")
+            nullable = false
     )
     private ClaimEligibilityMaster rule;
 
@@ -42,8 +41,7 @@ public class ClaimEligibilityCategoryMap {
     @JoinColumn(
             name = "CATEGORY_ID",
             referencedColumnName = "CATEGORY_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_AGENCY_CATEGORIES")
+            nullable = false
     )
     private AgencyCategory category;
 }

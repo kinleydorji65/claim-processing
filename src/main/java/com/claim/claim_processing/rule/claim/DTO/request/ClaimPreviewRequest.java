@@ -6,6 +6,7 @@ import lombok.Data;
 
 @Data
 public class ClaimPreviewRequest {
+    private Long claimTypeId;
     private String memberCode;
     private Long circumtancesId;
     private String memberCategoryId;

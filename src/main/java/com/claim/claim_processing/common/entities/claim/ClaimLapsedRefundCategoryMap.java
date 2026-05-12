@@ -32,8 +32,7 @@ public class ClaimLapsedRefundCategoryMap {
     @JoinColumn(
             name = "RULE_ID",
             referencedColumnName = "ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_CATEGORY_RULE")
+            nullable = false
     )
     private ClaimLapsedRefundMaster rule;
 
@@ -41,8 +40,7 @@ public class ClaimLapsedRefundCategoryMap {
     @JoinColumn(
             name = "CATEGORY_ID",
             referencedColumnName = "CATEGORY_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_LAPSED_REFUND_CATEGORY")
+            nullable = false
     )
     private AgencyCategory category;
 }
