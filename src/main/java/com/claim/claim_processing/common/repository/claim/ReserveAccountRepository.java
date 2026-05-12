@@ -17,6 +17,8 @@ public interface ReserveAccountRepository extends JpaRepository<ReserveAccountMa
     // -------------------------------
     Optional<ReserveAccountMaster> findByReserveAccountCode(String reserveAccountCode);
 
+    boolean existsByReserveAccountCode(String reserveAccountCode);
+
     // -------------------------------
     // FIND BY ACCOUNT TYPE (FK)
     // -------------------------------

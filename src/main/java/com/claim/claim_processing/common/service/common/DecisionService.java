@@ -1,23 +1,24 @@
 package com.claim.claim_processing.common.service.common;
 
 import com.claim.claim_processing.common.DTO.request.common.DecisionRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.DecisionResponseDto;
 
 import java.util.List;
 
 public interface DecisionService {
 
-    DecisionResponseDto createDecision(DecisionRequestDto dto);
+    ApiResponseDTO<DecisionResponseDto> createDecision(DecisionRequestDto requestDto);
 
-    DecisionResponseDto updateDecision(Long id, DecisionRequestDto dto);
+    ApiResponseDTO<List<DecisionResponseDto>> getAll();
 
-    DecisionResponseDto getById(Long id);
+    ApiResponseDTO<List<DecisionResponseDto>> getAllActive();
 
-    DecisionResponseDto getByCode(String code);
+    ApiResponseDTO<DecisionResponseDto> getById(Long id);
 
-    List<DecisionResponseDto> getAll();
+    ApiResponseDTO<DecisionResponseDto> getByCode(String code);
 
-    List<DecisionResponseDto> getAllActive();
+    ApiResponseDTO<DecisionResponseDto> updateDecision(Long id, DecisionRequestDto requestDto);
 
-    void deleteDecision(Long id);
+    ApiResponseDTO<String> deleteDecision(Long id);
 }

@@ -97,4 +97,10 @@ public class BenefitComponentTypeMasterController {
         ApiResponseDTO<String> response = service.delete(id);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllWithoutComponent() {
+        ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> response = service.getAllWithoutComponent();
+        return ResponseEntity.ok(response);
+    }
 }

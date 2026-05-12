@@ -34,6 +34,9 @@ public interface BenefitComponentTypeMasterService {
      */
     ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> getAll();
 
+
+    ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> getAllWithoutComponent();
+
     /**
      * Get active/inactive records
      */

@@ -1,10 +1,10 @@
 package com.claim.claim_processing.common.controller.common;
 
 import com.claim.claim_processing.common.DTO.request.common.DecisionRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.DecisionResponseDto;
 import com.claim.claim_processing.common.service.common.DecisionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,57 +17,75 @@ public class DecisionController {
 
     private final DecisionService decisionService;
 
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @PostMapping
-    public ResponseEntity<DecisionResponseDto> create(
-            @RequestBody DecisionRequestDto requestDto
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(decisionService.createDecision(requestDto));
+    public ResponseEntity<?> create(@RequestBody DecisionRequestDto requestDto) {
+        ApiResponseDTO<DecisionResponseDto> response = decisionService.createDecision(requestDto);
+        return ResponseEntity.ok(response);
     }
 
-
-    @GetMapping
-    public ResponseEntity<List<DecisionResponseDto>> getAll() {
-        return ResponseEntity.ok(decisionService.getAll());
-    }
-
-
-    @GetMapping("/active")
-    public ResponseEntity<List<DecisionResponseDto>> getAllActive() {
-        return ResponseEntity.ok(decisionService.getAllActive());
-    }
-
-
-    @GetMapping("/{id}")
-    public ResponseEntity<DecisionResponseDto> getById(
-            @PathVariable Long id
-    ) {
-        return ResponseEntity.ok(decisionService.getById(id));
-    }
-
-
-    @GetMapping("/code/{code}")
-    public ResponseEntity<DecisionResponseDto> getByCode(
-            @PathVariable String code
-    ) {
-        return ResponseEntity.ok(decisionService.getByCode(code));
-    }
-
-
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
     @PatchMapping("/{id}")
-    public ResponseEntity<DecisionResponseDto> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody DecisionRequestDto requestDto
     ) {
-        return ResponseEntity.ok(decisionService.updateDecision(id, requestDto));
+        ApiResponseDTO<DecisionResponseDto> response =
+                decisionService.updateDecision(id, requestDto);
+        return ResponseEntity.ok(response);
     }
 
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        ApiResponseDTO<DecisionResponseDto> response =
+                decisionService.getById(id);
+        return ResponseEntity.ok(response);
+    }
 
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
+    @GetMapping("/code/{code}")
+    public ResponseEntity<?> getByCode(@PathVariable String code) {
+        ApiResponseDTO<DecisionResponseDto> response =
+                decisionService.getByCode(code);
+        return ResponseEntity.ok(response);
+    }
+
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
+    @GetMapping
+    public ResponseEntity<?> getAll() {
+        ApiResponseDTO<List<DecisionResponseDto>> response =
+                decisionService.getAll();
+        return ResponseEntity.ok(response);
+    }
+
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
+    @GetMapping("/active")
+    public ResponseEntity<?> getAllActive() {
+        ApiResponseDTO<List<DecisionResponseDto>> response =
+                decisionService.getAllActive();
+        return ResponseEntity.ok(response);
+    }
+
+    // -----------------------------
+    // DELETE
+    // -----------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @PathVariable Long id
-    ) {
-        decisionService.deleteDecision(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        ApiResponseDTO<String> response =
+                decisionService.deleteDecision(id);
+        return ResponseEntity.ok(response);
     }
 }

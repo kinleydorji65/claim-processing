@@ -1,15 +1,18 @@
 package com.claim.claim_processing.common.service.common.impl;
 
 import com.claim.claim_processing.common.DTO.request.common.DecisionRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.DecisionResponseDto;
 import com.claim.claim_processing.common.entities.common.DecisionMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.common.DecisionMapper;
 import com.claim.claim_processing.common.repository.common.DecisionRepository;
 import com.claim.claim_processing.common.service.common.DecisionService;
+import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -19,93 +22,126 @@ public class DecisionServiceImpl implements DecisionService {
     private final DecisionRepository repository;
     private final DecisionMapper mapper;
 
-    // -------------------------------
+    // -----------------------------
     // CREATE
-    // -------------------------------
+    // -----------------------------
     @Override
-    public DecisionResponseDto createDecision(DecisionRequestDto dto) {
+    public ApiResponseDTO<DecisionResponseDto> createDecision(DecisionRequestDto requestDto) {
 
-        if (repository.existsByCode(dto.getCode())) {
-            throw new RuntimeException("Decision code already exists: " + dto.getCode());
+        if (repository.existsByCode(requestDto.getCode())) {
+            throw ClaimException.conflict("Decision code already exists: " + requestDto.getCode());
         }
 
-        DecisionMaster entity = mapper.toEntity(dto);
+        DecisionMaster entity = mapper.toEntity(requestDto);
+
+        entity.setIsActive(ActivityEnum.Y);
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
 
         DecisionMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
-    }
-
-    // -------------------------------
-    // UPDATE
-    // -------------------------------
-    @Override
-    public DecisionResponseDto updateDecision(Long id, DecisionRequestDto dto) {
-
-        DecisionMaster entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Decision not found with id: " + id));
-
-        // PATCH update (only non-null fields)
-        mapper.updateEntityFromDto(dto, entity);
-
-        DecisionMaster updated = repository.save(entity);
-
-        return mapper.toResponseDto(updated);
-    }
-
-    // -------------------------------
-    // GET BY ID
-    // -------------------------------
-    @Override
-    public DecisionResponseDto getById(Long id) {
-
-        DecisionMaster entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Decision not found with id: " + id));
-
-        return mapper.toResponseDto(entity);
-    }
-
-    // -------------------------------
-    // GET BY CODE
-    // -------------------------------
-    @Override
-    public DecisionResponseDto getByCode(String code) {
-
-        DecisionMaster entity = repository.findByCode(code)
-                .orElseThrow(() -> new RuntimeException("Decision not found with code: " + code));
-
-        return mapper.toResponseDto(entity);
-    }
-
-    // -------------------------------
-    // GET ALL
-    // -------------------------------
-    @Override
-    public List<DecisionResponseDto> getAll() {
-
-        return mapper.toResponseDtoList(repository.findAll());
-    }
-
-    // -------------------------------
-    // GET ACTIVE ONLY
-    // -------------------------------
-    @Override
-    public List<DecisionResponseDto> getAllActive() {
-
-        return mapper.toResponseDtoList(
-                repository.findAllByIsActive(ActivityEnum.Y)
+        return ApiResponseDTO.success(
+                "Decision created successfully",
+                mapper.toResponseDto(saved)
         );
     }
 
-    // -------------------------------
-    // DELETE (soft delete recommended later)
-    // -------------------------------
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
     @Override
-    public void deleteDecision(Long id) {
+    public ApiResponseDTO<List<DecisionResponseDto>> getAll() {
+
+        List<DecisionResponseDto> list =
+                repository.findAll()
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
+
+        return ApiResponseDTO.success("All decisions fetched successfully", list);
+    }
+
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<List<DecisionResponseDto>> getAllActive() {
+
+        List<DecisionResponseDto> list =
+                repository.findByIsActive(ActivityEnum.Y)
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
+
+        return ApiResponseDTO.success("Active decisions fetched successfully", list);
+    }
+
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<DecisionResponseDto> getById(Long id) {
 
         DecisionMaster entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Decision not found with id: " + id));
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Decision", String.valueOf(id)));
+
+        return ApiResponseDTO.success(
+                "Decision fetched successfully",
+                mapper.toResponseDto(entity)
+        );
+    }
+
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<DecisionResponseDto> getByCode(String code) {
+
+        DecisionMaster entity = repository.findByCode(code)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Decision", code));
+
+        return ApiResponseDTO.success(
+                "Decision fetched successfully",
+                mapper.toResponseDto(entity)
+        );
+    }
+
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<DecisionResponseDto> updateDecision(Long id, DecisionRequestDto requestDto) {
+
+        DecisionMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Decision", String.valueOf(id)));
+
+        mapper.updateEntityFromDto(requestDto, entity);
+
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        DecisionMaster updated = repository.save(entity);
+
+        return ApiResponseDTO.success(
+                "Decision updated successfully",
+                mapper.toResponseDto(updated)
+        );
+    }
+
+    // -----------------------------
+    // DELETE (soft or hard depending on design)
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<String> deleteDecision(Long id) {
+
+        DecisionMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Decision", String.valueOf(id)));
 
         repository.delete(entity);
+
+        return ApiResponseDTO.success("Decision deleted successfully");
     }
 }

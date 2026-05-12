@@ -1,152 +1,377 @@
 package com.claim.claim_processing.common.service.claim.impl;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimVestingRuleRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimVestingRuleResponseDto;
-import com.claim.claim_processing.common.entities.claim.*;
+import com.claim.claim_processing.common.entities.claim.ClaimVestingRuleMaster;
+import com.claim.claim_processing.common.entities.claim.VestingRefundType;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
-import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.common.mapper.claim.ClaimVestingRuleMasterMapper;
-import com.claim.claim_processing.common.repository.claim.ClaimVestingRuleMasterRepository;
 import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategoryRepository;
+import com.claim.claim_processing.common.repository.claim.ClaimVestingRuleMasterRepository;
 import com.claim.claim_processing.common.repository.claim.VestingRefundTypeRepository;
 import com.claim.claim_processing.common.repository.common.RuleTypeRepository;
 import com.claim.claim_processing.common.service.claim.ClaimVestingRuleMasterService;
+import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
-public class ClaimVestingRuleMasterServiceImpl implements ClaimVestingRuleMasterService {
+@Slf4j
+public class ClaimVestingRuleMasterServiceImpl
+        implements ClaimVestingRuleMasterService {
 
     private final ClaimVestingRuleMasterRepository repository;
+    private final ClaimVestingRuleMasterMapper mapper;
     private final AgencyCategoryRepository categoryRepository;
     private final VestingRefundTypeRepository refundRepository;
     private final RuleTypeRepository ruleTypeRepository;
 
-    private final ClaimVestingRuleMasterMapper mapper;
-
-    // =========================
+    // -----------------------------
     // CREATE
-    // =========================
+    // -----------------------------
     @Override
-    public ClaimVestingRuleResponseDto createRule(ClaimVestingRuleRequestDto dto) {
+    public ApiResponseDTO<ClaimVestingRuleResponseDto> createRule(
+            ClaimVestingRuleRequestDto dto) {
 
-        repository.findByRuleCode(dto.getRuleCode())
-                .ifPresent(r -> {
-                    throw ClaimException.conflict("Rule code already exists: " + dto.getRuleCode());
-                });
+        try {
 
-        ClaimVestingRuleMaster entity = mapper.toEntity(dto);
+            if (repository.existsByRuleCode(dto.getRuleCode())) {
+                throw ClaimException.conflict(
+                        "Rule code already exists: " + dto.getRuleCode()
+                );
+            }
 
-        entity.setCategory(getCategory(dto.getCategoryId()));
-        entity.setRefundType(getRefund(dto.getRefundId()));
-        entity.setRuleType(getRuleType(dto.getRuleTypeId()));
+            ClaimVestingRuleMaster entity = mapper.toEntity(dto);
 
-        return mapper.toDto(repository.save(entity));
-    }
-
-    // =========================
-    // UPDATE
-    // =========================
-    @Override
-    public ClaimVestingRuleResponseDto updateRule(Long id, ClaimVestingRuleRequestDto dto) {
-
-        ClaimVestingRuleMaster entity = repository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound("Rule not found: " + id));
-
-        mapper.updateEntityFromDto(dto, entity);
-
-        if (dto.getCategoryId() != null)
             entity.setCategory(getCategory(dto.getCategoryId()));
-
-
-        if (dto.getRefundId() != null)
             entity.setRefundType(getRefund(dto.getRefundId()));
-
-        if (dto.getRuleTypeId() != null)
             entity.setRuleType(getRuleType(dto.getRuleTypeId()));
 
-        return mapper.toDto(repository.save(entity));
+            ClaimVestingRuleMaster savedEntity = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Claim Vesting Rule created successfully",
+                    mapper.toResponseDto(savedEntity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error creating Claim Vesting Rule", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to create Claim Vesting Rule",
+                    ex
+            );
+        }
     }
 
-    // =========================
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<ClaimVestingRuleResponseDto> updateRule(
+            Long id,
+            ClaimVestingRuleRequestDto dto) {
+
+        try {
+
+            ClaimVestingRuleMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Claim Vesting Rule",
+                                    String.valueOf(id)
+                            ));
+
+            mapper.updateEntityFromDto(dto, entity);
+
+            entity.setCategory(getCategory(dto.getCategoryId()));
+            entity.setRefundType(getRefund(dto.getRefundId()));
+            entity.setRuleType(getRuleType(dto.getRuleTypeId()));
+
+            ClaimVestingRuleMaster updatedEntity =
+                    repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Claim Vesting Rule updated successfully",
+                    mapper.toResponseDto(updatedEntity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error updating Claim Vesting Rule", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to update Claim Vesting Rule",
+                    ex
+            );
+        }
+    }
+
+    // -----------------------------
     // GET BY ID
-    // =========================
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public ClaimVestingRuleResponseDto getById(Long id) {
-        return mapper.toDto(
-                repository.findById(id)
-                        .orElseThrow(() -> ClaimException.notFound("Rule not found: " + id))
-        );
+    public ApiResponseDTO<ClaimVestingRuleResponseDto> getById(Long id) {
+
+        try {
+
+            ClaimVestingRuleMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Claim Vesting Rule",
+                                    String.valueOf(id)
+                            ));
+
+            return ApiResponseDTO.success(
+                    "Claim Vesting Rule fetched successfully",
+                    mapper.toResponseDto(entity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error fetching Claim Vesting Rule", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Claim Vesting Rule",
+                    ex
+            );
+        }
     }
 
-    // =========================
+    // -----------------------------
     // GET ALL
-    // =========================
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public List<ClaimVestingRuleResponseDto> getAll() {
-        return mapper.toDto(repository.findAll());
+    public ApiResponseDTO<List<ClaimVestingRuleResponseDto>> getAll() {
+
+        try {
+
+            List<ClaimVestingRuleResponseDto> responseDtos =
+                    repository.findAll()
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            if (responseDtos.isEmpty()) {
+                throw ClaimException.notFound(
+                        "No Claim Vesting Rules found"
+                );
+            }
+
+            return ApiResponseDTO.success(
+                    "Claim Vesting Rules fetched successfully",
+                    responseDtos
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error fetching Claim Vesting Rules", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Claim Vesting Rules",
+                    ex
+            );
+        }
     }
 
-    // =========================
-    // FILTERS (CLEAN FK STYLE)
-    // =========================
+    // -----------------------------
+    // GET BY CATEGORY
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public List<ClaimVestingRuleResponseDto> getByCategoryId(String categoryId) {
-        return mapper.toDto(repository.findByCategory(getCategoryByCode(categoryId)));
+    public ApiResponseDTO<List<ClaimVestingRuleResponseDto>> getByCategoryId(
+            String categoryId) {
+
+        try {
+
+            List<ClaimVestingRuleResponseDto> responseDtos =
+                    repository.findByCategory_CategoryId(categoryId)
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            if (responseDtos.isEmpty()) {
+                throw ClaimException.notFound(
+                        "No Claim Vesting Rules found for category id: "
+                                + categoryId
+                );
+            }
+
+            return ApiResponseDTO.success(
+                    "Claim Vesting Rules fetched successfully",
+                    responseDtos
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error fetching Claim Vesting Rules by category", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Claim Vesting Rules",
+                    ex
+            );
+        }
     }
 
+    // -----------------------------
+    // GET BY REFUND TYPE
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public List<ClaimVestingRuleResponseDto> getByRefundId(Long refundId) {
-        return mapper.toDto(repository.findByRefundType(getRefund(refundId)));
+    public ApiResponseDTO<List<ClaimVestingRuleResponseDto>> getByRefundId(
+            Long refundId) {
+
+        try {
+
+            List<ClaimVestingRuleResponseDto> responseDtos =
+                    repository.findByRefundType_Id(refundId)
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            if (responseDtos.isEmpty()) {
+                throw ClaimException.notFound(
+                        "No Claim Vesting Rules found for refund id: "
+                                + refundId
+                );
+            }
+
+            return ApiResponseDTO.success(
+                    "Claim Vesting Rules fetched successfully",
+                    responseDtos
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error fetching Claim Vesting Rules by refund", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Claim Vesting Rules",
+                    ex
+            );
+        }
     }
 
+    // -----------------------------
+    // GET BY RULE TYPE
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public List<ClaimVestingRuleResponseDto> getByRuleTypeId(Long ruleTypeId) {
-        return mapper.toDto(repository.findByRuleType(getRuleType(ruleTypeId)));
+    public ApiResponseDTO<List<ClaimVestingRuleResponseDto>> getByRuleTypeId(
+            Long ruleTypeId) {
+
+        try {
+
+            List<ClaimVestingRuleResponseDto> responseDtos =
+                    repository.findByRuleType_Id(ruleTypeId)
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            if (responseDtos.isEmpty()) {
+                throw ClaimException.notFound(
+                        "No Claim Vesting Rules found for rule type id: "
+                                + ruleTypeId
+                );
+            }
+
+            return ApiResponseDTO.success(
+                    "Claim Vesting Rules fetched successfully",
+                    responseDtos
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error fetching Claim Vesting Rules by rule type", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Claim Vesting Rules",
+                    ex
+            );
+        }
     }
 
-    // =========================
+    // -----------------------------
     // DELETE
-    // =========================
+    // -----------------------------
     @Override
-    public void deleteRule(Long id) {
-        ClaimVestingRuleMaster entity = repository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound("Rule not found: " + id));
+    public ApiResponseDTO<String> deleteRule(Long id) {
 
-        repository.delete(entity);
+        try {
+
+            ClaimVestingRuleMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Claim Vesting Rule",
+                                    String.valueOf(id)
+                            ));
+
+            repository.delete(entity);
+
+            return ApiResponseDTO.success(
+                    "Claim Vesting Rule deleted successfully"
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error deleting Claim Vesting Rule", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to delete Claim Vesting Rule",
+                    ex
+            );
+        }
     }
 
-    // =========================
-    // FK HELPERS (CLEAN CENTRALIZED)
-    // =========================
+    // -----------------------------
+    // HELPERS
+    // -----------------------------
     private AgencyCategory getCategory(String id) {
-        return categoryRepository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound("Category not found: " + id));
-    }
 
-    private AgencyCategory getCategoryByCode(String code) {
-        return categoryRepository.findByCategoryId(code)
-                .orElseThrow(() -> ClaimException.notFound("Category not found: " + code));
+        return categoryRepository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Agency Category",
+                                id
+                        ));
     }
 
     private VestingRefundType getRefund(Long id) {
+
         return refundRepository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound("Refund not found: " + id));
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Refund Type",
+                                String.valueOf(id)
+                        ));
     }
 
     private RuleTypeMaster getRuleType(Long id) {
+
         return ruleTypeRepository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound("RuleType not found: " + id));
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Rule Type",
+                                String.valueOf(id)
+                        ));
     }
 }

@@ -24,7 +24,7 @@ public interface DeductionReferenceTypeRepository extends JpaRepository<Deductio
     // -------------------------------------------------
     // GET ACTIVE ONLY
     // -------------------------------------------------
-    List<DeductionReferenceTypeMaster> findAllByIsActive(ActivityEnum isActive);
+    List<DeductionReferenceTypeMaster> findByIsActive(ActivityEnum isActive);
 
     // -------------------------------------------------
     // OPTIONAL: ACTIVE BY CODE

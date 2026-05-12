@@ -19,13 +19,12 @@ public interface ClaimVestingRuleMasterMapper {
     // =========================
     @Mapping(source = "category", target = "category")
     @Mapping(source = "ruleType", target = "ruleType")
-    ClaimVestingRuleResponseDto toDto(ClaimVestingRuleMaster entity);
+    ClaimVestingRuleResponseDto toResponseDto(ClaimVestingRuleMaster entity);
 
-    List<ClaimVestingRuleResponseDto> toDto(List<ClaimVestingRuleMaster> entities);
+    List<ClaimVestingRuleResponseDto> toResponseDto(List<ClaimVestingRuleMaster> entities);
 
     // =========================
     // REQUEST DTO → ENTITY
-    // (FKs handled in service)
     // =========================
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", ignore = true)

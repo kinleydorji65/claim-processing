@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.common;
 
 import com.claim.claim_processing.common.DTO.request.common.ActionRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.ActionResponseDto;
 import com.claim.claim_processing.common.service.common.ActionMasterService;
 import lombok.RequiredArgsConstructor;
@@ -20,59 +21,82 @@ public class ActionMasterController {
     // CREATE
     // -------------------------------
     @PostMapping
-    public ResponseEntity<ActionResponseDto> create(
-            @RequestBody ActionRequestDto dto) {
+    public ResponseEntity<?> create(
+            @RequestBody ActionRequestDto dto
+    ) {
 
-        return ResponseEntity.ok(service.create(dto));
+        ApiResponseDTO<ActionResponseDto> response =
+                service.create(dto);
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // PATCH (PARTIAL UPDATE ONLY)
     // -------------------------------
     @PatchMapping("/{id}")
-    public ResponseEntity<ActionResponseDto> patch(
+    public ResponseEntity<?> patch(
             @PathVariable Long id,
-            @RequestBody ActionRequestDto dto) {
+            @RequestBody ActionRequestDto dto
+    ) {
 
         dto.setId(id);
-        return ResponseEntity.ok(service.patch(dto));
+
+        ApiResponseDTO<ActionResponseDto> response =
+                service.patch(dto);
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // GET BY ID
     // -------------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<ActionResponseDto> getById(
-            @PathVariable Long id) {
+    public ResponseEntity<?> getById(
+            @PathVariable Long id
+    ) {
 
-        return ResponseEntity.ok(service.getById(id));
+        ApiResponseDTO<ActionResponseDto> response =
+                service.getById(id);
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // GET ALL
     // -------------------------------
     @GetMapping
-    public ResponseEntity<List<ActionResponseDto>> getAll() {
+    public ResponseEntity<?> getAll() {
 
-        return ResponseEntity.ok(service.getAll());
+        ApiResponseDTO<List<ActionResponseDto>> response =
+                service.getAll();
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // GET ALL ACTIVE
     // -------------------------------
     @GetMapping("/active")
-    public ResponseEntity<List<ActionResponseDto>> getAllActive() {
+    public ResponseEntity<?> getAllActive() {
 
-        return ResponseEntity.ok(service.getAllActive());
+        ApiResponseDTO<List<ActionResponseDto>> response =
+                service.getAllActive();
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // SOFT DELETE
     // -------------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(
+            @PathVariable Long id
+    ) {
 
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+        ApiResponseDTO<String> response =
+                service.delete(id);
+
+        return ResponseEntity.ok(response);
     }
 }
