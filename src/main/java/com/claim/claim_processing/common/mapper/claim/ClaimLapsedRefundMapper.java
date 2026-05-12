@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public abstract class ClaimLapsedRefundMapper {
 
     @Autowired
@@ -37,7 +37,6 @@ public abstract class ClaimLapsedRefundMapper {
     protected RuleTypeRepository ruleTypeRepository;
 
 
-    @Mapping(target = "id", ignore = true)
     @Mapping(target = "claimCircumstance", ignore = true)
     @Mapping(target = "schemeType", ignore = true)
     @Mapping(target = "ruleType", ignore = true)

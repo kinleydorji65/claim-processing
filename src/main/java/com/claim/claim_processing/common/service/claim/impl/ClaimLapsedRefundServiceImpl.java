@@ -16,6 +16,8 @@ import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundCompo
 import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundRepository;
 import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeMasterRepository;
 import com.claim.claim_processing.common.service.claim.ClaimLapsedRefundService;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -37,10 +39,12 @@ public class ClaimLapsedRefundServiceImpl implements ClaimLapsedRefundService {
     // CREATE
     // -------------------------------
     @Override
+    @Transactional
     public ApiResponseDTO<ClaimLapsedRefundResponseDto> create(ClaimLapsedRefundRequestDto dto) {
 
         ClaimLapsedRefundMaster entity = mapper.toEntity(dto);
         ClaimLapsedRefundMaster saved = repository.save(entity);
+        repository.flush();
         ClaimLapsedRefundCategoryMap mapMemberCategory = mapMemberCategory(saved, dto.getMemberCategoryId());
         ClaimLapsedRefundComponentMap benefitComponent = mapClaimLapsedBenefitComponent(saved, mapMemberCategory, dto.getBenefitTypeId());
 

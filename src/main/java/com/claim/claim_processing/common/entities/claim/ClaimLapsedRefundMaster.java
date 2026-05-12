@@ -21,7 +21,10 @@ import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 public class ClaimLapsedRefundMaster {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "claim_refund_seq")
+    @SequenceGenerator(name = "claim_refund_seq", 
+                       sequenceName = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA.ISEQ$$_92310",  // Use the actual sequence name
+                       allocationSize = 1)
     @Column(name = "ID")
     private Long id;
 
