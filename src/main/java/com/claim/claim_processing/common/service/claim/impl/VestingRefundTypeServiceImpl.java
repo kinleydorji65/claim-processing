@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.claim.impl;
 
 import com.claim.claim_processing.common.DTO.request.claim.VestingRefundTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.VestingRefundTypeResponseDto;
 import com.claim.claim_processing.common.entities.claim.VestingRefundBenefitMap;
 import com.claim.claim_processing.common.entities.claim.VestingRefundType;
@@ -29,7 +30,7 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
     private final BenefitComponentTypeMasterRepository benefitComponentTypeMasterRepository;
 
     @Override
-    public VestingRefundTypeResponseDto create(VestingRefundTypeRequestDto requestDto) {
+    public ApiResponseDTO<VestingRefundTypeResponseDto> create(VestingRefundTypeRequestDto requestDto) {
 
         if (repository.existsByCode(requestDto.getCode())) {
             throw ClaimException.conflict(
@@ -40,7 +41,7 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
         VestingRefundType entity = mapper.toEntity(requestDto);
         repository.save(entity);
         List<BenefitComponentTypeMaster> benefitComponentTypeMasters = mapBenefitComponents(entity, requestDto.getBenefitComponentIds());
-        return mapper.toDto(entity, benefitComponentTypeMasters);
+        return ApiResponseDTO.success(mapper.toDto(entity, benefitComponentTypeMasters));
     }
 
     private List<BenefitComponentTypeMaster> mapBenefitComponents(VestingRefundType entity, List<Long> componentIds) {
@@ -74,7 +75,7 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
     }
 
     @Override
-    public VestingRefundTypeResponseDto update(Long id, VestingRefundTypeRequestDto requestDto) {
+    public ApiResponseDTO<VestingRefundTypeResponseDto> update(Long id, VestingRefundTypeRequestDto requestDto) {
 
         VestingRefundType existing = repository.findById(id)
                 .orElseThrow(() ->
@@ -93,11 +94,11 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
         mapper.updateEntityFromDto(requestDto, existing);
         VestingRefundType entity = repository.save(existing);
         List<BenefitComponentTypeMaster> benefitComponentTypeMasters = mapBenefitComponents(entity, requestDto.getBenefitComponentIds());
-        return mapper.toDto(entity, benefitComponentTypeMasters);
+        return ApiResponseDTO.success(mapper.toDto(entity, benefitComponentTypeMasters));
     }
 
     @Override
-    public VestingRefundTypeResponseDto getById(Long id) {
+    public ApiResponseDTO<VestingRefundTypeResponseDto> getById(Long id) {
 
         VestingRefundType entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -107,13 +108,13 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
                 .stream()
                 .map(VestingRefundBenefitMap::getBenefitComponentType)
                 .toList();
-        return mapper.toDto(entity, benefitComponentTypeMasters);
+        return ApiResponseDTO.success(mapper.toDto(entity, benefitComponentTypeMasters));
     }
 
     @Override
-    public List<VestingRefundTypeResponseDto> getAll() {
+    public ApiResponseDTO<List<VestingRefundTypeResponseDto>> getAll() {
 
-        return repository.findAll()
+        List<VestingRefundTypeResponseDto> dtos = repository.findAll()
                 .stream()
                 .map(entity -> {
                     List<BenefitComponentTypeMaster> benefitComponentTypeMasters = benefitMapRepository.findByVestingRefundType_Id(entity.getId())
@@ -123,10 +124,11 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
                     return mapper.toDto(entity, benefitComponentTypeMasters);
                 })
                 .toList();
+        return ApiResponseDTO.success(dtos);
     }
 
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         VestingRefundType entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -134,5 +136,6 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
                 );
 
         repository.delete(entity);
+        return ApiResponseDTO.success("VestingRefundType deleted successfully");
     }
 }

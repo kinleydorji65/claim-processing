@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.VestingRefundTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
 import com.claim.claim_processing.common.DTO.response.claim.VestingRefundTypeResponseDto;
 import com.claim.claim_processing.common.service.claim.VestingRefundTypeService;
@@ -19,79 +20,49 @@ public class VestingRefundTypeController {
     private final VestingRefundTypeService service;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<VestingRefundTypeResponseDto>> create(
+    public ResponseEntity<?> create(
             @RequestBody VestingRefundTypeRequestDto requestDto
     ) {
 
-        VestingRefundTypeResponseDto response = service.create(requestDto);
+        ApiResponseDTO<VestingRefundTypeResponseDto> response = service.create(requestDto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<VestingRefundTypeResponseDto>builder()
-                        .success(true)
-                        .message("Vesting Refund Type created successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<VestingRefundTypeResponseDto>> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody VestingRefundTypeRequestDto requestDto
     ) {
 
-        VestingRefundTypeResponseDto response = service.update(id, requestDto);
+        ApiResponseDTO<VestingRefundTypeResponseDto> response = service.update(id, requestDto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<VestingRefundTypeResponseDto>builder()
-                        .success(true)
-                        .message("Vesting Refund Type updated successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<VestingRefundTypeResponseDto>> getById(
+    public ResponseEntity<ApiResponseDTO<VestingRefundTypeResponseDto>> getById(
             @PathVariable Long id
     ) {
 
-        VestingRefundTypeResponseDto response = service.getById(id);
+        ApiResponseDTO<VestingRefundTypeResponseDto> response = service.getById(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<VestingRefundTypeResponseDto>builder()
-                        .success(true)
-                        .message("Vesting Refund Type fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<VestingRefundTypeResponseDto>>> getAll() {
+    public ResponseEntity<ApiResponseDTO<List<VestingRefundTypeResponseDto>>> getAll() {
 
-        List<VestingRefundTypeResponseDto> response = service.getAll();
+        ApiResponseDTO<List<VestingRefundTypeResponseDto>> response = service.getAll();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<VestingRefundTypeResponseDto>>builder()
-                        .success(true)
-                        .message("Vesting Refund Types fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response = service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<Void>builder()
-                        .success(true)
-                        .message("Vesting Refund Type deleted successfully")
-                        .data(null)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }
