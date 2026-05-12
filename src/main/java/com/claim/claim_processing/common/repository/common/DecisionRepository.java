@@ -15,5 +15,5 @@ public interface DecisionRepository extends JpaRepository<DecisionMaster, Long> 
 
     boolean existsByCode(String code);
 
-    List<DecisionMaster> findAllByIsActive(ActivityEnum isActive);
+    List<DecisionMaster> findByIsActive(ActivityEnum isActive);
 }

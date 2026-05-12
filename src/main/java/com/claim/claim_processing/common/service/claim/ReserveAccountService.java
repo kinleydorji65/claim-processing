@@ -1,23 +1,39 @@
 package com.claim.claim_processing.common.service.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.ReserveAccountRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ReserveAccountResponseDto;
 
 import java.util.List;
 
 public interface ReserveAccountService {
 
-    ReserveAccountResponseDto create(ReserveAccountRequestDto dto);
+    ApiResponseDTO<ReserveAccountResponseDto> create(
+            ReserveAccountRequestDto dto
+    );
 
-    ReserveAccountResponseDto update(Long id, ReserveAccountRequestDto dto);
 
-    ReserveAccountResponseDto getById(Long id);
+    ApiResponseDTO<ReserveAccountResponseDto> update(
+            Long id,
+            ReserveAccountRequestDto dto
+    );
 
-    List<ReserveAccountResponseDto> getAll();
+    ApiResponseDTO<ReserveAccountResponseDto> getById(
+            Long id
+    );
 
-    void delete(Long id);
+    ApiResponseDTO<List<ReserveAccountResponseDto>> getAll();
 
-    List<ReserveAccountResponseDto> getByAccountTypeId(Long accountTypeId);
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 
-    List<ReserveAccountResponseDto> getBySchemeTypeId(Long schemeTypeId);
+
+    ApiResponseDTO<List<ReserveAccountResponseDto>> getByAccountTypeId(
+            Long accountTypeId
+    );
+
+    ApiResponseDTO<List<ReserveAccountResponseDto>> getBySchemeTypeId(
+            Long schemeTypeId
+    );
 }

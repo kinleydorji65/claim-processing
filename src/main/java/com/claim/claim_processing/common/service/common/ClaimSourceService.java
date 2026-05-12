@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.common;
 
 import com.claim.claim_processing.common.DTO.request.common.ClaimSourceRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.ClaimSourceResponseDto;
 import com.claim.claim_processing.common.DTO.update.common.ClaimSourceUpdateDto;
 
@@ -8,17 +9,19 @@ import java.util.List;
 
 public interface ClaimSourceService {
 
-    ClaimSourceResponseDto create(ClaimSourceRequestDto requestDto);
+    ApiResponseDTO<List<ClaimSourceResponseDto>> getAllActive();
 
-    ClaimSourceResponseDto getById(Long id);
+    ApiResponseDTO<ClaimSourceResponseDto> getById(Long id);
 
-    ClaimSourceResponseDto getByCode(String code);
+    ApiResponseDTO<ClaimSourceResponseDto> getByCode(String code);
 
-    List<ClaimSourceResponseDto> getAll();
+    ApiResponseDTO<ClaimSourceResponseDto> create(ClaimSourceRequestDto requestDto);
 
-    List<ClaimSourceResponseDto> getAllActive();
+    ApiResponseDTO<ClaimSourceResponseDto> update(Long id, ClaimSourceUpdateDto updateDto);
 
-    ClaimSourceResponseDto update(Long id, ClaimSourceUpdateDto updateDto);
+    ApiResponseDTO<String> deactivate(Long id);
 
-    void deactivate(Long id);
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }

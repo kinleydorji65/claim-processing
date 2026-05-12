@@ -36,6 +36,10 @@ public interface BenefitComponentTypeMasterMapper {
                         .build())
                  .toList();
     }
+
+
+    List<BenefitComponentTypeMasterResponseDto> toResponseDto(
+            List<BenefitComponentTypeMaster> entities);
     /**
      * Request DTO -> Entity
      * Ignore auto-managed fields.

@@ -5,31 +5,39 @@ import com.claim.claim_processing.common.DTO.response.common.ActionResponseDto;
 import com.claim.claim_processing.common.entities.common.ActionMaster;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+import java.util.List;
+
+@Mapper(
+        componentModel = "spring",
+        uses = {},
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface ActionMasterMapper {
 
-    // -------------------------------
-    // ENTITY → RESPONSE DTO
-    // -------------------------------
-    ActionResponseDto toDto(ActionMaster entity);
+    // -----------------------------
+    // ENTITY → DTO
+    // -----------------------------
+    ActionResponseDto toResponseDto(ActionMaster entity);
 
-    // -------------------------------
-    // REQUEST DTO → ENTITY (CREATE)
-    // -------------------------------
+    List<ActionResponseDto> toResponseDto(List<ActionMaster> entities);
+
+    // -----------------------------
+    // DTO → ENTITY
+    // -----------------------------
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     ActionMaster toEntity(ActionRequestDto dto);
 
-    // -------------------------------
-    // PATCH UPDATE (NULL SAFE)
-    // -------------------------------
+    // -----------------------------
+    // PATCH UPDATE
+    // -----------------------------
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    void patchEntityFromDto(ActionRequestDto dto,
-                            @MappingTarget ActionMaster entity);
+    void updateEntityFromDto(ActionRequestDto dto, @MappingTarget ActionMaster entity);
 }

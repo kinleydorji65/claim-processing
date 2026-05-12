@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.common.impl;
 
 import com.claim.claim_processing.common.DTO.request.common.ClaimSourceRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.ClaimSourceResponseDto;
 import com.claim.claim_processing.common.DTO.update.common.ClaimSourceUpdateDto;
 import com.claim.claim_processing.common.entities.common.ClaimSourceMaster;
@@ -12,74 +13,138 @@ import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ClaimSourceServiceImpl implements ClaimSourceService {
 
-
     private final ClaimSourceRepository repository;
     private final ClaimSourceMapper mapper;
 
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
     @Override
-    public ClaimSourceResponseDto create(ClaimSourceRequestDto requestDto) {
+    public ApiResponseDTO<List<ClaimSourceResponseDto>> getAllActive() {
+
+        List<ClaimSourceResponseDto> response =
+                repository.findByIsActive(ActivityEnum.Y)
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
+
+        return ApiResponseDTO.success("Active claim sources fetched successfully", response);
+    }
+
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<ClaimSourceResponseDto> getById(Long id) {
+
+        ClaimSourceMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Claim Source", String.valueOf(id)));
+
+        return ApiResponseDTO.success("Claim source fetched successfully",
+                mapper.toResponseDto(entity));
+    }
+
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<ClaimSourceResponseDto> getByCode(String code) {
+
+        ClaimSourceMaster entity = repository.findByCode(code)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Claim Source", code));
+
+        return ApiResponseDTO.success("Claim source fetched successfully",
+                mapper.toResponseDto(entity));
+    }
+
+    // -----------------------------
+    // CREATE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<ClaimSourceResponseDto> create(ClaimSourceRequestDto requestDto) {
+
         if (repository.existsByCode(requestDto.getCode())) {
-            throw ClaimException.conflict("Claim source code already exists: " + requestDto.getCode());
+            throw ClaimException.conflict("Claim Source code already exists: " + requestDto.getCode());
         }
 
         ClaimSourceMaster entity = mapper.toEntity(requestDto);
-        entity.setCreatedBy("SYSTEM");
-        entity.setUpdatedBy("SYSTEM");
+
+        entity.setIsActive(ActivityEnum.Y);
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
 
         ClaimSourceMaster saved = repository.save(entity);
-        return mapper.toResponseDto(saved);
+
+        return ApiResponseDTO.success("Claim source created successfully",
+                mapper.toResponseDto(saved));
     }
 
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
     @Override
-    public ClaimSourceResponseDto getById(Long id) {
-        return mapper.toResponseDto(findById(id));
-    }
+    public ApiResponseDTO<ClaimSourceResponseDto> update(Long id, ClaimSourceUpdateDto updateDto) {
 
-    @Override
-    public ClaimSourceResponseDto getByCode(String code) {
-        ClaimSourceMaster entity = repository.findByCode(code)
-                .orElseThrow(() -> ClaimException.notFound("Claim source not found with code: " + code));
-
-        return mapper.toResponseDto(entity);
-    }
-
-    @Override
-    public List<ClaimSourceResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
-    }
-
-    @Override
-    public List<ClaimSourceResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
-    }
-
-    @Override
-    public ClaimSourceResponseDto update(Long id, ClaimSourceUpdateDto updateDto) {
-        ClaimSourceMaster entity = findById(id);
+        ClaimSourceMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Claim Source", String.valueOf(id)));
 
         mapper.updateEntityFromDto(updateDto, entity);
-        entity.setUpdatedBy("SYSTEM");
+
+        entity.setUpdatedAt(LocalDateTime.now());
 
         ClaimSourceMaster updated = repository.save(entity);
-        return mapper.toResponseDto(updated);
+
+        return ApiResponseDTO.success("Claim source updated successfully",
+                mapper.toResponseDto(updated));
     }
 
+    // -----------------------------
+    // DEACTIVATE
+    // -----------------------------
     @Override
-    public void deactivate(Long id) {
-        ClaimSourceMaster entity = findById(id);
+    public ApiResponseDTO<String> deactivate(Long id) {
+
+        ClaimSourceMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound("Claim Source", String.valueOf(id)));
+
         entity.setIsActive(ActivityEnum.N);
-        entity.setUpdatedBy("SYSTEM");
+        entity.setUpdatedAt(LocalDateTime.now());
+
         repository.save(entity);
+
+        return ApiResponseDTO.success("Claim source deactivated successfully");
     }
 
-    private ClaimSourceMaster findById(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound("Claim source not found with id: " + id));
+    // -----------------------------
+    // DELETE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<String> delete(Long id) {
+
+        try {
+
+            ClaimSourceMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound("Claim Source", String.valueOf(id)));
+
+            entity.setIsActive(ActivityEnum.N);
+            repository.save(entity);
+
+            return ApiResponseDTO.success("Claim Source deleted successfully", "DELETED");
+
+        } catch (Exception ex) {
+            throw ClaimException.internalError("Failed to delete Claim Source", ex);
+        }
     }
 }

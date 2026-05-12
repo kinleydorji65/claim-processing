@@ -1,78 +1,163 @@
 package com.claim.claim_processing.common.service.claim.impl;
 
-import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
 import com.claim.claim_processing.common.DTO.request.claim.TerminationReasonCreateRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.TerminationReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.TerminationReasonUpdateRequestDto;
+import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.claim.TerminationReasonMapper;
 import com.claim.claim_processing.common.repository.claim.TerminationReasonRepository;
 import com.claim.claim_processing.common.service.claim.TerminationReasonService;
+import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class TerminationReasonServiceImpl implements TerminationReasonService {
 
-    private final TerminationReasonRepository terminationReasonRepository;
-    private final TerminationReasonMapper terminationReasonMapper;
+    private final TerminationReasonRepository repository;
+    private final TerminationReasonMapper mapper;
 
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public List<TerminationReasonResponseDto> getAllActive() {
-        List<TerminationReasonMaster> reasons =
-                terminationReasonRepository.findAllByOrderByIsActiveAsc(ActivityEnum.Y);
+    public ApiResponseDTO<List<TerminationReasonResponseDto>> getAllActive() {
 
-        return terminationReasonMapper.toResponseDtoList(reasons);
-    }
+        List<TerminationReasonResponseDto> response =
+                repository.findByIsActive(ActivityEnum.Y)
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
 
-    @Override
-    @Transactional(readOnly = true)
-    public TerminationReasonResponseDto getById(Long id) {
-        TerminationReasonMaster reason = terminationReasonRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Termination reason not found with id: " + id));
-
-        return terminationReasonMapper.toResponseDto(reason);
-    }
-
-    @Override
-    public TerminationReasonResponseDto create(TerminationReasonCreateRequestDto requestDto) {
-        if (terminationReasonRepository.existsByCode(requestDto.getCode())) {
-            throw new RuntimeException("Termination reason code already exists: " + requestDto.getCode());
+        if (response.isEmpty()) {
+            throw ClaimException.notFound("No active Termination Reasons found");
         }
 
-        TerminationReasonMaster reason = terminationReasonMapper.toEntity(requestDto);
-        reason.setCreatedBy("SYSTEM");
-
-        TerminationReasonMaster savedReason = terminationReasonRepository.save(reason);
-        return terminationReasonMapper.toResponseDto(savedReason);
+        return ApiResponseDTO.success(
+                "Termination Reasons fetched successfully",
+                response
+        );
     }
 
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @Override
-    public TerminationReasonResponseDto update(Long id, TerminationReasonUpdateRequestDto requestDto) {
-        TerminationReasonMaster existingReason = terminationReasonRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Termination reason not found with id: " + id));
+    public ApiResponseDTO<TerminationReasonResponseDto> getById(Long id) {
 
-        terminationReasonMapper.updateEntityFromDto(requestDto, existingReason);
-        existingReason.setUpdatedBy("SYSTEM");
+        TerminationReasonMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Termination Reason",
+                                String.valueOf(id)
+                        )
+                );
 
-        TerminationReasonMaster updatedReason = terminationReasonRepository.save(existingReason);
-        return terminationReasonMapper.toResponseDto(updatedReason);
+        return ApiResponseDTO.success(
+                "Termination Reason fetched successfully",
+                mapper.toResponseDto(entity)
+        );
     }
 
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @Override
-    public void deactivate(Long id) {
-        TerminationReasonMaster existingReason = terminationReasonRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Termination reason not found with id: " + id));
+    public ApiResponseDTO<TerminationReasonResponseDto> create(
+            TerminationReasonCreateRequestDto requestDto
+    ) {
 
-        existingReason.setIsActive(ActivityEnum.N);
-        existingReason.setUpdatedBy("SYSTEM");
+        try {
 
-        terminationReasonRepository.save(existingReason);
+            TerminationReasonMaster entity = mapper.toEntity(requestDto);
+
+            entity.setCreatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(LocalDateTime.now());
+
+            if (entity.getIsActive() == null) {
+                entity.setIsActive(ActivityEnum.Y);
+            }
+
+            TerminationReasonMaster saved = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Termination Reason created successfully",
+                    mapper.toResponseDto(saved)
+            );
+
+        } catch (Exception ex) {
+            throw ClaimException.internalError(
+                    "Failed to create Termination Reason",
+                    ex
+            );
+        }
+    }
+
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<TerminationReasonResponseDto> update(
+            Long id,
+            TerminationReasonUpdateRequestDto requestDto
+    ) {
+
+        try {
+
+            TerminationReasonMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Termination Reason",
+                                    String.valueOf(id)
+                            )
+                    );
+
+            mapper.updateEntityFromDto(requestDto, entity);
+
+            entity.setUpdatedAt(LocalDateTime.now());
+
+            TerminationReasonMaster updated = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Termination Reason updated successfully",
+                    mapper.toResponseDto(updated)
+            );
+
+        } catch (Exception ex) {
+            throw ClaimException.internalError(
+                    "Failed to update Termination Reason",
+                    ex
+            );
+        }
+    }
+
+    // -----------------------------
+    // DEACTIVATE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<String> deactivate(Long id) {
+
+        TerminationReasonMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Termination Reason",
+                                String.valueOf(id)
+                        )
+                );
+
+        entity.setIsActive(ActivityEnum.N);
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        repository.save(entity);
+
+        return ApiResponseDTO.success(
+                "Termination Reason deactivated successfully"
+        );
     }
 }

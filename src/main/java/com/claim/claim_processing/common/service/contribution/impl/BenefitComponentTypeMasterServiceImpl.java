@@ -123,6 +123,13 @@ public class BenefitComponentTypeMasterServiceImpl
 
     @Override
     @Transactional(readOnly = true)
+    public ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> getAllWithoutComponent() {
+        List<BenefitComponentTypeMaster> benefitComponents = repository.findAll();
+        return ApiResponseDTO.success(mapper.toResponseDto(benefitComponents));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> getByStatus(
             ActivityEnum isActive
     ) {

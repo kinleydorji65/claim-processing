@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.ReserveAccountRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ReserveAccountResponseDto;
 import com.claim.claim_processing.common.service.claim.ReserveAccountService;
 import lombok.RequiredArgsConstructor;
@@ -20,69 +21,96 @@ public class ReserveAccountController {
     // CREATE
     // -------------------------------
     @PostMapping
-    public ResponseEntity<ReserveAccountResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody ReserveAccountRequestDto dto
     ) {
-        return ResponseEntity.ok(service.create(dto));
+
+        ApiResponseDTO<ReserveAccountResponseDto> response =
+                service.create(dto);
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // UPDATE
     // -------------------------------
     @PutMapping("/{id}")
-    public ResponseEntity<ReserveAccountResponseDto> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody ReserveAccountRequestDto dto
     ) {
-        return ResponseEntity.ok(service.update(id, dto));
+
+        ApiResponseDTO<ReserveAccountResponseDto> response =
+                service.update(id, dto);
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // GET BY ID
     // -------------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<ReserveAccountResponseDto> getById(
+    public ResponseEntity<?> getById(
             @PathVariable Long id
     ) {
-        return ResponseEntity.ok(service.getById(id));
+
+        ApiResponseDTO<ReserveAccountResponseDto> response =
+                service.getById(id);
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // GET ALL
     // -------------------------------
     @GetMapping
-    public ResponseEntity<List<ReserveAccountResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+    public ResponseEntity<?> getAll() {
+
+        ApiResponseDTO<List<ReserveAccountResponseDto>> response =
+                service.getAll();
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // DELETE
     // -------------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
+    public ResponseEntity<?> delete(
             @PathVariable Long id
     ) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+
+        ApiResponseDTO<String> response =
+                service.delete(id);
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // FILTER BY ACCOUNT TYPE
     // -------------------------------
     @GetMapping("/by-account-type/{accountTypeId}")
-    public ResponseEntity<List<ReserveAccountResponseDto>> getByAccountType(
+    public ResponseEntity<?> getByAccountType(
             @PathVariable Long accountTypeId
     ) {
-        return ResponseEntity.ok(service.getByAccountTypeId(accountTypeId));
+
+        ApiResponseDTO<List<ReserveAccountResponseDto>> response =
+                service.getByAccountTypeId(accountTypeId);
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // FILTER BY SCHEME TYPE
     // -------------------------------
     @GetMapping("/by-scheme-type/{schemeTypeId}")
-    public ResponseEntity<List<ReserveAccountResponseDto>> getBySchemeType(
+    public ResponseEntity<?> getBySchemeType(
             @PathVariable Long schemeTypeId
     ) {
-        return ResponseEntity.ok(service.getBySchemeTypeId(schemeTypeId));
+
+        ApiResponseDTO<List<ReserveAccountResponseDto>> response =
+                service.getBySchemeTypeId(schemeTypeId);
+
+        return ResponseEntity.ok(response);
     }
 }
