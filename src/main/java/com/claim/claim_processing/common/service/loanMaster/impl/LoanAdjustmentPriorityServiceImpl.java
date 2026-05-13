@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.loanMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.loanMaster.LoanAdjustmentPriorityRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.loanMaster.LoanAdjustmentPriorityResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.loanMaster.LoanAdjustmentPriorityMaster;
@@ -11,102 +12,108 @@ import com.claim.claim_processing.common.repository.loanMaster.LoanTypeRepositor
 import com.claim.claim_processing.common.service.loanMaster.LoanAdjustmentPriorityService;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class LoanAdjustmentPriorityServiceImpl
-        implements LoanAdjustmentPriorityService {
+public class LoanAdjustmentPriorityServiceImpl implements LoanAdjustmentPriorityService {
 
     private final LoanAdjustmentPriorityRepository repository;
     private final LoanTypeRepository loanTypeRepository;
     private final LoanAdjustmentPriorityMapper mapper;
 
-    // 🔹 CREATE
+    // ---------------- CREATE ----------------
     @Override
-    public LoanAdjustmentPriorityResponseDto create(
+    public ApiResponseDTO<LoanAdjustmentPriorityResponseDto> create(
             LoanAdjustmentPriorityRequestDto dto
     ) {
+        try {
 
-        LoanTypeMaster loanType = loanTypeRepository.findById(dto.getLoanTypeId())
-                .orElseThrow(() ->
-                        ClaimException.resourceNotFound(
-                                "LoanType",
-                                dto.getLoanTypeId().toString()
-                        )
-                );
+            LoanTypeMaster loanType = getLoanType(dto.getLoanTypeId());
 
-        // one config per loan type
-        if (repository.existsByLoanType(loanType)) {
-            throw ClaimException.conflict(
-                    "Priority already configured for loan type id: "
-                            + dto.getLoanTypeId()
-            );
-        }
-
-        LoanAdjustmentPriorityMaster entity = mapper.toEntity(dto);
-
-        entity.setLoanType(loanType);
-        entity.setCreatedBy(dto.getCreatedBy());
-
-        if (dto.getIsActive() != null) {
-            entity.setIsActive(dto.getIsActive());
-        }
-
-        return mapper.toResponseDto(repository.save(entity));
-    }
-
-    // 🔹 UPDATE
-    @Override
-    public LoanAdjustmentPriorityResponseDto update(
-            Long id,
-            LoanAdjustmentPriorityRequestDto dto
-    ) {
-
-        LoanAdjustmentPriorityMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.resourceNotFound(
-                                "LoanAdjustmentPriority",
-                                id.toString()
-                        )
-                );
-
-        mapper.updateEntityFromDto(dto, entity);
-
-        // FK update support
-        if (dto.getLoanTypeId() != null) {
-
-            LoanTypeMaster loanType = loanTypeRepository.findById(dto.getLoanTypeId())
-                    .orElseThrow(() ->
-                            ClaimException.resourceNotFound(
-                                    "LoanType",
-                                    dto.getLoanTypeId().toString()
-                            )
-                    );
-
-            if (repository.existsByLoanTypeAndIdNot(loanType, id)) {
+            if (repository.existsByLoanType(loanType)) {
                 throw ClaimException.conflict(
-                        "Priority already configured for loan type id: "
-                                + dto.getLoanTypeId()
+                        "Priority already configured for loan type: " + dto.getLoanTypeId()
                 );
             }
 
+            LoanAdjustmentPriorityMaster entity = mapper.toEntity(dto);
             entity.setLoanType(loanType);
+            entity.setCreatedBy(dto.getCreatedBy());
+            entity.setUpdatedBy(dto.getUpdatedBy());
+
+            if (dto.getIsActive() == null) {
+                entity.setIsActive(ActivityEnum.Y);
+            }
+
+            LoanAdjustmentPriorityMaster saved = repository.save(entity);
+
+            return ApiResponseDTO.created(mapper.toResponseDto(saved));
+
+        } catch (ClaimException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Error creating LoanAdjustmentPriority", ex);
+            throw ClaimException.internalError("Failed to create Loan Adjustment Priority", ex);
         }
-
-        entity.setUpdatedBy(dto.getUpdatedBy());
-
-        return mapper.toResponseDto(repository.save(entity));
     }
 
-    // 🔹 GET BY ID
+    // ---------------- UPDATE ----------------
+    @Override
+    public ApiResponseDTO<LoanAdjustmentPriorityResponseDto> update(
+            Long id,
+            LoanAdjustmentPriorityRequestDto dto
+    ) {
+        try {
+
+            LoanAdjustmentPriorityMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "LoanAdjustmentPriority",
+                                    id.toString()
+                            )
+                    );
+
+            mapper.updateEntityFromDto(dto, entity);
+
+            if (dto.getLoanTypeId() != null) {
+
+                LoanTypeMaster loanType = getLoanType(dto.getLoanTypeId());
+
+                if (repository.existsByLoanTypeAndIdNot(loanType, id)) {
+                    throw ClaimException.conflict(
+                            "Priority already configured for loan type: " + dto.getLoanTypeId()
+                    );
+                }
+
+                entity.setLoanType(loanType);
+            }
+
+            LoanAdjustmentPriorityMaster updated = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Updated successfully",
+                    mapper.toResponseDto(updated)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Error updating LoanAdjustmentPriority", ex);
+            throw ClaimException.internalError("Failed to update Loan Adjustment Priority", ex);
+        }
+    }
+
+    // ---------------- GET BY ID ----------------
     @Override
     @Transactional(readOnly = true)
-    public LoanAdjustmentPriorityResponseDto getById(Long id) {
+    public ApiResponseDTO<LoanAdjustmentPriorityResponseDto> getById(Long id) {
 
         LoanAdjustmentPriorityMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -116,60 +123,92 @@ public class LoanAdjustmentPriorityServiceImpl
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
-    // 🔹 GET ALL
+    // ---------------- GET ALL ----------------
     @Override
     @Transactional(readOnly = true)
-    public List<LoanAdjustmentPriorityResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
+    public ApiResponseDTO<List<LoanAdjustmentPriorityResponseDto>> getAll() {
+
+        List<LoanAdjustmentPriorityResponseDto> list =
+                mapper.toResponseDtoList(repository.findAll());
+
+        return ApiResponseDTO.success(list);
     }
 
-    // 🔹 GET ACTIVE
+    // ---------------- GET ACTIVE ----------------
     @Override
     @Transactional(readOnly = true)
-    public List<LoanAdjustmentPriorityResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(
-                repository.findByIsActive(ActivityEnum.Y)
-        );
+    public ApiResponseDTO<List<LoanAdjustmentPriorityResponseDto>> getAllActive() {
+
+        List<LoanAdjustmentPriorityResponseDto> list =
+                mapper.toResponseDtoList(repository.findByIsActive(ActivityEnum.Y));
+
+        return ApiResponseDTO.success(list);
     }
 
-    // 🔹 GET BY FK ID
+    // ---------------- GET BY LOAN TYPE ----------------
     @Override
     @Transactional(readOnly = true)
-    public List<LoanAdjustmentPriorityResponseDto> getByLoanTypeId(
-            Long loanTypeId
-    ) {
+    public ApiResponseDTO<List<LoanAdjustmentPriorityResponseDto>> getByLoanTypeId(Long loanTypeId) {
 
+        // 1. Validate FK exists
         LoanTypeMaster loanType = loanTypeRepository.findById(loanTypeId)
                 .orElseThrow(() ->
                         ClaimException.resourceNotFound(
                                 "LoanType",
-                                loanTypeId.toString()
+                                String.valueOf(loanTypeId)
                         )
                 );
 
-        return mapper.toResponseDtoList(
-                repository.findByLoanType(loanType)
+        // 2. Fetch mappings
+        List<LoanAdjustmentPriorityMaster> list =
+                repository.findByLoanType(loanType);
+
+        // 3. Business rule validation (THIS IS YOUR BLOCK)
+        if (list.isEmpty()) {
+            throw ClaimException.notFound(
+                    "No Loan Adjustment Priority configured for Loan Type: " + loanTypeId
+            );
+        }
+
+        // 4. Return response
+        return ApiResponseDTO.success(
+                mapper.toResponseDtoList(list)
         );
     }
 
-
-    // 🔹 DELETE (SOFT DELETE)
+    // ---------------- DELETE (SOFT) ----------------
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
-        LoanAdjustmentPriorityMaster entity = repository.findById(id)
+        try {
+
+            LoanAdjustmentPriorityMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "LoanAdjustmentPriority",
+                                    id.toString()
+                            )
+                    );
+
+            entity.setIsActive(ActivityEnum.N);
+            repository.save(entity);
+
+            return ApiResponseDTO.success("Deactivated successfully", null);
+
+        } catch (Exception ex) {
+            log.error("Error deleting LoanAdjustmentPriority", ex);
+            throw ClaimException.internalError("Failed to delete Loan Adjustment Priority", ex);
+        }
+    }
+
+    // ---------------- HELPER ----------------
+    private LoanTypeMaster getLoanType(Long id) {
+        return loanTypeRepository.findById(id)
                 .orElseThrow(() ->
-                        ClaimException.resourceNotFound(
-                                "LoanAdjustmentPriority",
-                                id.toString()
-                        )
+                        ClaimException.resourceNotFound("LoanType", id.toString())
                 );
-
-        entity.setIsActive(ActivityEnum.N);
-
-        repository.save(entity);
     }
 }

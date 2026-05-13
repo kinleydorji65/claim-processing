@@ -1,14 +1,17 @@
 package com.claim.claim_processing.common.service.contribution.impl;
 
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.DTO.request.contribution.SchemeCreateRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.contribution.SchemeUpdateRequestDto;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.mapper.contribution.SchemeTypeMapper;
 import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
 import com.claim.claim_processing.common.service.contribution.SchemeService;
+import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,61 +19,208 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 public class SchemeServiceImpl implements SchemeService {
 
-    private final SchemeTypeRepository schemeRepository;
-    private final SchemeTypeMapper SchemeTypeMapper;
+    private final SchemeTypeRepository repository;
+    private final SchemeTypeMapper mapper;
 
     @Override
-    @Transactional(readOnly = true)
-    public List<SchemeTypeResponseDto> getAllActive() {
-        List<SchemeMaster> schemes = schemeRepository.findByIsActiveOrderByNameAsc(ActivityEnum.Y);
-        return SchemeTypeMapper.toResponseDtoList(schemes);
-    }
+    public ApiResponseDTO<SchemeTypeResponseDto> create(
+            SchemeCreateRequestDto dto
+    ) {
 
-    @Override
-    @Transactional(readOnly = true)
-    public SchemeTypeResponseDto getById(Long id) {
-        SchemeMaster scheme = schemeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Scheme not found with id: " + id));
+        try {
 
-        return SchemeTypeMapper.toResponseDto(scheme);
-    }
+            if (repository.existsByCode(dto.getCode())) {
+                throw ClaimException.conflict(
+                        "Scheme code already exists: " + dto.getCode()
+                );
+            }
 
-    @Override
-    public SchemeTypeResponseDto create(SchemeCreateRequestDto requestDto) {
-        if (schemeRepository.existsByCode(requestDto.getCode())) {
-            throw new RuntimeException("Scheme code already exists: " + requestDto.getCode());
+            SchemeMaster entity = mapper.toEntity(dto);
+
+            if (entity.getIsActive() == null) {
+                entity.setIsActive(ActivityEnum.Y);
+            }
+
+            SchemeMaster savedEntity = repository.save(entity);
+
+            return ApiResponseDTO.created(
+                    mapper.toResponseDto(savedEntity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error creating Scheme", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to create Scheme",
+                    ex
+            );
         }
-
-        SchemeMaster scheme = SchemeTypeMapper.toEntity(requestDto);
-        scheme.setCreatedBy("SYSTEM");
-
-        SchemeMaster savedScheme = schemeRepository.save(scheme);
-        return SchemeTypeMapper.toResponseDto(savedScheme);
     }
 
     @Override
-    public SchemeTypeResponseDto update(Long id, SchemeUpdateRequestDto requestDto) {
-        SchemeMaster existingScheme = schemeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Scheme not found with id: " + id));
+    public ApiResponseDTO<SchemeTypeResponseDto> update(
+            Long id,
+            SchemeUpdateRequestDto dto
+    ) {
 
-        SchemeTypeMapper.updateEntityFromDto(requestDto, existingScheme);
-        existingScheme.setUpdatedBy("SYSTEM");
+        try {
 
-        SchemeMaster updatedScheme = schemeRepository.save(existingScheme);
-        return SchemeTypeMapper.toResponseDto(updatedScheme);
+            SchemeMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Scheme",
+                                    String.valueOf(id)
+                            )
+                    );
+
+            mapper.updateEntityFromDto(dto, entity);
+
+            SchemeMaster updatedEntity = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Scheme updated successfully",
+                    mapper.toResponseDto(updatedEntity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error updating Scheme", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to update Scheme",
+                    ex
+            );
+        }
     }
 
     @Override
-    public void deactivate(Long id) {
-        SchemeMaster existingScheme = schemeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Scheme not found with id: " + id));
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<SchemeTypeResponseDto> getById(
+            Long id
+    ) {
 
-        existingScheme.setIsActive(ActivityEnum.N);
-        existingScheme.setUpdatedBy("SYSTEM");
+        try {
 
-        schemeRepository.save(existingScheme);
+            SchemeMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Scheme",
+                                    String.valueOf(id)
+                            )
+                    );
+
+            return ApiResponseDTO.success(
+                    mapper.toResponseDto(entity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching Scheme by id", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Scheme",
+                    ex
+            );
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<List<SchemeTypeResponseDto>> getAll() {
+
+        try {
+
+            List<SchemeTypeResponseDto> response =
+                    repository.findAll()
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            return ApiResponseDTO.success(response);
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching all Schemes", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Schemes",
+                    ex
+            );
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<List<SchemeTypeResponseDto>> getAllActive() {
+
+        try {
+
+            List<SchemeTypeResponseDto> response =
+                    repository.findByIsActive(ActivityEnum.Y)
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            return ApiResponseDTO.success(response);
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching active Schemes", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch active Schemes",
+                    ex
+            );
+        }
+    }
+
+    @Override
+    public ApiResponseDTO<String> delete(
+            Long id
+    ) {
+
+        try {
+
+            SchemeMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Scheme",
+                                    String.valueOf(id)
+                            )
+                    );
+
+            repository.delete(entity);
+
+            return ApiResponseDTO.success(
+                    "Scheme deleted successfully",
+                    null
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error deleting Scheme", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to delete Scheme",
+                    ex
+            );
+        }
     }
 }

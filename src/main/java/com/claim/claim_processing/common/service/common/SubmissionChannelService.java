@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.common;
 
 import com.claim.claim_processing.common.DTO.request.common.SubmissionChannelRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.SubmissionChannelResponseDto;
 import com.claim.claim_processing.common.DTO.update.common.SubmissionChannelUpdateDto;
 
@@ -8,17 +9,28 @@ import java.util.List;
 
 public interface SubmissionChannelService {
 
-    SubmissionChannelResponseDto create(SubmissionChannelRequestDto requestDto);
+    ApiResponseDTO<SubmissionChannelResponseDto> create(
+            SubmissionChannelRequestDto requestDto
+    );
 
-    SubmissionChannelResponseDto getById(Long id);
+    ApiResponseDTO<SubmissionChannelResponseDto> update(
+            Long id,
+            SubmissionChannelUpdateDto updateDto
+    );
 
-    SubmissionChannelResponseDto getByCode(String code);
+    ApiResponseDTO<SubmissionChannelResponseDto> getById(
+            Long id
+    );
 
-    List<SubmissionChannelResponseDto> getAll();
+    ApiResponseDTO<SubmissionChannelResponseDto> getByCode(
+            String code
+    );
 
-    List<SubmissionChannelResponseDto> getAllActive();
+    ApiResponseDTO<List<SubmissionChannelResponseDto>> getAll();
 
-    SubmissionChannelResponseDto update(Long id, SubmissionChannelUpdateDto updateDto);
+    ApiResponseDTO<List<SubmissionChannelResponseDto>> getAllActive();
 
-    void deactivate(Long id);
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }

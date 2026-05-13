@@ -13,4 +13,6 @@ public class BusinessTypeUpdateDto {
     private String description;
     private Integer displayOrder;
     private String isActive;
+    private String code;
+    private String updatedBy;
 }

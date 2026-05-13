@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.common;
 
 import com.claim.claim_processing.common.DTO.request.common.DeductionTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.DeductionTypeResponseDto;
 import com.claim.claim_processing.common.service.common.DeductionTypeService;
 import lombok.RequiredArgsConstructor;
@@ -20,59 +21,59 @@ public class DeductionTypeController {
     // CREATE
     // -------------------------------
     @PostMapping
-    public ResponseEntity<DeductionTypeResponseDto> create(
-            @RequestBody DeductionTypeRequestDto dto) {
-
-        return ResponseEntity.ok(service.create(dto));
+    public ResponseEntity<?> create(@RequestBody DeductionTypeRequestDto dto) {
+        ApiResponseDTO<DeductionTypeResponseDto> response = service.create(dto);
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // GET BY ID
     // -------------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<DeductionTypeResponseDto> getById(
-            @PathVariable Long id) {
-
-        return ResponseEntity.ok(service.getById(id));
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        ApiResponseDTO<DeductionTypeResponseDto> response = service.getById(id);
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
-    // GET BY CODE (BUSINESS KEY)
+    // GET BY CODE
     // -------------------------------
     @GetMapping("/code/{code}")
-    public ResponseEntity<DeductionTypeResponseDto> getByCode(
-            @PathVariable String code) {
-
-        return ResponseEntity.ok(service.getByCode(code));
+    public ResponseEntity<?> getByCode(@PathVariable String code) {
+        ApiResponseDTO<DeductionTypeResponseDto> response = service.getByCode(code);
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // GET ALL ACTIVE
     // -------------------------------
     @GetMapping("/active")
-    public ResponseEntity<List<DeductionTypeResponseDto>> getAllActive() {
-
-        return ResponseEntity.ok(service.getAllActive());
+    public ResponseEntity<?> getAllActive() {
+        ApiResponseDTO<List<DeductionTypeResponseDto>> response = service.getAllActive();
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
-    // UPDATE (PATCH STYLE)
-    // -------------------------------
+// PATCH UPDATE
+// -------------------------------
     @PatchMapping("/{id}")
-    public ResponseEntity<DeductionTypeResponseDto> update(
+    public ResponseEntity<?> patch(
             @PathVariable Long id,
-            @RequestBody DeductionTypeRequestDto dto) {
+            @RequestBody DeductionTypeRequestDto dto
+    ) {
 
-        return ResponseEntity.ok(service.update(id, dto));
+        ApiResponseDTO<DeductionTypeResponseDto> response =
+                service.patch(id, dto);
+
+        return ResponseEntity.ok(response);
     }
 
     // -------------------------------
     // DELETE (SOFT DELETE)
     // -------------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        ApiResponseDTO<String> response = service.delete(id);
+        return ResponseEntity.ok(response);
     }
 }

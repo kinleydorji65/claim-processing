@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.common.impl;
 
 import com.claim.claim_processing.common.DTO.request.common.RuleTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.RuleTypeResponseDto;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -10,116 +11,163 @@ import com.claim.claim_processing.common.service.common.RuleTypeService;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class RuleTypeServiceImpl implements RuleTypeService {
 
     private final RuleTypeRepository repository;
     private final RuleTypeMapper mapper;
 
-    // 🔹 CREATE
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @Override
-    public RuleTypeResponseDto create(RuleTypeRequestDto dto) {
+    public ApiResponseDTO<RuleTypeResponseDto> create(
+            RuleTypeRequestDto dto
+    ) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict(
-                    "Rule Type already exists with code: " + dto.getCode()
+                    "Rule Type code already exists: " + dto.getCode()
             );
         }
 
         RuleTypeMaster entity = mapper.toEntity(dto);
-
         entity.setCreatedBy(dto.getCreatedBy());
-
-        if (dto.getDisplayOrder() != null) {
-            entity.setDisplayOrder(dto.getDisplayOrder());
-        }
-
-        if (dto.getIsActive() != null) {
-            entity.setIsActive(dto.getIsActive());
-        }
-
-        return mapper.toResponseDto(repository.save(entity));
-    }
-
-    // 🔹 UPDATE
-    @Override
-    public RuleTypeResponseDto update(Long id, RuleTypeRequestDto dto) {
-
-        RuleTypeMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.resourceNotFound("RuleType", id.toString())
-                );
-
-        mapper.updateEntityFromDto(dto, entity);
-
         entity.setUpdatedBy(dto.getUpdatedBy());
+        RuleTypeMaster savedEntity = repository.save(entity);
 
-        return mapper.toResponseDto(repository.save(entity));
+        return ApiResponseDTO.created(
+                mapper.toResponseDto(savedEntity)
+        );
     }
 
-    // 🔹 GET BY ID
+    // -----------------------------
+    // UPDATE (PATCH)
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public RuleTypeResponseDto getById(Long id) {
+    public ApiResponseDTO<RuleTypeResponseDto> update(
+            Long id,
+            RuleTypeRequestDto dto
+    ) {
 
         RuleTypeMaster entity = repository.findById(id)
                 .orElseThrow(() ->
-                        ClaimException.resourceNotFound("RuleType", id.toString())
-                );
-
-        return mapper.toResponseDto(entity);
-    }
-
-    // 🔹 GET BY CODE
-    @Override
-    @Transactional(readOnly = true)
-    public RuleTypeResponseDto getByCode(String code) {
-
-        RuleTypeMaster entity = repository.findByCode(code)
-                .orElseThrow(() ->
-                        ClaimException.notFound(
-                                "Rule Type not found with code: " + code
+                        ClaimException.resourceNotFound(
+                                "Rule Type",
+                                String.valueOf(id)
                         )
                 );
 
-        return mapper.toResponseDto(entity);
-    }
+        // PATCH update (only non-null values)
+        mapper.updateEntityFromDto(dto, entity);
+        entity.setUpdatedBy(dto.getUpdatedBy());
 
-    // 🔹 GET ALL
-    @Override
-    @Transactional(readOnly = true)
-    public List<RuleTypeResponseDto> getAll() {
-        return mapper.toResponseDtoList(
-                repository.findAllByOrderByDisplayOrderAsc()
+        RuleTypeMaster updatedEntity = repository.save(entity);
+
+        return ApiResponseDTO.success(
+                "Rule Type updated successfully",
+                mapper.toResponseDto(updatedEntity)
         );
     }
 
-    // 🔹 GET ACTIVE
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public List<RuleTypeResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByDisplayOrderAsc(ActivityEnum.Y)
-        );
-    }
-
-    // 🔹 DELETE (SOFT DELETE)
-    @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<RuleTypeResponseDto> getById(
+            Long id
+    ) {
 
         RuleTypeMaster entity = repository.findById(id)
                 .orElseThrow(() ->
-                        ClaimException.resourceNotFound("RuleType", id.toString())
+                        ClaimException.resourceNotFound(
+                                "Rule Type",
+                                String.valueOf(id)
+                        )
+                );
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
+        );
+    }
+
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<RuleTypeResponseDto> getByCode(
+            String code
+    ) {
+
+        RuleTypeMaster entity = repository.findByCode(code)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Rule Type",
+                                code
+                        )
+                );
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
+        );
+    }
+
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<List<RuleTypeResponseDto>> getAll() {
+
+        List<RuleTypeResponseDto> response = repository.findAll()
+                .stream()
+                .map(mapper::toResponseDto)
+                .toList();
+
+        return ApiResponseDTO.success(response);
+    }
+
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<List<RuleTypeResponseDto>> getAllActive() {
+
+        List<RuleTypeResponseDto> response = repository
+                .findByIsActive(ActivityEnum.Y)
+                .stream()
+                .map(mapper::toResponseDto)
+                .toList();
+
+        return ApiResponseDTO.success(response);
+    }
+
+    // -----------------------------
+    // SOFT DELETE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<String> delete(
+            Long id
+    ) {
+
+        RuleTypeMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Rule Type",
+                                String.valueOf(id)
+                        )
                 );
 
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+
+        return ApiResponseDTO.success(
+                "Rule Type deactivated successfully",
+                null
+        );
     }
 }

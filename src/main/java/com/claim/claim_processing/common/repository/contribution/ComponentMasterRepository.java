@@ -13,7 +13,7 @@ public interface ComponentMasterRepository extends JpaRepository<ComponentMaster
 
     Optional<ComponentMaster> findByCode(String code);
 
-    List<ComponentMaster> findAllByIsActive(ActivityEnum isActive);
+    List<ComponentMaster> findByIsActive(ActivityEnum isActive);
 
     boolean existsByCode(String code);
 }

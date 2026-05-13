@@ -1,10 +1,10 @@
 package com.claim.claim_processing.common.controller.common;
 
 import com.claim.claim_processing.common.DTO.request.common.PayeeTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.PayeeTypeResponseDto;
 import com.claim.claim_processing.common.service.common.PayeeTypeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,58 +17,98 @@ public class PayeeTypeController {
 
     private final PayeeTypeService service;
 
-    // 🔹 Create
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @PostMapping
-    public ResponseEntity<PayeeTypeResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody PayeeTypeRequestDto dto
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(dto));
+
+        ApiResponseDTO<PayeeTypeResponseDto> response =
+                service.create(dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Update (PATCH style)
+    // -----------------------------
+    // PATCH UPDATE
+    // -----------------------------
     @PatchMapping("/{id}")
-    public ResponseEntity<PayeeTypeResponseDto> update(
+    public ResponseEntity<?> patch(
             @PathVariable Long id,
             @RequestBody PayeeTypeRequestDto dto
     ) {
-        return ResponseEntity.ok(service.update(id, dto));
+
+        ApiResponseDTO<PayeeTypeResponseDto> response =
+                service.patch(id, dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Get By ID
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<PayeeTypeResponseDto> getById(
+    public ResponseEntity<?> getById(
             @PathVariable Long id
     ) {
-        return ResponseEntity.ok(service.getById(id));
+
+        ApiResponseDTO<PayeeTypeResponseDto> response =
+                service.getById(id);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Get By Code
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
     @GetMapping("/code/{code}")
-    public ResponseEntity<PayeeTypeResponseDto> getByCode(
+    public ResponseEntity<?> getByCode(
             @PathVariable String code
     ) {
-        return ResponseEntity.ok(service.getByCode(code));
+
+        ApiResponseDTO<PayeeTypeResponseDto> response =
+                service.getByCode(code);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Get All
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
     @GetMapping
-    public ResponseEntity<List<PayeeTypeResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+    public ResponseEntity<?> getAll() {
+
+        ApiResponseDTO<List<PayeeTypeResponseDto>> response =
+                service.getAll();
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Get All Active
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
     @GetMapping("/active")
-    public ResponseEntity<List<PayeeTypeResponseDto>> getAllActive() {
-        return ResponseEntity.ok(service.getAllActive());
+    public ResponseEntity<?> getAllActive() {
+
+        ApiResponseDTO<List<PayeeTypeResponseDto>> response =
+                service.getAllActive();
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 Soft Delete
+    // -----------------------------
+    // SOFT DELETE
+    // -----------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(
+    public ResponseEntity<?> delete(
             @PathVariable Long id
     ) {
-        service.delete(id);
-        return ResponseEntity.ok("Payee Type deactivated successfully.");
+
+        ApiResponseDTO<String> response =
+                service.delete(id);
+
+        return ResponseEntity.ok(response);
     }
 }

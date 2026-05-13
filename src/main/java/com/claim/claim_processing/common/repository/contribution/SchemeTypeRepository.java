@@ -15,4 +15,5 @@ public interface SchemeTypeRepository extends JpaRepository<SchemeMaster, Long> 
     boolean existsByCode(String code);
     List<SchemeMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
     Optional<SchemeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
+    List<SchemeMaster> findByIsActive(ActivityEnum isActive);
 }

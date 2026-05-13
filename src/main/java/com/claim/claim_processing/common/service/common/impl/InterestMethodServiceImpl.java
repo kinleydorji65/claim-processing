@@ -1,118 +1,240 @@
 package com.claim.claim_processing.common.service.common.impl;
 
 import com.claim.claim_processing.common.DTO.request.common.InterestMethodRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.InterestMethodResponseDto;
 import com.claim.claim_processing.common.entities.common.InterestMethodMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.common.InterestMethodMapper;
 import com.claim.claim_processing.common.repository.common.InterestMethodRepository;
 import com.claim.claim_processing.common.service.common.InterestMethodService;
-import jakarta.persistence.EntityNotFoundException;
+import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class InterestMethodServiceImpl implements InterestMethodService {
 
     private final InterestMethodRepository repository;
     private final InterestMethodMapper mapper;
 
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @Override
-    public InterestMethodResponseDto create(InterestMethodRequestDto dto) {
+    public ApiResponseDTO<InterestMethodResponseDto> create(
+            InterestMethodRequestDto dto
+    ) {
 
-        if (repository.existsByCode(dto.getCode())) {
-            throw new IllegalArgumentException(
-                    "Interest Method already exists with code: " + dto.getCode()
+        try {
+
+            if (repository.existsByCode(dto.getCode())) {
+                throw ClaimException.conflict(
+                        "Interest Method code already exists: "
+                                + dto.getCode()
+                );
+            }
+
+            InterestMethodMaster entity = mapper.toEntity(dto);
+
+            InterestMethodMaster saved = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Interest Method created successfully",
+                    mapper.toResponseDto(saved)
+            );
+
+        } catch (ClaimException e) {
+            throw e;
+        } catch (Exception e) {
+            throw ClaimException.internalError(
+                    "Failed to create Interest Method: " + e.getMessage()
             );
         }
+    }
 
-        InterestMethodMaster entity = mapper.toEntity(dto);
+    // -----------------------------
+    // PATCH UPDATE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<InterestMethodResponseDto> patch(
+            Long id,
+            InterestMethodRequestDto dto
+    ) {
 
-        entity.setCreatedBy(dto.getCreatedBy());
+        try {
 
-        if (dto.getIsActive() != null) {
-            entity.setIsActive(dto.getIsActive());
+            InterestMethodMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Interest Method",
+                                    String.valueOf(id)
+                            )
+                    );
+
+            mapper.updateEntityFromDto(dto, entity);
+
+            InterestMethodMaster updated = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Interest Method updated successfully",
+                    mapper.toResponseDto(updated)
+            );
+
+        } catch (ClaimException e) {
+            throw e;
+        } catch (Exception e) {
+            throw ClaimException.internalError(
+                    "Failed to update Interest Method: " + e.getMessage()
+            );
         }
-
-        return mapper.toResponseDto(repository.save(entity));
     }
 
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @Override
-    public InterestMethodResponseDto update(Long id, InterestMethodRequestDto dto) {
+    public ApiResponseDTO<InterestMethodResponseDto> getById(
+            Long id
+    ) {
 
-        InterestMethodMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Interest Method not found with id: " + id
-                        )
-                );
+        try {
 
-        mapper.updateEntityFromDto(dto, entity);
+            InterestMethodMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Interest Method",
+                                    String.valueOf(id)
+                            )
+                    );
 
-        entity.setUpdatedBy(dto.getUpdatedBy());
+            return ApiResponseDTO.success(
+                    mapper.toResponseDto(entity)
+            );
 
-        return mapper.toResponseDto(repository.save(entity));
+        } catch (ClaimException e) {
+            throw e;
+        } catch (Exception e) {
+            throw ClaimException.internalError(
+                    "Failed to fetch Interest Method: " + e.getMessage()
+            );
+        }
     }
 
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public InterestMethodResponseDto getById(Long id) {
+    public ApiResponseDTO<InterestMethodResponseDto> getByCode(
+            String code
+    ) {
 
-        InterestMethodMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Interest Method not found with id: " + id
-                        )
-                );
+        try {
 
-        return mapper.toResponseDto(entity);
+            InterestMethodMaster entity =
+                    repository.findByCode(code)
+                            .orElseThrow(() ->
+                                    ClaimException.resourceNotFound(
+                                            "Interest Method Code",
+                                            code
+                                    )
+                            );
+
+            return ApiResponseDTO.success(
+                    mapper.toResponseDto(entity)
+            );
+
+        } catch (ClaimException e) {
+            throw e;
+        } catch (Exception e) {
+            throw ClaimException.internalError(
+                    "Failed to fetch Interest Method by code: " + e.getMessage()
+            );
+        }
     }
 
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public InterestMethodResponseDto getByCode(String code) {
+    public ApiResponseDTO<List<InterestMethodResponseDto>> getAll() {
 
-        InterestMethodMaster entity = repository.findByCode(code)
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Interest Method not found with code: " + code
-                        )
-                );
+        try {
 
-        return mapper.toResponseDto(entity);
+            List<InterestMethodResponseDto> response =
+                    repository.findAll()
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            return ApiResponseDTO.success(response);
+
+        } catch (Exception e) {
+            throw ClaimException.internalError(
+                    "Failed to fetch Interest Methods: " + e.getMessage()
+            );
+        }
     }
 
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public List<InterestMethodResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
+    public ApiResponseDTO<List<InterestMethodResponseDto>> getAllActive() {
+
+        try {
+
+            List<InterestMethodResponseDto> response =
+                    repository.findByIsActive(ActivityEnum.Y)
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            return ApiResponseDTO.success(response);
+
+        } catch (Exception e) {
+            throw ClaimException.internalError(
+                    "Failed to fetch active Interest Methods: " + e.getMessage()
+            );
+        }
     }
 
+    // -----------------------------
+    // SOFT DELETE
+    // -----------------------------
     @Override
-    @Transactional(readOnly = true)
-    public List<InterestMethodResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(
-                repository.findByIsActive(ActivityEnum.Y)
-        );
-    }
+    public ApiResponseDTO<String> delete(
+            Long id
+    ) {
 
-    @Override
-    public void delete(Long id) {
+        try {
 
-        InterestMethodMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Interest Method not found with id: " + id
-                        )
-                );
+            InterestMethodMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Interest Method",
+                                    String.valueOf(id)
+                            )
+                    );
 
-        entity.setIsActive(ActivityEnum.N);
+            entity.setIsActive(ActivityEnum.N);
 
-        repository.save(entity);
+            repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Interest Method deactivated successfully",
+                    null
+            );
+
+        } catch (ClaimException e) {
+            throw e;
+        } catch (Exception e) {
+            throw ClaimException.internalError(
+                    "Failed to delete Interest Method: " + e.getMessage()
+            );
+        }
     }
 }

@@ -1,10 +1,10 @@
 package com.claim.claim_processing.common.controller.common;
 
 import com.claim.claim_processing.common.DTO.request.common.StageRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.StageResponseDto;
 import com.claim.claim_processing.common.service.common.StageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,58 +17,98 @@ public class StageController {
 
     private final StageService service;
 
-    // 🔹 CREATE
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @PostMapping
-    public ResponseEntity<StageResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody StageRequestDto dto
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(dto));
+
+        ApiResponseDTO<StageResponseDto> response =
+                service.create(dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 UPDATE
+    // -----------------------------
+    // PATCH UPDATE
+    // -----------------------------
     @PatchMapping("/{id}")
-    public ResponseEntity<StageResponseDto> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody StageRequestDto dto
     ) {
-        return ResponseEntity.ok(service.update(id, dto));
+
+        ApiResponseDTO<StageResponseDto> response =
+                service.update(id, dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET BY ID
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<StageResponseDto> getById(
+    public ResponseEntity<?> getById(
             @PathVariable Long id
     ) {
-        return ResponseEntity.ok(service.getById(id));
+
+        ApiResponseDTO<StageResponseDto> response =
+                service.getById(id);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET BY CODE
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
     @GetMapping("/code/{code}")
-    public ResponseEntity<StageResponseDto> getByCode(
+    public ResponseEntity<?> getByCode(
             @PathVariable String code
     ) {
-        return ResponseEntity.ok(service.getByCode(code));
+
+        ApiResponseDTO<StageResponseDto> response =
+                service.getByCode(code);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET ALL
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
     @GetMapping
-    public ResponseEntity<List<StageResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+    public ResponseEntity<?> getAll() {
+
+        ApiResponseDTO<List<StageResponseDto>> response =
+                service.getAll();
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET ALL ACTIVE
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
     @GetMapping("/active")
-    public ResponseEntity<List<StageResponseDto>> getAllActive() {
-        return ResponseEntity.ok(service.getAllActive());
+    public ResponseEntity<?> getAllActive() {
+
+        ApiResponseDTO<List<StageResponseDto>> response =
+                service.getAllActive();
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 SOFT DELETE
+    // -----------------------------
+    // SOFT DELETE
+    // -----------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(
+    public ResponseEntity<?> delete(
             @PathVariable Long id
     ) {
-        service.delete(id);
-        return ResponseEntity.ok("Stage deactivated successfully");
+
+        ApiResponseDTO<String> response =
+                service.delete(id);
+
+        return ResponseEntity.ok(response);
     }
 }

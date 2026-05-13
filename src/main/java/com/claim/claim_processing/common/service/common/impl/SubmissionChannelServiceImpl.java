@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.common.impl;
 
 import com.claim.claim_processing.common.DTO.request.common.SubmissionChannelRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.SubmissionChannelResponseDto;
 import com.claim.claim_processing.common.DTO.update.common.SubmissionChannelUpdateDto;
 import com.claim.claim_processing.common.entities.common.SubmissionChannelMaster;
@@ -10,85 +11,255 @@ import com.claim.claim_processing.common.repository.common.SubmissionChannelRepo
 import com.claim.claim_processing.common.service.common.SubmissionChannelService;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SubmissionChannelServiceImpl implements SubmissionChannelService {
 
     private final SubmissionChannelRepository repository;
     private final SubmissionChannelMapper mapper;
 
     @Override
-    public SubmissionChannelResponseDto create(SubmissionChannelRequestDto requestDto) {
-        if (repository.existsByCode(requestDto.getCode())) {
-            throw ClaimException.conflict(
-                    "Submission channel code already exists: " + requestDto.getCode()
+    public ApiResponseDTO<SubmissionChannelResponseDto> create(
+            SubmissionChannelRequestDto requestDto
+    ) {
+
+        try {
+
+            if (repository.existsByCode(requestDto.getCode())) {
+                throw ClaimException.conflict(
+                        "Submission Channel code already exists: "
+                                + requestDto.getCode()
+                );
+            }
+
+            SubmissionChannelMaster entity =
+                    mapper.toEntity(requestDto);
+
+            entity.setCreatedBy(requestDto.getCreatedBy());
+            entity.setUpdatedBy(requestDto.getUpdatedBy());
+
+            SubmissionChannelMaster savedEntity =
+                    repository.save(entity);
+
+            return ApiResponseDTO.created(
+                    mapper.toResponseDto(savedEntity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error creating Submission Channel", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to create Submission Channel",
+                    ex
             );
         }
-
-        SubmissionChannelMaster entity = mapper.toEntity(requestDto);
-        entity.setCreatedBy("SYSTEM");
-        entity.setUpdatedBy("SYSTEM");
-
-        SubmissionChannelMaster saved = repository.save(entity);
-        return mapper.toResponseDto(saved);
     }
 
     @Override
-    public SubmissionChannelResponseDto getById(Long id) {
-        return mapper.toResponseDto(findById(id));
+    public ApiResponseDTO<SubmissionChannelResponseDto> update(
+            Long id,
+            SubmissionChannelUpdateDto updateDto
+    ) {
+
+        try {
+
+            SubmissionChannelMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Submission Channel",
+                                    String.valueOf(id)
+                            )
+                    );
+
+            mapper.updateEntityFromDto(updateDto, entity);
+
+            entity.setUpdatedBy(updateDto.getUpdatedBy());
+
+            SubmissionChannelMaster updatedEntity =
+                    repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Submission Channel updated successfully",
+                    mapper.toResponseDto(updatedEntity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error updating Submission Channel", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to update Submission Channel",
+                    ex
+            );
+        }
     }
 
     @Override
-    public SubmissionChannelResponseDto getByCode(String code) {
-        SubmissionChannelMaster entity = repository.findByCode(code)
-                .orElseThrow(() ->
-                        ClaimException.notFound("Submission channel not found with code: " + code)
-                );
+    public ApiResponseDTO<SubmissionChannelResponseDto> getById(
+            Long id
+    ) {
 
-        return mapper.toResponseDto(entity);
+        try {
+
+            SubmissionChannelMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Submission Channel",
+                                    String.valueOf(id)
+                            )
+                    );
+
+            return ApiResponseDTO.success(
+                    mapper.toResponseDto(entity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching Submission Channel by id", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Submission Channel",
+                    ex
+            );
+        }
     }
 
     @Override
-    public List<SubmissionChannelResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
+    public ApiResponseDTO<SubmissionChannelResponseDto> getByCode(
+            String code
+    ) {
+
+        try {
+
+            SubmissionChannelMaster entity =
+                    repository.findByCode(code)
+                            .orElseThrow(() ->
+                                    ClaimException.resourceNotFound(
+                                            "Submission Channel code",
+                                            code
+                                    )
+                            );
+
+            return ApiResponseDTO.success(
+                    mapper.toResponseDto(entity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching Submission Channel by code", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Submission Channel",
+                    ex
+            );
+        }
     }
 
     @Override
-    public List<SubmissionChannelResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y)
-        );
+    public ApiResponseDTO<List<SubmissionChannelResponseDto>> getAll() {
+
+        try {
+
+            List<SubmissionChannelResponseDto> response =
+                    repository.findAll()
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            return ApiResponseDTO.success(response);
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching all Submission Channels", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Submission Channels",
+                    ex
+            );
+        }
     }
 
     @Override
-    public SubmissionChannelResponseDto update(Long id, SubmissionChannelUpdateDto updateDto) {
-        SubmissionChannelMaster entity = findById(id);
+    public ApiResponseDTO<List<SubmissionChannelResponseDto>> getAllActive() {
 
-        mapper.updateEntityFromDto(updateDto, entity);
-        entity.setUpdatedBy("SYSTEM");
+        try {
 
-        SubmissionChannelMaster updated = repository.save(entity);
-        return mapper.toResponseDto(updated);
+            List<SubmissionChannelResponseDto> response =
+                    repository.findByIsActive(ActivityEnum.Y)
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            return ApiResponseDTO.success(response);
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching active Submission Channels", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch active Submission Channels",
+                    ex
+            );
+        }
     }
 
     @Override
-    public void deactivate(Long id) {
-        SubmissionChannelMaster entity = findById(id);
+    public ApiResponseDTO<String> delete(
+            Long id
+    ) {
 
-        entity.setIsActive(ActivityEnum.N);
-        entity.setUpdatedBy("SYSTEM");
+        try {
 
-        repository.save(entity);
-    }
+            SubmissionChannelMaster entity =
+                    repository.findById(id)
+                            .orElseThrow(() ->
+                                    ClaimException.resourceNotFound(
+                                            "Submission Channel",
+                                            String.valueOf(id)
+                                    )
+                            );
 
-    private SubmissionChannelMaster findById(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.notFound("Submission channel not found with id: " + id)
-                );
+            entity.setIsActive(ActivityEnum.N);
+            entity.setUpdatedAt(LocalDateTime.now());
+
+            repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Submission Channel deleted successfully",
+                    null
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error deleting Submission Channel", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to delete Submission Channel",
+                    ex
+            );
+        }
     }
 }

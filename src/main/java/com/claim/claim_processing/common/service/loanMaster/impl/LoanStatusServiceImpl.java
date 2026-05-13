@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.loanMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.loanMaster.LoanStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.loanMaster.LoanStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.loanMaster.LoanStatusMaster;
@@ -9,11 +10,13 @@ import com.claim.claim_processing.common.repository.loanMaster.LoanStatusReposit
 import com.claim.claim_processing.common.service.loanMaster.LoanStatusService;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -22,34 +25,96 @@ public class LoanStatusServiceImpl implements LoanStatusService {
     private final LoanStatusRepository repository;
     private final LoanStatusMapper mapper;
 
-    // 🔹 CREATE
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @Override
-    public LoanStatusResponseDto create(LoanStatusRequestDto dto) {
+    public ApiResponseDTO<LoanStatusResponseDto> create(LoanStatusRequestDto dto) {
 
-        if (repository.existsByCode(dto.getCode())) {
-            throw ClaimException.conflict(
-                    "Loan Status already exists with code: " + dto.getCode()
+        try {
+
+            if (repository.existsByCode(dto.getCode())) {
+                throw ClaimException.conflict(
+                        "Loan Status already exists with code: " + dto.getCode()
+                );
+            }
+
+            LoanStatusMaster entity = mapper.toEntity(dto);
+
+            entity.setCreatedBy(dto.getCreatedBy());
+            entity.setUpdatedBy(dto.getCreatedBy());
+
+            entity.setIsActive(
+                    dto.getIsActive() != null ? dto.getIsActive() : ActivityEnum.Y
             );
+
+            if (dto.getDisplayOrder() != null) {
+                entity.setDisplayOrder(dto.getDisplayOrder());
+            }
+
+            LoanStatusMaster saved = repository.save(entity);
+
+            return ApiResponseDTO.created(
+                    mapper.toResponseDto(saved)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error creating LoanStatus", ex);
+            throw ClaimException.internalError("Failed to create Loan Status", ex);
         }
-
-        LoanStatusMaster entity = mapper.toEntity(dto);
-
-        entity.setCreatedBy(dto.getCreatedBy());
-
-        if (dto.getDisplayOrder() != null) {
-            entity.setDisplayOrder(dto.getDisplayOrder());
-        }
-
-        if (dto.getIsActive() != null) {
-            entity.setIsActive(dto.getIsActive());
-        }
-
-        return mapper.toResponseDto(repository.save(entity));
     }
 
-    // 🔹 UPDATE
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
     @Override
-    public LoanStatusResponseDto update(Long id, LoanStatusRequestDto dto) {
+    public ApiResponseDTO<LoanStatusResponseDto> update(Long id, LoanStatusRequestDto dto) {
+
+        try {
+
+            LoanStatusMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "LoanStatus",
+                                    id.toString()
+                            )
+                    );
+
+            if (dto.getCode() != null &&
+                    repository.existsByCodeAndIdNot(dto.getCode(), id)) {
+                throw ClaimException.conflict(
+                        "Loan Status already exists with code: " + dto.getCode()
+                );
+            }
+
+            mapper.updateEntityFromDto(dto, entity);
+
+            entity.setUpdatedBy(dto.getUpdatedBy());
+
+            LoanStatusMaster updated = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    mapper.toResponseDto(updated)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error updating LoanStatus", ex);
+            throw ClaimException.internalError("Failed to update Loan Status", ex);
+        }
+    }
+
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<LoanStatusResponseDto> getById(Long id) {
 
         LoanStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -59,41 +124,17 @@ public class LoanStatusServiceImpl implements LoanStatusService {
                         )
                 );
 
-        // duplicate check
-        if (dto.getCode() != null &&
-                repository.existsByCodeAndIdNot(dto.getCode(), id)) {
-            throw ClaimException.conflict(
-                    "Loan Status already exists with code: " + dto.getCode()
-            );
-        }
-
-        mapper.updateEntityFromDto(dto, entity);
-
-        entity.setUpdatedBy(dto.getUpdatedBy());
-
-        return mapper.toResponseDto(repository.save(entity));
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
+        );
     }
 
-    // 🔹 GET BY ID
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
     @Override
     @Transactional(readOnly = true)
-    public LoanStatusResponseDto getById(Long id) {
-
-        LoanStatusMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.resourceNotFound(
-                                "LoanStatus",
-                                id.toString()
-                        )
-                );
-
-        return mapper.toResponseDto(entity);
-    }
-
-    // 🔹 GET BY CODE
-    @Override
-    @Transactional(readOnly = true)
-    public LoanStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<LoanStatusResponseDto> getByCode(String code) {
 
         LoanStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -102,39 +143,68 @@ public class LoanStatusServiceImpl implements LoanStatusService {
                         )
                 );
 
-        return mapper.toResponseDto(entity);
-    }
-
-    // 🔹 GET ALL
-    @Override
-    @Transactional(readOnly = true)
-    public List<LoanStatusResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
-    }
-
-    // 🔹 GET ACTIVE
-    @Override
-    @Transactional(readOnly = true)
-    public List<LoanStatusResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(
-                repository.findByIsActive(ActivityEnum.Y)
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
         );
     }
 
-    // 🔹 DELETE (SOFT DELETE)
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
     @Override
-    public void delete(Long id) {
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<List<LoanStatusResponseDto>> getAll() {
 
-        LoanStatusMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.resourceNotFound(
-                                "LoanStatus",
-                                id.toString()
-                        )
-                );
+        return ApiResponseDTO.success(
+                mapper.toResponseDtoList(repository.findAll())
+        );
+    }
 
-        entity.setIsActive(ActivityEnum.N);
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<List<LoanStatusResponseDto>> getAllActive() {
 
-        repository.save(entity);
+        return ApiResponseDTO.success(
+                mapper.toResponseDtoList(
+                        repository.findByIsActive(ActivityEnum.Y)
+                )
+        );
+    }
+
+    // -----------------------------
+    // DELETE (SOFT DELETE)
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<String> delete(Long id) {
+
+        try {
+
+            LoanStatusMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "LoanStatus",
+                                    id.toString()
+                            )
+                    );
+
+            entity.setIsActive(ActivityEnum.N);
+
+            repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Loan Status deactivated successfully",
+                    null
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+            log.error("Error deleting LoanStatus", ex);
+            throw ClaimException.internalError("Failed to delete Loan Status", ex);
+        }
     }
 }

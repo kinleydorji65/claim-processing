@@ -15,6 +15,11 @@ public interface BusinessTypeRepository extends JpaRepository<BusinessTypeMaster
 
     Optional<BusinessTypeMaster> findByCode(String code);
 
+    boolean existsByCodeAndIdNot(
+            String code,
+            Long id
+    );
+
     List<BusinessTypeMaster> findByIsActive(ActivityEnum isActive);
 
     Optional<BusinessTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
