@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -117,24 +118,24 @@ public class ClaimLapsedRefundServiceImpl implements ClaimLapsedRefundService {
     // GET ALL
     // -------------------------------
     @Override
-    public ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> getAll() {
-        List<ClaimLapsedRefundResponseDto> responseDtos = repository.findAll().stream().map(entity -> {
-            List<AgencyCategory> agencyCategories = categoryMapRepository.findByRule_Id(entity.getRuleType().getId())
-                .stream()
-                .map(ClaimLapsedRefundCategoryMap::getCategory)
-                .toList();
-            List<Long> categoriesId = categoryMapRepository.findByRule_Id(entity.getRuleType().getId())
-                .stream()
-                .map(ClaimLapsedRefundCategoryMap::getId)
-                .toList();
-            List<BenefitComponentTypeMaster> benefitComponents = componentMapRepository.findByRule_IdAndClaimLapsedRefundCategoryMap_IdIn(entity.getRuleType().getId(), categoriesId)
-                .stream()
-                .map(ClaimLapsedRefundComponentMap::getBenefitComponentType)
-                .toList();
-            return mapper.toResponseDto(entity, agencyCategories, benefitComponents);
-        }).toList();
-        return ApiResponseDTO.success(responseDtos);
-    }
+public ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> getAll() {
+    List<ClaimLapsedRefundResponseDto> responseDtos = repository.findAll().stream().map(entity -> {
+        List<AgencyCategory> agencyCategories = categoryMapRepository.findByRule_Id(entity.getRuleType().getId())
+            .stream()
+            .map(ClaimLapsedRefundCategoryMap::getCategory)
+            .toList();
+        
+        // FIX: Get components directly by rule ID only
+        List<BenefitComponentTypeMaster> benefitComponents = componentMapRepository
+            .findByRule_Id(entity.getId())  // Add this method
+            .stream()
+            .map(ClaimLapsedRefundComponentMap::getBenefitComponentType)
+            .collect(Collectors.toList());
+        
+        return mapper.toResponseDto(entity, agencyCategories, benefitComponents);
+    }).toList();
+    return ApiResponseDTO.success(responseDtos);
+}
 
     // -------------------------------
     // UPDATE

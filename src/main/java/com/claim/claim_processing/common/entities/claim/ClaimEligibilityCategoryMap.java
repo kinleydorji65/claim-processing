@@ -7,13 +7,7 @@ import lombok.*;
 @Entity
 @Table(
         name = "CLAIM_ELIGIBILITY_CATEGORY_MAP",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "UK_CLAIM_ELIGIBILITY_RULE_CAT",
-                        columnNames = {"RULE_ID", "CATEGORY_ID"}
-                )
-        }
+        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
 )
 @Getter
 @Setter

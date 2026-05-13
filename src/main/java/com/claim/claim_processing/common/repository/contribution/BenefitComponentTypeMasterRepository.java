@@ -40,4 +40,5 @@ public interface BenefitComponentTypeMasterRepository
      * Search by name ignoring case
      */
     List<BenefitComponentTypeMaster> findByNameContainingIgnoreCase(String name);
+    List<BenefitComponentTypeMaster> findByNameContainingIgnoreCase(String name);
 }
