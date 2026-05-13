@@ -11,4 +11,6 @@ public class SubmissionChannelRequestDto {
 
     private String code;
     private String name;
+    private String createdBy;
+    private String updatedBy;
 }

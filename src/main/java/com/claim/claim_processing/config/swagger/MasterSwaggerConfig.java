@@ -93,7 +93,8 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                 .pathsToMatch(
                         "/api/benefit-component-details/**",
                         "/api/benefit-component-types/**",
-                        "/api/claim/masters/schemes/**"
+                        "/api/claim/masters/schemes/**",
+                        "/api/master/contribution/component-master/**"
                 )
                 .displayName("Contribution Master APIs")
                 .build();

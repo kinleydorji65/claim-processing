@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.legalMaster;
 
 import com.claim.claim_processing.common.DTO.request.legalMaster.RecoveryReasonRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.legalMaster.RecoveryReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.legalMaster.RecoveryReasonUpdateDto;
 
@@ -8,17 +9,17 @@ import java.util.List;
 
 public interface RecoveryReasonService {
 
-    RecoveryReasonResponseDto create(RecoveryReasonRequestDto requestDto);
+    ApiResponseDTO<RecoveryReasonResponseDto> create(RecoveryReasonRequestDto dto);
 
-    RecoveryReasonResponseDto getById(Long id);
+    ApiResponseDTO<RecoveryReasonResponseDto> update(Long id, RecoveryReasonUpdateDto dto);
 
-    RecoveryReasonResponseDto getByCode(String code);
+    ApiResponseDTO<RecoveryReasonResponseDto> getById(Long id);
 
-    List<RecoveryReasonResponseDto> getAll();
+    ApiResponseDTO<RecoveryReasonResponseDto> getByCode(String code);
 
-    List<RecoveryReasonResponseDto> getAllActive();
+    ApiResponseDTO<List<RecoveryReasonResponseDto>> getAll();
 
-    RecoveryReasonResponseDto update(Long id, RecoveryReasonUpdateDto updateDto);
+    ApiResponseDTO<List<RecoveryReasonResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

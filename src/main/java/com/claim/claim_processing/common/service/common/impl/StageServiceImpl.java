@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.common.impl;
 
 import com.claim.claim_processing.common.DTO.request.common.StageRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.StageResponseDto;
 import com.claim.claim_processing.common.entities.common.StageMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -9,111 +10,245 @@ import com.claim.claim_processing.common.repository.common.StageRepository;
 import com.claim.claim_processing.common.service.common.StageService;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Slf4j
 public class StageServiceImpl implements StageService {
 
     private final StageRepository repository;
     private final StageMapper mapper;
 
-    // 🔹 CREATE
     @Override
-    public StageResponseDto create(StageRequestDto dto) {
+    public ApiResponseDTO<StageResponseDto> create(
+            StageRequestDto dto
+    ) {
 
-        if (repository.existsByCode(dto.getCode())) {
-            throw ClaimException.conflict(
-                    "Stage already exists with code: " + dto.getCode()
+        try {
+
+            if (repository.existsByCode(dto.getCode())) {
+                throw ClaimException.conflict(
+                        "Stage code already exists: " + dto.getCode()
+                );
+            }
+
+            StageMaster entity = mapper.toEntity(dto);
+
+            StageMaster savedEntity = repository.save(entity);
+
+            return ApiResponseDTO.created(
+                    mapper.toResponseDto(savedEntity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error creating Stage", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to create Stage",
+                    ex
             );
         }
+    }
 
-        StageMaster entity = mapper.toEntity(dto);
+    @Override
+    public ApiResponseDTO<StageResponseDto> update(
+            Long id,
+            StageRequestDto dto
+    ) {
 
-        entity.setCreatedBy(dto.getCreatedBy());
+        try {
 
-        if (dto.getIsActive() != null) {
-            entity.setIsActive(dto.getIsActive());
+            StageMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Stage",
+                                    String.valueOf(id)
+                            )
+                    );
+
+            mapper.updateEntityFromDto(dto, entity);
+
+            entity.setUpdatedBy(dto.getUpdatedBy());
+
+            StageMaster updatedEntity = repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Stage updated successfully",
+                    mapper.toResponseDto(updatedEntity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error updating Stage", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to update Stage",
+                    ex
+            );
         }
-
-        return mapper.toResponseDto(repository.save(entity));
     }
 
-    // 🔹 UPDATE
     @Override
-    public StageResponseDto update(Long id, StageRequestDto dto) {
+    public ApiResponseDTO<StageResponseDto> getById(
+            Long id
+    ) {
 
-        StageMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.resourceNotFound("Stage", id.toString())
-                );
+        try {
 
-        mapper.updateEntityFromDto(dto, entity);
+            StageMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Stage",
+                                    String.valueOf(id)
+                            )
+                    );
 
-        entity.setUpdatedBy(dto.getUpdatedBy());
+            return ApiResponseDTO.success(
+                    mapper.toResponseDto(entity)
+            );
 
-        return mapper.toResponseDto(repository.save(entity));
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching Stage by id", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Stage",
+                    ex
+            );
+        }
     }
 
-    // 🔹 GET BY ID
     @Override
-    @Transactional(readOnly = true)
-    public StageResponseDto getById(Long id) {
+    public ApiResponseDTO<StageResponseDto> getByCode(
+            String code
+    ) {
 
-        StageMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.resourceNotFound("Stage", id.toString())
-                );
+        try {
 
-        return mapper.toResponseDto(entity);
+            StageMaster entity = repository.findByCode(code)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Stage code",
+                                    code
+                            )
+                    );
+
+            return ApiResponseDTO.success(
+                    mapper.toResponseDto(entity)
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching Stage by code", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Stage",
+                    ex
+            );
+        }
     }
 
-    // 🔹 GET BY CODE
     @Override
-    @Transactional(readOnly = true)
-    public StageResponseDto getByCode(String code) {
+    public ApiResponseDTO<List<StageResponseDto>> getAll() {
 
-        StageMaster entity = repository.findByCode(code)
-                .orElseThrow(() ->
-                        ClaimException.notFound(
-                                "Stage not found with code: " + code
-                        )
-                );
+        try {
 
-        return mapper.toResponseDto(entity);
+            List<StageResponseDto> response =
+                    repository.findAll()
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            return ApiResponseDTO.success(response);
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching all Stages", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch Stages",
+                    ex
+            );
+        }
     }
 
-    // 🔹 GET ALL
     @Override
-    @Transactional(readOnly = true)
-    public List<StageResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
+    public ApiResponseDTO<List<StageResponseDto>> getAllActive() {
+
+        try {
+
+            List<StageResponseDto> response =
+                    repository.findByIsActive(ActivityEnum.Y)
+                            .stream()
+                            .map(mapper::toResponseDto)
+                            .toList();
+
+            return ApiResponseDTO.success(response);
+
+        } catch (Exception ex) {
+
+            log.error("Error fetching active Stages", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to fetch active Stages",
+                    ex
+            );
+        }
     }
 
-    // 🔹 GET ACTIVE
     @Override
-    @Transactional(readOnly = true)
-    public List<StageResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(
-                repository.findByIsActive(ActivityEnum.Y)
-        );
-    }
+    public ApiResponseDTO<String> delete(Long id) {
 
-    // 🔹 DELETE (SOFT DELETE)
-    @Override
-    public void delete(Long id) {
+        try {
 
-        StageMaster entity = repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.resourceNotFound("Stage", id.toString())
-                );
+            StageMaster entity = repository.findById(id)
+                    .orElseThrow(() ->
+                            ClaimException.resourceNotFound(
+                                    "Stage",
+                                    String.valueOf(id)
+                            )
+                    );
 
-        entity.setIsActive(ActivityEnum.N);
+            // SOFT DELETE
+            entity.setIsActive(ActivityEnum.N);
+            entity.setUpdatedAt(LocalDateTime.now());
 
-        repository.save(entity);
+            repository.save(entity);
+
+            return ApiResponseDTO.success(
+                    "Stage deleted successfully",
+                    null
+            );
+
+        } catch (ClaimException ex) {
+            throw ex;
+
+        } catch (Exception ex) {
+
+            log.error("Error while deleting Stage", ex);
+
+            throw ClaimException.internalError(
+                    "Failed to delete Stage",
+                    ex
+            );
+        }
     }
 }

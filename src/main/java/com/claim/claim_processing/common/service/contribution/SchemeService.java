@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.contribution;
 
 import com.claim.claim_processing.common.DTO.request.contribution.SchemeCreateRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.contribution.SchemeUpdateRequestDto;
 
@@ -8,13 +9,24 @@ import java.util.List;
 
 public interface SchemeService {
 
-    List<SchemeTypeResponseDto> getAllActive();
+    ApiResponseDTO<SchemeTypeResponseDto> create(
+            SchemeCreateRequestDto dto
+    );
 
-    SchemeTypeResponseDto getById(Long id);
+    ApiResponseDTO<SchemeTypeResponseDto> update(
+            Long id,
+            SchemeUpdateRequestDto dto
+    );
 
-    SchemeTypeResponseDto create(SchemeCreateRequestDto requestDto);
+    ApiResponseDTO<SchemeTypeResponseDto> getById(
+            Long id
+    );
 
-    SchemeTypeResponseDto update(Long id, SchemeUpdateRequestDto requestDto);
+    ApiResponseDTO<List<SchemeTypeResponseDto>> getAll();
 
-    void deactivate(Long id);
+    ApiResponseDTO<List<SchemeTypeResponseDto>> getAllActive();
+
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }

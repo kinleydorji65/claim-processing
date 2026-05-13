@@ -1,23 +1,24 @@
 package com.claim.claim_processing.common.service.loanMaster;
 
 import com.claim.claim_processing.common.DTO.request.loanMaster.LoanTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.loanMaster.LoanTypeResponseDto;
 
 import java.util.List;
 
 public interface LoanTypeService {
 
-    LoanTypeResponseDto create(LoanTypeRequestDto dto);
+    ApiResponseDTO<LoanTypeResponseDto> create(LoanTypeRequestDto dto);
 
-    LoanTypeResponseDto update(Long id, LoanTypeRequestDto dto);
+    ApiResponseDTO<LoanTypeResponseDto> update(Long id, LoanTypeRequestDto dto);
 
-    LoanTypeResponseDto getById(Long id);
+    ApiResponseDTO<LoanTypeResponseDto> getById(Long id);
 
-    LoanTypeResponseDto getByCode(String code);
+    ApiResponseDTO<LoanTypeResponseDto> getByCode(String code);
 
-    List<LoanTypeResponseDto> getAll();
+    ApiResponseDTO<List<LoanTypeResponseDto>> getAll();
 
-    List<LoanTypeResponseDto> getAllActive();
+    ApiResponseDTO<List<LoanTypeResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

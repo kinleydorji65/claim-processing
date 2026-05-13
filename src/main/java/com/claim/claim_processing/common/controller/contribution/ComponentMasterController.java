@@ -1,10 +1,9 @@
 package com.claim.claim_processing.common.controller.contribution;
 
-import com.claim.claim_processing.common.DTO.request.contribution.SchemeCreateRequestDto;
+import com.claim.claim_processing.common.DTO.request.contribution.ComponentRequestDto;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
-import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
-import com.claim.claim_processing.common.DTO.update.contribution.SchemeUpdateRequestDto;
-import com.claim.claim_processing.common.service.contribution.SchemeService;
+import com.claim.claim_processing.common.DTO.response.contribution.ComponentResponseDto;
+import com.claim.claim_processing.common.service.contribution.ComponentMasterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,37 +11,35 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/claim/masters/schemes")
+@RequestMapping("/api/master/contribution/component-master")
 @RequiredArgsConstructor
-public class SchemeController {
+public class ComponentMasterController {
 
-    private final SchemeService service;
+    private final ComponentMasterService service;
 
     // -----------------------------
     // CREATE
     // -----------------------------
     @PostMapping
     public ResponseEntity<?> create(
-            @RequestBody SchemeCreateRequestDto dto
-    ) {
+            @RequestBody ComponentRequestDto requestDto) {
 
-        ApiResponseDTO<SchemeTypeResponseDto> response =
-                service.create(dto);
+        ApiResponseDTO<ComponentResponseDto> response =
+                service.create(requestDto);
 
         return ResponseEntity.ok(response);
     }
 
     // -----------------------------
-    // PATCH UPDATE
+    // UPDATE
     // -----------------------------
     @PatchMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Long id,
-            @RequestBody SchemeUpdateRequestDto dto
-    ) {
+            @RequestBody ComponentRequestDto requestDto) {
 
-        ApiResponseDTO<SchemeTypeResponseDto> response =
-                service.update(id, dto);
+        ApiResponseDTO<ComponentResponseDto> response =
+                service.update(id, requestDto);
 
         return ResponseEntity.ok(response);
     }
@@ -51,11 +48,9 @@ public class SchemeController {
     // GET BY ID
     // -----------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(
-            @PathVariable Long id
-    ) {
+    public ResponseEntity<?> getById(@PathVariable Long id) {
 
-        ApiResponseDTO<SchemeTypeResponseDto> response =
+        ApiResponseDTO<ComponentResponseDto> response =
                 service.getById(id);
 
         return ResponseEntity.ok(response);
@@ -67,7 +62,7 @@ public class SchemeController {
     @GetMapping
     public ResponseEntity<?> getAll() {
 
-        ApiResponseDTO<List<SchemeTypeResponseDto>> response =
+        ApiResponseDTO<List<ComponentResponseDto>> response =
                 service.getAll();
 
         return ResponseEntity.ok(response);
@@ -79,7 +74,7 @@ public class SchemeController {
     @GetMapping("/active")
     public ResponseEntity<?> getAllActive() {
 
-        ApiResponseDTO<List<SchemeTypeResponseDto>> response =
+        ApiResponseDTO<List<ComponentResponseDto>> response =
                 service.getAllActive();
 
         return ResponseEntity.ok(response);
@@ -89,9 +84,7 @@ public class SchemeController {
     // DELETE
     // -----------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(
-            @PathVariable Long id
-    ) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
 
         ApiResponseDTO<String> response =
                 service.delete(id);

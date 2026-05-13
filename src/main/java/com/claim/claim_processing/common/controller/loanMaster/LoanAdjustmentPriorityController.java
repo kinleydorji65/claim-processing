@@ -1,10 +1,10 @@
 package com.claim.claim_processing.common.controller.loanMaster;
 
 import com.claim.claim_processing.common.DTO.request.loanMaster.LoanAdjustmentPriorityRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.loanMaster.LoanAdjustmentPriorityResponseDto;
 import com.claim.claim_processing.common.service.loanMaster.LoanAdjustmentPriorityService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,58 +17,49 @@ public class LoanAdjustmentPriorityController {
 
     private final LoanAdjustmentPriorityService service;
 
-    // 🔹 CREATE
     @PostMapping
-    public ResponseEntity<LoanAdjustmentPriorityResponseDto> create(
-            @RequestBody LoanAdjustmentPriorityRequestDto dto
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(dto));
+    public ResponseEntity<?> create(@RequestBody LoanAdjustmentPriorityRequestDto dto) {
+        ApiResponseDTO<LoanAdjustmentPriorityResponseDto> response = service.create(dto);
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 UPDATE
     @PatchMapping("/{id}")
-    public ResponseEntity<LoanAdjustmentPriorityResponseDto> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody LoanAdjustmentPriorityRequestDto dto
     ) {
-        return ResponseEntity.ok(service.update(id, dto));
+        ApiResponseDTO<LoanAdjustmentPriorityResponseDto> response = service.update(id, dto);
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET BY ID
     @GetMapping("/{id}")
-    public ResponseEntity<LoanAdjustmentPriorityResponseDto> getById(
-            @PathVariable Long id
-    ) {
-        return ResponseEntity.ok(service.getById(id));
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        ApiResponseDTO<LoanAdjustmentPriorityResponseDto> response = service.getById(id);
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET ALL
     @GetMapping
-    public ResponseEntity<List<LoanAdjustmentPriorityResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+    public ResponseEntity<?> getAll() {
+        ApiResponseDTO<List<LoanAdjustmentPriorityResponseDto>> response = service.getAll();
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET ALL ACTIVE
     @GetMapping("/active")
-    public ResponseEntity<List<LoanAdjustmentPriorityResponseDto>> getAllActive() {
-        return ResponseEntity.ok(service.getAllActive());
+    public ResponseEntity<?> getAllActive() {
+        ApiResponseDTO<List<LoanAdjustmentPriorityResponseDto>> response = service.getAllActive();
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET BY LOAN TYPE FK
     @GetMapping("/loan-type/{loanTypeId}")
-    public ResponseEntity<List<LoanAdjustmentPriorityResponseDto>> getByLoanTypeId(
-            @PathVariable Long loanTypeId
-    ) {
-        return ResponseEntity.ok(service.getByLoanTypeId(loanTypeId));
+    public ResponseEntity<?> getByLoanTypeId(@PathVariable Long loanTypeId) {
+        ApiResponseDTO<List<LoanAdjustmentPriorityResponseDto>> response =
+                service.getByLoanTypeId(loanTypeId);
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 SOFT DELETE
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(
-            @PathVariable Long id
-    ) {
-        service.delete(id);
-        return ResponseEntity.ok("Loan Adjustment Priority deactivated successfully");
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        ApiResponseDTO<String> response = service.delete(id);
+        return ResponseEntity.ok(response);
     }
 }

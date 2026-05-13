@@ -1,10 +1,10 @@
 package com.claim.claim_processing.common.controller.common;
 
 import com.claim.claim_processing.common.DTO.request.common.RuleTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.RuleTypeResponseDto;
 import com.claim.claim_processing.common.service.common.RuleTypeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,58 +17,93 @@ public class RuleTypeController {
 
     private final RuleTypeService service;
 
-    // 🔹 CREATE
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @PostMapping
-    public ResponseEntity<RuleTypeResponseDto> create(
-            @RequestBody RuleTypeRequestDto dto
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(dto));
+    public ResponseEntity<?> create(
+            @RequestBody RuleTypeRequestDto dto) {
+
+        ApiResponseDTO<RuleTypeResponseDto> response =
+                service.create(dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 UPDATE
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
     @PatchMapping("/{id}")
-    public ResponseEntity<RuleTypeResponseDto> update(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
-            @RequestBody RuleTypeRequestDto dto
-    ) {
-        return ResponseEntity.ok(service.update(id, dto));
+            @RequestBody RuleTypeRequestDto dto) {
+
+        ApiResponseDTO<RuleTypeResponseDto> response =
+                service.update(id, dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET BY ID
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<RuleTypeResponseDto> getById(
-            @PathVariable Long id
-    ) {
-        return ResponseEntity.ok(service.getById(id));
+    public ResponseEntity<?> getById(
+            @PathVariable Long id) {
+
+        ApiResponseDTO<RuleTypeResponseDto> response =
+                service.getById(id);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET BY CODE
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
     @GetMapping("/code/{code}")
-    public ResponseEntity<RuleTypeResponseDto> getByCode(
-            @PathVariable String code
-    ) {
-        return ResponseEntity.ok(service.getByCode(code));
+    public ResponseEntity<?> getByCode(
+            @PathVariable String code) {
+
+        ApiResponseDTO<RuleTypeResponseDto> response =
+                service.getByCode(code);
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET ALL
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
     @GetMapping
-    public ResponseEntity<List<RuleTypeResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+    public ResponseEntity<?> getAll() {
+
+        ApiResponseDTO<List<RuleTypeResponseDto>> response =
+                service.getAll();
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 GET ALL ACTIVE
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
     @GetMapping("/active")
-    public ResponseEntity<List<RuleTypeResponseDto>> getAllActive() {
-        return ResponseEntity.ok(service.getAllActive());
+    public ResponseEntity<?> getAllActive() {
+
+        ApiResponseDTO<List<RuleTypeResponseDto>> response =
+                service.getAllActive();
+
+        return ResponseEntity.ok(response);
     }
 
-    // 🔹 SOFT DELETE
+    // -----------------------------
+    // DELETE
+    // -----------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(
-            @PathVariable Long id
-    ) {
-        service.delete(id);
-        return ResponseEntity.ok("Rule Type deactivated successfully");
+    public ResponseEntity<?> delete(
+            @PathVariable Long id) {
+
+        ApiResponseDTO<String> response =
+                service.delete(id);
+
+        return ResponseEntity.ok(response);
     }
 }
