@@ -11,4 +11,5 @@ public class PartialWithdrawalReasonUpdateDto {
 
     private String name;
     private String isActive;
+    private String updatedBy;
 }

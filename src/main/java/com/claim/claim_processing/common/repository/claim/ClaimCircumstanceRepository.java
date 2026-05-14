@@ -15,6 +15,8 @@ public interface ClaimCircumstanceRepository extends JpaRepository<ClaimCircumst
 
     boolean existsByCode(String code);
 
+    List<ClaimCircumstanceMaster> findByIsActive(ActivityEnum isActive);
+
     List<ClaimCircumstanceMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
 
     Optional<ClaimCircumstanceMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);

@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.partial.impl;
 
 import com.claim.claim_processing.common.DTO.request.partial.PartialCauseRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalCauseResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.PartialCauseUpdateDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -8,7 +9,7 @@ import com.claim.claim_processing.common.entities.partial.PartialWithdrawalCause
 import com.claim.claim_processing.common.mapper.partial.PartialCauseMapper;
 import com.claim.claim_processing.common.repository.partial.PartialCauseRepository;
 import com.claim.claim_processing.common.service.partial.PartialCauseService;
-import jakarta.persistence.EntityNotFoundException;
+import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,73 +18,109 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PartialCauseServiceImpl implements PartialCauseService {
-    private static final String NOT_FOUND_MESSAGE = "Partial withdrawal cause not found with id: ";
 
     private final PartialCauseRepository repository;
     private final PartialCauseMapper mapper;
 
     @Override
-    public PartialWithdrawalCauseResponseDto create(PartialCauseRequestDto requestDto) {
-        validateDuplicateCode(requestDto.getCode());
+    public ApiResponseDTO<PartialWithdrawalCauseResponseDto> create(
+            PartialCauseRequestDto requestDto) {
+
+        if (repository.existsByCode(requestDto.getCode())) {
+            throw ClaimException.conflict(
+                    "Partial Cause code already exists: " + requestDto.getCode()
+            );
+        }
 
         PartialWithdrawalCauseMaster entity = mapper.toEntity(requestDto);
-        entity.setCreatedBy("SYSTEM");
-        entity.setUpdatedBy("SYSTEM");
 
-        PartialWithdrawalCauseMaster savedEntity = repository.save(entity);
-        return mapper.toResponseDto(savedEntity);
+        entity.setCreatedBy(requestDto.getCreatedBy());
+        entity.setUpdatedBy(requestDto.getCreatedBy());
+
+        repository.save(entity);
+
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     @Override
-    public PartialWithdrawalCauseResponseDto getById(Long id) {
-        PartialWithdrawalCauseMaster entity = findEntityById(id);
-        return mapper.toResponseDto(entity);
+    public ApiResponseDTO<PartialWithdrawalCauseResponseDto> getById(Long id) {
+
+        PartialWithdrawalCauseMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "Partial Cause not found with id: " + id
+                        ));
+
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     @Override
-    public PartialWithdrawalCauseResponseDto getByCode(String code) {
+    public ApiResponseDTO<PartialWithdrawalCauseResponseDto> getByCode(String code) {
+
         PartialWithdrawalCauseMaster entity = repository.findByCode(code)
-                .orElseThrow(() -> new EntityNotFoundException("Partial withdrawal cause not found with code: " + code));
-        return mapper.toResponseDto(entity);
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "Partial Cause not found with code: " + code
+                        ));
+
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     @Override
-    public List<PartialWithdrawalCauseResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
+    public ApiResponseDTO<List<PartialWithdrawalCauseResponseDto>> getAll() {
+
+        List<PartialWithdrawalCauseResponseDto> responseDtos = repository.findAll()
+                .stream()
+                .map(mapper::toResponseDto)
+                .toList();
+
+        return ApiResponseDTO.success(responseDtos);
     }
 
     @Override
-    public List<PartialWithdrawalCauseResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(repository.findByIsActiveOrderByNameAsc(ActivityEnum.Y));
+    public ApiResponseDTO<List<PartialWithdrawalCauseResponseDto>> getAllActive() {
+
+        List<PartialWithdrawalCauseResponseDto> responseDtos = repository.findByIsActive(ActivityEnum.Y)
+                .stream()
+                .map(mapper::toResponseDto)
+                .toList();
+
+        return ApiResponseDTO.success(responseDtos);
     }
 
     @Override
-    public PartialWithdrawalCauseResponseDto update(Long id, PartialCauseUpdateDto updateDto) {
-        PartialWithdrawalCauseMaster entity = findEntityById(id);
+    public ApiResponseDTO<PartialWithdrawalCauseResponseDto> update(
+            Long id,
+            PartialCauseUpdateDto updateDto) {
+
+        PartialWithdrawalCauseMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "Partial Cause not found with id: " + id
+                        ));
 
         mapper.updateEntityFromDto(updateDto, entity);
-        entity.setUpdatedBy("SYSTEM");
 
-        PartialWithdrawalCauseMaster updatedEntity = repository.save(entity);
-        return mapper.toResponseDto(updatedEntity);
+        entity.setUpdatedBy(updateDto.getUpdatedBy());
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(repository.save(entity))
+        );
     }
 
     @Override
-    public void delete(Long id) {
-        PartialWithdrawalCauseMaster entity = findEntityById(id);
-        entity.setIsActive(ActivityEnum.N);
-        entity.setUpdatedBy("SYSTEM");
-        repository.save(entity);
-    }
+    public ApiResponseDTO<String> delete(Long id) {
 
-    private PartialWithdrawalCauseMaster findEntityById(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(NOT_FOUND_MESSAGE + id));
-    }
+        PartialWithdrawalCauseMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "Partial Cause not found with id: " + id
+                        ));
 
-    private void validateDuplicateCode(String code) {
-        if (repository.existsByCode(code)) {
-            throw new IllegalArgumentException("Partial withdrawal cause code already exists: " + code);
-        }
+        repository.delete(entity);
+
+        return ApiResponseDTO.success(
+                "Partial Cause deleted successfully"
+        );
     }
 }

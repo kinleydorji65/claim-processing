@@ -14,6 +14,7 @@ public class ClaimCircumstanceResponseDto {
     private Long id;
     private String code;
     private String name;
+    private String description;
     private ActivityEnum isActive;
     private LocalDateTime createdAt;
     private String createdBy;

@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.partial.impl;
 
 import com.claim.claim_processing.common.DTO.request.partial.HousePurchaseTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.partial.HousePurchaseTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.HousePurchaseTypeUpdateDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -18,81 +19,135 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HousePurchaseTypeServiceImpl implements HousePurchaseTypeService {
 
-
     private final HousePurchaseTypeRepository repository;
     private final HousePurchaseTypeMapper mapper;
 
+    // -----------------------------
+    // CREATE
+    // -----------------------------
     @Override
-    public HousePurchaseTypeResponseDto create(HousePurchaseTypeRequestDto requestDto) {
+    public ApiResponseDTO<HousePurchaseTypeResponseDto> create(
+            HousePurchaseTypeRequestDto requestDto) {
 
         if (repository.existsByCode(requestDto.getCode())) {
             throw ClaimException.conflict(
-                    "House purchase type code already exists: " + requestDto.getCode()
+                    "House Purchase Type code already exists: " + requestDto.getCode()
             );
         }
 
         HousePurchaseTypeMaster entity = mapper.toEntity(requestDto);
-        entity.setCreatedBy("SYSTEM");
-        entity.setUpdatedBy("SYSTEM");
 
-        HousePurchaseTypeMaster saved = repository.save(entity);
-        return mapper.toResponseDto(saved);
-    }
+        entity.setCreatedBy(requestDto.getCreatedBy());
+        entity.setUpdatedBy(requestDto.getCreatedBy());
 
-    @Override
-    public HousePurchaseTypeResponseDto getById(Long id) {
-        return mapper.toResponseDto(findById(id));
-    }
+        repository.save(entity);
 
-    @Override
-    public HousePurchaseTypeResponseDto getByCode(String code) {
-        HousePurchaseTypeMaster entity = repository.findByCode(code)
-                .orElseThrow(() ->
-                        ClaimException.notFound("House purchase type not found with code: " + code)
-                );
-
-        return mapper.toResponseDto(entity);
-    }
-
-    @Override
-    public List<HousePurchaseTypeResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
-    }
-
-    @Override
-    public List<HousePurchaseTypeResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
         );
     }
 
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
     @Override
-    public HousePurchaseTypeResponseDto update(Long id, HousePurchaseTypeUpdateDto updateDto) {
+    public ApiResponseDTO<HousePurchaseTypeResponseDto> getById(Long id) {
 
-        HousePurchaseTypeMaster entity = findById(id);
+        HousePurchaseTypeMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "House Purchase Type not found with id: " + id
+                        ));
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
+        );
+    }
+
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<HousePurchaseTypeResponseDto> getByCode(String code) {
+
+        HousePurchaseTypeMaster entity = repository.findByCode(code)
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "House Purchase Type not found with code: " + code
+                        ));
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
+        );
+    }
+
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<List<HousePurchaseTypeResponseDto>> getAll() {
+
+        List<HousePurchaseTypeResponseDto> responseDtos = repository.findAll()
+                .stream()
+                .map(mapper::toResponseDto)
+                .toList();
+
+        return ApiResponseDTO.success(responseDtos);
+    }
+
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<List<HousePurchaseTypeResponseDto>> getAllActive() {
+
+        List<HousePurchaseTypeResponseDto> responseDtos = repository.findByIsActive(ActivityEnum.Y)
+                .stream()
+                .map(mapper::toResponseDto)
+                .toList();
+
+        return ApiResponseDTO.success(responseDtos);
+    }
+
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
+    @Override
+    public ApiResponseDTO<HousePurchaseTypeResponseDto> update(
+            Long id,
+            HousePurchaseTypeUpdateDto updateDto) {
+
+        HousePurchaseTypeMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "House Purchase Type not found with id: " + id
+                        ));
 
         mapper.updateEntityFromDto(updateDto, entity);
-        entity.setUpdatedBy("SYSTEM");
 
-        HousePurchaseTypeMaster updated = repository.save(entity);
-        return mapper.toResponseDto(updated);
+        entity.setUpdatedBy(updateDto.getUpdatedBy());
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(repository.save(entity))
+        );
     }
 
+    // -----------------------------
+    // DELETE
+    // -----------------------------
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
-        HousePurchaseTypeMaster entity = findById(id);
-
-        entity.setIsActive(ActivityEnum.N);
-        entity.setUpdatedBy("SYSTEM");
-
-        repository.save(entity);
-    }
-
-    private HousePurchaseTypeMaster findById(Long id) {
-        return repository.findById(id)
+        HousePurchaseTypeMaster entity = repository.findById(id)
                 .orElseThrow(() ->
-                        ClaimException.notFound("House purchase type not found with id: " + id)
-                );
+                        ClaimException.notFound(
+                                "House Purchase Type not found with id: " + id
+                        ));
+
+        repository.delete(entity);
+
+        return ApiResponseDTO.success(
+                "House Purchase Type deleted successfully"
+        );
     }
 }
