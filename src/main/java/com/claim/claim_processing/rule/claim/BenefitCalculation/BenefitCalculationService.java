@@ -8,5 +8,5 @@ import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationRespon
 
 public interface BenefitCalculationService {
     ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(ClaimPreviewRequest request);
-    ApiResponseDTO<BigDecimal> getTotalAccumulationAmount(String memberCode);
+    // ApiResponseDTO<BigDecimal> getTotalAccumulationAmount(String memberCode);
 }

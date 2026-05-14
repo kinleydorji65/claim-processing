@@ -220,14 +220,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                                 .toList();
         }
 
-        public ApiResponseDTO<BigDecimal> getTotalAccumulationAmount(String memberCode) {
-                MemberContributionSummary contributionSummary = memberContributionService
-                                .getContributionSummary(memberCode);
-                BigDecimal totalAccumulationAmount = contributionSummary.getTotalBalance();
-                return ApiResponseDTO.<BigDecimal>builder()
-                                .data(totalAccumulationAmount)
-                                .build();
-        }
+        
 
         private List<RuleTypeResponseDto> checkEligibleRules(Long claimTypeId){
                 List<ClaimTypeRuleMap> mappings = claimTypeRuleMapRepository.findByClaimTypeId(claimTypeId);

@@ -2,6 +2,7 @@ package com.claim.claim_processing.common.DTO.response.others.member;
 
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
@@ -31,6 +32,8 @@ public class MemberDetailResponseDto {
     private LocalDate pfJoiningDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate pensionJoiningDate;
+    private BigDecimal totalBalanceAmount;
+    private BigDecimal totalBalanceWithoutInterestAmount;
 
     private List<MemberBankResponseDto> memberBanks;
     private List<MemberNomineeResponseDto> memberNominees;

@@ -23,4 +23,7 @@ public interface ClaimEligibilityCategoryMapRepository
     // FIND BY RULE AND CATEGORY
     Optional<ClaimEligibilityCategoryMap> findByRule_IdAndCategory_CategoryId(Long ruleId, String categoryId);
 
+    
+    
+    // Find existing mapping
 }

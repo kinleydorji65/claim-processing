@@ -1,5 +1,7 @@
 package com.claim.claim_processing.integration.member.service.impl;
 
+import java.math.BigDecimal;
+
 import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
@@ -29,6 +31,11 @@ public class MemberServiceImpl implements MemberService {
         MemberDetailResponseDto responseDto = memberDetailMapper.toMemberDetailResponseDto(memberDetail);
         responseDto.setPfJoiningDate(contributionSummary.getPfJoiningDate());
         responseDto.setPensionJoiningDate(contributionSummary.getPensionJoiningDate());
+        BigDecimal totalAccumulationAmount = contributionSummary.getTotalBalance();
+                BigDecimal getInterest = contributionSummary.getComponentGroups().stream().map(group -> group.getInterest()).toList().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal totalAccumulationWithoutInterestAmount = totalAccumulationAmount.subtract(getInterest);
+        responseDto.setTotalBalanceAmount(totalAccumulationAmount);
+        responseDto.setTotalBalanceWithoutInterestAmount(totalAccumulationWithoutInterestAmount);
         return ApiResponseDTO.success(responseDto);
     }
 }

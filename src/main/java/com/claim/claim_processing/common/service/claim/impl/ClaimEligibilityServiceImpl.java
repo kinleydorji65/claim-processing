@@ -100,6 +100,7 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
         }
 
         @Override
+        @Transactional
         public ApiResponseDTO<ClaimEligibilityResponseDto> create(ClaimEligibilityCreateRequestDto requestDto) {
 
                 if (claimEligibilityRepository.existsByRuleCode(requestDto.getRuleCode())) {
