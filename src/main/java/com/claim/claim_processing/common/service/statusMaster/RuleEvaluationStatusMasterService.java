@@ -1,23 +1,24 @@
 package com.claim.claim_processing.common.service.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.RuleEvaluationStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.RuleEvaluationStatusResponseDto;
 
 import java.util.List;
 
 public interface RuleEvaluationStatusMasterService {
 
-    RuleEvaluationStatusResponseDto create(RuleEvaluationStatusRequestDto dto);
+    ApiResponseDTO<RuleEvaluationStatusResponseDto> create(RuleEvaluationStatusRequestDto dto);
 
-    RuleEvaluationStatusResponseDto update(Long id, RuleEvaluationStatusRequestDto dto);
+    ApiResponseDTO<RuleEvaluationStatusResponseDto> update(Long id, RuleEvaluationStatusRequestDto dto);
 
-    RuleEvaluationStatusResponseDto getById(Long id);
+    ApiResponseDTO<RuleEvaluationStatusResponseDto> getById(Long id);
 
-    RuleEvaluationStatusResponseDto getByCode(String code);
+    ApiResponseDTO<RuleEvaluationStatusResponseDto> getByCode(String code);
 
-    List<RuleEvaluationStatusResponseDto> getAll();
+    ApiResponseDTO<List<RuleEvaluationStatusResponseDto>> getAll();
 
-    List<RuleEvaluationStatusResponseDto> getAllActive();
+    ApiResponseDTO<List<RuleEvaluationStatusResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

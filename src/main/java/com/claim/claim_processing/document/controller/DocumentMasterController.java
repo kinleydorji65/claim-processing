@@ -17,12 +17,12 @@ public class DocumentMasterController {
 
     private final DocumentService documentService;
 
-    @GetMapping("/generate/{claimId}")
+    @GetMapping("/generate/{claimTypeId}")
     public ResponseEntity<?> generateClaimDocument(
-            @PathVariable Long claimId) {
+            @PathVariable Long claimTypeId) {
 
         ApiResponseDTO<List<DocumentTypeResponseDto>> response =
-                documentService.generateClaimDocument(claimId);
+                documentService.generateClaimDocument(claimTypeId);
 
         return ResponseEntity.ok(response);
     }

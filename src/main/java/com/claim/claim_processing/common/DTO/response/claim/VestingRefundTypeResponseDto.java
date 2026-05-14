@@ -1,7 +1,6 @@
 package com.claim.claim_processing.common.DTO.response.claim;
 
 import com.claim.claim_processing.common.DTO.response.contribution.BenefitComponentTypeResponseDto;
-import com.claim.claim_processing.common.DTO.response.contribution.ComponentResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 

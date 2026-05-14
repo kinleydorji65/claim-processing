@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.RuleEvaluationStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.RuleEvaluationStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.RuleEvaluationStatusMaster;
@@ -24,7 +25,7 @@ public class RuleEvaluationStatusMasterServiceImpl
 
     // ================= CREATE =================
     @Override
-    public RuleEvaluationStatusResponseDto create(RuleEvaluationStatusRequestDto dto) {
+    public ApiResponseDTO<RuleEvaluationStatusResponseDto> create(RuleEvaluationStatusRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict(
@@ -40,12 +41,12 @@ public class RuleEvaluationStatusMasterServiceImpl
 
         RuleEvaluationStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public RuleEvaluationStatusResponseDto update(Long id, RuleEvaluationStatusRequestDto dto) {
+    public ApiResponseDTO<RuleEvaluationStatusResponseDto> update(Long id, RuleEvaluationStatusRequestDto dto) {
 
         RuleEvaluationStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -67,12 +68,12 @@ public class RuleEvaluationStatusMasterServiceImpl
 
         RuleEvaluationStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public RuleEvaluationStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<RuleEvaluationStatusResponseDto> getById(Long id) {
 
         RuleEvaluationStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -81,12 +82,12 @@ public class RuleEvaluationStatusMasterServiceImpl
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public RuleEvaluationStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<RuleEvaluationStatusResponseDto> getByCode(String code) {
 
         RuleEvaluationStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -95,35 +96,35 @@ public class RuleEvaluationStatusMasterServiceImpl
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<RuleEvaluationStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<RuleEvaluationStatusResponseDto>> getAll() {
 
         List<RuleEvaluationStatusMaster> list = repository.findAll();
 
         list.sort(Comparator.comparing(RuleEvaluationStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<RuleEvaluationStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<RuleEvaluationStatusResponseDto>> getAllActive() {
 
         List<RuleEvaluationStatusMaster> list =
                 repository.findByIsActive(ActivityEnum.Y);
 
         list.sort(Comparator.comparing(RuleEvaluationStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= DELETE (SOFT DELETE) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         RuleEvaluationStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -135,5 +136,7 @@ public class RuleEvaluationStatusMasterServiceImpl
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+
+        return ApiResponseDTO.success("Rule evaluation status deleted successfully");
     }
 }

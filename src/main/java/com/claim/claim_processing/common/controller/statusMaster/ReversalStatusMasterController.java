@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.ReversalStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
 import com.claim.claim_processing.common.DTO.response.statusMaster.ReversalStatusResponseDto;
 import com.claim.claim_processing.common.service.statusMaster.ReversalStatusMasterService;
@@ -19,111 +20,69 @@ public class ReversalStatusMasterController {
 
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<ApiResponse<ReversalStatusResponseDto>> create(
+    public ResponseEntity<ApiResponseDTO<ReversalStatusResponseDto>> create(
             @RequestBody ReversalStatusRequestDto dto) {
 
-        ReversalStatusResponseDto response = service.create(dto);
+        ApiResponseDTO<ReversalStatusResponseDto> response = service.create(dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<ReversalStatusResponseDto>builder()
-                        .success(true)
-                        .message("Reversal status created successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= UPDATE (PATCH) =================
     @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<ReversalStatusResponseDto>> update(
+    public ResponseEntity<ApiResponseDTO<ReversalStatusResponseDto>> update(
             @PathVariable Long id,
             @RequestBody ReversalStatusRequestDto dto) {
 
-        ReversalStatusResponseDto response = service.update(id, dto);
+        ApiResponseDTO<ReversalStatusResponseDto> response = service.update(id, dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<ReversalStatusResponseDto>builder()
-                        .success(true)
-                        .message("Reversal status updated successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ReversalStatusResponseDto>> getById(
+    public ResponseEntity<ApiResponseDTO<ReversalStatusResponseDto>> getById(
             @PathVariable Long id) {
 
-        ReversalStatusResponseDto response = service.getById(id);
+        ApiResponseDTO<ReversalStatusResponseDto> response = service.getById(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<ReversalStatusResponseDto>builder()
-                        .success(true)
-                        .message("Reversal status fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY CODE =================
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<ReversalStatusResponseDto>> getByCode(
+    public ResponseEntity<ApiResponseDTO<ReversalStatusResponseDto>> getByCode(
             @PathVariable String code) {
 
-        ReversalStatusResponseDto response = service.getByCode(code);
+        ApiResponseDTO<ReversalStatusResponseDto> response = service.getByCode(code);
 
-        return ResponseEntity.ok(
-                ApiResponse.<ReversalStatusResponseDto>builder()
-                        .success(true)
-                        .message("Reversal status fetched by code successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL =================
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ReversalStatusResponseDto>>> getAll() {
+    public ResponseEntity<ApiResponseDTO<List<ReversalStatusResponseDto>>> getAll() {
 
-        List<ReversalStatusResponseDto> response = service.getAll();
+        ApiResponseDTO<List<ReversalStatusResponseDto>> response = service.getAll();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<ReversalStatusResponseDto>>builder()
-                        .success(true)
-                        .message("All reversal statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL ACTIVE =================
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<ReversalStatusResponseDto>>> getAllActive() {
+    public ResponseEntity<ApiResponseDTO<List<ReversalStatusResponseDto>>> getAllActive() {
 
-        List<ReversalStatusResponseDto> response = service.getAllActive();
+        ApiResponseDTO<List<ReversalStatusResponseDto>> response = service.getAllActive();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<ReversalStatusResponseDto>>builder()
-                        .success(true)
-                        .message("Active reversal statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> delete(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO<String>> delete(@PathVariable Long id) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response = service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .message("Reversal status deleted successfully")
-                        .data("Deleted ID: " + id)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }

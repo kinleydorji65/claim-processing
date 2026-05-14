@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.PaymentLineStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.PaymentLineStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.PaymentLineStatusMaster;
@@ -23,7 +24,7 @@ public class PaymentLineStatusMasterServiceImpl implements PaymentLineStatusMast
 
     // ================= CREATE =================
     @Override
-    public PaymentLineStatusResponseDto create(PaymentLineStatusRequestDto dto) {
+    public ApiResponseDTO<PaymentLineStatusResponseDto> create(PaymentLineStatusRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict(
@@ -39,12 +40,12 @@ public class PaymentLineStatusMasterServiceImpl implements PaymentLineStatusMast
 
         PaymentLineStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public PaymentLineStatusResponseDto update(Long id, PaymentLineStatusRequestDto dto) {
+    public ApiResponseDTO<PaymentLineStatusResponseDto> update(Long id, PaymentLineStatusRequestDto dto) {
 
         PaymentLineStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -66,12 +67,12 @@ public class PaymentLineStatusMasterServiceImpl implements PaymentLineStatusMast
 
         PaymentLineStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public PaymentLineStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<PaymentLineStatusResponseDto> getById(Long id) {
 
         PaymentLineStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -80,12 +81,12 @@ public class PaymentLineStatusMasterServiceImpl implements PaymentLineStatusMast
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public PaymentLineStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<PaymentLineStatusResponseDto> getByCode(String code) {
 
         PaymentLineStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -94,35 +95,35 @@ public class PaymentLineStatusMasterServiceImpl implements PaymentLineStatusMast
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<PaymentLineStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<PaymentLineStatusResponseDto>> getAll() {
 
         List<PaymentLineStatusMaster> list = repository.findAll();
 
         list.sort(Comparator.comparing(PaymentLineStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<PaymentLineStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<PaymentLineStatusResponseDto>> getAllActive() {
 
         List<PaymentLineStatusMaster> list =
                 repository.findByIsActive(ActivityEnum.Y);
 
         list.sort(Comparator.comparing(PaymentLineStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= DELETE (SOFT DELETE) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         PaymentLineStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -134,5 +135,6 @@ public class PaymentLineStatusMasterServiceImpl implements PaymentLineStatusMast
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+        return ApiResponseDTO.success("Payment line status deleted successfully");
     }
 }

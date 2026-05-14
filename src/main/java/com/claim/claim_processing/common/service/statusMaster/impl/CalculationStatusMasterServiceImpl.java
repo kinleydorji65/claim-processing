@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.CalculationStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.CalculationStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.CalculationStatusMaster;
@@ -23,7 +24,7 @@ public class CalculationStatusMasterServiceImpl implements CalculationStatusMast
 
     // ================= CREATE =================
     @Override
-    public CalculationStatusResponseDto create(CalculationStatusRequestDto dto) {
+    public ApiResponseDTO<CalculationStatusResponseDto> create(CalculationStatusRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict(
@@ -39,12 +40,12 @@ public class CalculationStatusMasterServiceImpl implements CalculationStatusMast
 
         CalculationStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public CalculationStatusResponseDto update(Long id, CalculationStatusRequestDto dto) {
+    public ApiResponseDTO<CalculationStatusResponseDto> update(Long id, CalculationStatusRequestDto dto) {
 
         CalculationStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -67,12 +68,12 @@ public class CalculationStatusMasterServiceImpl implements CalculationStatusMast
 
         CalculationStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public CalculationStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<CalculationStatusResponseDto> getById(Long id) {
 
         CalculationStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -81,12 +82,12 @@ public class CalculationStatusMasterServiceImpl implements CalculationStatusMast
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public CalculationStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<CalculationStatusResponseDto> getByCode(String code) {
 
         CalculationStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -95,35 +96,35 @@ public class CalculationStatusMasterServiceImpl implements CalculationStatusMast
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<CalculationStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<CalculationStatusResponseDto>> getAll() {
 
         List<CalculationStatusMaster> list = repository.findAll();
 
         list.sort(Comparator.comparing(CalculationStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<CalculationStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<CalculationStatusResponseDto>> getAllActive() {
 
         List<CalculationStatusMaster> list =
                 repository.findByIsActive(ActivityEnum.Y);
 
         list.sort(Comparator.comparing(CalculationStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= DELETE (Soft Delete) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         CalculationStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -135,5 +136,7 @@ public class CalculationStatusMasterServiceImpl implements CalculationStatusMast
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+
+        return ApiResponseDTO.success("Calculation status deleted successfully");
     }
 }

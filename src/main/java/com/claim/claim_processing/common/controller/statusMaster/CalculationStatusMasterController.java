@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.CalculationStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
 import com.claim.claim_processing.common.DTO.response.statusMaster.CalculationStatusResponseDto;
 import com.claim.claim_processing.common.service.statusMaster.CalculationStatusMasterService;
@@ -19,112 +20,70 @@ public class CalculationStatusMasterController {
 
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<ApiResponse<CalculationStatusResponseDto>> create(
+    public ResponseEntity<ApiResponseDTO<CalculationStatusResponseDto>> create(
             @RequestBody CalculationStatusRequestDto dto) {
 
-        CalculationStatusResponseDto response = service.create(dto);
+        ApiResponseDTO<CalculationStatusResponseDto> response = service.create(dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<CalculationStatusResponseDto>builder()
-                        .success(true)
-                        .message("Calculation status created successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= UPDATE =================
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<CalculationStatusResponseDto>> update(
+    public ResponseEntity<ApiResponseDTO<CalculationStatusResponseDto>> update(
             @PathVariable Long id,
             @RequestBody CalculationStatusRequestDto dto) {
 
-        CalculationStatusResponseDto response = service.update(id, dto);
+        ApiResponseDTO<CalculationStatusResponseDto> response = service.update(id, dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<CalculationStatusResponseDto>builder()
-                        .success(true)
-                        .message("Calculation status updated successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CalculationStatusResponseDto>> getById(
+    public ResponseEntity<ApiResponseDTO<CalculationStatusResponseDto>> getById(
             @PathVariable Long id) {
 
-        CalculationStatusResponseDto response = service.getById(id);
+        ApiResponseDTO<CalculationStatusResponseDto> response = service.getById(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<CalculationStatusResponseDto>builder()
-                        .success(true)
-                        .message("Calculation status fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY CODE =================
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<CalculationStatusResponseDto>> getByCode(
+    public ResponseEntity<ApiResponseDTO<CalculationStatusResponseDto>> getByCode(
             @PathVariable String code) {
 
-        CalculationStatusResponseDto response = service.getByCode(code);
+        ApiResponseDTO<CalculationStatusResponseDto> response = service.getByCode(code);
 
-        return ResponseEntity.ok(
-                ApiResponse.<CalculationStatusResponseDto>builder()
-                        .success(true)
-                        .message("Calculation status fetched by code successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL =================
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CalculationStatusResponseDto>>> getAll() {
+    public ResponseEntity<ApiResponseDTO<List<CalculationStatusResponseDto>>> getAll() {
 
-        List<CalculationStatusResponseDto> response = service.getAll();
+        ApiResponseDTO<List<CalculationStatusResponseDto>> response = service.getAll();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<CalculationStatusResponseDto>>builder()
-                        .success(true)
-                        .message("All calculation statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL ACTIVE =================
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<CalculationStatusResponseDto>>> getAllActive() {
+    public ResponseEntity<ApiResponseDTO<List<CalculationStatusResponseDto>>> getAllActive() {
 
-        List<CalculationStatusResponseDto> response = service.getAllActive();
+        ApiResponseDTO<List<CalculationStatusResponseDto>> response = service.getAllActive();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<CalculationStatusResponseDto>>builder()
-                        .success(true)
-                        .message("Active calculation statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> delete(
+    public ResponseEntity<ApiResponseDTO<String>> delete(
             @PathVariable Long id) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response = service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .message("Calculation status deleted successfully")
-                        .data("Deleted ID: " + id)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }

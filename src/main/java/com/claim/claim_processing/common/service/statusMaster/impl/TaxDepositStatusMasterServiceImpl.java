@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.TaxDepositStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.TaxDepositStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.TaxDepositStatusMaster;
@@ -23,7 +24,7 @@ public class TaxDepositStatusMasterServiceImpl implements TaxDepositStatusMaster
 
     // ================= CREATE =================
     @Override
-    public TaxDepositStatusResponseDto create(TaxDepositStatusRequestDto dto) {
+    public ApiResponseDTO<TaxDepositStatusResponseDto> create(TaxDepositStatusRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict(
@@ -39,12 +40,12 @@ public class TaxDepositStatusMasterServiceImpl implements TaxDepositStatusMaster
 
         TaxDepositStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public TaxDepositStatusResponseDto update(Long id, TaxDepositStatusRequestDto dto) {
+    public ApiResponseDTO<TaxDepositStatusResponseDto> update(Long id, TaxDepositStatusRequestDto dto) {
 
         TaxDepositStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -66,12 +67,12 @@ public class TaxDepositStatusMasterServiceImpl implements TaxDepositStatusMaster
 
         TaxDepositStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public TaxDepositStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<TaxDepositStatusResponseDto> getById(Long id) {
 
         TaxDepositStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -80,12 +81,12 @@ public class TaxDepositStatusMasterServiceImpl implements TaxDepositStatusMaster
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public TaxDepositStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<TaxDepositStatusResponseDto> getByCode(String code) {
 
         TaxDepositStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -94,35 +95,35 @@ public class TaxDepositStatusMasterServiceImpl implements TaxDepositStatusMaster
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<TaxDepositStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<TaxDepositStatusResponseDto>> getAll() {
 
         List<TaxDepositStatusMaster> list = repository.findAll();
 
         list.sort(Comparator.comparing(TaxDepositStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<TaxDepositStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<TaxDepositStatusResponseDto>> getAllActive() {
 
         List<TaxDepositStatusMaster> list =
                 repository.findByIsActive(ActivityEnum.Y);
 
         list.sort(Comparator.comparing(TaxDepositStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= DELETE (SOFT DELETE) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         TaxDepositStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -134,5 +135,7 @@ public class TaxDepositStatusMasterServiceImpl implements TaxDepositStatusMaster
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+
+        return ApiResponseDTO.success("Tax deposit status deleted successfully");
     }
 }

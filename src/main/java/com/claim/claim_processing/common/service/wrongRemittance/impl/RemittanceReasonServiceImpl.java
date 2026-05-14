@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.wrongRemittance.impl;
 
 import com.claim.claim_processing.common.DTO.request.wrongRemittance.RemittanceReasonRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.wrongRemittance.RemittanceReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.wrongRemittance.RemittanceReasonUpdateDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -24,7 +25,7 @@ public class RemittanceReasonServiceImpl implements RemittanceReasonService {
     private final RemittanceReasonMapper mapper;
 
     @Override
-    public RemittanceReasonResponseDto create(RemittanceReasonRequestDto requestDto) {
+    public ApiResponseDTO<RemittanceReasonResponseDto> create(RemittanceReasonRequestDto requestDto) {
         if (repository.existsByCode(requestDto.getCode())) {
             throw ClaimException.conflict(
                     "Remittance reason code already exists: " + requestDto.getCode()
@@ -36,55 +37,56 @@ public class RemittanceReasonServiceImpl implements RemittanceReasonService {
         entity.setUpdatedBy("SYSTEM");
 
         WrongRemittanceReasonMaster saved = repository.save(entity);
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     @Override
-    public RemittanceReasonResponseDto getById(Long id) {
-        return mapper.toResponseDto(findById(id));
+    public ApiResponseDTO<RemittanceReasonResponseDto> getById(Long id) {
+        return ApiResponseDTO.success(mapper.toResponseDto(findById(id)));
     }
 
     @Override
-    public RemittanceReasonResponseDto getByCode(String code) {
+    public ApiResponseDTO<RemittanceReasonResponseDto> getByCode(String code) {
         WrongRemittanceReasonMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
                         ClaimException.notFound("Remittance reason not found with code: " + code)
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     @Override
-    public List<RemittanceReasonResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
+    public ApiResponseDTO<List<RemittanceReasonResponseDto>> getAll() {
+        return ApiResponseDTO.success(mapper.toResponseDtoList(repository.findAll()));
     }
 
     @Override
-    public List<RemittanceReasonResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(
+    public ApiResponseDTO<List<RemittanceReasonResponseDto>> getAllActive() {
+        return ApiResponseDTO.success(mapper.toResponseDtoList(
                 repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
-        );
+        ));
     }
 
     @Override
-    public RemittanceReasonResponseDto update(Long id, RemittanceReasonUpdateDto updateDto) {
+    public ApiResponseDTO<RemittanceReasonResponseDto> update(Long id, RemittanceReasonUpdateDto updateDto) {
         WrongRemittanceReasonMaster entity = findById(id);
 
         mapper.updateEntityFromDto(updateDto, entity);
         entity.setUpdatedBy("SYSTEM");
 
         WrongRemittanceReasonMaster updated = repository.save(entity);
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     @Override
-    public void deactivate(Long id) {
+    public ApiResponseDTO<String> deactivate(Long id) {
         WrongRemittanceReasonMaster entity = findById(id);
 
         entity.setIsActive(ActivityEnum.N);
         entity.setUpdatedBy("SYSTEM");
 
         repository.save(entity);
+        return ApiResponseDTO.success("Remittance reason deactivated successfully");
     }
 
     private WrongRemittanceReasonMaster findById(Long id) {

@@ -1,23 +1,24 @@
 package com.claim.claim_processing.common.service.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.PaymentLineStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.PaymentLineStatusResponseDto;
 
 import java.util.List;
 
 public interface PaymentLineStatusMasterService {
 
-    PaymentLineStatusResponseDto create(PaymentLineStatusRequestDto dto);
+    ApiResponseDTO<PaymentLineStatusResponseDto> create(PaymentLineStatusRequestDto dto);
 
-    PaymentLineStatusResponseDto update(Long id, PaymentLineStatusRequestDto dto);
+    ApiResponseDTO<PaymentLineStatusResponseDto> update(Long id, PaymentLineStatusRequestDto dto);
 
-    PaymentLineStatusResponseDto getById(Long id);
+    ApiResponseDTO<PaymentLineStatusResponseDto> getById(Long id);
 
-    PaymentLineStatusResponseDto getByCode(String code);
+    ApiResponseDTO<PaymentLineStatusResponseDto> getByCode(String code);
 
-    List<PaymentLineStatusResponseDto> getAll();
+    ApiResponseDTO<List<PaymentLineStatusResponseDto>> getAll();
 
-    List<PaymentLineStatusResponseDto> getAllActive();
+    ApiResponseDTO<List<PaymentLineStatusResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.ReversalStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.ReversalStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.ReversalStatusMaster;
@@ -23,7 +24,7 @@ public class ReversalStatusMasterServiceImpl implements ReversalStatusMasterServ
 
     // ================= CREATE =================
     @Override
-    public ReversalStatusResponseDto create(ReversalStatusRequestDto dto) {
+    public ApiResponseDTO<ReversalStatusResponseDto> create(ReversalStatusRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict(
@@ -39,12 +40,12 @@ public class ReversalStatusMasterServiceImpl implements ReversalStatusMasterServ
 
         ReversalStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public ReversalStatusResponseDto update(Long id, ReversalStatusRequestDto dto) {
+    public ApiResponseDTO<ReversalStatusResponseDto> update(Long id, ReversalStatusRequestDto dto) {
 
         ReversalStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -66,12 +67,12 @@ public class ReversalStatusMasterServiceImpl implements ReversalStatusMasterServ
 
         ReversalStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public ReversalStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<ReversalStatusResponseDto> getById(Long id) {
 
         ReversalStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -80,12 +81,12 @@ public class ReversalStatusMasterServiceImpl implements ReversalStatusMasterServ
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public ReversalStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<ReversalStatusResponseDto> getByCode(String code) {
 
         ReversalStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -94,35 +95,35 @@ public class ReversalStatusMasterServiceImpl implements ReversalStatusMasterServ
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<ReversalStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<ReversalStatusResponseDto>> getAll() {
 
         List<ReversalStatusMaster> list = repository.findAll();
 
         list.sort(Comparator.comparing(ReversalStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<ReversalStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<ReversalStatusResponseDto>> getAllActive() {
 
         List<ReversalStatusMaster> list =
                 repository.findByIsActive(ActivityEnum.Y);
 
         list.sort(Comparator.comparing(ReversalStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= DELETE (SOFT DELETE) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         ReversalStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -134,5 +135,7 @@ public class ReversalStatusMasterServiceImpl implements ReversalStatusMasterServ
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+
+        return ApiResponseDTO.success("Reversal status deleted successfully");
     }
 }

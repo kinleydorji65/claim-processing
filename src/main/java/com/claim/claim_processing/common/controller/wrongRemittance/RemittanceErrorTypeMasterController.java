@@ -2,6 +2,7 @@ package com.claim.claim_processing.common.controller.wrongRemittance;
 
 import com.claim.claim_processing.common.DTO.request.wrongRemittance.RemittanceErrorTypeRequestDto;
 import com.claim.claim_processing.common.DTO.response.wrongRemittance.RemittanceErrorTypeResponseDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
 import com.claim.claim_processing.common.service.wrongRemittance.RemittanceErrorTypeMasterService;
 import lombok.RequiredArgsConstructor;
@@ -19,112 +20,70 @@ public class RemittanceErrorTypeMasterController {
 
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<ApiResponse<RemittanceErrorTypeResponseDto>> create(
+    public ResponseEntity<ApiResponseDTO<RemittanceErrorTypeResponseDto>> create(
             @RequestBody RemittanceErrorTypeRequestDto dto) {
 
-        RemittanceErrorTypeResponseDto response = service.create(dto);
+        ApiResponseDTO<RemittanceErrorTypeResponseDto> response = service.create(dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<RemittanceErrorTypeResponseDto>builder()
-                        .success(true)
-                        .message("Wrong remittance error type created successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= UPDATE (PATCH) =================
     @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<RemittanceErrorTypeResponseDto>> update(
+    public ResponseEntity<ApiResponseDTO<RemittanceErrorTypeResponseDto>> update(
             @PathVariable Long id,
             @RequestBody RemittanceErrorTypeRequestDto dto) {
 
-        RemittanceErrorTypeResponseDto response = service.update(id, dto);
+        ApiResponseDTO<RemittanceErrorTypeResponseDto> response = service.update(id, dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<RemittanceErrorTypeResponseDto>builder()
-                        .success(true)
-                        .message("Wrong remittance error type updated successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<RemittanceErrorTypeResponseDto>> getById(
+    public ResponseEntity<ApiResponseDTO<RemittanceErrorTypeResponseDto>> getById(
             @PathVariable Long id) {
 
-        RemittanceErrorTypeResponseDto response = service.getById(id);
+        ApiResponseDTO<RemittanceErrorTypeResponseDto> response = service.getById(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<RemittanceErrorTypeResponseDto>builder()
-                        .success(true)
-                        .message("Wrong remittance error type fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY CODE =================
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<RemittanceErrorTypeResponseDto>> getByCode(
+    public ResponseEntity<ApiResponseDTO<RemittanceErrorTypeResponseDto>> getByCode(
             @PathVariable String code) {
 
-        RemittanceErrorTypeResponseDto response = service.getByCode(code);
+        ApiResponseDTO<RemittanceErrorTypeResponseDto> response = service.getByCode(code);
 
-        return ResponseEntity.ok(
-                ApiResponse.<RemittanceErrorTypeResponseDto>builder()
-                        .success(true)
-                        .message("Wrong remittance error type fetched by code successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL =================
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RemittanceErrorTypeResponseDto>>> getAll() {
+    public ResponseEntity<ApiResponseDTO<List<RemittanceErrorTypeResponseDto>>> getAll() {
 
-        List<RemittanceErrorTypeResponseDto> response = service.getAll();
+        ApiResponseDTO<List<RemittanceErrorTypeResponseDto>> response = service.getAll();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<RemittanceErrorTypeResponseDto>>builder()
-                        .success(true)
-                        .message("All wrong remittance error types fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL ACTIVE =================
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<RemittanceErrorTypeResponseDto>>> getAllActive() {
+    public ResponseEntity<ApiResponseDTO<List<RemittanceErrorTypeResponseDto>>> getAllActive() {
 
-        List<RemittanceErrorTypeResponseDto> response = service.getAllActive();
+        ApiResponseDTO<List<RemittanceErrorTypeResponseDto>> response = service.getAllActive();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<RemittanceErrorTypeResponseDto>>builder()
-                        .success(true)
-                        .message("Active wrong remittance error types fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> delete(
+    public ResponseEntity<ApiResponseDTO<String>> delete(
             @PathVariable Long id) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response = service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .message("Wrong remittance error type deleted successfully")
-                        .data("Deleted ID: " + id)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }

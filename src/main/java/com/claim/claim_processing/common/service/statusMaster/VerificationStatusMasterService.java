@@ -1,23 +1,24 @@
 package com.claim.claim_processing.common.service.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.VerificationStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.VerificationStatusResponseDto;
 
 import java.util.List;
 
 public interface VerificationStatusMasterService {
 
-    VerificationStatusResponseDto create(VerificationStatusRequestDto dto);
+    ApiResponseDTO<VerificationStatusResponseDto> create(VerificationStatusRequestDto dto);
 
-    VerificationStatusResponseDto update(Long id, VerificationStatusRequestDto dto);
+    ApiResponseDTO<VerificationStatusResponseDto> update(Long id, VerificationStatusRequestDto dto);
 
-    VerificationStatusResponseDto getById(Long id);
+    ApiResponseDTO<VerificationStatusResponseDto> getById(Long id);
 
-    VerificationStatusResponseDto getByCode(String code);
+    ApiResponseDTO<VerificationStatusResponseDto> getByCode(String code);
 
-    List<VerificationStatusResponseDto> getAll();
+    ApiResponseDTO<List<VerificationStatusResponseDto>> getAll();
 
-    List<VerificationStatusResponseDto> getAllActive();
+    ApiResponseDTO<List<VerificationStatusResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

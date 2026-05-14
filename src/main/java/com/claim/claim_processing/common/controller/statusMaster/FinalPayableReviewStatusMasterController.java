@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.FinalPayableReviewStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
 import com.claim.claim_processing.common.DTO.response.statusMaster.FinalPayableReviewStatusResponseDto;
 import com.claim.claim_processing.common.service.statusMaster.FinalPayableReviewStatusMasterService;
@@ -19,122 +20,80 @@ public class FinalPayableReviewStatusMasterController {
 
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<ApiResponse<FinalPayableReviewStatusResponseDto>> create(
+    public ResponseEntity<ApiResponseDTO<FinalPayableReviewStatusResponseDto>> create(
             @RequestBody FinalPayableReviewStatusRequestDto dto
     ) {
 
-        FinalPayableReviewStatusResponseDto response = service.create(dto);
+        ApiResponseDTO<FinalPayableReviewStatusResponseDto> response = service.create(dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<FinalPayableReviewStatusResponseDto>builder()
-                        .success(true)
-                        .message("Final payable review status created successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= UPDATE =================
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<FinalPayableReviewStatusResponseDto>> update(
+    public ResponseEntity<ApiResponseDTO<FinalPayableReviewStatusResponseDto>> update(
             @PathVariable Long id,
             @RequestBody FinalPayableReviewStatusRequestDto dto
     ) {
 
-        FinalPayableReviewStatusResponseDto response =
+        ApiResponseDTO<FinalPayableReviewStatusResponseDto> response =
                 service.update(id, dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<FinalPayableReviewStatusResponseDto>builder()
-                        .success(true)
-                        .message("Final payable review status updated successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<FinalPayableReviewStatusResponseDto>> getById(
+    public ResponseEntity<ApiResponseDTO<FinalPayableReviewStatusResponseDto>> getById(
             @PathVariable Long id
     ) {
 
-        FinalPayableReviewStatusResponseDto response =
+        ApiResponseDTO<FinalPayableReviewStatusResponseDto> response =
                 service.getById(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<FinalPayableReviewStatusResponseDto>builder()
-                        .success(true)
-                        .message("Final payable review status fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY CODE =================
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<FinalPayableReviewStatusResponseDto>> getByCode(
+    public ResponseEntity<ApiResponseDTO<FinalPayableReviewStatusResponseDto>> getByCode(
             @PathVariable String code
     ) {
 
-        FinalPayableReviewStatusResponseDto response =
+        ApiResponseDTO<FinalPayableReviewStatusResponseDto> response =
                 service.getByCode(code);
 
-        return ResponseEntity.ok(
-                ApiResponse.<FinalPayableReviewStatusResponseDto>builder()
-                        .success(true)
-                        .message("Final payable review status fetched by code successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL =================
     @GetMapping
-    public ResponseEntity<ApiResponse<List<FinalPayableReviewStatusResponseDto>>> getAll() {
+    public ResponseEntity<ApiResponseDTO<List<FinalPayableReviewStatusResponseDto>>> getAll() {
 
-        List<FinalPayableReviewStatusResponseDto> response =
+        ApiResponseDTO<List<FinalPayableReviewStatusResponseDto>> response =
                 service.getAll();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<FinalPayableReviewStatusResponseDto>>builder()
-                        .success(true)
-                        .message("All final payable review statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL ACTIVE =================
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<FinalPayableReviewStatusResponseDto>>> getAllActive() {
+    public ResponseEntity<ApiResponseDTO<List<FinalPayableReviewStatusResponseDto>>> getAllActive() {
 
-        List<FinalPayableReviewStatusResponseDto> response =
+        ApiResponseDTO<List<FinalPayableReviewStatusResponseDto>> response =
                 service.getAllActive();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<FinalPayableReviewStatusResponseDto>>builder()
-                        .success(true)
-                        .message("Active final payable review statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> delete(
+    public ResponseEntity<ApiResponseDTO<String>> delete(
             @PathVariable Long id
     ) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response = service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .message("Final payable review status deleted successfully")
-                        .data("Deleted ID: " + id)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }
