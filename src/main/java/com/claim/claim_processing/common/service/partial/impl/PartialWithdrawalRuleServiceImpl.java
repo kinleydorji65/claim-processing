@@ -1,20 +1,22 @@
 package com.claim.claim_processing.common.service.partial.impl;
 
 import com.claim.claim_processing.common.DTO.request.partial.PartialWithdrawalRuleRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalRuleResponseDto;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalAccumulationMaster;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalReasonMaster;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalRuleMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
-import com.claim.claim_processing.common.repository.partial.PartialWithdrawalAccumulationRepository;
-import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.common.mapper.partial.PartialWithdrawalRuleMapper;
-import com.claim.claim_processing.common.repository.partial.PartialWithdrawalRuleRepository;
-import com.claim.claim_processing.common.repository.partial.PartialReasonRepository;
 import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategoryRepository;
+import com.claim.claim_processing.common.repository.partial.PartialReasonRepository;
+import com.claim.claim_processing.common.repository.partial.PartialWithdrawalAccumulationRepository;
+import com.claim.claim_processing.common.repository.partial.PartialWithdrawalRuleRepository;
 import com.claim.claim_processing.common.service.partial.PartialWithdrawalRuleService;
+import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,38 +24,50 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleService {
 
-    private final PartialWithdrawalRuleRepository ruleRepository;
+    private final PartialWithdrawalRuleRepository repository;
+    private final PartialWithdrawalRuleMapper mapper;
+
     private final AgencyCategoryRepository categoryRepository;
     private final PartialReasonRepository reasonRepository;
     private final PartialWithdrawalAccumulationRepository accumulationRepository;
-    private final PartialWithdrawalRuleMapper mapper;
 
-    // -----------------------
+    // =========================
     // CREATE
-    // -----------------------
+    // =========================
     @Override
-    public PartialWithdrawalRuleResponseDto create(PartialWithdrawalRuleRequestDto dto) {
-
-        validateDuplicate(dto.getCategoryId(), dto.getReasonId());
+    @Transactional
+    public ApiResponseDTO<PartialWithdrawalRuleResponseDto> create(
+            PartialWithdrawalRuleRequestDto dto) {
 
         PartialWithdrawalRuleMaster entity = mapper.toEntity(dto);
 
         entity.setCategory(getCategory(dto.getCategoryId()));
         entity.setReason(getReason(dto.getReasonId()));
+        entity.setAccumulation(getAccumulation(dto.getAccumulationId()));
 
-        return mapper.toResponseDto(ruleRepository.save(entity));
+        entity.setCreatedBy(dto.getCreatedBy());
+        entity.setUpdatedBy(dto.getUpdatedBy());
+
+        repository.save(entity);
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
+        );
     }
 
-    // -----------------------
-    // UPDATE (PATCH)
-    // -----------------------
+    // =========================
+    // UPDATE
+    // =========================
     @Override
-    public PartialWithdrawalRuleResponseDto update(Long id, PartialWithdrawalRuleRequestDto dto) {
+    public ApiResponseDTO<PartialWithdrawalRuleResponseDto> update(
+            Long id,
+            PartialWithdrawalRuleRequestDto dto) {
 
-        PartialWithdrawalRuleMaster entity = ruleRepository.findById(id)
+        PartialWithdrawalRuleMaster entity = repository.findById(id)
                 .orElseThrow(() ->
-                        ClaimException.resourceNotFound("PartialWithdrawalRule", id.toString())
-                );
+                        ClaimException.notFound(
+                                "Partial Withdrawal Rule not found with id: " + id
+                        ));
 
         mapper.updateEntityFromDto(dto, entity);
 
@@ -65,129 +79,189 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
             entity.setReason(getReason(dto.getReasonId()));
         }
 
-        return mapper.toResponseDto(ruleRepository.save(entity));
+        if (dto.getAccumulationId() != null) {
+            entity.setAccumulation(getAccumulation(dto.getAccumulationId()));
+        }
+
+        entity.setUpdatedBy(dto.getUpdatedBy());
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(repository.save(entity))
+        );
     }
 
-    // -----------------------
+    // =========================
     // GET BY ID
-    // -----------------------
+    // =========================
     @Override
-    public PartialWithdrawalRuleResponseDto getById(Long id) {
-        return ruleRepository.findById(id)
-                .map(mapper::toResponseDto)
+    public ApiResponseDTO<PartialWithdrawalRuleResponseDto> getById(Long id) {
+
+        PartialWithdrawalRuleMaster entity = repository.findById(id)
                 .orElseThrow(() ->
-                        ClaimException.resourceNotFound("PartialWithdrawalRule", id.toString())
-                );
+                        ClaimException.notFound(
+                                "Partial Withdrawal Rule not found with id: " + id
+                        ));
+
+        return ApiResponseDTO.success(
+                mapper.toResponseDto(entity)
+        );
     }
 
-    // -----------------------
+    // =========================
     // GET ALL
-    // -----------------------
+    // =========================
     @Override
-    public List<PartialWithdrawalRuleResponseDto> getAll() {
-        List<PartialWithdrawalRuleMaster> list = ruleRepository.findAll();
+    public ApiResponseDTO<List<PartialWithdrawalRuleResponseDto>> getAll() {
 
-        if (list.isEmpty()) {
-            throw ClaimException.notFound("No Partial Withdrawal Rules found");
+        List<PartialWithdrawalRuleResponseDto> responseDtos =
+                repository.findAll()
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
+
+        if (responseDtos.isEmpty()) {
+            throw ClaimException.notFound(
+                    "No Partial Withdrawal Rules found"
+            );
         }
 
-        return list.stream()
-                .map(mapper::toResponseDto)
-                .toList();
+        return ApiResponseDTO.success(responseDtos);
     }
 
-    // -----------------------
-    // FILTERS
-    // -----------------------
+    // =========================
+    // GET BY CATEGORY
+    // =========================
     @Override
-    public List<PartialWithdrawalRuleResponseDto> getByCategory(String categoryId) {
-        List<PartialWithdrawalRuleMaster> list =
-                ruleRepository.findByCategory_CategoryId(categoryId);
+    public ApiResponseDTO<List<PartialWithdrawalRuleResponseDto>> getByCategory(
+            String categoryId) {
 
-        if (list.isEmpty()) {
-            throw ClaimException.resourceNotFound("Rules for categoryId", categoryId);
+        getCategory(categoryId);
+
+        List<PartialWithdrawalRuleResponseDto> responseDtos =
+                repository.findByCategory_CategoryId(categoryId)
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
+
+        if (responseDtos.isEmpty()) {
+            throw ClaimException.notFound(
+                    "No Partial Withdrawal Rules found for category id: " + categoryId
+            );
         }
 
-        return list.stream()
-                .map(mapper::toResponseDto)
-                .toList();
+        return ApiResponseDTO.success(responseDtos);
     }
 
+    // =========================
+    // GET BY REASON
+    // =========================
     @Override
-    public List<PartialWithdrawalRuleResponseDto> getByReason(Long reasonId) {
-        List<PartialWithdrawalRuleMaster> list =
-                ruleRepository.findByReason_Id(reasonId);
+    public ApiResponseDTO<List<PartialWithdrawalRuleResponseDto>> getByReason(
+            Long reasonId) {
 
-        if (list.isEmpty()) {
-            throw ClaimException.resourceNotFound("Rules for reasonId", reasonId.toString());
+        getReason(reasonId);
+
+        List<PartialWithdrawalRuleResponseDto> responseDtos =
+                repository.findByReason_Id(reasonId)
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
+
+        if (responseDtos.isEmpty()) {
+            throw ClaimException.notFound(
+                    "No Partial Withdrawal Rules found for reason id: " + reasonId
+            );
         }
 
-        return list.stream()
-                .map(mapper::toResponseDto)
-                .toList();
+        return ApiResponseDTO.success(responseDtos);
     }
 
-
+    // =========================
+    // GET BY ACCUMULATION
+    // =========================
     @Override
-    public List<PartialWithdrawalRuleResponseDto> getByAccumulation(Long accumulationId) {
-        List<PartialWithdrawalRuleMaster> list =
-                ruleRepository.findByAccumulation_Id(accumulationId);
+    public ApiResponseDTO<List<PartialWithdrawalRuleResponseDto>> getByAccumulation(
+            Long accumulationId) {
 
-        if (list.isEmpty()) {
-            throw ClaimException.resourceNotFound("Rules for accumulationId", accumulationId.toString());
+        getAccumulation(accumulationId);
+
+        List<PartialWithdrawalRuleResponseDto> responseDtos =
+                repository.findByAccumulation_Id(accumulationId)
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
+
+        if (responseDtos.isEmpty()) {
+            throw ClaimException.notFound(
+                    "No Partial Withdrawal Rules found for accumulation id: " + accumulationId
+            );
         }
 
-        return list.stream()
-                .map(mapper::toResponseDto)
-                .toList();
+        return ApiResponseDTO.success(responseDtos);
     }
 
-    // -----------------------
+    // =========================
     // DELETE
-    // -----------------------
+    // =========================
     @Override
-    public void delete(Long id) {
-        if (!ruleRepository.existsById(id)) {
-            throw ClaimException.resourceNotFound("PartialWithdrawalRule", id.toString());
-        }
-        ruleRepository.deleteById(id);
+    public ApiResponseDTO<String> delete(Long id) {
+
+        PartialWithdrawalRuleMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "Partial Withdrawal Rule not found with id: " + id
+                        ));
+
+        repository.delete(entity);
+
+        return ApiResponseDTO.success(
+                "Partial Withdrawal Rule deleted successfully"
+        );
     }
 
-    // -----------------------
+    // =========================
     // HELPERS
-    // -----------------------
+    // =========================
+
     private AgencyCategory getCategory(String categoryId) {
+
+        if (categoryId == null) {
+            throw ClaimException.badRequest("Category id is required");
+        }
+
         return categoryRepository.findById(categoryId)
                 .orElseThrow(() ->
-                        ClaimException.resourceNotFound("AgencyCategory", categoryId)
-                );
+                        ClaimException.resourceNotFound(
+                                "Agency Category",
+                                categoryId
+                        ));
     }
 
     private PartialWithdrawalReasonMaster getReason(Long reasonId) {
+
+        if (reasonId == null) {
+            throw ClaimException.badRequest("Reason id is required");
+        }
+
         return reasonRepository.findById(reasonId)
                 .orElseThrow(() ->
-                        ClaimException.resourceNotFound("PartialWithdrawalReason", reasonId.toString())
-                );
+                        ClaimException.resourceNotFound(
+                                "Partial Withdrawal Reason",
+                                String.valueOf(reasonId)
+                        ));
     }
 
     private PartialWithdrawalAccumulationMaster getAccumulation(Long accumulationId) {
+
+        if (accumulationId == null) {
+            throw ClaimException.badRequest("Accumulation id is required");
+        }
+
         return accumulationRepository.findById(accumulationId)
                 .orElseThrow(() ->
-                        ClaimException.resourceNotFound("PartialWithdrawalAccumulation", accumulationId.toString())
-                );
-    }
-
-    private void validateDuplicate(String categoryId, Long reasonId) {
-
-        boolean exists = ruleRepository.findByCategory_CategoryId(categoryId)
-                .stream()
-                .anyMatch(r -> r.getReason().getId().equals(reasonId));
-
-        if (exists) {
-            throw ClaimException.conflict(
-                    "Rule already exists for categoryId: " + categoryId +
-                            " and reasonId: " + reasonId
-            );
-        }
+                        ClaimException.resourceNotFound(
+                                "Partial Withdrawal Accumulation",
+                                String.valueOf(accumulationId)
+                        ));
     }
 }

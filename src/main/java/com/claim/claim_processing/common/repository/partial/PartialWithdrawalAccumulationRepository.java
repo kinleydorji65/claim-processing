@@ -14,6 +14,10 @@ public interface PartialWithdrawalAccumulationRepository
 
     boolean existsByCode(String code);
 
+    Optional<PartialWithdrawalAccumulationMaster> findByCode(
+            String code
+    );
+
     List<PartialWithdrawalAccumulationMaster> findByIsActive(String isActive);
 
     List<PartialWithdrawalAccumulationMaster> findByIsActive(ActivityEnum isActive);
