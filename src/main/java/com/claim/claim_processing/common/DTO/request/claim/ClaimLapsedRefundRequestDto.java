@@ -20,6 +20,7 @@ public class ClaimLapsedRefundRequestDto {
 
     private String memberCategoryId;
     private Long benefitTypeId;
+    private Long existingBenefitId;
 
     private Integer minContributionMonths;
     private Integer maxContributionMonths;

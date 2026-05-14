@@ -32,7 +32,7 @@ public interface ClaimEligibilityComponentMapRepository
     // -------------------------------
     // FIND BY RULE AND CATEGORY MAP (using relationships)
     // -------------------------------
-    Optional<ClaimEligibilityComponentMap> findByRule_IdAndClaimEligibilityCategoryMap_Id(Long ruleId, Long categoryMapId);
+    List<ClaimEligibilityComponentMap> findByRule_IdAndClaimEligibilityCategoryMap_Id(Long ruleId, Long categoryMapId);
     List<ClaimEligibilityComponentMap> findByRule_IdAndClaimEligibilityCategoryMap_IdIn(Long ruleId, List<Long> categoryMapIds);
     
     List<ClaimEligibilityComponentMap> findByRule_IdAndClaimEligibilityCategoryMap_IdAndIsActive(
