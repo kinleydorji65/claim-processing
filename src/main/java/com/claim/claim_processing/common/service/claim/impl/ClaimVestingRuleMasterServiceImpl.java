@@ -6,10 +6,12 @@ import com.claim.claim_processing.common.DTO.response.claim.ClaimVestingRuleResp
 import com.claim.claim_processing.common.entities.claim.ClaimVestingRuleMaster;
 import com.claim.claim_processing.common.entities.claim.VestingRefundType;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
+import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
 import com.claim.claim_processing.common.mapper.claim.ClaimVestingRuleMasterMapper;
 import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategoryRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimVestingRuleMasterRepository;
+import com.claim.claim_processing.common.repository.claim.VestingRefundBenefitMapRepository;
 import com.claim.claim_processing.common.repository.claim.VestingRefundTypeRepository;
 import com.claim.claim_processing.common.repository.common.RuleTypeRepository;
 import com.claim.claim_processing.common.service.claim.ClaimVestingRuleMasterService;
@@ -27,6 +29,7 @@ public class ClaimVestingRuleMasterServiceImpl
         implements ClaimVestingRuleMasterService {
 
     private final ClaimVestingRuleMasterRepository repository;
+    private final VestingRefundBenefitMapRepository mapRepository;
     private final ClaimVestingRuleMasterMapper mapper;
     private final AgencyCategoryRepository categoryRepository;
     private final VestingRefundTypeRepository refundRepository;
@@ -161,9 +164,15 @@ public class ClaimVestingRuleMasterServiceImpl
             List<ClaimVestingRuleResponseDto> responseDtos =
                     repository.findAll()
                             .stream()
-                            .map(mapper::toResponseDto)
+                            .map(vesting -> {
+                                List<BenefitComponentTypeMaster> benefitComponentTypes = mapRepository
+                                        .findByVestingRefundType_Id(
+                                                vesting.getRefundType().getId()
+                                        ).stream().map(vestingRuleMap -> vestingRuleMap.getBenefitComponentType()).toList();
+                                        return mapper.toResponseDto(vesting, benefitComponentTypes);
+                            })
                             .toList();
-
+// mapper::toResponseDto
             if (responseDtos.isEmpty()) {
                 throw ClaimException.notFound(
                         "No Claim Vesting Rules found"
