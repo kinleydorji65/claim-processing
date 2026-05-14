@@ -13,4 +13,6 @@ public class HousePurchaseTypeRequestDto {
     private String name;
     private String description;
     private Integer displayOrder;
+    private String createdBy;
+    private String updatedBy;
 }

@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.ClaimCircumstanceCreateRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ClaimCircumstanceResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.ClaimCircumstanceUpdateRequestDto;
 
@@ -8,13 +9,21 @@ import java.util.List;
 
 public interface ClaimCircumstanceService {
 
-    List<ClaimCircumstanceResponseDto> getAllActive();
+    ApiResponseDTO<List<ClaimCircumstanceResponseDto>> getAllActive();
 
-    ClaimCircumstanceResponseDto getById(Long id);
+    ApiResponseDTO<ClaimCircumstanceResponseDto> getById(Long id);
 
-    ClaimCircumstanceResponseDto create(ClaimCircumstanceCreateRequestDto requestDto);
+    ApiResponseDTO<List<ClaimCircumstanceResponseDto>> getAll();
 
-    ClaimCircumstanceResponseDto update(Long id, ClaimCircumstanceUpdateRequestDto requestDto);
+    ApiResponseDTO<ClaimCircumstanceResponseDto> getByCode(
+            String code
+    );
 
-    void deactivate(Long id);
+    ApiResponseDTO<ClaimCircumstanceResponseDto> create(ClaimCircumstanceCreateRequestDto requestDto);
+
+    ApiResponseDTO<ClaimCircumstanceResponseDto> update(Long id, ClaimCircumstanceUpdateRequestDto requestDto);
+
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }

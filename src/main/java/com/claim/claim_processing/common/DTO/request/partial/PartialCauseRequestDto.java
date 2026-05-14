@@ -12,4 +12,6 @@ public class PartialCauseRequestDto {
     private String code;
     private String name;
     private String description;
+    private String createdBy;
+    private String updatedBy;
 }

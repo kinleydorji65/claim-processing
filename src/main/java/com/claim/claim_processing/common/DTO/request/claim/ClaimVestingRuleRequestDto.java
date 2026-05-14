@@ -25,8 +25,6 @@ public class ClaimVestingRuleRequestDto {
 
     private String payoutResult;
 
-    private Long cutoffId;
-
     private Long refundId;
 
     private Long ruleTypeId;

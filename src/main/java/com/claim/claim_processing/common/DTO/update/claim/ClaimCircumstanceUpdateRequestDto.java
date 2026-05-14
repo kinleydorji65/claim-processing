@@ -11,4 +11,5 @@ public class ClaimCircumstanceUpdateRequestDto {
     private String name;
     private String description;
     private ActivityEnum isActive;
+    private String updatedBy;
 }

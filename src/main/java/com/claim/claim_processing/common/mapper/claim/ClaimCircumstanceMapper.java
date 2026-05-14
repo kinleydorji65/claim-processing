@@ -20,7 +20,8 @@ public interface ClaimCircumstanceMapper {
     @Mapping(target = "updatedBy", ignore = true)
     ClaimCircumstanceMaster toEntity(ClaimCircumstanceCreateRequestDto dto);
 
-    // RESPONSE (for dropdown / list)
+    // RESPONSE
+    @Mapping(target = "description", source = "description")
     ClaimCircumstanceResponseDto toResponseDto(ClaimCircumstanceMaster entity);
 
     // LIST RESPONSE
@@ -29,11 +30,13 @@ public interface ClaimCircumstanceMapper {
     // UPDATE
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "code", ignore = true) // important: code is immutable
+    @Mapping(target = "code", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    void updateEntityFromDto(ClaimCircumstanceUpdateRequestDto dto,
-                             @MappingTarget ClaimCircumstanceMaster entity);
+    void updateEntityFromDto(
+            ClaimCircumstanceUpdateRequestDto dto,
+            @MappingTarget ClaimCircumstanceMaster entity
+    );
 }
