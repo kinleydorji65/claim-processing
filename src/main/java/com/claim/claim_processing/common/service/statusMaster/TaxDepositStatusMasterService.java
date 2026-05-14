@@ -1,23 +1,24 @@
 package com.claim.claim_processing.common.service.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.TaxDepositStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.TaxDepositStatusResponseDto;
 
 import java.util.List;
 
 public interface TaxDepositStatusMasterService {
 
-    TaxDepositStatusResponseDto create(TaxDepositStatusRequestDto dto);
+    ApiResponseDTO<TaxDepositStatusResponseDto> create(TaxDepositStatusRequestDto dto);
 
-    TaxDepositStatusResponseDto update(Long id, TaxDepositStatusRequestDto dto);
+    ApiResponseDTO<TaxDepositStatusResponseDto> update(Long id, TaxDepositStatusRequestDto dto);
 
-    TaxDepositStatusResponseDto getById(Long id);
+    ApiResponseDTO<TaxDepositStatusResponseDto> getById(Long id);
 
-    TaxDepositStatusResponseDto getByCode(String code);
+    ApiResponseDTO<TaxDepositStatusResponseDto> getByCode(String code);
 
-    List<TaxDepositStatusResponseDto> getAll();
+    ApiResponseDTO<List<TaxDepositStatusResponseDto>> getAll();
 
-    List<TaxDepositStatusResponseDto> getAllActive();
+    ApiResponseDTO<List<TaxDepositStatusResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

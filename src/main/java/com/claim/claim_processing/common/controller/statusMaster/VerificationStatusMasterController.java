@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.VerificationStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
 import com.claim.claim_processing.common.DTO.response.statusMaster.VerificationStatusResponseDto;
 import com.claim.claim_processing.common.service.statusMaster.VerificationStatusMasterService;
@@ -19,111 +20,69 @@ public class VerificationStatusMasterController {
 
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<ApiResponse<VerificationStatusResponseDto>> create(
+    public ResponseEntity<ApiResponseDTO<VerificationStatusResponseDto>> create(
             @RequestBody VerificationStatusRequestDto dto) {
 
-        VerificationStatusResponseDto response = service.create(dto);
+        ApiResponseDTO<VerificationStatusResponseDto> response = service.create(dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<VerificationStatusResponseDto>builder()
-                        .success(true)
-                        .message("Verification status created successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= UPDATE (PATCH) =================
     @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<VerificationStatusResponseDto>> update(
+    public ResponseEntity<ApiResponseDTO<VerificationStatusResponseDto>> update(
             @PathVariable Long id,
             @RequestBody VerificationStatusRequestDto dto) {
 
-        VerificationStatusResponseDto response = service.update(id, dto);
+        ApiResponseDTO<VerificationStatusResponseDto> response = service.update(id, dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<VerificationStatusResponseDto>builder()
-                        .success(true)
-                        .message("Verification status updated successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<VerificationStatusResponseDto>> getById(
+    public ResponseEntity<ApiResponseDTO<VerificationStatusResponseDto>> getById(
             @PathVariable Long id) {
 
-        VerificationStatusResponseDto response = service.getById(id);
+        ApiResponseDTO<VerificationStatusResponseDto> response = service.getById(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<VerificationStatusResponseDto>builder()
-                        .success(true)
-                        .message("Verification status fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY CODE =================
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<VerificationStatusResponseDto>> getByCode(
+    public ResponseEntity<ApiResponseDTO<VerificationStatusResponseDto>> getByCode(
             @PathVariable String code) {
 
-        VerificationStatusResponseDto response = service.getByCode(code);
+        ApiResponseDTO<VerificationStatusResponseDto> response = service.getByCode(code);
 
-        return ResponseEntity.ok(
-                ApiResponse.<VerificationStatusResponseDto>builder()
-                        .success(true)
-                        .message("Verification status fetched by code successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL =================
     @GetMapping
-    public ResponseEntity<ApiResponse<List<VerificationStatusResponseDto>>> getAll() {
+    public ResponseEntity<ApiResponseDTO<List<VerificationStatusResponseDto>>> getAll() {
 
-        List<VerificationStatusResponseDto> response = service.getAll();
+        ApiResponseDTO<List<VerificationStatusResponseDto>> response = service.getAll();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<VerificationStatusResponseDto>>builder()
-                        .success(true)
-                        .message("All verification statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL ACTIVE =================
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<VerificationStatusResponseDto>>> getAllActive() {
+    public ResponseEntity<ApiResponseDTO<List<VerificationStatusResponseDto>>> getAllActive() {
 
-        List<VerificationStatusResponseDto> response = service.getAllActive();
+        ApiResponseDTO<List<VerificationStatusResponseDto>> response = service.getAllActive();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<VerificationStatusResponseDto>>builder()
-                        .success(true)
-                        .message("Active verification statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> delete(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO<String>> delete(@PathVariable Long id) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response = service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .message("Verification status deleted successfully")
-                        .data("Deleted ID: " + id)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }

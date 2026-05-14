@@ -1,23 +1,24 @@
 package com.claim.claim_processing.common.service.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.PostingEntryStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.PostingEntryStatusResponseDto;
 
 import java.util.List;
 
 public interface PostingEntryStatusMasterService {
 
-    PostingEntryStatusResponseDto create(PostingEntryStatusRequestDto dto);
+    ApiResponseDTO<PostingEntryStatusResponseDto> create(PostingEntryStatusRequestDto dto);
 
-    PostingEntryStatusResponseDto update(Long id, PostingEntryStatusRequestDto dto);
+    ApiResponseDTO<PostingEntryStatusResponseDto> update(Long id, PostingEntryStatusRequestDto dto);
 
-    PostingEntryStatusResponseDto getById(Long id);
+    ApiResponseDTO<PostingEntryStatusResponseDto> getById(Long id);
 
-    PostingEntryStatusResponseDto getByCode(String code);
+    ApiResponseDTO<PostingEntryStatusResponseDto> getByCode(String code);
 
-    List<PostingEntryStatusResponseDto> getAll();
+    ApiResponseDTO<List<PostingEntryStatusResponseDto>> getAll();
 
-    List<PostingEntryStatusResponseDto> getAllActive();
+    ApiResponseDTO<List<PostingEntryStatusResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

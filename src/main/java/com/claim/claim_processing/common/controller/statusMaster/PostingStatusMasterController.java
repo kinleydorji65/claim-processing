@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.PostingStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
 import com.claim.claim_processing.common.DTO.response.statusMaster.PostingStatusResponseDto;
 import com.claim.claim_processing.common.service.statusMaster.PostingStatusMasterService;
@@ -19,111 +20,69 @@ public class PostingStatusMasterController {
 
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<ApiResponse<PostingStatusResponseDto>> create(
+    public ResponseEntity<ApiResponseDTO<PostingStatusResponseDto>> create(
             @RequestBody PostingStatusRequestDto dto) {
 
-        PostingStatusResponseDto response = service.create(dto);
+        ApiResponseDTO<PostingStatusResponseDto> response = service.create(dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<PostingStatusResponseDto>builder()
-                        .success(true)
-                        .message("Posting status created successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= UPDATE (PATCH) =================
     @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<PostingStatusResponseDto>> update(
+    public ResponseEntity<ApiResponseDTO<PostingStatusResponseDto>> update(
             @PathVariable Long id,
             @RequestBody PostingStatusRequestDto dto) {
 
-        PostingStatusResponseDto response = service.update(id, dto);
+        ApiResponseDTO<PostingStatusResponseDto> response = service.update(id, dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<PostingStatusResponseDto>builder()
-                        .success(true)
-                        .message("Posting status updated successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PostingStatusResponseDto>> getById(
+    public ResponseEntity<ApiResponseDTO<PostingStatusResponseDto>> getById(
             @PathVariable Long id) {
 
-        PostingStatusResponseDto response = service.getById(id);
+        ApiResponseDTO<PostingStatusResponseDto> response = service.getById(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<PostingStatusResponseDto>builder()
-                        .success(true)
-                        .message("Posting status fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY CODE =================
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<PostingStatusResponseDto>> getByCode(
+    public ResponseEntity<ApiResponseDTO<PostingStatusResponseDto>> getByCode(
             @PathVariable String code) {
 
-        PostingStatusResponseDto response = service.getByCode(code);
+        ApiResponseDTO<PostingStatusResponseDto> response = service.getByCode(code);
 
-        return ResponseEntity.ok(
-                ApiResponse.<PostingStatusResponseDto>builder()
-                        .success(true)
-                        .message("Posting status fetched by code successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL =================
     @GetMapping
-    public ResponseEntity<ApiResponse<List<PostingStatusResponseDto>>> getAll() {
+    public ResponseEntity<ApiResponseDTO<List<PostingStatusResponseDto>>> getAll() {
 
-        List<PostingStatusResponseDto> response = service.getAll();
+        ApiResponseDTO<List<PostingStatusResponseDto>> response = service.getAll();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<PostingStatusResponseDto>>builder()
-                        .success(true)
-                        .message("All posting statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL ACTIVE =================
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<PostingStatusResponseDto>>> getAllActive() {
+    public ResponseEntity<ApiResponseDTO<List<PostingStatusResponseDto>>> getAllActive() {
 
-        List<PostingStatusResponseDto> response = service.getAllActive();
+        ApiResponseDTO<List<PostingStatusResponseDto>> response = service.getAllActive();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<PostingStatusResponseDto>>builder()
-                        .success(true)
-                        .message("Active posting statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> delete(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO<String>> delete(@PathVariable Long id) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response = service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .message("Posting status deleted successfully")
-                        .data("Deleted ID: " + id)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }

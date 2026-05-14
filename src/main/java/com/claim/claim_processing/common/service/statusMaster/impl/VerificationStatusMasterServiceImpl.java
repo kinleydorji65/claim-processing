@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.VerificationStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.VerificationStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.VerificationStatusMaster;
@@ -24,7 +25,7 @@ public class VerificationStatusMasterServiceImpl
 
     // ================= CREATE =================
     @Override
-    public VerificationStatusResponseDto create(VerificationStatusRequestDto dto) {
+    public ApiResponseDTO<VerificationStatusResponseDto> create(VerificationStatusRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict(
@@ -40,12 +41,12 @@ public class VerificationStatusMasterServiceImpl
 
         VerificationStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public VerificationStatusResponseDto update(Long id, VerificationStatusRequestDto dto) {
+    public ApiResponseDTO<VerificationStatusResponseDto> update(Long id, VerificationStatusRequestDto dto) {
 
         VerificationStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -67,12 +68,12 @@ public class VerificationStatusMasterServiceImpl
 
         VerificationStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public VerificationStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<VerificationStatusResponseDto> getById(Long id) {
 
         VerificationStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -81,12 +82,12 @@ public class VerificationStatusMasterServiceImpl
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public VerificationStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<VerificationStatusResponseDto> getByCode(String code) {
 
         VerificationStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -95,35 +96,35 @@ public class VerificationStatusMasterServiceImpl
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<VerificationStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<VerificationStatusResponseDto>> getAll() {
 
         List<VerificationStatusMaster> list = repository.findAll();
 
         list.sort(Comparator.comparing(VerificationStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<VerificationStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<VerificationStatusResponseDto>> getAllActive() {
 
         List<VerificationStatusMaster> list =
                 repository.findByIsActive(ActivityEnum.Y);
 
         list.sort(Comparator.comparing(VerificationStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= DELETE (SOFT DELETE) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         VerificationStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -135,5 +136,7 @@ public class VerificationStatusMasterServiceImpl
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+
+        return ApiResponseDTO.success("Verification status deleted successfully");
     }
 }

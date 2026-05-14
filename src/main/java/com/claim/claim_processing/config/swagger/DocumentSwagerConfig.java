@@ -5,13 +5,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class DocumentConfig implements SwaggerConfig {
+public class DocumentSwagerConfig implements SwaggerConfig {
     @Bean
     public GroupedOpenApi documentApi() {
         return createGroupedApi(
             "Document Management",
             "Document Detail APIs",
-            "/api/claim-processing/documents/**",
+            "/api/claim/documents/**",
             "Document"
         );
     }

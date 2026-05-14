@@ -1,26 +1,27 @@
 package com.claim.claim_processing.common.service.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.FinalPayableReviewStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.FinalPayableReviewStatusResponseDto;
 
 import java.util.List;
 
 public interface FinalPayableReviewStatusMasterService {
 
-    FinalPayableReviewStatusResponseDto create(FinalPayableReviewStatusRequestDto dto);
+    ApiResponseDTO<FinalPayableReviewStatusResponseDto> create(FinalPayableReviewStatusRequestDto dto);
 
-    FinalPayableReviewStatusResponseDto update(
+    ApiResponseDTO<FinalPayableReviewStatusResponseDto> update(
             Long id,
             FinalPayableReviewStatusRequestDto dto
     );
 
-    FinalPayableReviewStatusResponseDto getById(Long id);
+    ApiResponseDTO<FinalPayableReviewStatusResponseDto> getById(Long id);
 
-    FinalPayableReviewStatusResponseDto getByCode(String code);
+    ApiResponseDTO<FinalPayableReviewStatusResponseDto> getByCode(String code);
 
-    List<FinalPayableReviewStatusResponseDto> getAll();
+    ApiResponseDTO<List<FinalPayableReviewStatusResponseDto>> getAll();
 
-    List<FinalPayableReviewStatusResponseDto> getAllActive();
+    ApiResponseDTO<List<FinalPayableReviewStatusResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

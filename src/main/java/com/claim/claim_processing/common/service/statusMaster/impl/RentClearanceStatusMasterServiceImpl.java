@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.RentClearanceStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.RentClearanceStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.RentClearanceStatusMaster;
@@ -23,7 +24,7 @@ public class RentClearanceStatusMasterServiceImpl implements RentClearanceStatus
 
     // ================= CREATE =================
     @Override
-    public RentClearanceStatusResponseDto create(RentClearanceStatusRequestDto dto) {
+    public ApiResponseDTO<RentClearanceStatusResponseDto> create(RentClearanceStatusRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict(
@@ -39,12 +40,12 @@ public class RentClearanceStatusMasterServiceImpl implements RentClearanceStatus
 
         RentClearanceStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public RentClearanceStatusResponseDto update(Long id, RentClearanceStatusRequestDto dto) {
+    public ApiResponseDTO<RentClearanceStatusResponseDto> update(Long id, RentClearanceStatusRequestDto dto) {
 
         RentClearanceStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -66,12 +67,12 @@ public class RentClearanceStatusMasterServiceImpl implements RentClearanceStatus
 
         RentClearanceStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public RentClearanceStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<RentClearanceStatusResponseDto> getById(Long id) {
 
         RentClearanceStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -80,12 +81,12 @@ public class RentClearanceStatusMasterServiceImpl implements RentClearanceStatus
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public RentClearanceStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<RentClearanceStatusResponseDto> getByCode(String code) {
 
         RentClearanceStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -94,35 +95,35 @@ public class RentClearanceStatusMasterServiceImpl implements RentClearanceStatus
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<RentClearanceStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<RentClearanceStatusResponseDto>> getAll() {
 
         List<RentClearanceStatusMaster> list = repository.findAll();
 
         list.sort(Comparator.comparing(RentClearanceStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<RentClearanceStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<RentClearanceStatusResponseDto>> getAllActive() {
 
         List<RentClearanceStatusMaster> list =
                 repository.findByIsActive(ActivityEnum.Y);
 
         list.sort(Comparator.comparing(RentClearanceStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= DELETE (SOFT DELETE) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         RentClearanceStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -134,5 +135,6 @@ public class RentClearanceStatusMasterServiceImpl implements RentClearanceStatus
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+        return ApiResponseDTO.success("Rent clearance status deleted successfully");
     }
 }

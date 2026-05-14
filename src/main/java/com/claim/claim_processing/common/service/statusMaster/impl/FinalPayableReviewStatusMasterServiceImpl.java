@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.FinalPayableReviewStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.FinalPayableReviewStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.FinalPayableReviewStatusMaster;
@@ -24,7 +25,7 @@ public class FinalPayableReviewStatusMasterServiceImpl
 
     // ================= CREATE =================
     @Override
-    public FinalPayableReviewStatusResponseDto create(
+    public ApiResponseDTO<FinalPayableReviewStatusResponseDto> create(
             FinalPayableReviewStatusRequestDto dto
     ) {
 
@@ -42,12 +43,12 @@ public class FinalPayableReviewStatusMasterServiceImpl
 
         FinalPayableReviewStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public FinalPayableReviewStatusResponseDto update(
+    public ApiResponseDTO<FinalPayableReviewStatusResponseDto> update(
             Long id,
             FinalPayableReviewStatusRequestDto dto
     ) {
@@ -73,12 +74,12 @@ public class FinalPayableReviewStatusMasterServiceImpl
 
         FinalPayableReviewStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public FinalPayableReviewStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<FinalPayableReviewStatusResponseDto> getById(Long id) {
 
         FinalPayableReviewStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -87,12 +88,12 @@ public class FinalPayableReviewStatusMasterServiceImpl
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public FinalPayableReviewStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<FinalPayableReviewStatusResponseDto> getByCode(String code) {
 
         FinalPayableReviewStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -101,12 +102,12 @@ public class FinalPayableReviewStatusMasterServiceImpl
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<FinalPayableReviewStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<FinalPayableReviewStatusResponseDto>> getAll() {
 
         List<FinalPayableReviewStatusMaster> list = repository.findAll();
 
@@ -114,12 +115,12 @@ public class FinalPayableReviewStatusMasterServiceImpl
                 Comparator.comparing(FinalPayableReviewStatusMaster::getDisplayOrder)
         );
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<FinalPayableReviewStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<FinalPayableReviewStatusResponseDto>> getAllActive() {
 
         List<FinalPayableReviewStatusMaster> list =
                 repository.findByIsActive(ActivityEnum.Y);
@@ -128,12 +129,12 @@ public class FinalPayableReviewStatusMasterServiceImpl
                 Comparator.comparing(FinalPayableReviewStatusMaster::getDisplayOrder)
         );
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= DELETE (Soft Delete) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         FinalPayableReviewStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -145,5 +146,6 @@ public class FinalPayableReviewStatusMasterServiceImpl
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+        return ApiResponseDTO.success("Final payable review status deleted successfully");
     }
 }

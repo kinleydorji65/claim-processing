@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.ApprovalStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
 import com.claim.claim_processing.common.DTO.response.statusMaster.ApprovalStatusResponseDto;
 import com.claim.claim_processing.common.service.statusMaster.ApprovalStatusMasterService;
@@ -19,111 +20,69 @@ public class ApprovalStatusMasterController {
 
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<ApiResponse<ApprovalStatusResponseDto>> create(
+    public ResponseEntity<ApiResponseDTO<ApprovalStatusResponseDto>> create(
             @RequestBody ApprovalStatusRequestDto dto) {
 
-        ApprovalStatusResponseDto response = service.create(dto);
+        ApiResponseDTO<ApprovalStatusResponseDto> response = service.create(dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<ApprovalStatusResponseDto>builder()
-                        .success(true)
-                        .message("Approval status created successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= UPDATE =================
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ApprovalStatusResponseDto>> update(
+    public ResponseEntity<ApiResponseDTO<ApprovalStatusResponseDto>> update(
             @PathVariable Long id,
             @RequestBody ApprovalStatusRequestDto dto) {
 
-        ApprovalStatusResponseDto response = service.update(id, dto);
+        ApiResponseDTO<ApprovalStatusResponseDto> response = service.update(id, dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<ApprovalStatusResponseDto>builder()
-                        .success(true)
-                        .message("Approval status updated successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ApprovalStatusResponseDto>> getById(
+    public ResponseEntity<ApiResponseDTO<ApprovalStatusResponseDto>> getById(
             @PathVariable Long id) {
 
-        ApprovalStatusResponseDto response = service.getById(id);
+        ApiResponseDTO<ApprovalStatusResponseDto> response = service.getById(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<ApprovalStatusResponseDto>builder()
-                        .success(true)
-                        .message("Fetched approval status successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY CODE =================
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<ApprovalStatusResponseDto>> getByCode(
+    public ResponseEntity<ApiResponseDTO<ApprovalStatusResponseDto>> getByCode(
             @PathVariable String code) {
 
-        ApprovalStatusResponseDto response = service.getByCode(code);
+        ApiResponseDTO<ApprovalStatusResponseDto> response = service.getByCode(code);
 
-        return ResponseEntity.ok(
-                ApiResponse.<ApprovalStatusResponseDto>builder()
-                        .success(true)
-                        .message("Fetched approval status by code successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL =================
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ApprovalStatusResponseDto>>> getAll() {
+    public ResponseEntity<ApiResponseDTO<List<ApprovalStatusResponseDto>>> getAll() {
 
-        List<ApprovalStatusResponseDto> response = service.getAll();
+        ApiResponseDTO<List<ApprovalStatusResponseDto>> response = service.getAll();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<ApprovalStatusResponseDto>>builder()
-                        .success(true)
-                        .message("Fetched all approval statuses successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL ACTIVE =================
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<ApprovalStatusResponseDto>>> getAllActive() {
+    public ResponseEntity<ApiResponseDTO<List<ApprovalStatusResponseDto>>> getAllActive() {
 
-        List<ApprovalStatusResponseDto> response = service.getAllActive();
+        ApiResponseDTO<List<ApprovalStatusResponseDto>> response = service.getAllActive();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<ApprovalStatusResponseDto>>builder()
-                        .success(true)
-                        .message("Fetched active approval statuses successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> delete(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO<String>> delete(@PathVariable Long id) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response = service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .message("Approval status deleted successfully")
-                        .data("ID: " + id)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }

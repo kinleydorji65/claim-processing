@@ -1,23 +1,24 @@
 package com.claim.claim_processing.common.service.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.RentClearanceStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.RentClearanceStatusResponseDto;
 
 import java.util.List;
 
 public interface RentClearanceStatusMasterService {
 
-    RentClearanceStatusResponseDto create(RentClearanceStatusRequestDto dto);
+    ApiResponseDTO<RentClearanceStatusResponseDto> create(RentClearanceStatusRequestDto dto);
 
-    RentClearanceStatusResponseDto update(Long id, RentClearanceStatusRequestDto dto);
+    ApiResponseDTO<RentClearanceStatusResponseDto> update(Long id, RentClearanceStatusRequestDto dto);
 
-    RentClearanceStatusResponseDto getById(Long id);
+    ApiResponseDTO<RentClearanceStatusResponseDto> getById(Long id);
 
-    RentClearanceStatusResponseDto getByCode(String code);
+    ApiResponseDTO<RentClearanceStatusResponseDto> getByCode(String code);
 
-    List<RentClearanceStatusResponseDto> getAll();
+    ApiResponseDTO<List<RentClearanceStatusResponseDto>> getAll();
 
-    List<RentClearanceStatusResponseDto> getAllActive();
+    ApiResponseDTO<List<RentClearanceStatusResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.statusMaster;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.RentClearanceStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
 import com.claim.claim_processing.common.DTO.response.statusMaster.RentClearanceStatusResponseDto;
 import com.claim.claim_processing.common.service.statusMaster.RentClearanceStatusMasterService;
@@ -19,111 +20,69 @@ public class RentClearanceStatusMasterController {
 
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<ApiResponse<RentClearanceStatusResponseDto>> create(
+    public ResponseEntity<ApiResponseDTO<RentClearanceStatusResponseDto>> create(
             @RequestBody RentClearanceStatusRequestDto dto) {
 
-        RentClearanceStatusResponseDto response = service.create(dto);
+        ApiResponseDTO<RentClearanceStatusResponseDto> response = service.create(dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<RentClearanceStatusResponseDto>builder()
-                        .success(true)
-                        .message("Rent clearance status created successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= UPDATE (PATCH) =================
     @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<RentClearanceStatusResponseDto>> update(
+    public ResponseEntity<ApiResponseDTO<RentClearanceStatusResponseDto>> update(
             @PathVariable Long id,
             @RequestBody RentClearanceStatusRequestDto dto) {
 
-        RentClearanceStatusResponseDto response = service.update(id, dto);
+        ApiResponseDTO<RentClearanceStatusResponseDto> response = service.update(id, dto);
 
-        return ResponseEntity.ok(
-                ApiResponse.<RentClearanceStatusResponseDto>builder()
-                        .success(true)
-                        .message("Rent clearance status updated successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY ID =================
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<RentClearanceStatusResponseDto>> getById(
+    public ResponseEntity<ApiResponseDTO<RentClearanceStatusResponseDto>> getById(
             @PathVariable Long id) {
 
-        RentClearanceStatusResponseDto response = service.getById(id);
+        ApiResponseDTO<RentClearanceStatusResponseDto> response = service.getById(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<RentClearanceStatusResponseDto>builder()
-                        .success(true)
-                        .message("Rent clearance status fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET BY CODE =================
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<RentClearanceStatusResponseDto>> getByCode(
+    public ResponseEntity<ApiResponseDTO<RentClearanceStatusResponseDto>> getByCode(
             @PathVariable String code) {
 
-        RentClearanceStatusResponseDto response = service.getByCode(code);
+        ApiResponseDTO<RentClearanceStatusResponseDto> response = service.getByCode(code);
 
-        return ResponseEntity.ok(
-                ApiResponse.<RentClearanceStatusResponseDto>builder()
-                        .success(true)
-                        .message("Rent clearance status fetched by code successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL =================
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RentClearanceStatusResponseDto>>> getAll() {
+    public ResponseEntity<ApiResponseDTO<List<RentClearanceStatusResponseDto>>> getAll() {
 
-        List<RentClearanceStatusResponseDto> response = service.getAll();
+        ApiResponseDTO<List<RentClearanceStatusResponseDto>> response = service.getAll();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<RentClearanceStatusResponseDto>>builder()
-                        .success(true)
-                        .message("All rent clearance statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= GET ALL ACTIVE =================
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<RentClearanceStatusResponseDto>>> getAllActive() {
+    public ResponseEntity<ApiResponseDTO<List<RentClearanceStatusResponseDto>>> getAllActive() {
 
-        List<RentClearanceStatusResponseDto> response = service.getAllActive();
+        ApiResponseDTO<List<RentClearanceStatusResponseDto>> response = service.getAllActive();
 
-        return ResponseEntity.ok(
-                ApiResponse.<List<RentClearanceStatusResponseDto>>builder()
-                        .success(true)
-                        .message("Active rent clearance statuses fetched successfully")
-                        .data(response)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 
     // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> delete(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO<String>> delete(@PathVariable Long id) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response = service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .message("Rent clearance status deleted successfully")
-                        .data("Deleted ID: " + id)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }

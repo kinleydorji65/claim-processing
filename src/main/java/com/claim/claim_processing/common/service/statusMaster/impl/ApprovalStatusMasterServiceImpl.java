@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.ApprovalStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.ApprovalStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.ApprovalStatusMaster;
@@ -22,7 +23,7 @@ public class ApprovalStatusMasterServiceImpl implements ApprovalStatusMasterServ
 
     // ================= CREATE =================
     @Override
-    public ApprovalStatusResponseDto create(ApprovalStatusRequestDto dto) {
+    public ApiResponseDTO<ApprovalStatusResponseDto> create(ApprovalStatusRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict("Code already exists: " + dto.getCode());
@@ -36,12 +37,12 @@ public class ApprovalStatusMasterServiceImpl implements ApprovalStatusMasterServ
 
         ApprovalStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public ApprovalStatusResponseDto update(Long id, ApprovalStatusRequestDto dto) {
+    public ApiResponseDTO<ApprovalStatusResponseDto> update(Long id, ApprovalStatusRequestDto dto) {
 
         ApprovalStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -59,52 +60,52 @@ public class ApprovalStatusMasterServiceImpl implements ApprovalStatusMasterServ
 
         ApprovalStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public ApprovalStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<ApprovalStatusResponseDto> getById(Long id) {
 
         ApprovalStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
                         ClaimException.notFound("Approval Status not found with id: " + id)
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public ApprovalStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<ApprovalStatusResponseDto> getByCode(String code) {
 
         ApprovalStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
                         ClaimException.notFound("Approval Status not found with code: " + code)
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<ApprovalStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<ApprovalStatusResponseDto>> getAll() {
 
-        return mapper.toResponseDtoList(repository.findAll());
+        return ApiResponseDTO.success(mapper.toResponseDtoList(repository.findAll()));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<ApprovalStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<ApprovalStatusResponseDto>> getAllActive() {
 
-        return mapper.toResponseDtoList(
-                repository.findByIsActive(ActivityEnum.Y)
+        return ApiResponseDTO.success(
+                mapper.toResponseDtoList(repository.findByIsActive(ActivityEnum.Y))
         );
     }
 
     // ================= DELETE (soft delete) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         ApprovalStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -114,5 +115,7 @@ public class ApprovalStatusMasterServiceImpl implements ApprovalStatusMasterServ
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+
+        return ApiResponseDTO.success("Approval Status deleted successfully");
     }
 }

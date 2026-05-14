@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.statusMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.statusMaster.PostingEntryStatusRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.statusMaster.PostingEntryStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.statusMaster.PostingEntryStatusMaster;
@@ -23,7 +24,7 @@ public class PostingEntryStatusMasterServiceImpl implements PostingEntryStatusMa
 
     // ================= CREATE =================
     @Override
-    public PostingEntryStatusResponseDto create(PostingEntryStatusRequestDto dto) {
+    public ApiResponseDTO<PostingEntryStatusResponseDto> create(PostingEntryStatusRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
             throw ClaimException.conflict(
@@ -39,12 +40,12 @@ public class PostingEntryStatusMasterServiceImpl implements PostingEntryStatusMa
 
         PostingEntryStatusMaster saved = repository.save(entity);
 
-        return mapper.toResponseDto(saved);
+        return ApiResponseDTO.success(mapper.toResponseDto(saved));
     }
 
     // ================= UPDATE =================
     @Override
-    public PostingEntryStatusResponseDto update(Long id, PostingEntryStatusRequestDto dto) {
+    public ApiResponseDTO<PostingEntryStatusResponseDto> update(Long id, PostingEntryStatusRequestDto dto) {
 
         PostingEntryStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -66,12 +67,12 @@ public class PostingEntryStatusMasterServiceImpl implements PostingEntryStatusMa
 
         PostingEntryStatusMaster updated = repository.save(entity);
 
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(mapper.toResponseDto(updated));
     }
 
     // ================= GET BY ID =================
     @Override
-    public PostingEntryStatusResponseDto getById(Long id) {
+    public ApiResponseDTO<PostingEntryStatusResponseDto> getById(Long id) {
 
         PostingEntryStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -80,12 +81,12 @@ public class PostingEntryStatusMasterServiceImpl implements PostingEntryStatusMa
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET BY CODE =================
     @Override
-    public PostingEntryStatusResponseDto getByCode(String code) {
+    public ApiResponseDTO<PostingEntryStatusResponseDto> getByCode(String code) {
 
         PostingEntryStatusMaster entity = repository.findByCode(code)
                 .orElseThrow(() ->
@@ -94,35 +95,35 @@ public class PostingEntryStatusMasterServiceImpl implements PostingEntryStatusMa
                         )
                 );
 
-        return mapper.toResponseDto(entity);
+        return ApiResponseDTO.success(mapper.toResponseDto(entity));
     }
 
     // ================= GET ALL =================
     @Override
-    public List<PostingEntryStatusResponseDto> getAll() {
+    public ApiResponseDTO<List<PostingEntryStatusResponseDto>> getAll() {
 
         List<PostingEntryStatusMaster> list = repository.findAll();
 
         list.sort(Comparator.comparing(PostingEntryStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= GET ALL ACTIVE =================
     @Override
-    public List<PostingEntryStatusResponseDto> getAllActive() {
+    public ApiResponseDTO<List<PostingEntryStatusResponseDto>> getAllActive() {
 
         List<PostingEntryStatusMaster> list =
                 repository.findByIsActive(ActivityEnum.Y);
 
         list.sort(Comparator.comparing(PostingEntryStatusMaster::getDisplayOrder));
 
-        return mapper.toResponseDtoList(list);
+        return ApiResponseDTO.success(mapper.toResponseDtoList(list));
     }
 
     // ================= DELETE (SOFT DELETE) =================
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         PostingEntryStatusMaster entity = repository.findById(id)
                 .orElseThrow(() ->
@@ -134,5 +135,6 @@ public class PostingEntryStatusMasterServiceImpl implements PostingEntryStatusMa
         entity.setIsActive(ActivityEnum.N);
 
         repository.save(entity);
+        return ApiResponseDTO.success("Posting entry status deleted successfully");
     }
 }
