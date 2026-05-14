@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.partial;
 
 import com.claim.claim_processing.common.DTO.request.partial.DisasterTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.partial.DisasterTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.DisasterTypeUpdateDto;
 
@@ -8,17 +9,49 @@ import java.util.List;
 
 public interface DisasterTypeService {
 
-    DisasterTypeResponseDto create(DisasterTypeRequestDto requestDto);
+    // -----------------------------
+    // CREATE
+    // -----------------------------
+    ApiResponseDTO<DisasterTypeResponseDto> create(
+            DisasterTypeRequestDto requestDto
+    );
 
-    DisasterTypeResponseDto getById(Long id);
+    // -----------------------------
+    // UPDATE
+    // -----------------------------
+    ApiResponseDTO<DisasterTypeResponseDto> update(
+            Long id,
+            DisasterTypeUpdateDto updateDto
+    );
 
-    DisasterTypeResponseDto getByCode(String code);
+    // -----------------------------
+    // GET BY ID
+    // -----------------------------
+    ApiResponseDTO<DisasterTypeResponseDto> getById(
+            Long id
+    );
 
-    List<DisasterTypeResponseDto> getAll();
+    // -----------------------------
+    // GET BY CODE
+    // -----------------------------
+    ApiResponseDTO<DisasterTypeResponseDto> getByCode(
+            String code
+    );
 
-    List<DisasterTypeResponseDto> getAllActive();
+    // -----------------------------
+    // GET ALL
+    // -----------------------------
+    ApiResponseDTO<List<DisasterTypeResponseDto>> getAll();
 
-    DisasterTypeResponseDto update(Long id, DisasterTypeUpdateDto updateDto);
+    // -----------------------------
+    // GET ALL ACTIVE
+    // -----------------------------
+    ApiResponseDTO<List<DisasterTypeResponseDto>> getAllActive();
 
-    void delete(Long id);
+    // -----------------------------
+    // DELETE
+    // -----------------------------
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }
