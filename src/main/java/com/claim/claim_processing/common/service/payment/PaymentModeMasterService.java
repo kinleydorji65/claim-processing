@@ -1,24 +1,27 @@
 package com.claim.claim_processing.common.service.payment;
 
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.payment.PaymentModeResponseDto;
 import com.claim.claim_processing.common.DTO.request.payment.PaymentModeRequestDto;
 import java.util.List;
 
 public interface PaymentModeMasterService {
 
-    PaymentModeResponseDto create(PaymentModeRequestDto requestDto);
+    ApiResponseDTO<PaymentModeResponseDto> create(PaymentModeRequestDto requestDto);
 
-    PaymentModeResponseDto update(Long id, PaymentModeRequestDto requestDto);
+    ApiResponseDTO<PaymentModeResponseDto> update(Long id, PaymentModeRequestDto requestDto);
 
-    PaymentModeResponseDto patch(Long id, PaymentModeRequestDto requestDto);
+    ApiResponseDTO<PaymentModeResponseDto> patch(Long id, PaymentModeRequestDto requestDto);
 
-    PaymentModeResponseDto getById(Long id);
+    ApiResponseDTO<PaymentModeResponseDto> getById(Long id);
 
-    PaymentModeResponseDto getByCode(String code);
+    ApiResponseDTO<PaymentModeResponseDto> getByCode(String code);
 
-    List<PaymentModeResponseDto> getAll();
+    ApiResponseDTO<List<PaymentModeResponseDto>> getAll();
 
-    List<PaymentModeResponseDto> getAllActive();
+    ApiResponseDTO<List<PaymentModeResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }

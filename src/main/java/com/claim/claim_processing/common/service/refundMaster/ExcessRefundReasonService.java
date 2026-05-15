@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.refundMaster;
 
 import com.claim.claim_processing.common.DTO.request.refundMaster.ExcessRefundReasonRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.refundMaster.ExcessRefundReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.refundMaster.ExcessRefundReasonUpdateDto;
 
@@ -8,17 +9,19 @@ import java.util.List;
 
 public interface ExcessRefundReasonService {
 
-    ExcessRefundReasonResponseDto create(ExcessRefundReasonRequestDto requestDto);
+    ApiResponseDTO<ExcessRefundReasonResponseDto> create(ExcessRefundReasonRequestDto requestDto);
 
-    ExcessRefundReasonResponseDto getById(Long id);
+    ApiResponseDTO<ExcessRefundReasonResponseDto> getById(Long id);
 
-    ExcessRefundReasonResponseDto getByCode(String code);
+    ApiResponseDTO<ExcessRefundReasonResponseDto> getByCode(String code);
 
-    List<ExcessRefundReasonResponseDto> getAll();
+    ApiResponseDTO<List<ExcessRefundReasonResponseDto>> getAll();
 
-    List<ExcessRefundReasonResponseDto> getAllActive();
+    ApiResponseDTO<List<ExcessRefundReasonResponseDto>> getAllActive();
 
-    ExcessRefundReasonResponseDto update(Long id, ExcessRefundReasonUpdateDto updateDto);
+    ApiResponseDTO<ExcessRefundReasonResponseDto> update(Long id, ExcessRefundReasonUpdateDto updateDto);
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }

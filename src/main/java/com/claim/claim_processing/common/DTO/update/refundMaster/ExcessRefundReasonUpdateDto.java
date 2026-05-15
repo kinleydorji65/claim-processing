@@ -11,6 +11,7 @@ import lombok.*;
 public class ExcessRefundReasonUpdateDto {
 
     private String name;
+    private String code;
     private String description;
     private Integer displayOrder;
     private ActivityEnum isActive;

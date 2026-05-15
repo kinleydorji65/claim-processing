@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.refundMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.refundMaster.ExcessRefundReasonRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.refundMaster.ExcessRefundReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.refundMaster.ExcessRefundReasonUpdateDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -11,87 +12,142 @@ import com.claim.claim_processing.common.service.refundMaster.ExcessRefundReason
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ExcessRefundReasonServiceImpl implements ExcessRefundReasonService {
 
     private final ExcessRefundReasonRepository repository;
     private final ExcessRefundReasonMapper mapper;
 
     @Override
-    public ExcessRefundReasonResponseDto create(ExcessRefundReasonRequestDto requestDto) {
+    public ApiResponseDTO<ExcessRefundReasonResponseDto> create(
+            ExcessRefundReasonRequestDto requestDto) {
 
         if (repository.existsByCode(requestDto.getCode())) {
             throw ClaimException.conflict(
-                    "Excess refund reason code already exists: " + requestDto.getCode()
+                    "Excess refund reason already exists with code: " + requestDto.getCode()
             );
         }
 
         ExcessRefundReasonMaster entity = mapper.toEntity(requestDto);
-        entity.setCreatedBy("SYSTEM");
-        entity.setUpdatedBy("SYSTEM");
+        entity.setIsActive(ActivityEnum.Y);
+        entity.setCreatedBy(requestDto.getCreatedBy());
+        entity.setUpdatedBy(requestDto.getUpdatedBy());
 
         ExcessRefundReasonMaster saved = repository.save(entity);
-        return mapper.toResponseDto(saved);
-    }
 
-    @Override
-    public ExcessRefundReasonResponseDto getById(Long id) {
-        return mapper.toResponseDto(findById(id));
-    }
-
-    @Override
-    public ExcessRefundReasonResponseDto getByCode(String code) {
-        ExcessRefundReasonMaster entity = repository.findByCode(code)
-                .orElseThrow(() ->
-                        ClaimException.notFound("Excess refund reason not found with code: " + code)
-                );
-
-        return mapper.toResponseDto(entity);
-    }
-
-    @Override
-    public List<ExcessRefundReasonResponseDto> getAll() {
-        return mapper.toResponseDtoList(repository.findAll());
-    }
-
-    @Override
-    public List<ExcessRefundReasonResponseDto> getAllActive() {
-        return mapper.toResponseDtoList(
-                repository.findByIsActiveOrderByDisplayOrderAscNameAsc(ActivityEnum.Y)
+        return ApiResponseDTO.created(
+                mapper.toResponseDto(saved)
         );
     }
 
     @Override
-    public ExcessRefundReasonResponseDto update(Long id, ExcessRefundReasonUpdateDto updateDto) {
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<ExcessRefundReasonResponseDto> getById(Long id) {
 
-        ExcessRefundReasonMaster entity = findById(id);
+        ExcessRefundReasonMaster entity = repository.findById(id)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Excess refund reason not found with id: " + id
+                ));
 
-        mapper.updateEntityFromDto(updateDto, entity);
-        entity.setUpdatedBy("SYSTEM");
-
-        ExcessRefundReasonMaster updated = repository.save(entity);
-        return mapper.toResponseDto(updated);
+        return ApiResponseDTO.success(
+                "Excess refund reason fetched successfully",
+                mapper.toResponseDto(entity)
+        );
     }
 
     @Override
-    public void delete(Long id) {
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<ExcessRefundReasonResponseDto> getByCode(String code) {
 
-        ExcessRefundReasonMaster entity = findById(id);
+        ExcessRefundReasonMaster entity = repository.findByCode(code)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Excess refund reason not found with code: " + code
+                ));
 
-        entity.setIsActive(ActivityEnum.N);
-        entity.setUpdatedBy("SYSTEM");
-
-        repository.save(entity);
+        return ApiResponseDTO.success(
+                "Excess refund reason fetched successfully",
+                mapper.toResponseDto(entity)
+        );
     }
 
-    private ExcessRefundReasonMaster findById(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() ->
-                        ClaimException.notFound("Excess refund reason not found with id: " + id)
-                );
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<List<ExcessRefundReasonResponseDto>> getAll() {
+
+        List<ExcessRefundReasonResponseDto> response = repository.findAll()
+                .stream()
+                .map(mapper::toResponseDto)
+                .toList();
+
+        return ApiResponseDTO.success(
+                "Excess refund reasons fetched successfully",
+                response
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<List<ExcessRefundReasonResponseDto>> getAllActive() {
+
+        List<ExcessRefundReasonResponseDto> response =
+                repository.findByIsActive(ActivityEnum.Y)
+                        .stream()
+                        .map(mapper::toResponseDto)
+                        .toList();
+
+        return ApiResponseDTO.success(
+                "Active excess refund reasons fetched successfully",
+                response
+        );
+    }
+
+    @Override
+    public ApiResponseDTO<ExcessRefundReasonResponseDto> update(
+            Long id,
+            ExcessRefundReasonUpdateDto updateDto) {
+
+        ExcessRefundReasonMaster entity = repository.findById(id)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Excess refund reason not found with id: " + id
+                ));
+
+        if (updateDto.getCode() != null
+                && !updateDto.getCode().equalsIgnoreCase(entity.getCode())
+                && repository.existsByCode(updateDto.getCode())) {
+            throw ClaimException.conflict(
+                    "Excess refund reason already exists with code: " + updateDto.getCode()
+            );
+        }
+
+        mapper.updateEntityFromDto(updateDto, entity);
+        ExcessRefundReasonMaster updated = repository.save(entity);
+
+        return ApiResponseDTO.success(
+                "Excess refund reason updated successfully",
+                mapper.toResponseDto(updated)
+        );
+    }
+
+    @Override
+    public ApiResponseDTO<String> delete(Long id) {
+
+        ExcessRefundReasonMaster entity = repository.findById(id)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Excess refund reason not found with id: " + id
+                ));
+
+        entity.setIsActive(ActivityEnum.N);
+        repository.save(entity);
+
+        return ApiResponseDTO.success(
+                "Excess refund reason deleted successfully",
+                "Deleted successfully"
+        );
     }
 }
