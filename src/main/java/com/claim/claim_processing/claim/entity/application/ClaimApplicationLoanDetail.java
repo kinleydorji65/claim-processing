@@ -7,11 +7,11 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
+import com.claim.claim_processing.common.entities.adjustmentMaster.LoanStatusMaster;
+import com.claim.claim_processing.common.entities.adjustmentMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.common.DecisionMaster;
 import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.loanMaster.LoanStatusMaster;
-import com.claim.claim_processing.common.entities.loanMaster.LoanTypeMaster;
 
 @Entity
 @Table(
