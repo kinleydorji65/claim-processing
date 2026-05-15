@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -138,11 +139,10 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
                 claimEligibilityRepository.flush();
                 ClaimEligibilityCategoryMap categoryMap = mapClaimEligibilityToCategory(saved,
                                 requestDto.getMemberCategoryId());
-                BenefitComponentTypeMaster benefitComponentType = mapBenefitComponentTypeToEligibility(saved,
+                List<BenefitComponentTypeMaster> benefitComponents = mapBenefitComponentTypeToEligibility(saved,
                                 categoryMap,
-                                requestDto.getBenefitTypeId(), null);
+                                requestDto.getBenefitTypeIds(), null);
                 List<AgencyCategory> agencyCategories = List.of(categoryMap.getCategory());
-                List<BenefitComponentTypeMaster> benefitComponents = List.of(benefitComponentType);
                 return ApiResponseDTO.success(
                                 claimEligibilityMapper.toResponseDto(saved, agencyCategories, benefitComponents));
         }
@@ -186,16 +186,15 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
                         entity.setSchemeType(schemeType);
                 }
 
-                entity.setUpdatedBy("SYSTEM");
+                entity.setUpdatedBy(requestDto.getUpdatedBy());
 
                 ClaimEligibilityMaster updated = claimEligibilityRepository.save(entity);
                 ClaimEligibilityCategoryMap categoryMap = mapClaimEligibilityToCategory(updated,
                                 requestDto.getMemberCategoryId());
-                BenefitComponentTypeMaster benefitComponentType = mapBenefitComponentTypeToEligibility(updated,
+                List<BenefitComponentTypeMaster> benefitComponents = mapBenefitComponentTypeToEligibility(updated,
                                 categoryMap,
-                                requestDto.getBenefitTypeId(), requestDto.getExistingBenefitTypeId());
+                                requestDto.getBenefitTypeIds(), requestDto.getExistingBenefitTypeIds());
                 List<AgencyCategory> agencyCategories = List.of(categoryMap.getCategory());
-                List<BenefitComponentTypeMaster> benefitComponents = List.of(benefitComponentType);
                 return ApiResponseDTO.success(
                                 claimEligibilityMapper.toResponseDto(updated, agencyCategories, benefitComponents));
         }
@@ -324,55 +323,89 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
         }
 
         private ClaimEligibilityCategoryMap mapClaimEligibilityToCategory(
-        ClaimEligibilityMaster eligibility,
-        String memberCategoryId) {
+                        ClaimEligibilityMaster eligibility,
+                        String memberCategoryId) {
 
-    AgencyCategory category = getMemberCategory(memberCategoryId);
+                AgencyCategory category = getMemberCategory(memberCategoryId);
 
-    // 1. Try to find existing mapping
-    return claimEligibilityCategoryMapRepository
-            .findByRule_IdAndCategory_CategoryId(
-                    eligibility.getId(),
-                    memberCategoryId)
-            .map(existing -> {
-                // UPDATE CASE (safe refresh if needed)
-                existing.setRule(eligibility);
-                existing.setCategory(category);
-                return claimEligibilityCategoryMapRepository.save(existing);
-            })
-            .orElseGet(() -> {
-                // CREATE CASE
-                ClaimEligibilityCategoryMap newMap =
-                        ClaimEligibilityCategoryMap.builder()
-                                .rule(eligibility)
-                                .category(category)
-                                .build();
-                return claimEligibilityCategoryMapRepository.save(newMap);
-            });
-}
+                // 1. Try to find existing mapping
+                return claimEligibilityCategoryMapRepository
+                                .findByRule_IdAndCategory_CategoryId(
+                                                eligibility.getId(),
+                                                memberCategoryId)
+                                .map(existing -> {
+                                        // UPDATE CASE (safe refresh if needed)
+                                        existing.setRule(eligibility);
+                                        existing.setCategory(category);
+                                        return claimEligibilityCategoryMapRepository.save(existing);
+                                })
+                                .orElseGet(() -> {
+                                        // CREATE CASE
+                                        ClaimEligibilityCategoryMap newMap = ClaimEligibilityCategoryMap.builder()
+                                                        .rule(eligibility)
+                                                        .category(category)
+                                                        .build();
+                                        return claimEligibilityCategoryMapRepository.save(newMap);
+                                });
+        }
 
-        private BenefitComponentTypeMaster mapBenefitComponentTypeToEligibility(ClaimEligibilityMaster eligibility,
-                        ClaimEligibilityCategoryMap categoryMap, Long benefitTypeId, Long existingBenefitTypeId) {
+        private List<BenefitComponentTypeMaster> mapBenefitComponentTypeToEligibility(
+                        ClaimEligibilityMaster eligibility,
+                        ClaimEligibilityCategoryMap categoryMap,
+                        List<Long> benefitTypeIds,
+                        List<Long> existingComponentMapIds) {
+
+                List<BenefitComponentTypeMaster> response = new ArrayList<>();
+
+                for (int i = 0; i < benefitTypeIds.size(); i++) {
+
+                        Long benefitTypeId = benefitTypeIds.get(i);
+
+                        final Long existingMapId;
+
+                        if (existingComponentMapIds != null
+                                        && existingComponentMapIds.size() > i) {
+                                existingMapId = existingComponentMapIds.get(i);
+                        } else {
+                                existingMapId = null;
+                        }
+
                         ClaimEligibilityComponentMap componentMap;
-                        if (existingBenefitTypeId != null) {
+
+                        if (existingMapId != null) {
+
                                 componentMap = claimEligibilityComponentMapRepository
-                                .findById(existingBenefitTypeId)
-                                .orElseGet(ClaimEligibilityComponentMap::new);
-                        }else{
-                                Boolean isDuplicate = checkDuplicateBenefitComponent(eligibility.getId(), categoryMap.getId(), benefitTypeId);
+                                                .findById(existingMapId)
+                                                .orElseThrow(() -> ClaimException.notFound(
+                                                                "Component map not found with id: " + existingMapId));
+
+                        } else {
+
+                                boolean isDuplicate = checkDuplicateBenefitComponent(
+                                                eligibility.getId(),
+                                                categoryMap.getId(),
+                                                benefitTypeId);
+
                                 if (isDuplicate) {
-                                        throw ClaimException.conflict("Duplicate benefit component found");
+                                        throw ClaimException.conflict(
+                                                        "Duplicate benefit component found");
                                 }
+
                                 componentMap = new ClaimEligibilityComponentMap();
                         }
-                
-                
-                        componentMap.setClaimEligibilityCategoryMap(categoryMap);
+
+                        BenefitComponentTypeMaster benefitComponent = getBenefitTypeComponent(benefitTypeId);
+
                         componentMap.setRule(eligibility);
-                        componentMap.setBenefitComponentType(getBenefitTypeComponent(benefitTypeId));
-                        
-                claimEligibilityComponentMapRepository.save(componentMap);
-                return componentMap.getBenefitComponentType();
+                        componentMap.setClaimEligibilityCategoryMap(categoryMap);
+                        componentMap.setBenefitComponentType(benefitComponent);
+
+                        claimEligibilityComponentMapRepository.save(componentMap);
+
+                        response.add(benefitComponent);
+                }
+
+                return response;
         }
 
         public Boolean checkDuplicateBenefitComponent(Long ruleId, Long categoryMapId, Long benefitTypeId) {
