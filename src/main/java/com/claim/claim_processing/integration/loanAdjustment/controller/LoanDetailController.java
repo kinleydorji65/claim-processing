@@ -23,7 +23,7 @@ public class LoanDetailController {
             @PathVariable String accountNumber) {
 
         return ResponseEntity.ok(
-                ApiResponseDTO.success(service.getLoanDetails(accountNumber))
+                service.getLoanDetails(accountNumber)
         );
     }
 }

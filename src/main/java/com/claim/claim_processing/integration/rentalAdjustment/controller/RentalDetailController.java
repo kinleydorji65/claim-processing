@@ -16,12 +16,12 @@ public class RentalDetailController {
 
     private final RentalDetailService rentalDetailService;
 
-    @GetMapping("/{cid}")
+    @GetMapping("/{identityId}")
     public ResponseEntity<ApiResponseDTO<List<RentalDetailResponseDto>>> getRentalDetails(
-            @PathVariable String cid) {
+            @PathVariable String identityId) {
 
         return ResponseEntity.ok(
-                rentalDetailService.getRentalDetails(cid)
+                rentalDetailService.getRentalDetails(identityId)
         );
     }
 }

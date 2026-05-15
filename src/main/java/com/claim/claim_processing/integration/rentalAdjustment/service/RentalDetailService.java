@@ -7,5 +7,5 @@ import com.claim.claim_processing.integration.rentalAdjustment.dto.RentalDetailR
 
 public interface RentalDetailService {
 
-    ApiResponseDTO<List<RentalDetailResponseDto>> getRentalDetails(String cid);
+    ApiResponseDTO<List<RentalDetailResponseDto>> getRentalDetails(String identityId);
 }
