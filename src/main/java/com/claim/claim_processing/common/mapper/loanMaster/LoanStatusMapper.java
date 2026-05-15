@@ -2,7 +2,8 @@ package com.claim.claim_processing.common.mapper.loanMaster;
 
 import com.claim.claim_processing.common.DTO.request.loanMaster.LoanStatusRequestDto;
 import com.claim.claim_processing.common.DTO.response.loanMaster.LoanStatusResponseDto;
-import com.claim.claim_processing.common.entities.loanMaster.LoanStatusMaster;
+import com.claim.claim_processing.common.entities.adjustmentMaster.LoanStatusMaster;
+
 import org.mapstruct.*;
 
 import java.util.List;

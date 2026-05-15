@@ -2,6 +2,7 @@ package com.claim.claim_processing.common.DTO.request.claim;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -17,7 +18,7 @@ public class ClaimEligibilityCreateRequestDto {
     private Long ruleTypeId;
 
     private String memberCategoryId;
-    private Long benefitTypeId;
+    private List<Long> benefitTypeIds;
 
     private Integer minContributionMonths;
     private Integer maxContributionMonths;

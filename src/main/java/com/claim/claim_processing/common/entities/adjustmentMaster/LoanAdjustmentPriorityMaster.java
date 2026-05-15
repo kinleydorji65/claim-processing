@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.entities.loanMaster;
+package com.claim.claim_processing.common.entities.adjustmentMaster;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnumConverter;

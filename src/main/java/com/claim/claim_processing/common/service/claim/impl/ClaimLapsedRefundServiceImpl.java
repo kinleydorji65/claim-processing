@@ -16,11 +16,13 @@ import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundCompo
 import com.claim.claim_processing.common.repository.claim.ClaimLapsedRefundRepository;
 import com.claim.claim_processing.common.repository.contribution.BenefitComponentTypeMasterRepository;
 import com.claim.claim_processing.common.service.claim.ClaimLapsedRefundService;
+import com.claim.claim_processing.exceptions.ClaimException;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,10 +49,9 @@ public class ClaimLapsedRefundServiceImpl implements ClaimLapsedRefundService {
         ClaimLapsedRefundMaster saved = repository.save(entity);
         repository.flush();
         ClaimLapsedRefundCategoryMap mapMemberCategory = mapMemberCategory(saved, dto.getMemberCategoryId());
-        ClaimLapsedRefundComponentMap benefitComponent = mapClaimLapsedBenefitComponent(saved, mapMemberCategory, dto.getBenefitTypeId(), null);
+        List<BenefitComponentTypeMaster> benefitComponents = mapClaimLapsedBenefitComponent(saved, mapMemberCategory, dto.getBenefitTypeIds(), null);
 
         List<AgencyCategory> agencyCategories = List.of(mapMemberCategory.getCategory());
-        List<BenefitComponentTypeMaster> benefitComponents = List.of(benefitComponent.getBenefitComponentType());
         return ApiResponseDTO.success(mapper.toResponseDto(saved, agencyCategories, benefitComponents));
     }
 
@@ -69,25 +70,69 @@ public class ClaimLapsedRefundServiceImpl implements ClaimLapsedRefundService {
     return categoryMapRepository.save(map);
 }
 
-    private ClaimLapsedRefundComponentMap mapClaimLapsedBenefitComponent(ClaimLapsedRefundMaster rule, ClaimLapsedRefundCategoryMap categoryMap, Long benefitTypeId, Long existingBenefitId) {
+    private List<BenefitComponentTypeMaster> mapClaimLapsedBenefitComponent(
+        ClaimLapsedRefundMaster rule,
+        ClaimLapsedRefundCategoryMap categoryMap,
+        List<Long> benefitTypeIds,
+        List<Long> existingComponentMapIds
+) {
+    List<BenefitComponentTypeMaster> response = new ArrayList<>();
+
+    if (benefitTypeIds == null || benefitTypeIds.isEmpty()) {
+        return response;
+    }
+
+    for (int i = 0; i < benefitTypeIds.size(); i++) {
+
+        Long benefitTypeId = benefitTypeIds.get(i);
+
+        final Long existingMapId;
+
+        if (existingComponentMapIds != null
+                && existingComponentMapIds.size() > i) {
+            existingMapId = existingComponentMapIds.get(i);
+        } else {
+            existingMapId = null;
+        }
+
         ClaimLapsedRefundComponentMap map;
-        if (existingBenefitId != null) {
-            map = componentMapRepository.findById(existingBenefitId)
-                    .orElseGet(ClaimLapsedRefundComponentMap::new);
-        }else {
-            Boolean isDuplicate = checkDuplicateBenefitComponent(rule.getId(), categoryMap.getId(), benefitTypeId);
+
+        if (existingMapId != null) {
+
+            map = componentMapRepository.findById(existingMapId)
+                    .orElseThrow(() -> ClaimException.notFound(
+                            "Lapsed refund component map not found with id: " + existingMapId
+                    ));
+
+        } else {
+
+            Boolean isDuplicate = checkDuplicateBenefitComponent(
+                    rule.getId(),
+                    categoryMap.getId(),
+                    benefitTypeId
+            );
+
             if (isDuplicate) {
-                throw new RuntimeException("Duplicate benefit component found");
+                throw ClaimException.conflict("Duplicate benefit component found");
             }
+
             map = new ClaimLapsedRefundComponentMap();
         }
-            map.setClaimLapsedRefundCategoryMap(categoryMap);
-            map.setRule(rule);
-            map.setBenefitComponentType(getBenefitTypeComponent(benefitTypeId));
-            componentMapRepository.save(map);
-       
-        return map;
+
+        BenefitComponentTypeMaster benefitComponent =
+                getBenefitTypeComponent(benefitTypeId);
+
+        map.setRule(rule);
+        map.setClaimLapsedRefundCategoryMap(categoryMap);
+        map.setBenefitComponentType(benefitComponent);
+
+        componentMapRepository.save(map);
+
+        response.add(benefitComponent);
     }
+
+    return response;
+}
 
     private Boolean checkDuplicateBenefitComponent(Long ruleId, Long categoryMapId, Long benefitTypeId) {
         return componentMapRepository.existsByRule_IdAndClaimLapsedRefundCategoryMap_IdAndBenefitComponentType_Id(
@@ -166,10 +211,9 @@ public ApiResponseDTO<List<ClaimLapsedRefundResponseDto>> getAll() {
 
         ClaimLapsedRefundMaster updated = repository.save(entity);
         ClaimLapsedRefundCategoryMap mapMemberCategory = mapMemberCategory(updated, dto.getMemberCategoryId());
-        ClaimLapsedRefundComponentMap benefitComponent = mapClaimLapsedBenefitComponent(updated, mapMemberCategory, dto.getBenefitTypeId(), dto.getExistingBenefitId());
+        List<BenefitComponentTypeMaster> benefitComponents = mapClaimLapsedBenefitComponent(updated, mapMemberCategory, dto.getBenefitTypeIds(), dto.getExistingBenefitIds());
 
         List<AgencyCategory> agencyCategories = List.of(mapMemberCategory.getCategory());
-        List<BenefitComponentTypeMaster> benefitComponents = List.of(benefitComponent.getBenefitComponentType());
         return ApiResponseDTO.success(mapper.toResponseDto(updated, agencyCategories, benefitComponents));
     }
 

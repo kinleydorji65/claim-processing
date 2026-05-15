@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class ClaimPreviewRequest {
     private Long claimTypeId;
-    private String memberCode;
+    private String nppfNumber;
     private Long circumtancesId;
     private String memberCategoryId;
     private LocalDate cessationDate;

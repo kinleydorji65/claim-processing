@@ -1,8 +1,9 @@
-package com.claim.claim_processing.common.repository.loanMaster;
+package com.claim.claim_processing.common.repository.adjustmentMaster;
 
+import com.claim.claim_processing.common.entities.adjustmentMaster.LoanAdjustmentPriorityMaster;
+import com.claim.claim_processing.common.entities.adjustmentMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.loanMaster.LoanAdjustmentPriorityMaster;
-import com.claim.claim_processing.common.entities.loanMaster.LoanTypeMaster;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

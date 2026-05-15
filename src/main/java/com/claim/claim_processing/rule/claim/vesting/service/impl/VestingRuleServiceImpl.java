@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.VestingRefundTypeResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimVestingRuleMaster;
 import com.claim.claim_processing.common.entities.claim.VestingRefundBenefitMap;
@@ -46,16 +47,16 @@ public class VestingRuleServiceImpl implements VestingRuleService {
     public VestingRuleResponseDTO determineVestingEligibility(ClaimPreviewRequest request) {
 
         // 1. Get contribution summary
-        MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(request.getMemberCode());
+        ApiResponseDTO<MemberContributionSummary> contributionSummary = memberContributionService
+                .getContributionSummary(request.getNppfNumber());
 
-        if (contributionSummary.getContributionEndDate() == null) {
-            throw ClaimException.notFound("Member Contribution not found with Member Code: " + request.getMemberCode());
+        if (contributionSummary.getData().getContributionEndDate() == null) {
+            throw ClaimException.notFound("Member Contribution not found with Member Code: " + request.getNppfNumber());
         }
 
         // 2. Extract data
-        Integer totalContributionMonths = contributionSummary.getTotalContributionMonths();
-        LocalDate contributionStartDate = contributionSummary.getContributionStartDate();
+        Integer totalContributionMonths = contributionSummary.getData().getTotalContributionMonths();
+        LocalDate contributionStartDate = contributionSummary.getData().getContributionStartDate();
         LocalDate serviceJoiningDate = request.getServiceJoiningDate();
         LocalDate cessationDate = request.getCessationDate();
 
@@ -164,7 +165,7 @@ public class VestingRuleServiceImpl implements VestingRuleService {
                 .totalVestingMonths(totalMonths)
                 .requiredVestingMonths(
                         rule.getMinVestingMonths() == null ? rule.getMaxVestingMonths() : rule.getMinVestingMonths())
-                .eligibilityNote(buildEligibilityNote(rule, totalMonths))
+                .eligibilityNote(buildEligibilityNotes(rule, totalMonths))
                 .categoryBenefits(getCategoryBenefits(rule))
                 .build();
     }
@@ -243,17 +244,22 @@ public class VestingRuleServiceImpl implements VestingRuleService {
         return (int) ChronoUnit.MONTHS.between(startDate, endDate);
     }
 
-    private String buildEligibilityNote(ClaimVestingRuleMaster rule, Integer totalMonths) {
+    private List<String> buildEligibilityNotes(
+        ClaimVestingRuleMaster rule,
+        Integer totalMonths
+) {
 
     if (rule == null) {
-        return "No vesting rule found for your contribution period.";
+        return List.of(
+                "No vesting rule found for your contribution period."
+        );
     }
 
-    String conditionText = buildConditionText(rule);
-    String payoutText = buildPayoutText(rule.getRefundType().getCode());
-
-    return "Based on your contribution of " + totalMonths + " months, "
-            + conditionText + " " + payoutText;
+    return List.of(
+            "Your Total contribution is " + totalMonths + " months.",
+            buildConditionText(rule),
+            buildPayoutText(rule.getRefundType().getCode())
+    );
 }
 
 private String buildConditionText(ClaimVestingRuleMaster rule) {
@@ -264,27 +270,28 @@ private String buildConditionText(ClaimVestingRuleMaster rule) {
     return switch (rule.getComparisonType()) {
 
         case "LESS_THAN" ->
-                "your contribution is less than " + max + " months.";
+                "Which is less than " + max + " months.";
 
         case "LESS_THAN_OR_EQUAL" ->
-                "your contribution is less than or equal to " + max + " months.";
+                "Which is less than or equal to " + max + " months.";
 
         case "GREATER_THAN" ->
-                "your contribution is greater than " + min + " months.";
+                "Which is greater than " + min + " months.";
 
         case "GREATER_THAN_OR_EQUAL" ->
-                "your contribution is greater than or equal to " + min + " months.";
+                "Which is greater than or equal to " + min + " months.";
 
         case "RANGE" -> {
             if (min != null && max != null) {
-                yield "your contribution is between " + min + " and " + max + " months.";
+                yield "Which is between "
+                        + min + " and " + max + " months.";
             } else {
-                yield "your contribution meets the required range.";
+                yield "Which meets the required range.";
             }
         }
 
         default ->
-                "your contribution meets the vesting requirement.";
+                "Which meets the vesting requirement.";
     };
 }
 private String buildPayoutText(String payoutResult) {
@@ -292,16 +299,16 @@ private String buildPayoutText(String payoutResult) {
     return switch (payoutResult) {
 
         case "PENSION" ->
-                "You are eligible for pension benefit only.";
+                "Because of that, you are eligible for pension benefit only.";
 
         case "LUMPSUM" ->
-                "You are eligible for lump sum benefit only.";
+                "Because of that, you are eligible for lump sum benefit only.";
 
         case "OPTION" ->
-                "You are eligible for both pension and lump sum (option available).";
+                "Because of that, you are eligible for both pension and lump sum benefits.";
 
         default ->
-                "Benefit eligibility could not be determined.";
+                "Because of that, your benefit eligibility could not be determined.";
     };
 }
 }

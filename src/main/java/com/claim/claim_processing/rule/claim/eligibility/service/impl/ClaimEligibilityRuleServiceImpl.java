@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityCategoryMap;
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityComponentMap;
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityMaster;
@@ -49,12 +50,12 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
     public ClaimEligibilityPreviewResponse previewEligibility(ClaimPreviewRequest request) {
         System.out.println("request received in service: " + request);
         // 1. Fetch contribution summary (snapshot-based)
-        MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(request.getMemberCode());
+        ApiResponseDTO<MemberContributionSummary> contributionSummary = memberContributionService
+                .getContributionSummary(request.getNppfNumber());
 
-        Integer totalMonths = contributionSummary.getTotalContributionMonths();
+        Integer totalMonths = contributionSummary.getData().getTotalContributionMonths();
         LocalDate cessationDate = request.getCessationDate() != null ? request.getCessationDate()
-                : contributionSummary.getContributionEndDate();
+                : contributionSummary.getData().getContributionEndDate();
 
         System.out.println("Total contribution months: " + totalMonths + ", claim circumstance: " + cessationDate);
 
@@ -65,7 +66,7 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
         for (ClaimEligibilityMaster rule : rules) {
 
             boolean c1 = rule.getClaimCircumstance().getId().equals(request.getCircumtancesId());
-            boolean c2 = rule.getSchemeType().getId().equals(contributionSummary.getSchemeTypeId());
+            boolean c2 = rule.getSchemeType().getId().equals(contributionSummary.getData().getSchemeTypeId());
             boolean c3 = matchesContributionMonths(rule, totalMonths);
             boolean c4 = matchesEffectiveDate(rule, cessationDate);
 
@@ -78,7 +79,7 @@ public class ClaimEligibilityRuleServiceImpl implements ClaimEligibilityRuleServ
         }
         ClaimEligibilityMaster matchingRule = rules.stream()
                 .filter(rule -> Objects.equals(rule.getClaimCircumstance().getId(), request.getCircumtancesId()))
-                .filter(rule -> Objects.equals(rule.getSchemeType().getId(), contributionSummary.getSchemeTypeId()))
+                .filter(rule -> Objects.equals(rule.getSchemeType().getId(), contributionSummary.getData().getSchemeTypeId()))
                 .filter(rule -> matchesContributionMonths(rule, totalMonths))
                 .filter(rule -> matchesEffectiveDate(rule, cessationDate))
                 .findFirst()

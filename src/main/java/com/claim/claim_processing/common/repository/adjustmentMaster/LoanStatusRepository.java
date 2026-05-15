@@ -1,7 +1,8 @@
-package com.claim.claim_processing.common.repository.loanMaster;
+package com.claim.claim_processing.common.repository.adjustmentMaster;
 
+import com.claim.claim_processing.common.entities.adjustmentMaster.LoanStatusMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.loanMaster.LoanTypeMaster;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,10 +10,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface LoanTypeRepository extends JpaRepository<LoanTypeMaster, Long> {
+public interface LoanStatusRepository extends JpaRepository<LoanStatusMaster, Long> {
 
     // 🔹 Find by unique code
-    Optional<LoanTypeMaster> findByCode(String code);
+    Optional<LoanStatusMaster> findByCode(String code);
 
     // 🔹 Duplicate check (create)
     boolean existsByCode(String code);
@@ -20,6 +21,6 @@ public interface LoanTypeRepository extends JpaRepository<LoanTypeMaster, Long> 
     // 🔹 Duplicate check (update)
     boolean existsByCodeAndIdNot(String code, Long id);
 
-    // 🔹 Active records
-    List<LoanTypeMaster> findByIsActive(ActivityEnum isActive);
+    // 🔹 Fetch active records
+    List<LoanStatusMaster> findByIsActive(ActivityEnum isActive);
 }
