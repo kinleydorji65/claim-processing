@@ -20,8 +20,8 @@ import lombok.NoArgsConstructor;
 public class MemberContributionSnapshot {
 
     @Id
-    @Column(name = "MEMBER_CODE", nullable = false, unique = true)
-    private String memberCode;
+    @Column(name = "NPPF_NUMBER", nullable = false, unique = true)
+    private String nppfNumber;
 
     @Column(name = "SCHEME_ID")
     private Long schemeId;

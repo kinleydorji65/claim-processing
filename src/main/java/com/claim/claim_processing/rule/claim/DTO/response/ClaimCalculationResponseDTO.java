@@ -11,7 +11,7 @@ import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 @Data
 @Builder
 public class ClaimCalculationResponseDTO {
-    private String memberCode;
+    private String nppfNumber;
     private BigDecimal noOfYearInService;
     private Boolean loanCheck;
     private Boolean rentalCheck;

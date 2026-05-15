@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.claim.ClaimLapsedRefundCategoryMap;
 import com.claim.claim_processing.common.entities.claim.ClaimLapsedRefundComponentMap;
 import com.claim.claim_processing.common.entities.claim.ClaimLapsedRefundMaster;
@@ -47,12 +48,12 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
     public LapsedRefundPreviewResponseDTO previewLapsedRefund(ClaimPreviewRequest request) {
 
         // 1. Fetch contribution summary (snapshot-based)
-        MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(request.getMemberCode());
+        ApiResponseDTO<MemberContributionSummary> contributionSummary = memberContributionService
+                .getContributionSummary(request.getNppfNumber());
 
-        Integer totalMonths = contributionSummary.getTotalContributionMonths();
+        Integer totalMonths = contributionSummary.getData().getTotalContributionMonths();
         LocalDate terminationDate = request.getCessationDate() != null ? request.getCessationDate()
-                : contributionSummary.getContributionEndDate();
+                : contributionSummary.getData().getContributionEndDate();
 
                 List<ClaimLapsedRefundMaster> rules =
         lapsedRefundRepository.findByIsActive(ActivityEnum.Y);
@@ -64,7 +65,7 @@ public class LapsedRefundServiceImpl implements LapsedRefundService {
         ))
         .filter(rule -> Objects.equals(
                 rule.getSchemeType().getId(),
-                contributionSummary.getSchemeTypeId()
+                contributionSummary.getData().getSchemeTypeId()
         ))
         .filter(rule -> matchesContributionMonths(rule, totalMonths))
         .filter(rule -> matchesEffectiveDate(rule, terminationDate))

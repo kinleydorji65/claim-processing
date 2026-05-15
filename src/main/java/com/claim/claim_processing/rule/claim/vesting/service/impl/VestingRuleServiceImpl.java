@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.VestingRefundTypeResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimVestingRuleMaster;
 import com.claim.claim_processing.common.entities.claim.VestingRefundBenefitMap;
@@ -46,16 +47,16 @@ public class VestingRuleServiceImpl implements VestingRuleService {
     public VestingRuleResponseDTO determineVestingEligibility(ClaimPreviewRequest request) {
 
         // 1. Get contribution summary
-        MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(request.getMemberCode());
+        ApiResponseDTO<MemberContributionSummary> contributionSummary = memberContributionService
+                .getContributionSummary(request.getNppfNumber());
 
-        if (contributionSummary.getContributionEndDate() == null) {
-            throw ClaimException.notFound("Member Contribution not found with Member Code: " + request.getMemberCode());
+        if (contributionSummary.getData().getContributionEndDate() == null) {
+            throw ClaimException.notFound("Member Contribution not found with Member Code: " + request.getNppfNumber());
         }
 
         // 2. Extract data
-        Integer totalContributionMonths = contributionSummary.getTotalContributionMonths();
-        LocalDate contributionStartDate = contributionSummary.getContributionStartDate();
+        Integer totalContributionMonths = contributionSummary.getData().getTotalContributionMonths();
+        LocalDate contributionStartDate = contributionSummary.getData().getContributionStartDate();
         LocalDate serviceJoiningDate = request.getServiceJoiningDate();
         LocalDate cessationDate = request.getCessationDate();
 

@@ -24,15 +24,15 @@ public class MemberServiceImpl implements MemberService {
     private final MemberDetailMapper memberDetailMapper;
 
     public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String memberCode, String agencyCode) {
-        MemberContributionSummary contributionSummary = memberContributionService.getContributionSummary(memberCode);
+        ApiResponseDTO<MemberContributionSummary> contributionSummary = memberContributionService.getContributionSummary(memberCode);
         MemberDetail memberDetail = memberDetailRepository.findByMemberCodeAndAgencyCode(memberCode, agencyCode)
                 .orElseThrow(() -> new RuntimeException("Member not found with code: " + memberCode + " and agency code: " + agencyCode));  
         // This is a placeholder implementation and should be replaced with actual logic to call the member service
         MemberDetailResponseDto responseDto = memberDetailMapper.toMemberDetailResponseDto(memberDetail);
-        responseDto.setPfJoiningDate(contributionSummary.getPfJoiningDate());
-        responseDto.setPensionJoiningDate(contributionSummary.getPensionJoiningDate());
-        BigDecimal totalAccumulationAmount = contributionSummary.getTotalBalance();
-                BigDecimal getInterest = contributionSummary.getComponentGroups().stream().map(group -> group.getInterest()).toList().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        responseDto.setPfJoiningDate(contributionSummary.getData().getPfJoiningDate());
+        responseDto.setPensionJoiningDate(contributionSummary.getData().getPensionJoiningDate());
+        BigDecimal totalAccumulationAmount = contributionSummary.getData().getTotalBalance();
+                BigDecimal getInterest = contributionSummary.getData().getComponentGroups().stream().map(group -> group.getInterest()).toList().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
                 BigDecimal totalAccumulationWithoutInterestAmount = totalAccumulationAmount.subtract(getInterest);
         responseDto.setTotalBalanceAmount(totalAccumulationAmount);
         responseDto.setTotalBalanceWithoutInterestAmount(totalAccumulationWithoutInterestAmount);

@@ -22,6 +22,7 @@ import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 import com.claim.claim_processing.rule.claim.BenefitCalculation.BenefitCalculationService;
 import com.claim.claim_processing.rule.claim.DTO.contribution.EligibleBenefitComponentDTO;
 import com.claim.claim_processing.rule.claim.DTO.contribution.MemberContributionSummary;
+import com.claim.claim_processing.rule.claim.DTO.contribution.PartialMemberContributionSummary;
 import com.claim.claim_processing.rule.claim.DTO.request.ClaimPreviewRequest;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO.ComponentBalanceDTO;
@@ -48,8 +49,8 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
         public ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(ClaimPreviewRequest request) {
                 List<RuleTypeResponseDto> ruleTypes = checkEligibleRules(request.getClaimTypeId());
-                MemberContributionSummary contributionSummary = memberContributionService
-                                .getContributionSummary(request.getMemberCode());
+                ApiResponseDTO<MemberContributionSummary> contributionSummary = memberContributionService
+                                .getContributionSummary(request.getNppfNumber());
                 ClaimEligibilityPreviewResponse claimEligibilityPreviewResponse = null;
                 LapsedRefundPreviewResponseDTO previewLapsedRefund = null;
                 VestingRuleResponseDTO vestingResponse = null;
@@ -63,11 +64,11 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 }
         
                 BigDecimal serviceYears = calculateServiceYears(
-                                contributionSummary.getContributionStartDate(),
-                                contributionSummary.getContributionEndDate());
+                                contributionSummary.getData().getContributionStartDate(),
+                                contributionSummary.getData().getContributionEndDate());
                 
                 ClaimCalculationResponseDTO response = processComponentsWithRules(
-                                contributionSummary,
+                                contributionSummary.getData(),
                                 vestingResponse,
                                 claimEligibilityPreviewResponse,
                                 previewLapsedRefund,
@@ -150,7 +151,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         Boolean loanCheck = ruleTypes.stream().anyMatch(rt -> rt.getCode().equals("LOAN_ADJUSTMENT"));
         Boolean rentalCheck = ruleTypes.stream().anyMatch(rt -> rt.getCode().equals("RENTAL_ADJUSTMENT"));
                 return ClaimCalculationResponseDTO.builder()
-                                .memberCode(contributionSummary.getMemberCode())
+                                .nppfNumber(contributionSummary.getNppfNumber())
                                 .contributionStartDate(contributionSummary.getContributionStartDate())
                                 .contributionEndDate(contributionSummary.getContributionEndDate())
                                 .totalContributionMonths(contributionSummary.getTotalContributionMonths())
@@ -231,5 +232,11 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                         return ruleTypeMapper.toResponseDtoList(ruleTypes);
                 }
                 return Collections.emptyList();
+        }
+
+        @Override
+        public ApiResponseDTO<PartialMemberContributionSummary> getPartialContributionSummary(String nppfNumber){
+                ApiResponseDTO<PartialMemberContributionSummary> responseDTO = memberContributionService.getPartialContributionSummary(nppfNumber);
+                return responseDTO;
         }
 }

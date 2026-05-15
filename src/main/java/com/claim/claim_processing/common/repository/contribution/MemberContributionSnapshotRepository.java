@@ -9,5 +9,5 @@ import com.claim.claim_processing.common.entities.contribution.MemberContributio
 public interface MemberContributionSnapshotRepository
         extends JpaRepository<MemberContributionSnapshot, String> {
 
-    Optional<MemberContributionSnapshot> findByMemberCode(String memberCode);
+    Optional<MemberContributionSnapshot> findByNppfNumber(String nppfNumber);
 }
