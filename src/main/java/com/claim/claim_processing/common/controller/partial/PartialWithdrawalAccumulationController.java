@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.partial;
 
 import com.claim.claim_processing.common.DTO.request.partial.PartialWithdrawalAccumulationRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalAccumulationResponseDto;
 import com.claim.claim_processing.common.service.partial.PartialWithdrawalAccumulationService;
 import lombok.RequiredArgsConstructor;
@@ -16,59 +17,55 @@ public class PartialWithdrawalAccumulationController {
 
     private final PartialWithdrawalAccumulationService service;
 
-    // =========================
-    // CREATE
-    // =========================
     @PostMapping
-    public ResponseEntity<PartialWithdrawalAccumulationResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody PartialWithdrawalAccumulationRequestDto dto) {
 
-        return ResponseEntity.ok(service.create(dto));
+        ApiResponseDTO<PartialWithdrawalAccumulationResponseDto> response = service.create(dto);
+        return ResponseEntity.ok(response);
     }
 
-    // =========================
-    // UPDATE
-    // =========================
-    @PutMapping("/{id}")
-    public ResponseEntity<PartialWithdrawalAccumulationResponseDto> update(
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody PartialWithdrawalAccumulationRequestDto dto) {
 
-        return ResponseEntity.ok(service.update(id, dto));
+        ApiResponseDTO<PartialWithdrawalAccumulationResponseDto> response = service.update(id, dto);
+        return ResponseEntity.ok(response);
     }
 
-    // =========================
-    // GET BY ID
-    // =========================
     @GetMapping("/{id}")
-    public ResponseEntity<PartialWithdrawalAccumulationResponseDto> getById(
-            @PathVariable Long id) {
+    public ResponseEntity<?> getById(@PathVariable Long id) {
 
-        return ResponseEntity.ok(service.getById(id));
+        ApiResponseDTO<PartialWithdrawalAccumulationResponseDto> response = service.getById(id);
+        return ResponseEntity.ok(response);
     }
 
-    // =========================
-    // GET ALL (INCLUDES ACTIVE + INACTIVE)
-    // =========================
+    @GetMapping("/code/{code}")
+    public ResponseEntity<?> getByCode(@PathVariable String code) {
+
+        ApiResponseDTO<PartialWithdrawalAccumulationResponseDto> response = service.getByCode(code);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
-    public ResponseEntity<List<PartialWithdrawalAccumulationResponseDto>> getAll() {
-        return ResponseEntity.ok(service.getAll());
+    public ResponseEntity<?> getAll() {
+
+        ApiResponseDTO<List<PartialWithdrawalAccumulationResponseDto>> response = service.getAll();
+        return ResponseEntity.ok(response);
     }
 
-    // =========================
-    // GET ALL ACTIVE ONLY
-    // =========================
     @GetMapping("/active")
-    public ResponseEntity<List<PartialWithdrawalAccumulationResponseDto>> getAllActive() {
-        return ResponseEntity.ok(service.getAllActive());
+    public ResponseEntity<?> getAllActive() {
+
+        ApiResponseDTO<List<PartialWithdrawalAccumulationResponseDto>> response = service.getAllActive();
+        return ResponseEntity.ok(response);
     }
 
-    // =========================
-    // DELETE (SOFT DELETE)
-    // =========================
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+
+        ApiResponseDTO<String> response = service.delete(id);
+        return ResponseEntity.ok(response);
     }
 }

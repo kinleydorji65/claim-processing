@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.DTO.response.partial;
 
 import com.claim.claim_processing.common.DTO.response.others.agency.agencyRelated.AgencyCategoryDTO;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -25,11 +26,7 @@ public class PartialWithdrawalRuleResponseDto {
 
     private Integer numberOfContributionMonths;
 
-    private Boolean pfAccumulation;
-
-    private Boolean totalAccumulationValue;
-
-    private String isActive;
+    private ActivityEnum isActive;
 
     private LocalDateTime createdAt;
 

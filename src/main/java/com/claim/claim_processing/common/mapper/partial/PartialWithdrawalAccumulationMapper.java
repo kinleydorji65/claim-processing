@@ -5,31 +5,50 @@ import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalA
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalAccumulationMaster;
 import org.mapstruct.*;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface PartialWithdrawalAccumulationMapper {
 
     // =========================
-    // ENTITY → RESPONSE DTO
-    // =========================
-    PartialWithdrawalAccumulationResponseDto toDto(
-            PartialWithdrawalAccumulationMaster entity);
-
-    // =========================
-    // REQUEST DTO → ENTITY
+    // CREATE
     // =========================
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     PartialWithdrawalAccumulationMaster toEntity(
-            PartialWithdrawalAccumulationRequestDto dto);
+            PartialWithdrawalAccumulationRequestDto dto
+    );
 
     // =========================
-    // UPDATE ENTITY (PARTIAL UPDATE)
+    // RESPONSE
+    // =========================
+    PartialWithdrawalAccumulationResponseDto toResponseDto(
+            PartialWithdrawalAccumulationMaster entity
+    );
+
+    // =========================
+    // LIST RESPONSE
+    // =========================
+    List<PartialWithdrawalAccumulationResponseDto> toResponseDtoList(
+            List<PartialWithdrawalAccumulationMaster> entities
+    );
+
+    // =========================
+    // UPDATE
     // =========================
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "code", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    void updateEntity(@MappingTarget PartialWithdrawalAccumulationMaster entity,
-                      PartialWithdrawalAccumulationRequestDto dto);
+    @Mapping(target = "updatedBy", ignore = true)
+    void updateEntityFromDto(
+            PartialWithdrawalAccumulationRequestDto dto,
+            @MappingTarget PartialWithdrawalAccumulationMaster entity
+    );
 }

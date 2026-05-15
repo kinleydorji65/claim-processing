@@ -3,44 +3,45 @@ package com.claim.claim_processing.common.mapper.partial;
 import com.claim.claim_processing.common.DTO.request.partial.PartialWithdrawalCauseRequestDto;
 import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalCauseResponseDto;
 import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalReasonResponseDto;
+import com.claim.claim_processing.common.DTO.update.partial.PartialWithdrawalReasonUpdateDto;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalCauseMaster;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalReasonMaster;
 import org.mapstruct.*;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface PartialWithdrawalCauseMapper {
 
-    // =========================
-    // ENTITY → RESPONSE DTO
-    // =========================
-    @Mapping(source = "reason", target = "reason")
-    PartialWithdrawalCauseResponseDto toDto(PartialWithdrawalCauseMaster entity);
-
-    // =========================
-    // REQUEST DTO → ENTITY
-    // FK (reason) handled in service layer
-    // =========================
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "reason", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     PartialWithdrawalCauseMaster toEntity(PartialWithdrawalCauseRequestDto dto);
 
-    // =========================
-    // UPDATE ENTITY
-    // =========================
+    @Mapping(target = "reason", source = "reason")
+    PartialWithdrawalCauseResponseDto toResponseDto(PartialWithdrawalCauseMaster entity);
+
+    List<PartialWithdrawalCauseResponseDto> toResponseDtoList(
+            List<PartialWithdrawalCauseMaster> entities
+    );
+
+    PartialWithdrawalReasonResponseDto toReasonResponseDto(
+            PartialWithdrawalReasonMaster reason
+    );
+
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "code", ignore = true)
     @Mapping(target = "reason", ignore = true)
-    void updateEntity(@MappingTarget PartialWithdrawalCauseMaster entity,
-                      PartialWithdrawalCauseRequestDto dto);
-
-    // =========================
-    // NESTED MAPPING (Reason → DTO)
-    // =========================
-    default PartialWithdrawalReasonResponseDto map(PartialWithdrawalReasonMaster reason) {
-        if (reason == null) return null;
-
-        return PartialWithdrawalReasonResponseDto.builder()
-                .id(reason.getId())
-                .code(reason.getCode())
-                .name(reason.getName())
-                .build();
-    }
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    void updateEntityFromDto(
+            PartialWithdrawalCauseRequestDto dto,
+            @MappingTarget PartialWithdrawalCauseMaster entity
+    );
 }

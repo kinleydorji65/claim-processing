@@ -30,16 +30,14 @@ public class PartialWithdrawalRuleMaster {
     @JoinColumn(
             name = "CATEGORY_ID",
             referencedColumnName = "CATEGORY_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_PARTIAL_WITHDRAWAL_RULE_CATEGORY")
+            nullable = false
     )
     private AgencyCategory category;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "REASON_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_PARTIAL_WITHDRAWAL_RULE_REASON")
+            nullable = false
     )
     private PartialWithdrawalReasonMaster reason;
 
@@ -47,22 +45,12 @@ public class PartialWithdrawalRuleMaster {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "ACCUMULATION_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_ACCUMULATION_TYPE")
+            nullable = false
     )
     private PartialWithdrawalAccumulationMaster accumulation;
 
     @Column(name = "MAX_WITHDRAWAL_PERCENTAGE", precision = 5, scale = 2)
     private BigDecimal maxWithdrawalPercentage;
-
-    // Boolean mapped to Y/N
-    @Convert(converter = YesNoConverter.class)
-    @Column(name = "PF_ACCUMULATION")
-    private Boolean pfAccumulation;
-
-    @Convert(converter = YesNoConverter.class)
-    @Column(name = "TOTAL_ACCUMULATION_VALUE")
-    private Boolean totalAccumulationValue;
 
     @Column(name = "NUMBER_OF_CONTRIBUTION_MONTHS")
     private Integer numberOfContributionMonths;
@@ -87,15 +75,8 @@ public class PartialWithdrawalRuleMaster {
     @PrePersist
     public void prePersist() {
         handleDefaults();
-        validateAccumulation();
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
-        validateAccumulation();
     }
 
     private void handleDefaults() {
@@ -104,11 +85,5 @@ public class PartialWithdrawalRuleMaster {
         }
     }
 
-    private void validateAccumulation() {
-        if (Boolean.TRUE.equals(pfAccumulation)) {
-            totalAccumulationValue = false;
-        } else if (Boolean.TRUE.equals(totalAccumulationValue)) {
-            pfAccumulation = false;
-        }
-    }
+
 }

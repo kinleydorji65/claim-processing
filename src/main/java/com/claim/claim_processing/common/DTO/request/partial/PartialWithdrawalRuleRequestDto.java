@@ -11,8 +11,6 @@ import java.math.BigDecimal;
 @Builder
 public class PartialWithdrawalRuleRequestDto {
 
-    private Long id;
-
     private String categoryId;
 
     private Long reasonId;
@@ -22,10 +20,6 @@ public class PartialWithdrawalRuleRequestDto {
     private BigDecimal maxWithdrawalPercentage;
 
     private Integer numberOfContributionMonths;
-
-    private Boolean pfAccumulation;
-
-    private Boolean totalAccumulationValue;
 
     private String createdBy;
 
