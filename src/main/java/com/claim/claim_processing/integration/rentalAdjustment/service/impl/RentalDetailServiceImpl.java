@@ -18,7 +18,7 @@ public class RentalDetailServiceImpl implements RentalDetailService {
     private final RentalAdjustmentMasterRepository repository;
 
     @Override
-    public ApiResponseDTO<List<RentalDetailResponseDto>> getRentalDetails(String cid) {
+    public ApiResponseDTO<List<RentalDetailResponseDto>> getRentalDetails(String identityId) {
 
         BigDecimal percentage = repository.findAll().get(0).getPercentage();
         List<RentalDetailResponseDto> response = List.of(
@@ -27,12 +27,16 @@ public class RentalDetailServiceImpl implements RentalDetailService {
                         .rentalType("Residential")
                         .status("Active")
                         .rentalPercentage(percentage)
+                        .amount(new BigDecimal(30000))
+                        .rentalAmount(new BigDecimal(5000.00))
                         .build(),
 
                 RentalDetailResponseDto.builder()
                         .rentalType("Commercial")
                         .status("Completed")
                         .rentalPercentage(percentage)
+                        .amount(new BigDecimal(50000))
+                        .rentalAmount(new BigDecimal(10000.00))
                         .build()
         );
         return ApiResponseDTO.success(response);

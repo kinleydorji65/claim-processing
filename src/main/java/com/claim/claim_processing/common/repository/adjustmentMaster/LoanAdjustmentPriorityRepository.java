@@ -25,8 +25,11 @@ public interface LoanAdjustmentPriorityRepository
     // 🔹 Find by FK
     List<LoanAdjustmentPriorityMaster> findByLoanType(LoanTypeMaster loanType);
 
-    List<LoanAdjustmentPriorityMaster> findByLoanTypeAndIsActive(
-            LoanTypeMaster loanType,
-            ActivityEnum isActive
-    );
+    List<LoanAdjustmentPriorityMaster> findByLoanTypeAndIsActiveOrderByPriorityOrderAsc(
+        LoanTypeMaster loanType,
+        ActivityEnum isActive
+);
+List<LoanAdjustmentPriorityMaster> findByIsActiveOrderByPriorityOrderAsc(
+        ActivityEnum isActive
+);
 }
