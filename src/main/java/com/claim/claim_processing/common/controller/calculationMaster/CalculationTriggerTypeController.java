@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.calculationMaster;
 
 import com.claim.claim_processing.common.DTO.request.calculationMaster.CalculationTriggerTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.calculationMaster.CalculationTriggerTypeResponseDto;
 import com.claim.claim_processing.common.service.calculationMaster.CalculationTriggerTypeService;
 import lombok.RequiredArgsConstructor;
@@ -16,63 +17,72 @@ public class CalculationTriggerTypeController {
 
     private final CalculationTriggerTypeService service;
 
-    // -------------------------------
-    // CREATE
-    // -------------------------------
     @PostMapping
-    public ResponseEntity<CalculationTriggerTypeResponseDto> create(
+    public ResponseEntity<?> create(
             @RequestBody CalculationTriggerTypeRequestDto dto) {
 
-        return ResponseEntity.ok(service.create(dto));
+        ApiResponseDTO<CalculationTriggerTypeResponseDto> response =
+                service.create(dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------------
-    // PATCH ONLY (NO PUT)
-    // -------------------------------
     @PatchMapping("/{id}")
-    public ResponseEntity<CalculationTriggerTypeResponseDto> patch(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody CalculationTriggerTypeRequestDto dto) {
 
-        dto.setId(id);
-        return ResponseEntity.ok(service.patch(dto));
+        ApiResponseDTO<CalculationTriggerTypeResponseDto> response =
+                service.update(id, dto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------------
-    // GET BY ID
-    // -------------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<CalculationTriggerTypeResponseDto> getById(
+    public ResponseEntity<?> getById(
             @PathVariable Long id) {
 
-        return ResponseEntity.ok(service.getById(id));
+        ApiResponseDTO<CalculationTriggerTypeResponseDto> response =
+                service.getById(id);
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------------
-    // GET ALL
-    // -------------------------------
+    @GetMapping("/code/{code}")
+    public ResponseEntity<?> getByCode(
+            @PathVariable String code) {
+
+        ApiResponseDTO<CalculationTriggerTypeResponseDto> response =
+                service.getByCode(code);
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
-    public ResponseEntity<List<CalculationTriggerTypeResponseDto>> getAll() {
+    public ResponseEntity<?> getAll() {
 
-        return ResponseEntity.ok(service.getAll());
+        ApiResponseDTO<List<CalculationTriggerTypeResponseDto>> response =
+                service.getAll();
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------------
-    // GET ALL ACTIVE
-    // -------------------------------
     @GetMapping("/active")
-    public ResponseEntity<List<CalculationTriggerTypeResponseDto>> getAllActive() {
+    public ResponseEntity<?> getAllActive() {
 
-        return ResponseEntity.ok(service.getAllActive());
+        ApiResponseDTO<List<CalculationTriggerTypeResponseDto>> response =
+                service.getAllActive();
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------------
-    // DELETE (SOFT DELETE)
-    // -------------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(
+            @PathVariable Long id) {
 
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+        ApiResponseDTO<String> response =
+                service.delete(id);
+
+        return ResponseEntity.ok(response);
     }
 }

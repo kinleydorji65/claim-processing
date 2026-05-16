@@ -12,7 +12,9 @@ import lombok.NoArgsConstructor;
 public class ClaimantTypeUpdateRequestDto {
 
     private String name;
+    private String code;
     private String description;
     private Integer displayOrder;
     private String isActive;
+    private String updatedBy;
 }

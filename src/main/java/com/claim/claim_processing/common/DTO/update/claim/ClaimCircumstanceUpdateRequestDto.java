@@ -9,6 +9,7 @@ import lombok.*;
 public class ClaimCircumstanceUpdateRequestDto {
 
     private String name;
+    private String code;
     private String description;
     private ActivityEnum isActive;
     private String updatedBy;

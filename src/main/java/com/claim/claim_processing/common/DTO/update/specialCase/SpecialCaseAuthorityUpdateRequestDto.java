@@ -10,5 +10,7 @@ import lombok.*;
 public class SpecialCaseAuthorityUpdateRequestDto {
 
     private String name;
+    private String code;
     private String isActive;
+    private String updatedBy;
 }

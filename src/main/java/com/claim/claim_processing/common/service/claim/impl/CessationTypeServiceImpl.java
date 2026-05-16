@@ -5,9 +5,12 @@ import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.CessationTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.CessationTypeUpdateRequestDto;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
+import com.claim.claim_processing.common.entities.claim.ClaimCircumstanceMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.claim.CessationTypeMapper;
 import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
+import com.claim.claim_processing.common.repository.claim.ClaimCircumstanceRepository;
+
 import com.claim.claim_processing.common.service.claim.CessationTypeService;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ public class CessationTypeServiceImpl implements CessationTypeService {
 
     private final CessationTypeRepository repository;
     private final CessationTypeMapper mapper;
+    private final ClaimCircumstanceRepository claimCircumstanceRepository;
 
     // -----------------------------
     // GET ALL
@@ -105,7 +109,8 @@ public class CessationTypeServiceImpl implements CessationTypeService {
     // CREATE
     // -----------------------------
     @Override
-    public ApiResponseDTO<CessationTypeResponseDto> create(CessationTypeCreateRequestDto requestDto) {
+    public ApiResponseDTO<CessationTypeResponseDto> create(
+            CessationTypeCreateRequestDto requestDto) {
 
         if (repository.existsByCode(requestDto.getCode())) {
             throw ClaimException.conflict(
@@ -113,8 +118,17 @@ public class CessationTypeServiceImpl implements CessationTypeService {
             );
         }
 
+        ClaimCircumstanceMaster claimCircumstance =
+                claimCircumstanceRepository.findById(requestDto.getClaimCircumstanceId())
+                        .orElseThrow(() -> ClaimException.notFound(
+                                "Claim circumstance not found with id: "
+                                        + requestDto.getClaimCircumstanceId()
+                        ));
+
         CessationTypeMaster entity = mapper.toEntity(requestDto);
 
+        entity.setClaimCircumstance(claimCircumstance);
+        entity.setCreatedBy(requestDto.getCreatedBy());
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
 
@@ -144,7 +158,7 @@ public class CessationTypeServiceImpl implements CessationTypeService {
                         ));
 
         mapper.updateEntityFromDto(requestDto, entity);
-
+        entity.setUpdatedBy(requestDto.getUpdatedBy());
         entity.setUpdatedAt(LocalDateTime.now());
 
         CessationTypeMaster updated = repository.save(entity);
@@ -173,6 +187,20 @@ public class CessationTypeServiceImpl implements CessationTypeService {
         return ApiResponseDTO.success(
                 "Cessation Type deleted successfully",
                 "Deleted successfully"
+        );
+    }
+
+    @Override
+    public ApiResponseDTO<CessationTypeResponseDto> getByCode(String code) {
+
+        CessationTypeMaster entity = repository.findByCode(code)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Cessation type not found with code: " + code
+                ));
+
+        return ApiResponseDTO.success(
+                "Cessation type fetched successfully",
+                mapper.toResponseDto(entity)
         );
     }
 }

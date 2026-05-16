@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 public class CessationTypeUpdateRequestDto {
 
     private String name;
+    private String code;
     private String isActive;
     private Long claimCircumstanceId;
+    private String updatedBy;
 }
