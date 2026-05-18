@@ -1,11 +1,10 @@
 package com.claim.claim_processing.common.controller.specialCase;
 
 import com.claim.claim_processing.common.DTO.request.specialCase.SpecialCaseRefundReasonRequestDto;
-import com.claim.claim_processing.common.DTO.response.apiResponse.ApiResponse;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.specialCase.SpecialCaseRefundReasonResponseDto;
 import com.claim.claim_processing.common.service.specialCase.SpecialCaseRefundReasonMasterService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,132 +17,72 @@ public class SpecialCaseRefundReasonMasterController {
 
     private final SpecialCaseRefundReasonMasterService service;
 
-    // -------------------------
-    // CREATE
-    // -------------------------
     @PostMapping
-    public ResponseEntity<ApiResponse<SpecialCaseRefundReasonResponseDto>> create(
-            @RequestBody SpecialCaseRefundReasonRequestDto requestDto
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<SpecialCaseRefundReasonResponseDto>builder()
-                        .success(true)
-                        .message("Special case refund reason created successfully")
-                        .data(service.create(requestDto))
-                        .build()
-        );
+    public ResponseEntity<?> create(
+            @RequestBody SpecialCaseRefundReasonRequestDto requestDto) {
+
+        ApiResponseDTO<SpecialCaseRefundReasonResponseDto> response =
+                service.create(requestDto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------
-    // UPDATE (FULL)
-    // -------------------------
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<SpecialCaseRefundReasonResponseDto>> update(
-            @PathVariable Long id,
-            @RequestBody SpecialCaseRefundReasonRequestDto requestDto
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.<SpecialCaseRefundReasonResponseDto>builder()
-                        .success(true)
-                        .message("Special case refund reason updated successfully")
-                        .data(service.update(id, requestDto))
-                        .build()
-        );
-    }
-
-    // -------------------------
-    // PATCH (PARTIAL)
-    // -------------------------
     @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<SpecialCaseRefundReasonResponseDto>> patch(
+    public ResponseEntity<?> update(
             @PathVariable Long id,
-            @RequestBody SpecialCaseRefundReasonRequestDto requestDto
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.<SpecialCaseRefundReasonResponseDto>builder()
-                        .success(true)
-                        .message("Special case refund reason partially updated successfully")
-                        .data(service.patch(id, requestDto))
-                        .build()
-        );
+            @RequestBody SpecialCaseRefundReasonRequestDto requestDto) {
+
+        ApiResponseDTO<SpecialCaseRefundReasonResponseDto> response =
+                service.update(id, requestDto);
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------
-    // GET BY ID
-    // -------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SpecialCaseRefundReasonResponseDto>> getById(
-            @PathVariable Long id
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.<SpecialCaseRefundReasonResponseDto>builder()
-                        .success(true)
-                        .message("Special case refund reason fetched successfully")
-                        .data(service.getById(id))
-                        .build()
-        );
+    public ResponseEntity<?> getById(
+            @PathVariable Long id) {
+
+        ApiResponseDTO<SpecialCaseRefundReasonResponseDto> response =
+                service.getById(id);
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------
-    // GET BY CODE
-    // -------------------------
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<SpecialCaseRefundReasonResponseDto>> getByCode(
-            @PathVariable String code
-    ) {
-        return ResponseEntity.ok(
-                ApiResponse.<SpecialCaseRefundReasonResponseDto>builder()
-                        .success(true)
-                        .message("Special case refund reason fetched successfully")
-                        .data(service.getByCode(code))
-                        .build()
-        );
+    public ResponseEntity<?> getByCode(
+            @PathVariable String code) {
+
+        ApiResponseDTO<SpecialCaseRefundReasonResponseDto> response =
+                service.getByCode(code);
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------
-    // GET ALL
-    // -------------------------
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SpecialCaseRefundReasonResponseDto>>> getAll() {
-        return ResponseEntity.ok(
-                ApiResponse.<List<SpecialCaseRefundReasonResponseDto>>builder()
-                        .success(true)
-                        .message("Special case refund reasons fetched successfully")
-                        .data(service.getAll())
-                        .build()
-        );
+    public ResponseEntity<?> getAll() {
+
+        ApiResponseDTO<List<SpecialCaseRefundReasonResponseDto>> response =
+                service.getAll();
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------
-    // GET ALL ACTIVE
-    // -------------------------
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<SpecialCaseRefundReasonResponseDto>>> getAllActive() {
-        return ResponseEntity.ok(
-                ApiResponse.<List<SpecialCaseRefundReasonResponseDto>>builder()
-                        .success(true)
-                        .message("Active special case refund reasons fetched successfully")
-                        .data(service.getAllActive())
-                        .build()
-        );
+    public ResponseEntity<?> getAllActive() {
+
+        ApiResponseDTO<List<SpecialCaseRefundReasonResponseDto>> response =
+                service.getAllActive();
+
+        return ResponseEntity.ok(response);
     }
 
-    // -------------------------
-    // SOFT DELETE
-    // -------------------------
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable Long id
-    ) {
+    public ResponseEntity<?> delete(
+            @PathVariable Long id) {
 
-        service.delete(id);
+        ApiResponseDTO<String> response =
+                service.delete(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.<Void>builder()
-                        .success(true)
-                        .message("Special case refund reason deleted successfully")
-                        .data(null)
-                        .build()
-        );
+        return ResponseEntity.ok(response);
     }
 }

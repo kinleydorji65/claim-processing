@@ -83,7 +83,7 @@ public class CessationTypeController {
     // =========================
     // UPDATE
     // =========================
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody CessationTypeUpdateRequestDto requestDto) {
@@ -102,6 +102,19 @@ public class CessationTypeController {
 
         ApiResponseDTO<String> response =
                 service.delete(id);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================
+    // GET BY CODE
+    // =========================
+    @GetMapping("/code/{code}")
+    public ResponseEntity<?> getByCode(
+            @PathVariable String code) {
+
+        ApiResponseDTO<CessationTypeResponseDto> response =
+                service.getByCode(code);
 
         return ResponseEntity.ok(response);
     }

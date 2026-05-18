@@ -11,5 +11,7 @@ import lombok.*;
 public class RefundScopeUpdateDto {
 
     private String name;
+    private String code;
     private ActivityEnum isActive;
+    private  String updatedBy;
 }

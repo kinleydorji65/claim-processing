@@ -9,7 +9,6 @@ import lombok.*;
 @AllArgsConstructor
 public class CalculationStageRequestDto {
 
-    private Long id;
 
     private String code;
 

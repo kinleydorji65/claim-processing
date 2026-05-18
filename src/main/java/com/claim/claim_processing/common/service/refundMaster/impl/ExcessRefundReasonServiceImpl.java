@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -38,6 +40,7 @@ public class ExcessRefundReasonServiceImpl implements ExcessRefundReasonService 
         entity.setIsActive(ActivityEnum.Y);
         entity.setCreatedBy(requestDto.getCreatedBy());
         entity.setUpdatedBy(requestDto.getUpdatedBy());
+        entity.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
 
         ExcessRefundReasonMaster saved = repository.save(entity);
 
@@ -127,6 +130,7 @@ public class ExcessRefundReasonServiceImpl implements ExcessRefundReasonService 
 
         mapper.updateEntityFromDto(updateDto, entity);
         ExcessRefundReasonMaster updated = repository.save(entity);
+        entity.setUpdatedBy(updateDto.getUpdatedBy());
 
         return ApiResponseDTO.success(
                 "Excess refund reason updated successfully",
@@ -142,8 +146,7 @@ public class ExcessRefundReasonServiceImpl implements ExcessRefundReasonService 
                         "Excess refund reason not found with id: " + id
                 ));
 
-        entity.setIsActive(ActivityEnum.N);
-        repository.save(entity);
+        repository.delete(entity);
 
         return ApiResponseDTO.success(
                 "Excess refund reason deleted successfully",

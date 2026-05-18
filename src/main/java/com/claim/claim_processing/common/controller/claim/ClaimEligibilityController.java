@@ -8,13 +8,7 @@ import com.claim.claim_processing.common.service.claim.ClaimEligibilityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -73,6 +67,27 @@ public class ClaimEligibilityController {
     @GetMapping("/by-rule-type/{id}")
     public ResponseEntity<?> getByRuleType(@PathVariable Long id) {
         ApiResponseDTO<List<ClaimEligibilityResponseDto>> response = claimEligibilityService.getByRuleTypeId(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================
+    // GET ALL
+    // =========================
+    @GetMapping("/all")
+    public ResponseEntity<?> getAll() {
+
+        ApiResponseDTO<List<ClaimEligibilityResponseDto>> response =
+                claimEligibilityService.getAll();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+
+        ApiResponseDTO<String> response =
+                claimEligibilityService.delete(id);
+
         return ResponseEntity.ok(response);
     }
 }

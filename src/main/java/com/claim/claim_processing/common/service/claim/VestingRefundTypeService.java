@@ -14,6 +14,8 @@ public interface VestingRefundTypeService {
 
     ApiResponseDTO<VestingRefundTypeResponseDto> getById(Long id);
 
+    ApiResponseDTO<VestingRefundTypeResponseDto> getByCode(String code);
+
     ApiResponseDTO<List<VestingRefundTypeResponseDto>> getAll();
 
     ApiResponseDTO<String> delete(Long id);

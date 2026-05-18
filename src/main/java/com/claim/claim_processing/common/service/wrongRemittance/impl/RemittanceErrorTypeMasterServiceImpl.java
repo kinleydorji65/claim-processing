@@ -12,6 +12,7 @@ import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -40,6 +41,8 @@ public class RemittanceErrorTypeMasterServiceImpl
         if (entity.getIsActive() == null) {
             entity.setIsActive(ActivityEnum.Y);
         }
+        entity.setCreatedBy(dto.getCreatedBy());
+        entity.setCreatedAt(LocalDateTime.now());
 
         WrongRemittanceErrorTypeMaster saved = repository.save(entity);
 
@@ -70,6 +73,7 @@ public class RemittanceErrorTypeMasterServiceImpl
         }
 
         mapper.updateEntity(entity, dto);
+        entity.setUpdatedBy(dto.getUpdatedBy());
 
         WrongRemittanceErrorTypeMaster updated = repository.save(entity);
 
@@ -146,9 +150,11 @@ public class RemittanceErrorTypeMasterServiceImpl
                         )
                 );
 
-        entity.setIsActive(ActivityEnum.N);
+        repository.delete(entity);
 
-        repository.save(entity);
-        return ApiResponseDTO.success("Wrong remittance error type deleted successfully");
+        return ApiResponseDTO.success(
+                "Wrong remittance error type deleted successfully",
+                "Deleted successfully"
+        );
     }
 }

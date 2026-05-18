@@ -35,7 +35,7 @@ public class TerminationReasonController {
     // -----------------------------
     // UPDATE
     // -----------------------------
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody TerminationReasonUpdateRequestDto requestDto
@@ -78,6 +78,20 @@ public class TerminationReasonController {
     ) {
         ApiResponseDTO<String> response =
                 service.deactivate(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // -----------------------------
+// DELETE
+// -----------------------------
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(
+            @PathVariable Long id
+    ) {
+
+        ApiResponseDTO<String> response =
+                service.delete(id);
+
         return ResponseEntity.ok(response);
     }
 }

@@ -18,4 +18,6 @@ public interface TerminationReasonService {
     ApiResponseDTO<TerminationReasonResponseDto> update(Long id, TerminationReasonUpdateRequestDto requestDto);
 
     ApiResponseDTO<String> deactivate(Long id);
+
+    ApiResponseDTO<String> delete(Long id);
 }

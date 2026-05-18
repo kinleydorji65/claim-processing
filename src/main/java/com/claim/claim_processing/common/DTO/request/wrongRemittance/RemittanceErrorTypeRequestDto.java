@@ -11,6 +11,8 @@ public class RemittanceErrorTypeRequestDto {
 
     private String code;
     private String name;
+    private String createdBy;
+    private String updatedBy;
     private String description;
     private Integer displayOrder;
     private ActivityEnum isActive;

@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.refundMaster;
 
 import com.claim.claim_processing.common.DTO.request.refundMaster.RefundScopeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.refundMaster.RefundScopeResponseDto;
 import com.claim.claim_processing.common.DTO.update.refundMaster.RefundScopeUpdateDto;
 
@@ -8,17 +9,19 @@ import java.util.List;
 
 public interface RefundScopeService {
 
-    RefundScopeResponseDto create(RefundScopeRequestDto requestDto);
+    ApiResponseDTO<RefundScopeResponseDto> create(RefundScopeRequestDto requestDto);
 
-    RefundScopeResponseDto getById(Long id);
+    ApiResponseDTO<RefundScopeResponseDto> getById(Long id);
 
-    RefundScopeResponseDto getByCode(String code);
+    ApiResponseDTO<RefundScopeResponseDto> getByCode(String code);
 
-    List<RefundScopeResponseDto> getAll();
+    ApiResponseDTO<List<RefundScopeResponseDto>> getAll();
 
-    List<RefundScopeResponseDto> getAllActive();
+    ApiResponseDTO<List<RefundScopeResponseDto>> getAllActive();
 
-    RefundScopeResponseDto update(Long id, RefundScopeUpdateDto updateDto);
+    ApiResponseDTO<RefundScopeResponseDto> update(Long id, RefundScopeUpdateDto updateDto);
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }

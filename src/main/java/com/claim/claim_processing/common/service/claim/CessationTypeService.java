@@ -19,6 +19,8 @@ public interface CessationTypeService {
 
     ApiResponseDTO<CessationTypeResponseDto> create(CessationTypeCreateRequestDto requestDto);
 
+    ApiResponseDTO<CessationTypeResponseDto> getByCode(String code);
+
     ApiResponseDTO<CessationTypeResponseDto> update(Long id, CessationTypeUpdateRequestDto requestDto);
 
     ApiResponseDTO<String> delete(Long id);

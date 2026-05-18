@@ -7,6 +7,7 @@ import com.claim.claim_processing.common.DTO.response.common.RuleTypeResponseDto
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.claim.ClaimEligibilityUpdateRequestDto;
 import com.claim.claim_processing.common.entities.claim.*;
+import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.BenefitComponentTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
@@ -38,6 +39,7 @@ public abstract class ClaimEligibilityMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "claimCircumstance", ignore = true)
     @Mapping(target = "schemeType", ignore = true)
+    @Mapping(target = "ruleType", ignore = true)
     @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -97,6 +99,12 @@ public abstract class ClaimEligibilityMapper {
             .id(entity.getClaimCircumstance().getId())
             .code(entity.getClaimCircumstance().getCode())
             .name(entity.getClaimCircumstance().getName())
+                .description(entity.getClaimCircumstance().getDescription())
+            .isActive(entity.getClaimCircumstance().getIsActive())
+            .createdAt(entity.getClaimCircumstance().getCreatedAt())
+            .createdBy(entity.getClaimCircumstance().getCreatedBy())
+            .updatedAt(entity.getClaimCircumstance().getUpdatedAt())
+            .updatedBy(entity.getClaimCircumstance().getUpdatedBy())
             .build();
     }
 
@@ -111,6 +119,12 @@ public abstract class ClaimEligibilityMapper {
             .code(entity.getRuleType().getCode())
             .name(entity.getRuleType().getName())
             .displayOrder(entity.getRuleType().getDisplayOrder())
+                .updatedBy(entity.getRuleType().getUpdatedBy())
+                .updatedAt(entity.getRuleType().getUpdatedAt())
+                .createdBy(entity.getRuleType().getCreatedBy())
+                .createdAt(entity.getRuleType().getCreatedAt())
+                .description(entity.getRuleType().getDescription())
+                .isActive(entity.getRuleType().getIsActive())
             .build();
     }
     public abstract List<ClaimEligibilityResponseDto> toResponseDtoList(List<ClaimEligibilityMaster> entities);
@@ -119,6 +133,7 @@ public abstract class ClaimEligibilityMapper {
     @Mapping(target = "ruleCode", ignore = true)
     @Mapping(target = "claimCircumstance", ignore = true)
     @Mapping(target = "schemeType", ignore = true)
+    @Mapping(target = "ruleType", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -143,6 +158,13 @@ public abstract class ClaimEligibilityMapper {
                             .orElseThrow(() -> new RuntimeException("Scheme Type not found")));
         }
 
+        if (dto.getRuleTypeId() != null) {
+            entity.setRuleType(
+                    ruleTypeRepository.findById(dto.getRuleTypeId())
+                            .orElseThrow(() -> new RuntimeException("Rule Type not found"))
+            );
+        }
+
     }
 
     protected ClaimCircumstanceResponseDto map(ClaimCircumstanceMaster entity) {
@@ -153,6 +175,7 @@ public abstract class ClaimEligibilityMapper {
                 .id(entity.getId())
                 .code(entity.getCode())
                 .name(entity.getName())
+                .description(entity.getDescription())
                 .isActive(entity.getIsActive())
                 .createdAt(entity.getCreatedAt())
                 .createdBy(entity.getCreatedBy())
@@ -167,6 +190,27 @@ public abstract class ClaimEligibilityMapper {
         SchemeTypeResponseDto dto = new SchemeTypeResponseDto();
         dto.setId(entity.getId());
         dto.setName(entity.getName());
+        dto.setCode(entity.getCode());
         return dto;
+    }
+
+    protected RuleTypeResponseDto map(RuleTypeMaster entity) {
+
+        if (entity == null) {
+            return null;
+        }
+
+        return RuleTypeResponseDto.builder()
+                .id(entity.getId())
+                .code(entity.getCode())
+                .name(entity.getName())
+                .description(entity.getDescription())
+                .displayOrder(entity.getDisplayOrder())
+                .isActive(entity.getIsActive())
+                .createdAt(entity.getCreatedAt())
+                .createdBy(entity.getCreatedBy())
+                .updatedAt(entity.getUpdatedAt())
+                .updatedBy(entity.getUpdatedBy())
+                .build();
     }
 }

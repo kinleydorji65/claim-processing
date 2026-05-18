@@ -200,12 +200,9 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
     // DELETE
     // -------------------------------
     @Override
-    public ApiResponseDTO<String> delete(
-            Long id
-    ) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         try {
-
             ReserveAccountMaster entity = repository.findById(id)
                     .orElseThrow(() ->
                             ClaimException.resourceNotFound(
@@ -214,20 +211,18 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
                             )
                     );
 
-            entity.setIsActive(ActivityEnum.N);
-            entity.setUpdatedAt(LocalDateTime.now());
-
-            repository.save(entity);
+            repository.delete(entity);
 
             return ApiResponseDTO.success(
-                    "Reserve Account deactivated successfully"
+                    "Reserve Account deleted successfully",
+                    "Deleted successfully"
             );
 
         } catch (ClaimException ex) {
             throw ex;
         } catch (Exception ex) {
             throw ClaimException.internalError(
-                    "Failed to deactivate Reserve Account",
+                    "Failed to delete Reserve Account",
                     ex
             );
         }

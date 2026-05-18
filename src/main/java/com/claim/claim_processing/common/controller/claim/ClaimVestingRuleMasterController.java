@@ -32,7 +32,7 @@ public class ClaimVestingRuleMasterController {
     // -----------------------------
     // UPDATE
     // -----------------------------
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<ApiResponseDTO<ClaimVestingRuleResponseDto>> updateRule(
             @PathVariable Long id,
             @RequestBody ClaimVestingRuleRequestDto requestDto) {

@@ -12,4 +12,5 @@ public class TerminationReasonCreateRequestDto {
     private String name;
     private String description;
     private Integer displayOrder;
+    private String createdBy;
 }

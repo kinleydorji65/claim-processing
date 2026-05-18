@@ -40,7 +40,7 @@ public class ClaimCircumstanceServiceImpl implements ClaimCircumstanceService {
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setCreatedBy(requestDto.getCreatedBy());
-        entity.setUpdatedBy(requestDto.getCreatedBy());
+        entity.setUpdatedBy(requestDto.getUpdatedBy());
 
         repository.save(entity);
 
@@ -111,6 +111,7 @@ public class ClaimCircumstanceServiceImpl implements ClaimCircumstanceService {
         mapper.updateEntityFromDto(requestDto, entity);
 
         entity.setUpdatedBy(requestDto.getUpdatedBy());
+        entity.setUpdatedAt(LocalDateTime.now());
 
         return ApiResponseDTO.success(
                 mapper.toResponseDto(repository.save(entity))

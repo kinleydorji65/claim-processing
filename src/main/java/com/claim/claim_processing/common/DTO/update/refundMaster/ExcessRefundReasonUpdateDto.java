@@ -15,4 +15,5 @@ public class ExcessRefundReasonUpdateDto {
     private String description;
     private Integer displayOrder;
     private ActivityEnum isActive;
+    private String updatedBy;
 }

@@ -13,12 +13,16 @@ public interface AccountTypeService {
 
     ApiResponseDTO<AccountTypeResponseDto> getById(Long id);
 
+    ApiResponseDTO<AccountTypeResponseDto> getByCode(String code);
+
     ApiResponseDTO<AccountTypeResponseDto> create(
             AccountTypeCreateRequestDto requestDto);
 
     ApiResponseDTO<AccountTypeResponseDto> update(
             Long id,
-            AccountTypeUpdateRequestDto requestDto);
+            AccountTypeUpdateRequestDto updateRequestDto);
+
+    ApiResponseDTO<String> delete(Long id);
 
     ApiResponseDTO<String> deactivate(Long id);
 }

@@ -1,4 +1,5 @@
 package com.claim.claim_processing.common.service.beneficiary;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.beneficiary.ClaimantTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.beneficiary.ClaimantTypeUpdateRequestDto;
 import com.claim.claim_processing.common.DTO.request.beneficiary.ClaimantTypeCreateRequestDto;
@@ -6,13 +7,15 @@ import com.claim.claim_processing.common.DTO.request.beneficiary.ClaimantTypeCre
 import java.util.List;
 public interface ClaimantTypeService {
 
-    List<ClaimantTypeResponseDto> getAllActive();
+    ApiResponseDTO<List<ClaimantTypeResponseDto>> getAllActive();
 
-    ClaimantTypeResponseDto getById(Long id);
+    ApiResponseDTO<ClaimantTypeResponseDto> getById(Long id);
 
-    ClaimantTypeResponseDto create(ClaimantTypeCreateRequestDto requestDto);
+    ApiResponseDTO<ClaimantTypeResponseDto> getByCode(String code);
 
-    ClaimantTypeResponseDto update(Long id, ClaimantTypeUpdateRequestDto requestDto);
+    ApiResponseDTO<ClaimantTypeResponseDto> create(ClaimantTypeCreateRequestDto requestDto);
 
-    void deactivate(Long id);
+    ApiResponseDTO<ClaimantTypeResponseDto> update(Long id, ClaimantTypeUpdateRequestDto requestDto);
+
+    ApiResponseDTO<String> delete(Long id);
 }
