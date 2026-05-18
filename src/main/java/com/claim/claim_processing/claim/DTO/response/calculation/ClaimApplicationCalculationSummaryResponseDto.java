@@ -13,7 +13,7 @@ import com.claim.claim_processing.common.DTO.response.calculationMaster.Calculat
 import com.claim.claim_processing.common.DTO.response.claim.CessationTypeResponseDto;
 import com.claim.claim_processing.common.DTO.response.common.ReviewStatusResponseDto;
 import com.claim.claim_processing.common.DTO.response.common.StageResponseDto;
-import com.claim.claim_processing.common.DTO.response.statusMaster.CalculationStatusResponseDto;
+import com.claim.claim_processing.common.DTO.response.others.StatusMasterResponseDto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Data
@@ -62,7 +62,7 @@ public class ClaimApplicationCalculationSummaryResponseDto {
     private String differenceReason;
 
     private ReviewStatusResponseDto finalPayableReviewStatus;
-    private CalculationStatusResponseDto calculationStatus;
+    private StatusMasterResponseDto calculationStatus;
 
     private String calculationRemarks;
 

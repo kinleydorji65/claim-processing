@@ -58,12 +58,20 @@ spring:
         shutdown-timeout: 2000ms
 
 app:
+  codegen:
+      application:
+        code-type: CLAIM
+        claim-prefix: CLM
   resources:
     images:
       path: /images
     videos:
       path: /videos
-
+  master:
+    base-url: http://10.15.15.20:8082
+    endpoints:
+      types: /api/master-data/codes/types
+      generate: /api/master-data/codes/generate
 logging:
   file:
     name: logs/application.log

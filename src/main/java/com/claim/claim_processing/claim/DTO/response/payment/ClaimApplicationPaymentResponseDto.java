@@ -7,9 +7,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.claim.claim_processing.common.DTO.response.beneficiary.ClaimantTypeResponseDto;
+import com.claim.claim_processing.common.DTO.response.others.StatusMasterResponseDto;
 import com.claim.claim_processing.common.DTO.response.payment.PaymentModeResponseDto;
 import com.claim.claim_processing.common.DTO.response.payment.PaymentStatusResponseDto;
-import com.claim.claim_processing.common.DTO.response.statusMaster.ReversalStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -87,7 +87,7 @@ public class ClaimApplicationPaymentResponseDto {
 
     private ActivityEnum isReversalRequired;
 
-    private ReversalStatusResponseDto reversalStatus;
+    private StatusMasterResponseDto reversalStatus;
 
     private ActivityEnum isActive;
 

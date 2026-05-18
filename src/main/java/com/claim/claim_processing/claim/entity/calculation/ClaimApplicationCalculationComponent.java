@@ -2,7 +2,7 @@ package com.claim.claim_processing.claim.entity.calculation;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.statusMaster.CalculationStatusMaster;
+import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -135,7 +135,7 @@ public class ClaimApplicationCalculationComponent {
             name = "CALCULATION_STATUS_ID",
             foreignKey = @ForeignKey(name = "FK_CACC_CALC_STATUS")
     )
-    private CalculationStatusMaster calculationStatus;
+    private StatusMaster calculationStatus;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)

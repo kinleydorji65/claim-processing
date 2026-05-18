@@ -8,7 +8,7 @@ import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.StageMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.Currency;
-import com.claim.claim_processing.common.entities.statusMaster.CalculationStatusMaster;
+import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -107,7 +107,7 @@ public class ClaimApplicationCalculationSummary {
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "CALCULATION_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CACS_CALC_STATUS"))
-        private CalculationStatusMaster calculationStatus;
+        private StatusMaster calculationStatus;
 
         @Column(name = "CALCULATION_REMARKS", length = 2000)
         private String calculationRemarks;
