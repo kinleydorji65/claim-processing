@@ -11,8 +11,6 @@ import lombok.*;
 @AllArgsConstructor
 public class ClaimTypeMasterRequestDto {
 
-    private Long id; // optional for update
-
     private String code;
 
     private String name;

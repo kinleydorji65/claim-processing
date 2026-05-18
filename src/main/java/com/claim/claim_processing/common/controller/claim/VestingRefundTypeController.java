@@ -40,6 +40,17 @@ public class VestingRefundTypeController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/code/{code}")
+    public ResponseEntity<ApiResponseDTO<VestingRefundTypeResponseDto>> getByCode(
+            @PathVariable String code
+    ) {
+
+        ApiResponseDTO<VestingRefundTypeResponseDto> response =
+                service.getByCode(code);
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponseDTO<VestingRefundTypeResponseDto>> getById(
             @PathVariable Long id

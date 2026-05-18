@@ -10,6 +10,8 @@ import lombok.*;
 public class TerminationReasonUpdateRequestDto {
 
     private String name;
+    private String code;
+    private String updatedBy;
     private String description;
     private Integer displayOrder;
     private ActivityEnum isActive;

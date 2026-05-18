@@ -11,6 +11,8 @@ public interface ClaimEligibilityService {
 
     ApiResponseDTO<List<ClaimEligibilityResponseDto>> getAllActive();
 
+    ApiResponseDTO<List<ClaimEligibilityResponseDto>> getAll();
+
     ApiResponseDTO<ClaimEligibilityResponseDto> getById(Long id);
 
     ApiResponseDTO<ClaimEligibilityResponseDto> create(ClaimEligibilityCreateRequestDto requestDto);
@@ -24,4 +26,6 @@ public interface ClaimEligibilityService {
     ApiResponseDTO<List<ClaimEligibilityResponseDto>> getByRuleTypeId(Long ruleTypeId);
 
     ApiResponseDTO<String> deactivate(Long id);
+
+    ApiResponseDTO<String> delete(Long id);
 }

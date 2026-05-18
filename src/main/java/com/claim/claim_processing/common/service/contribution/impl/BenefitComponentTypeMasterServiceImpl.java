@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -40,7 +41,7 @@ public class BenefitComponentTypeMasterServiceImpl
         if (entity.getIsActive() == null) {
             entity.setIsActive(ActivityEnum.Y);
         }
-
+        entity.setCreatedBy(requestDto.getCreatedBy());
         BenefitComponentTypeMaster saved = repository.save(entity);
         List<BenefitComponentTypeDetail> mappings = mapComponentDetails(entity, requestDto.getComponentIds());
         return ApiResponseDTO.success(mapper.toResponseDto(saved, mappings));
@@ -93,6 +94,8 @@ public class BenefitComponentTypeMasterServiceImpl
         }
 
         mapper.updateEntityFromDto(requestDto, entity);
+        entity.setUpdatedBy(requestDto.getUpdatedBy());
+        entity.setCreatedAt(LocalDateTime.now());
 
         BenefitComponentTypeMaster updated = repository.save(entity);
         List<BenefitComponentTypeDetail> mappings = mapComponentDetails(entity, requestDto.getComponentIds());

@@ -14,6 +14,7 @@ public class VestingRefundTypeRequestDto {
 
     private String code;
     private String name;
+    private String createdBy;
     private ActivityEnum isActive;
 
     private List<Long> benefitComponentIds; // List of ComponentMaster IDs to be associated with this VestingRefundType

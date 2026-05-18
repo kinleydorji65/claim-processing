@@ -214,9 +214,18 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
 
         @Override
         public ApiResponseDTO<List<ClaimEligibilityResponseDto>> getByClaimCircumstanceId(Long claimCircumstanceId) {
-                List<ClaimEligibilityResponseDto> response = claimEligibilityRepository
-                                .findByClaimCircumstance_Id(claimCircumstanceId)
-                                .stream()
+            List<ClaimEligibilityMaster> entities =
+                    claimEligibilityRepository.findByClaimCircumstance_Id(claimCircumstanceId);
+
+            if (entities.isEmpty()) {
+                throw ClaimException.notFound(
+                        "No claim eligibility rules found for claim circumstance id: "
+                                + claimCircumstanceId
+                );
+            }
+
+            List<ClaimEligibilityResponseDto> response = entities
+                    .stream()
                                 .map(entity -> {
                                         List<AgencyCategory> agencyCategories = claimEligibilityCategoryMapRepository
                                                         .findByRule_Id(entity.getId())
@@ -251,11 +260,19 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
 
         @Override
         public ApiResponseDTO<List<ClaimEligibilityResponseDto>> getBySchemeTypeId(Long schemeTypeId) {
-                List<ClaimEligibilityResponseDto> response = claimEligibilityRepository
-                                .findBySchemeType_Id(schemeTypeId)
-                                .stream()
-                                .map(entity -> {
-                                        List<AgencyCategory> agencyCategories = claimEligibilityCategoryMapRepository
+            List<ClaimEligibilityMaster> entities =
+                    claimEligibilityRepository.findBySchemeType_Id(schemeTypeId);
+
+            if (entities.isEmpty()) {
+                throw ClaimException.notFound(
+                        "No claim eligibility rules found for scheme type id: " + schemeTypeId
+                );
+            }
+
+            List<ClaimEligibilityResponseDto> response = entities
+                    .stream()
+                    .map(entity -> {
+                        List<AgencyCategory> agencyCategories = claimEligibilityCategoryMapRepository
                                                         .findByRule_Id(entity.getId())
                                                         .stream()
                                                         .map(ClaimEligibilityCategoryMap::getCategory)
@@ -288,8 +305,17 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
 
         @Override
         public ApiResponseDTO<List<ClaimEligibilityResponseDto>> getByRuleTypeId(Long ruleTypeId) {
-                List<ClaimEligibilityResponseDto> response = claimEligibilityRepository.findByRuleType_Id(ruleTypeId)
-                                .stream()
+            List<ClaimEligibilityMaster> entities =
+                    claimEligibilityRepository.findByRuleType_Id(ruleTypeId);
+
+            if (entities.isEmpty()) {
+                throw ClaimException.notFound(
+                        "No claim eligibility rules found for rule type id: " + ruleTypeId
+                );
+            }
+
+            List<ClaimEligibilityResponseDto> response = entities
+                    .stream()
                                 .map(entity -> {
                                         List<AgencyCategory> agencyCategories = claimEligibilityCategoryMapRepository
                                                         .findByRule_Id(entity.getId())
@@ -413,4 +439,67 @@ public class ClaimEligibilityServiceImpl implements ClaimEligibilityService {
                                 .existsByRule_IdAndClaimEligibilityCategoryMap_IdAndBenefitComponentType_Id(
                                                 ruleId, categoryMapId, benefitTypeId);
         }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<List<ClaimEligibilityResponseDto>> getAll() {
+
+        List<ClaimEligibilityResponseDto> responseDtos = claimEligibilityRepository
+                .findAll()
+                .stream()
+                .map(entity -> {
+
+                    List<AgencyCategory> agencyCategories =
+                            claimEligibilityCategoryMapRepository
+                                    .findByRule_Id(entity.getId())
+                                    .stream()
+                                    .map(ClaimEligibilityCategoryMap::getCategory)
+                                    .toList();
+
+                    List<Long> categoryIds =
+                            claimEligibilityCategoryMapRepository
+                                    .findByRule_Id(entity.getId())
+                                    .stream()
+                                    .map(ClaimEligibilityCategoryMap::getId)
+                                    .toList();
+
+                    List<BenefitComponentTypeMaster> benefitComponents =
+                            claimEligibilityComponentMapRepository
+                                    .findByRule_IdAndClaimEligibilityCategoryMap_IdIn(
+                                            entity.getId(),
+                                            categoryIds
+                                    )
+                                    .stream()
+                                    .map(ClaimEligibilityComponentMap::getBenefitComponentType)
+                                    .toList();
+
+                    return claimEligibilityMapper.toResponseDto(
+                            entity,
+                            agencyCategories,
+                            benefitComponents
+                    );
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponseDTO.success(
+                "Claim eligibility rules fetched successfully",
+                responseDtos
+        );
+    }
+
+    @Override
+    public ApiResponseDTO<String> delete(Long id) {
+
+        ClaimEligibilityMaster entity = claimEligibilityRepository.findById(id)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Claim eligibility not found with id: " + id
+                ));
+
+        claimEligibilityRepository.delete(entity);
+
+        return ApiResponseDTO.success(
+                "Claim eligibility deleted successfully",
+                "Deleted successfully"
+        );
+    }
 }

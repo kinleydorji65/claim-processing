@@ -15,6 +15,7 @@ public class ClaimEligibilityUpdateRequestDto {
 
     private Long claimCircumstanceId;
     private Long schemeTypeId;
+    private Long ruleTypeId;
 
     private String memberCategoryId;
     private List<Long> benefitTypeIds;

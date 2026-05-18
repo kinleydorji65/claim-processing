@@ -79,6 +79,7 @@ public class TerminationReasonServiceImpl implements TerminationReasonService {
 
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
+            entity.setCreatedBy(requestDto.getCreatedBy());
 
             if (entity.getIsActive() == null) {
                 entity.setIsActive(ActivityEnum.Y);
@@ -121,6 +122,7 @@ public class TerminationReasonServiceImpl implements TerminationReasonService {
             mapper.updateEntityFromDto(requestDto, entity);
 
             entity.setUpdatedAt(LocalDateTime.now());
+            entity.setUpdatedBy(requestDto.getUpdatedBy());
 
             TerminationReasonMaster updated = repository.save(entity);
 
@@ -158,6 +160,25 @@ public class TerminationReasonServiceImpl implements TerminationReasonService {
 
         return ApiResponseDTO.success(
                 "Termination Reason deactivated successfully"
+        );
+    }
+
+    @Override
+    public ApiResponseDTO<String> delete(Long id) {
+
+        TerminationReasonMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.resourceNotFound(
+                                "Termination Reason",
+                                String.valueOf(id)
+                        )
+                );
+
+        repository.delete(entity);
+
+        return ApiResponseDTO.success(
+                "Termination reason deleted successfully",
+                "Deleted successfully"
         );
     }
 }
