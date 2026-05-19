@@ -60,4 +60,14 @@ public class RemittanceReasonController {
         ApiResponseDTO<String> response = service.deactivate(id);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponseDTO<String>> delete(
+            @PathVariable Long id
+    ) {
+
+        ApiResponseDTO<String> response = service.delete(id);
+
+        return ResponseEntity.ok(response);
+    }
 }

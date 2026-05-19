@@ -13,6 +13,7 @@ import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -33,8 +34,7 @@ public class RemittanceReasonServiceImpl implements RemittanceReasonService {
         }
 
         WrongRemittanceReasonMaster entity = mapper.toEntity(requestDto);
-        entity.setCreatedBy("SYSTEM");
-        entity.setUpdatedBy("SYSTEM");
+        entity.setCreatedBy(requestDto.getCreatedBy());
 
         WrongRemittanceReasonMaster saved = repository.save(entity);
         return ApiResponseDTO.success(mapper.toResponseDto(saved));
@@ -72,6 +72,7 @@ public class RemittanceReasonServiceImpl implements RemittanceReasonService {
         WrongRemittanceReasonMaster entity = findById(id);
 
         mapper.updateEntityFromDto(updateDto, entity);
+        entity.setUpdatedBy(updateDto.getUpdatedBy());
         entity.setUpdatedBy("SYSTEM");
 
         WrongRemittanceReasonMaster updated = repository.save(entity);
@@ -94,5 +95,23 @@ public class RemittanceReasonServiceImpl implements RemittanceReasonService {
                 .orElseThrow(() ->
                         ClaimException.notFound("Remittance reason not found with id: " + id)
                 );
+    }
+
+    @Override
+    public ApiResponseDTO<String> delete(Long id) {
+
+        WrongRemittanceReasonMaster entity = repository.findById(id)
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "Remittance reason not found with id: " + id
+                        )
+                );
+
+        repository.delete(entity);
+
+        return ApiResponseDTO.success(
+                "Remittance reason deleted successfully",
+                "Deleted successfully"
+        );
     }
 }

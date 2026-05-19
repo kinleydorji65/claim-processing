@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.DTO.update.beneficiary;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +16,6 @@ public class ClaimantTypeUpdateRequestDto {
     private String code;
     private String description;
     private Integer displayOrder;
-    private String isActive;
+    private ActivityEnum isActive;
     private String updatedBy;
 }

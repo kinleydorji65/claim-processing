@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -33,8 +34,8 @@ public class RecoveryReasonServiceImpl implements RecoveryReasonService {
 
         RecoveryReasonMaster entity = mapper.toEntity(dto);
         entity.setIsActive(ActivityEnum.Y);
-        entity.setCreatedBy(dto.getCreatedBy()); // OR logged-in user
-        entity.setUpdatedBy(dto.getCreatedBy());
+        entity.setCreatedBy(dto.getCreatedBy());
+        entity.setCreatedAt(LocalDateTime.now());
 
         RecoveryReasonMaster saved = repository.save(entity);
 
@@ -100,13 +101,16 @@ public class RecoveryReasonServiceImpl implements RecoveryReasonService {
     public ApiResponseDTO<String> delete(Long id) {
 
         RecoveryReasonMaster entity = repository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound("Recovery Reason", String.valueOf(id)));
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Recovery Reason",
+                        String.valueOf(id)
+                ));
 
-        // soft delete
-        entity.setIsActive(ActivityEnum.N);
+        repository.delete(entity);
 
-        repository.save(entity);
-
-        return ApiResponseDTO.success("Deleted successfully", null);
+        return ApiResponseDTO.success(
+                "Recovery reason deleted successfully",
+                "Deleted successfully"
+        );
     }
 }

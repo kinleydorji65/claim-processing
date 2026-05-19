@@ -35,7 +35,6 @@ public class PartialReasonServiceImpl implements PartialReasonService {
         PartialWithdrawalReasonMaster entity = mapper.toEntity(requestDto);
 
         entity.setCreatedBy(requestDto.getCreatedBy());
-        entity.setUpdatedBy(requestDto.getCreatedBy());
 
         repository.save(entity);
 

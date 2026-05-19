@@ -22,4 +22,6 @@ public interface RemittanceReasonService {
     ApiResponseDTO<RemittanceReasonResponseDto> update(Long id, RemittanceReasonUpdateDto updateDto);
 
     ApiResponseDTO<String> deactivate(Long id);
+
+    ApiResponseDTO<String> delete(Long id);
 }

@@ -10,6 +10,7 @@ import lombok.*;
 public class PartialWithdrawalReasonUpdateDto {
 
     private String name;
+    private String code;
     private String isActive;
     private String updatedBy;
 }

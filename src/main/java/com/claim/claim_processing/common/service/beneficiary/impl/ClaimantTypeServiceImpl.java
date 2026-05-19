@@ -82,7 +82,6 @@ public class ClaimantTypeServiceImpl implements ClaimantTypeService {
 
         ClaimantTypeMaster entity = mapper.toEntity(requestDto);
         entity.setIsActive(ActivityEnum.Y);
-        entity.setUpdatedBy(requestDto.getUpdatedBy());
         entity.setCreatedBy(requestDto.getCreatedBy());
         entity.setCreatedAt(LocalDateTime.now());
 
