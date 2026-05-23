@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.entities.partial;
+package com.claim.claim_processing.common.entities.others;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -7,25 +7,24 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "PARTIAL_WITHDRAWAL_ACCUMULATION_MASTER",
-        schema = "PPFMS_MASTER_SERVICE_SCHEMA"
-)
+        name = "REFUND_TYPE_MASTER",
+        schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PartialWithdrawalAccumulationMaster {
+public class RefundTypeMaster {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "CODE", length = 50)
+    @Column(name = "CODE", nullable = false, length = 50)
     private String code;
 
-    @Column(name = "NAME", length = 50)
+    @Column(name = "NAME", nullable = false, length = 150)
     private String name;
 
     @Column(name = "IS_ACTIVE", length = 1)

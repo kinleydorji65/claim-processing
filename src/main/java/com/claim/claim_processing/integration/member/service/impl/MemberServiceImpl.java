@@ -1,7 +1,5 @@
 package com.claim.claim_processing.integration.member.service.impl;
 
-import java.math.BigDecimal;
-
 import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
@@ -23,19 +21,14 @@ public class MemberServiceImpl implements MemberService {
     private final MemberContributionService memberContributionService;
     private final MemberDetailMapper memberDetailMapper;
 
-    public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String memberCode, String agencyCode) {
-        ApiResponseDTO<MemberContributionSummary> contributionSummary = memberContributionService.getContributionSummary(memberCode);
-        MemberDetail memberDetail = memberDetailRepository.findByMemberCodeAndAgencyCode(memberCode, agencyCode)
-                .orElseThrow(() -> new RuntimeException("Member not found with code: " + memberCode + " and agency code: " + agencyCode));  
+    public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String nppfNumber) {
+        MemberContributionSummary contributionSummary = memberContributionService.getContributionSummary(nppfNumber);
+        MemberDetail memberDetail = memberDetailRepository.findByNppfNumber(nppfNumber)
+                .orElseThrow(() -> new RuntimeException("Member not found with NPPF number: " + nppfNumber));  
         // This is a placeholder implementation and should be replaced with actual logic to call the member service
         MemberDetailResponseDto responseDto = memberDetailMapper.toMemberDetailResponseDto(memberDetail);
-        responseDto.setPfJoiningDate(contributionSummary.getData().getPfJoiningDate());
-        responseDto.setPensionJoiningDate(contributionSummary.getData().getPensionJoiningDate());
-        BigDecimal totalAccumulationAmount = contributionSummary.getData().getTotalBalance();
-                BigDecimal getInterest = contributionSummary.getData().getComponentGroups().stream().map(group -> group.getInterest()).toList().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-                BigDecimal totalAccumulationWithoutInterestAmount = totalAccumulationAmount.subtract(getInterest);
-        responseDto.setTotalBalanceAmount(totalAccumulationAmount);
-        responseDto.setTotalBalanceWithoutInterestAmount(totalAccumulationWithoutInterestAmount);
+        responseDto.setPfJoiningDate(contributionSummary.getPfJoiningDate());
+        responseDto.setPensionJoiningDate(contributionSummary.getPensionJoiningDate());
         return ApiResponseDTO.success(responseDto);
     }
 }

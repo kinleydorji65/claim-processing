@@ -6,6 +6,4 @@ import com.claim.claim_processing.rule.claim.DTO.response.ClaimEligibilityPrevie
 public interface ClaimEligibilityRuleService {
 
     ClaimEligibilityPreviewResponse previewEligibility(ClaimPreviewRequest request);
-
-    // ClaimEligibilityResponse checkEligibility(ClaimEligibilityCheckRequest request);
 }

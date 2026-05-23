@@ -28,12 +28,7 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/masters/business-types/**",
                         "/api/claim/masters/disaster-types/**",
                         "/api/claim/masters/house-purchase-types/**",
-                        "/api/partial-reasons/**",
-                        "/api/claim/partial-withdrawal-accumulations/**",
-                        "/api/partial-withdrawal-benefit-map/**",
-                        "/api/claim/partial-withdrawal-causes/**",
-                        "/api/claim/partial-withdrawal-rule/**",
-                        "/api/claim/masters/partial-withdrawal-causes/**"
+                        "/api/partial-reasons/**"
                 )
                 .displayName("Partial Master APIs")
                 .build();
@@ -47,9 +42,14 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/masters/account-types/**",
                         "/api/claim/masters/cessation-types/**",
                         "/api/claim/masters/claim-circumstances/**",
+                        "/api/claim-eligibility-category-map/**",
+                        "/api/master/claim-eligibility-component-map/**",
                         "/api/claim/masters/claim-eligibilities/**",
+                        "/api/claims/lapsed-refund-category-map/**",
+                        "/api/master/claims/lapsed-refund-component-map/**",
                         "/api/master/claim/lapsed-refund/**",
                         "/api/master/claims/type-master/**",
+                        "/api/claim/master/claim-type-rule-map/**",
                         "/api/claim/vesting-rules/**",
                         "/api/claims/reserve-accounts/**",
                         "/api/claim/masters/termination-reasons/**",
@@ -198,6 +198,16 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/credit-methods/**"
                 )
                 .displayName("ARR RULE Master APIs")
+                .build();
+    }
+    @Bean
+    public GroupedOpenApi testApi() {
+        return GroupedOpenApi.builder()
+                .group("Test API Management")
+                .pathsToMatch(
+                        "/api/test/**"
+                )
+                .displayName("Test APIs")
                 .build();
     }
 

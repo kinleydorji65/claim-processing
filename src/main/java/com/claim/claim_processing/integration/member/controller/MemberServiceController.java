@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class MemberServiceController {
     private final MemberService memberService;
 
-    @GetMapping("/get-member-details/{member-code}/{agency-code}")
-    public ResponseEntity<?> getMemberDetails(@PathVariable("member-code") String memberCode, @PathVariable("agency-code") String agencyCode) {
-        return ResponseEntity.ok(memberService.getMemberDetails(memberCode, agencyCode));
+    @GetMapping("/get-member-details/{nppfNumber}")
+    public ResponseEntity<?> getMemberDetails(@PathVariable("nppfNumber") String nppfNumber) {
+        return ResponseEntity.ok(memberService.getMemberDetails(nppfNumber));
     }
 }

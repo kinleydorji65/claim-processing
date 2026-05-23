@@ -29,9 +29,6 @@ public class MemberDetail {
     @Column(name = "MEMBER_TYPE_ID")
     private Long memberTypeId;
 
-    @Column(name = "AGENCY_CODE")
-    private String agencyCode;
-
     @Column(name = "AGENCY_NAME")
     private String agencyName;
 
@@ -97,6 +94,6 @@ public class MemberDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonBackReference
-    @JoinColumn(name = "AGENCY_ID", nullable = true)
-    private AgencyDetail applicationDetail;
+    @JoinColumn(name = "AGENCY_CODE", referencedColumnName = "AGENCY_CODE", nullable = true)
+    private AgencyDetail agencyDetail;
 }
