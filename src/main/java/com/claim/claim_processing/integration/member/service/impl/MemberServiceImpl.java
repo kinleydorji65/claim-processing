@@ -21,10 +21,10 @@ public class MemberServiceImpl implements MemberService {
     private final MemberContributionService memberContributionService;
     private final MemberDetailMapper memberDetailMapper;
 
-    public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String memberCode, String agencyCode) {
-        MemberContributionSummary contributionSummary = memberContributionService.getContributionSummary(memberCode);
-        MemberDetail memberDetail = memberDetailRepository.findByMemberCodeAndAgencyCode(memberCode, agencyCode)
-                .orElseThrow(() -> new RuntimeException("Member not found with code: " + memberCode + " and agency code: " + agencyCode));  
+    public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String nppfNumber) {
+        MemberContributionSummary contributionSummary = memberContributionService.getContributionSummary(nppfNumber);
+        MemberDetail memberDetail = memberDetailRepository.findByNppfNumber(nppfNumber)
+                .orElseThrow(() -> new RuntimeException("Member not found with NPPF number: " + nppfNumber));  
         // This is a placeholder implementation and should be replaced with actual logic to call the member service
         MemberDetailResponseDto responseDto = memberDetailMapper.toMemberDetailResponseDto(memberDetail);
         responseDto.setPfJoiningDate(contributionSummary.getPfJoiningDate());

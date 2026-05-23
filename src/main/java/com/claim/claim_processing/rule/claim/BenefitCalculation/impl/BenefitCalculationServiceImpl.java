@@ -150,7 +150,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         Boolean loanCheck = ruleTypes.stream().anyMatch(rt -> rt.getCode().equals("LOAN_ADJUSTMENT"));
         Boolean rentalCheck = ruleTypes.stream().anyMatch(rt -> rt.getCode().equals("RENTAL_ADJUSTMENT"));
                 return ClaimCalculationResponseDTO.builder()
-                                .memberCode(contributionSummary.getMemberCode())
+                                .nppfNumber(contributionSummary.getNppfNumber())
                                 .contributionStartDate(contributionSummary.getContributionStartDate())
                                 .contributionEndDate(contributionSummary.getContributionEndDate())
                                 .totalContributionMonths(contributionSummary.getTotalContributionMonths())
@@ -220,9 +220,9 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                                 .toList();
         }
 
-        public ApiResponseDTO<BigDecimal> getTotalAccumulationAmount(String memberCode) {
+        public ApiResponseDTO<BigDecimal> getTotalAccumulationAmount(String nppfNumber) {
                 MemberContributionSummary contributionSummary = memberContributionService
-                                .getContributionSummary(memberCode);
+                                .getContributionSummary(nppfNumber);
                 BigDecimal totalAccumulationAmount = contributionSummary.getTotalBalance();
                 return ApiResponseDTO.<BigDecimal>builder()
                                 .data(totalAccumulationAmount)

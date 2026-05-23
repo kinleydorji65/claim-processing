@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 @Builder
 public class MemberContributionSummary {
-    private String memberCode;
+    private String nppfNumber;
     private Long schemeTypeId;
 
     private LocalDate pfJoiningDate;

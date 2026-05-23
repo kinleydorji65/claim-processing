@@ -21,13 +21,13 @@ public class MemberContributionServiceImpl implements MemberContributionService 
     private final MemberContributionMapper contributionMapper;
 
     @Override
-    public MemberContributionSummary getContributionSummary(String memberCode) {
-        return snapshotRepository.findByMemberCode(memberCode)
+    public MemberContributionSummary getContributionSummary(String nppfNumber) {
+        return snapshotRepository.findByNppfNumber(nppfNumber)
             .map(contributionMapper::toSummaryFromEntity)  // Now maps Entity to Summary directly
-            .orElseGet(() -> emptySummary(memberCode));
+            .orElseGet(() -> emptySummary(nppfNumber));
     }
     
-    private MemberContributionSummary emptySummary(String memberCode) {
+    private MemberContributionSummary emptySummary(String nppfNumber) {
 
     List<MemberContributionSummary.ComponentGroup> groups = List.of(
 
@@ -74,7 +74,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     return MemberContributionSummary.builder()
-            .memberCode(memberCode) // KEEP SAME
+            .nppfNumber(nppfNumber) // KEEP SAME
             .schemeTypeId(1L)
             .pfJoiningDate(LocalDate.of(2015, 1, 1))
             .pensionJoiningDate(LocalDate.of(2015, 1, 1))

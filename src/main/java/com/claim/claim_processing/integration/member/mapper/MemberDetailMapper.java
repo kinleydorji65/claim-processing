@@ -59,6 +59,7 @@ protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberD
     responseDto.setMemberNominees(toMemberNomineeResponseList(memberDetail.getMemberNominees()));
     responseDto.setMemberFamilies(toMemberFamilyResponseList(memberDetail.getMemberFamilies()));
     responseDto.setSchemeTypeId(responseDto.getEmploymentTypeName().equals("Regular") ? 1L : 2L);
+    responseDto.setAgencyCode(memberDetail.getAgencyDetail() != null ? memberDetail.getAgencyDetail().getAgencyCode() : null);
 }
 
 private String getAgencyCategoryName(String agencyCategoryId) {

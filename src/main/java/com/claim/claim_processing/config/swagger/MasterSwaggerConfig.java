@@ -28,12 +28,7 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/masters/business-types/**",
                         "/api/claim/masters/disaster-types/**",
                         "/api/claim/masters/house-purchase-types/**",
-                        "/api/claim/masters/partial-causes/**",
-                        "/api/partial-reasons/**",
-                        "/api/claim/partial-withdrawal-accumulations/**",
-                        "/api/partial-withdrawal-benefit-map/**",
-                        "/api/claim/partial-withdrawal-causes/**",
-                        "/api/claim/partial-withdrawal-rule/**"
+                        "/api/partial-reasons/**"
                 )
                 .displayName("Partial Master APIs")
                 .build();
@@ -203,6 +198,16 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/credit-methods/**"
                 )
                 .displayName("ARR RULE Master APIs")
+                .build();
+    }
+    @Bean
+    public GroupedOpenApi testApi() {
+        return GroupedOpenApi.builder()
+                .group("Test API Management")
+                .pathsToMatch(
+                        "/api/test/**"
+                )
+                .displayName("Test APIs")
                 .build();
     }
 
