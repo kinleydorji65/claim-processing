@@ -18,6 +18,7 @@ public class RuleResponseDto {
 
     private String code;
     private String name;
+    private String ruleEffect;
     private List<ClaimRuleResponseDto> subClaimRules;
 
     @Data
@@ -63,6 +64,7 @@ public class RuleResponseDto {
 public static class ClaimRuleConditionResponse {
     private Long id;
     private String schemeTypeName;
+    private Long schemeTypeId;
     private Long priorityOrder;
     private Long totalContributionNumber;
     private Double withdrawalPercentage;

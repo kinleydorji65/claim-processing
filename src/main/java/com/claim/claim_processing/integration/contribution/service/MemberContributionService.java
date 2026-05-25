@@ -1,6 +1,6 @@
 package com.claim.claim_processing.integration.contribution.service;
 
-import com.claim.claim_processing.rule.claim.DTO.contribution.MemberContributionSummary;
+import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 
 public interface MemberContributionService {
 

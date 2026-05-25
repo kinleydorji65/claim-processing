@@ -22,8 +22,6 @@ public interface ClaimTypeMasterMapper {
                         .id(map.getRuleType().getId())
                         .code(map.getRuleType().getCode())
                         .name(map.getRuleType().getName())
-                        .description(map.getRuleType().getDescription())
-                        .displayOrder(map.getRuleType().getDisplayOrder())
                         .isActive(map.getRuleType().getIsActive())
                         .createdAt(map.getRuleType().getCreatedAt())
                         .createdBy(map.getRuleType().getCreatedBy())

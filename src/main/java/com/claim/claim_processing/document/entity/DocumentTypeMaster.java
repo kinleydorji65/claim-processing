@@ -29,10 +29,6 @@ public class DocumentTypeMaster {
         @Column(name = "NAME", nullable = false, length = 150)
         private String name;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "DOCUMENT_CATEGORY_ID", foreignKey = @ForeignKey(name = "FK_DOC_TYPE_CATEGORY"))
-        private DocumentCategoryMaster documentCategory;
-
         @Column(name = "DESCRIPTION", length = 300)
         private String description;
 

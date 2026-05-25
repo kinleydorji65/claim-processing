@@ -6,7 +6,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 import com.claim.claim_processing.common.entities.claim.ClaimEligibilityMaster;
-import com.claim.claim_processing.rule.claim.DTO.contribution.EligibleBenefitComponentDTO;
+import com.claim.claim_processing.integration.contribution.dto.EligibleBenefitComponentDTO;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimEligibilityPreviewResponse;
 
 @Mapper(componentModel = "spring")

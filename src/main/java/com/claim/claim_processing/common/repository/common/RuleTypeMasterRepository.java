@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface RuleTypeMasterRepository extends JpaRepository<RuleTypeMaster, Long> {
 
     Optional<RuleTypeMaster> findByCode(String code);
+    Optional<RuleTypeMaster> findByIdAndCode(Long id, String code);
 
     List<RuleTypeMaster> findByIsActive(String isActive);
 

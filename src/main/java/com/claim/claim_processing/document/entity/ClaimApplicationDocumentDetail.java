@@ -34,10 +34,6 @@ public class ClaimApplicationDocumentDetail {
         @JoinColumn(name = "DOCUMENT_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CADD_DOC_TYPE"))
         private DocumentTypeMaster documentType;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "DOCUMENT_CATEGORY_ID", foreignKey = @ForeignKey(name = "FK_CADD_DOC_CATEGORY"))
-        private DocumentCategoryMaster documentCategory;
-
         @Column(name = "DOCUMENT_NAME", length = 255)
         private String documentName;
 

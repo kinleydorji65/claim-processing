@@ -19,6 +19,7 @@ public interface ClaimTypeRuleMapRepository extends JpaRepository<ClaimTypeRuleM
     boolean existsByClaimTypeIdAndRuleTypeId(Long claimTypeId, Long ruleTypeId);
     Optional<ClaimTypeRuleMap> findByClaimType_IdAndRuleType_Id(Long claimTypeId, Long ruleTypeId);
     List<ClaimTypeRuleMap> findByClaimType_IdAndRuleType_IdIn(Long claimTypeId, List<Long> ruleTypeIds);
+    List<ClaimTypeRuleMap> findByClaimType_Id(Long claimTypeId);
 
     @Query("SELECT DISTINCT ctrm FROM ClaimTypeRuleMap ctrm " +
            "LEFT JOIN FETCH ctrm.ruleType " +

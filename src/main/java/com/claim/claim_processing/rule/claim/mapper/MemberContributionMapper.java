@@ -6,7 +6,7 @@ import org.mapstruct.factory.Mappers;
 
 import com.claim.claim_processing.common.DTO.response.contribution.MemberContributionDTO;
 import com.claim.claim_processing.common.entities.contribution.MemberContributionSnapshot;
-import com.claim.claim_processing.rule.claim.DTO.contribution.MemberContributionSummary;
+import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 
 @Mapper(componentModel = "spring")
 public interface MemberContributionMapper {

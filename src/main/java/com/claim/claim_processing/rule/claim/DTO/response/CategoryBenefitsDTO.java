@@ -2,7 +2,7 @@ package com.claim.claim_processing.rule.claim.DTO.response;
 
 import java.util.List;
 
-import com.claim.claim_processing.rule.claim.DTO.contribution.EligibleBenefitComponentDTO;
+import com.claim.claim_processing.integration.contribution.dto.EligibleBenefitComponentDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

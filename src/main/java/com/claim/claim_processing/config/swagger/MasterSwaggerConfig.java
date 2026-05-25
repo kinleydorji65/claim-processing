@@ -203,11 +203,21 @@ public class MasterSwaggerConfig implements SwaggerConfig {
     @Bean
     public GroupedOpenApi testApi() {
         return GroupedOpenApi.builder()
-                .group("Test API Management")
+                .group("Rule Service APIs")
                 .pathsToMatch(
-                        "/api/test/**"
+                        "/api/rule-service/**"
                 )
-                .displayName("Test APIs")
+                .displayName("Rule Service APIs")
+                .build();
+    }
+    @Bean
+    public GroupedOpenApi documentApi() {
+        return GroupedOpenApi.builder()
+                .group("Document API Management")
+                .pathsToMatch(
+                        "/api/claim/documents/**"
+                )
+                .displayName("Document APIs")
                 .build();
     }
 

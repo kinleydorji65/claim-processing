@@ -6,10 +6,10 @@ import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberDetailResponseDto;
 import com.claim.claim_processing.common.entities.others.member.MemberDetail;
 import com.claim.claim_processing.common.repository.others.MemberDetailRepository;
+import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.integration.member.mapper.MemberDetailMapper;
 import com.claim.claim_processing.integration.member.service.MemberService;
-import com.claim.claim_processing.rule.claim.DTO.contribution.MemberContributionSummary;
 
 import lombok.RequiredArgsConstructor;
 

@@ -9,7 +9,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "RULE_TYPE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "RULE_TYPE_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,12 +28,8 @@ public class RuleTypeMaster {
     @Column(name = "NAME", nullable = false, length = 120)
     private String name;
 
-    @Column(name = "DESCRIPTION", length = 255)
-    private String description;
-
-    @Column(name = "DISPLAY_ORDER")
-    @Builder.Default
-    private Integer displayOrder = 1;
+    @Column(name = "RULE_EFFECT", length = 255)
+    private String ruleEffect;
 
     @Convert(converter = ActivityEnumConverter.class)
     @Column(name = "IS_ACTIVE", length = 1)
@@ -50,20 +46,4 @@ public class RuleTypeMaster {
 
     @Column(name = "UPDATED_BY", length = 100)
     private String updatedBy;
-
-    @PrePersist
-    public void prePersist() {
-        if (this.displayOrder == null) {
-            this.displayOrder = 1;
-        }
-        if (this.isActive == null) {
-            this.isActive = ActivityEnum.Y;
-        }
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
@@ -47,7 +48,7 @@ public class RuleGateWayServiceImpl implements RuleGateWayService {
 
     @Override
     @Transactional
-    public RuleResponseDto getByTopRuleType(Long ruleId) {
+    public ApiResponseDTO<RuleResponseDto> getByTopRuleType(Long ruleId) {
 
         RuleTypeMaster ruleType = ruleTypeMasterRepository.findById(ruleId)
                 .orElseThrow(() -> new RuntimeException(
@@ -60,12 +61,13 @@ public class RuleGateWayServiceImpl implements RuleGateWayService {
                 .map(this::mapClaimRuleToResponse)
                 .toList();
 
-        return RuleResponseDto.builder()
+        return ApiResponseDTO.success(RuleResponseDto.builder()
                 .id(ruleType.getId())
                 .code(ruleType.getCode())
                 .name(ruleType.getName())
+                .ruleEffect(ruleType.getRuleEffect())
                 .subClaimRules(subClaimRules)
-                .build();
+                .build());
     }
 
     private ClaimRuleResponseDto mapClaimRuleToResponse(ClaimRuleMaster claimRuleMaster) {
@@ -101,6 +103,7 @@ public class RuleGateWayServiceImpl implements RuleGateWayService {
                 .map(condition -> ClaimRuleConditionResponse.builder()
                         .id(condition.getId())
                         .schemeTypeName(getSchemeType(condition.getSchemeTypeId()))
+                        .schemeTypeId(condition.getSchemeTypeId())
                         .minMonths(condition.getMinMonths())
                         .maxMonths(condition.getMaxMonths())
                         .withdrawalPercentage(condition.getWithdrawalPercentage())

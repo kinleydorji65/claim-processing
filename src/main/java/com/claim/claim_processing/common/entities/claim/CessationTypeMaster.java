@@ -9,7 +9,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "CESSATION_TYPE_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "CESSATION_TYPE_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,14 +27,6 @@ public class CessationTypeMaster {
 
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "CIRCUMTANCES_ID",
-            referencedColumnName = "ID",
-            foreignKey = @ForeignKey(name = "FK_CLAIM_CIRCUMSTANCES")
-    )
-    private ClaimCircumstanceMaster claimCircumstance;
 
     @Convert(converter = ActivityEnumConverter.class)
     @Column(name = "IS_ACTIVE", length = 1)

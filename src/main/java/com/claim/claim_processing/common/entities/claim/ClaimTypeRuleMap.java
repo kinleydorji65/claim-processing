@@ -7,7 +7,7 @@ import lombok.*;
 @Entity
 @Table(
         name = "CLAIM_TYPE_RULE_MAP",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
+        schema = "PPFMS_MASTER_SERVICE_SCHEMA"
 )
 @Getter
 @Setter
