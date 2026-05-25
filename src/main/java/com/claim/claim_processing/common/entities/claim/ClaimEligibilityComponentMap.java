@@ -17,7 +17,14 @@ import lombok.*;
 public class ClaimEligibilityComponentMap {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+                    generator = "claim_eligibility_component_seq")
+    @SequenceGenerator(
+        name = "claim_eligibility_component_seq",
+        sequenceName = "SEQ_CLAIM_ELIGIBILITY_COMPONENT_MAP",
+        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",  // ← ADD THIS LINE
+        allocationSize = 1
+    )
     @Column(name = "ID")
     private Long id;
 

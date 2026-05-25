@@ -34,7 +34,7 @@ public class ReserveAccountController {
     // -------------------------------
     // UPDATE
     // -------------------------------
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody ReserveAccountRequestDto dto

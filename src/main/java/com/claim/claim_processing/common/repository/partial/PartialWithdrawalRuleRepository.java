@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface PartialWithdrawalRuleRepository
         extends JpaRepository<PartialWithdrawalRuleMaster, Long> {
     Optional<PartialWithdrawalRuleMaster> findById(Long id);
+    Optional<PartialWithdrawalRuleMaster> findByCategory_CategoryIdAndReason_Id(String categoryId, Long reasonId);
     List<PartialWithdrawalRuleMaster> findAll();
     List<PartialWithdrawalRuleMaster> findByCategory_CategoryId(String categoryId);
     List<PartialWithdrawalRuleMaster> findByReason_Id(Long reasonId);

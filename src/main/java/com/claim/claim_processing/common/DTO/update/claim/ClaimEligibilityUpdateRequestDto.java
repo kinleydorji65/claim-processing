@@ -2,6 +2,7 @@ package com.claim.claim_processing.common.DTO.update.claim;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -14,9 +15,11 @@ public class ClaimEligibilityUpdateRequestDto {
 
     private Long claimCircumstanceId;
     private Long schemeTypeId;
+    private Long ruleTypeId;
 
     private String memberCategoryId;
-    private Long benefitTypeId;
+    private List<Long> benefitTypeIds;
+    private List<Long> existingBenefitTypeIds;
 
     private Integer minContributionMonths;
     private Integer maxContributionMonths;
@@ -25,4 +28,5 @@ public class ClaimEligibilityUpdateRequestDto {
     private LocalDate effectiveTo;
 
     private String isActive;
+    private String updatedBy;
 }

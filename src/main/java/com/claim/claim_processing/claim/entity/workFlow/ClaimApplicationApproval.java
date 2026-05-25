@@ -3,7 +3,7 @@ package com.claim.claim_processing.claim.entity.workFlow;
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.DecisionMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.statusMaster.ApprovalStatusMaster;
+import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,7 +33,7 @@ public class ClaimApplicationApproval {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "APPROVAL_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAA_APPROVAL_STATUS"))
-    private ApprovalStatusMaster approvalStatus;
+    private StatusMaster approvalStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "APPROVAL_DECISION_ID", foreignKey = @ForeignKey(name = "FK_CAA_APPROVAL_DECISION"))

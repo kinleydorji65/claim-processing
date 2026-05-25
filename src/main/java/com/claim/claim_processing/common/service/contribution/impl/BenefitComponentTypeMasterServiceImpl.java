@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -32,8 +33,7 @@ public class BenefitComponentTypeMasterServiceImpl
 
     @Override
     public ApiResponseDTO<BenefitComponentTypeMasterResponseDto> create(
-            BenefitComponentTypeMasterRequestDto requestDto
-    ) {
+            BenefitComponentTypeMasterRequestDto requestDto) {
         validateDuplicateCode(requestDto.getCode());
 
         BenefitComponentTypeMaster entity = mapper.toEntity(requestDto);
@@ -41,14 +41,17 @@ public class BenefitComponentTypeMasterServiceImpl
         if (entity.getIsActive() == null) {
             entity.setIsActive(ActivityEnum.Y);
         }
-        
+        entity.setCreatedBy(requestDto.getCreatedBy());
         BenefitComponentTypeMaster saved = repository.save(entity);
         List<BenefitComponentTypeDetail> mappings = mapComponentDetails(entity, requestDto.getComponentIds());
         return ApiResponseDTO.success(mapper.toResponseDto(saved, mappings));
     }
-    private List<BenefitComponentTypeDetail> mapComponentDetails(BenefitComponentTypeMaster entity, List<Long> componentIds){
 
-        List<BenefitComponentTypeDetail> components = detailMapRepository.findByBenefitComponentType_IdAndComponent_IdIn(entity.getId(), componentIds);
+    private List<BenefitComponentTypeDetail> mapComponentDetails(BenefitComponentTypeMaster entity,
+            List<Long> componentIds) {
+
+        List<BenefitComponentTypeDetail> components = detailMapRepository
+                .findByBenefitComponentType_IdAndComponent_IdIn(entity.getId(), componentIds);
         List<BenefitComponentTypeDetail> mappings;
         if (components.isEmpty()) {
             mappings = componentIds.stream().map(componentId -> {
@@ -59,32 +62,29 @@ public class BenefitComponentTypeMasterServiceImpl
                 detailMapRepository.save(componentTypeDetail);
                 return componentTypeDetail;
             }).toList();
-        }else {
+        } else {
             mappings = components.stream()
-                .filter(map -> componentIds.contains(map.getComponent().getId()))
-                .map(map -> {
-                    map.setBenefitComponentType(entity);
-                    map.setComponent(getComponent(map.getComponent().getId()));
-                    return map;
-                })
-                .toList();
+                    .filter(map -> componentIds.contains(map.getComponent().getId()))
+                    .map(map -> {
+                        map.setBenefitComponentType(entity);
+                        map.setComponent(getComponent(map.getComponent().getId()));
+                        return map;
+                    })
+                    .toList();
         }
         return mappings;
     }
 
     private ComponentMaster getComponent(Long componentId) {
         return componentRepo.findById(componentId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Component not found with id: " + componentId
-                        ));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Component not found with id: " + componentId));
     }
 
     @Override
     public ApiResponseDTO<BenefitComponentTypeMasterResponseDto> update(
             Long id,
-            BenefitComponentTypeMasterRequestDto requestDto
-    ) {
+            BenefitComponentTypeMasterRequestDto requestDto) {
         BenefitComponentTypeMaster entity = findEntityById(id);
 
         if (requestDto.getCode() != null &&
@@ -94,6 +94,8 @@ public class BenefitComponentTypeMasterServiceImpl
         }
 
         mapper.updateEntityFromDto(requestDto, entity);
+        entity.setUpdatedBy(requestDto.getUpdatedBy());
+        entity.setCreatedAt(LocalDateTime.now());
 
         BenefitComponentTypeMaster updated = repository.save(entity);
         List<BenefitComponentTypeDetail> mappings = mapComponentDetails(entity, requestDto.getComponentIds());
@@ -114,7 +116,8 @@ public class BenefitComponentTypeMasterServiceImpl
         List<BenefitComponentTypeMasterResponseDto> response = repository.findAll()
                 .stream()
                 .map(entity -> {
-                    List<BenefitComponentTypeDetail> mappings = detailMapRepository.findByBenefitComponentType_Id(entity.getId());
+                    List<BenefitComponentTypeDetail> mappings = detailMapRepository
+                            .findByBenefitComponentType_Id(entity.getId());
                     return mapper.toResponseDto(entity, mappings);
                 })
                 .toList();
@@ -131,12 +134,12 @@ public class BenefitComponentTypeMasterServiceImpl
     @Override
     @Transactional(readOnly = true)
     public ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> getByStatus(
-            ActivityEnum isActive
-    ) {
+            ActivityEnum isActive) {
         List<BenefitComponentTypeMasterResponseDto> response = repository.findByIsActive(isActive)
                 .stream()
                 .map(entity -> {
-                    List<BenefitComponentTypeDetail> mappings = detailMapRepository.findByBenefitComponentType_Id(entity.getId());
+                    List<BenefitComponentTypeDetail> mappings = detailMapRepository
+                            .findByBenefitComponentType_Id(entity.getId());
                     return mapper.toResponseDto(entity, mappings);
                 })
                 .toList();
@@ -146,12 +149,12 @@ public class BenefitComponentTypeMasterServiceImpl
     @Override
     @Transactional(readOnly = true)
     public ApiResponseDTO<List<BenefitComponentTypeMasterResponseDto>> searchByName(
-            String keyword
-    ) {
+            String keyword) {
         List<BenefitComponentTypeMasterResponseDto> response = repository.findByNameContainingIgnoreCase(keyword)
                 .stream()
                 .map(entity -> {
-                    List<BenefitComponentTypeDetail> mappings = detailMapRepository.findByBenefitComponentType_Id(entity.getId());
+                    List<BenefitComponentTypeDetail> mappings = detailMapRepository
+                            .findByBenefitComponentType_Id(entity.getId());
                     return mapper.toResponseDto(entity, mappings);
                 })
                 .toList();
@@ -172,17 +175,14 @@ public class BenefitComponentTypeMasterServiceImpl
 
     private BenefitComponentTypeMaster findEntityById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Benefit Component Type not found with id: " + id
-                        ));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Benefit Component Type not found with id: " + id));
     }
 
     private void validateDuplicateCode(String code) {
         if (code != null && repository.existsByCode(code)) {
             throw new IllegalArgumentException(
-                    "Code already exists: " + code
-            );
+                    "Code already exists: " + code);
         }
     }
 }

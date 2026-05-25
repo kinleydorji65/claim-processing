@@ -22,7 +22,7 @@ public class ClaimCalculationResponseDTO {
 
     private Integer totalContributionMonths;
     private Integer totalNonContributionMonths;
-    private String eligibilityNote;
+    private List<String> eligibilityNote;
     private BigDecimal totalPfAmount;
     private BigDecimal totalPensionAmount;
 

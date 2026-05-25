@@ -11,6 +11,7 @@ public class RemittanceReasonRequestDto {
 
     private String code;
     private String name;
+    private String createdBy;
     private String description;
     private Integer displayOrder;
 }

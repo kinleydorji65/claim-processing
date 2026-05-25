@@ -1,16 +1,19 @@
 package com.claim.claim_processing.common.service.calculationMaster.impl;
 
 import com.claim.claim_processing.common.DTO.request.calculationMaster.CalculationTriggerTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.calculationMaster.CalculationTriggerTypeResponseDto;
 import com.claim.claim_processing.common.entities.calculationMaster.CalculationTriggerTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.calculationMaster.CalculationTriggerTypeMapper;
 import com.claim.claim_processing.common.repository.calculationMaster.CalculationTriggerTypeRepository;
 import com.claim.claim_processing.common.service.calculationMaster.CalculationTriggerTypeService;
+import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,88 +24,132 @@ public class CalculationTriggerTypeServiceImpl implements CalculationTriggerType
     private final CalculationTriggerTypeRepository repository;
     private final CalculationTriggerTypeMapper mapper;
 
-    // -------------------------------
-    // CREATE
-    // -------------------------------
     @Override
-    public CalculationTriggerTypeResponseDto create(CalculationTriggerTypeRequestDto dto) {
+    public ApiResponseDTO<CalculationTriggerTypeResponseDto> create(
+            CalculationTriggerTypeRequestDto dto) {
 
         if (repository.existsByCode(dto.getCode())) {
-            throw new RuntimeException("Code already exists: " + dto.getCode());
+            throw ClaimException.conflict(
+                    "Calculation trigger type already exists with code: " + dto.getCode()
+            );
         }
 
         CalculationTriggerTypeMaster entity = mapper.toEntity(dto);
-
         entity.setIsActive(ActivityEnum.Y);
+        entity.setCreatedBy(dto.getCreatedBy());
+        entity.setUpdatedBy(dto.getUpdatedBy());
+        entity.setCreatedAt(LocalDateTime.now());
 
-        return mapper.toDto(repository.save(entity));
+        CalculationTriggerTypeMaster saved = repository.save(entity);
+
+        return ApiResponseDTO.created(mapper.toDto(saved));
     }
 
-
-    // -------------------------------
-    // PATCH (PARTIAL UPDATE)
-    // -------------------------------
     @Override
-    public CalculationTriggerTypeResponseDto patch(CalculationTriggerTypeRequestDto dto) {
+    public ApiResponseDTO<CalculationTriggerTypeResponseDto> update(
+            Long id,
+            CalculationTriggerTypeRequestDto dto) {
 
-        CalculationTriggerTypeMaster entity = repository.findById(dto.getId())
-                .orElseThrow(() -> new RuntimeException("Trigger Type not found: " + dto.getId()));
+        CalculationTriggerTypeMaster entity = repository.findById(id)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Calculation trigger type not found with id: " + id
+                ));
+
+        if (dto.getCode() != null
+                && !dto.getCode().equalsIgnoreCase(entity.getCode())
+                && repository.existsByCode(dto.getCode())) {
+
+            throw ClaimException.conflict(
+                    "Calculation trigger type already exists with code: " + dto.getCode()
+            );
+        }
 
         mapper.patchEntityFromDto(dto, entity);
 
-        return mapper.toDto(repository.save(entity));
+        entity.setUpdatedBy(dto.getUpdatedBy());
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        CalculationTriggerTypeMaster updated = repository.save(entity);
+
+        return ApiResponseDTO.success(
+                "Calculation trigger type updated successfully",
+                mapper.toDto(updated)
+        );
     }
 
-    // -------------------------------
-    // GET BY ID
-    // -------------------------------
     @Override
     @Transactional(readOnly = true)
-    public CalculationTriggerTypeResponseDto getById(Long id) {
+    public ApiResponseDTO<CalculationTriggerTypeResponseDto> getById(Long id) {
 
         CalculationTriggerTypeMaster entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Trigger Type not found: " + id));
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Calculation trigger type not found with id: " + id
+                ));
 
-        return mapper.toDto(entity);
+        return ApiResponseDTO.success(
+                "Calculation trigger type fetched successfully",
+                mapper.toDto(entity)
+        );
     }
 
-    // -------------------------------
-    // GET ALL
-    // -------------------------------
     @Override
     @Transactional(readOnly = true)
-    public List<CalculationTriggerTypeResponseDto> getAll() {
+    public ApiResponseDTO<CalculationTriggerTypeResponseDto> getByCode(String code) {
 
-        return repository.findAll()
+        CalculationTriggerTypeMaster entity = repository.findByCode(code)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Calculation trigger type not found with code: " + code
+                ));
+
+        return ApiResponseDTO.success(
+                "Calculation trigger type fetched successfully",
+                mapper.toDto(entity)
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<List<CalculationTriggerTypeResponseDto>> getAll() {
+
+        List<CalculationTriggerTypeResponseDto> response = repository.findAll()
                 .stream()
                 .map(mapper::toDto)
                 .toList();
+
+        return ApiResponseDTO.success(
+                "Calculation trigger types fetched successfully",
+                response
+        );
     }
 
-    // -------------------------------
-    // GET ALL ACTIVE
-    // -------------------------------
     @Override
     @Transactional(readOnly = true)
-    public List<CalculationTriggerTypeResponseDto> getAllActive() {
+    public ApiResponseDTO<List<CalculationTriggerTypeResponseDto>> getAllActive() {
 
-        return repository.findByIsActive(ActivityEnum.Y)
+        List<CalculationTriggerTypeResponseDto> response = repository.findByIsActive(ActivityEnum.Y)
                 .stream()
                 .map(mapper::toDto)
                 .toList();
+
+        return ApiResponseDTO.success(
+                "Active calculation trigger types fetched successfully",
+                response
+        );
     }
 
-    // -------------------------------
-    // SOFT DELETE (recommended)
-    // -------------------------------
     @Override
-    public void delete(Long id) {
+    public ApiResponseDTO<String> delete(Long id) {
 
         CalculationTriggerTypeMaster entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Trigger Type not found: " + id));
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Calculation trigger type not found with id: " + id
+                ));
 
-        entity.setIsActive(ActivityEnum.N);
+        repository.delete(entity);
 
-        repository.save(entity);
+        return ApiResponseDTO.success(
+                "Calculation trigger type deleted successfully",
+                "Deleted successfully"
+        );
     }
 }

@@ -10,6 +10,8 @@ import lombok.*;
 public class DisasterTypeUpdateDto {
 
     private String name;
+    private String code;
     private String description;
     private String isActive;
+    private String updatedBy;
 }

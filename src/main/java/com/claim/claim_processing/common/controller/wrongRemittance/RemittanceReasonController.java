@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.controller.wrongRemittance;
 
 import com.claim.claim_processing.common.DTO.request.wrongRemittance.RemittanceReasonRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.wrongRemittance.RemittanceReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.wrongRemittance.RemittanceReasonUpdateDto;
 import com.claim.claim_processing.common.service.wrongRemittance.RemittanceReasonService;
@@ -22,37 +23,51 @@ public class RemittanceReasonController {
     private final RemittanceReasonService service;
 
     @GetMapping
-    public ResponseEntity<List<RemittanceReasonResponseDto>> getAllActive() {
-        return ResponseEntity.ok(service.getAllActive());
+    public ResponseEntity<ApiResponseDTO<List<RemittanceReasonResponseDto>>> getAllActive() {
+        ApiResponseDTO<List<RemittanceReasonResponseDto>> response = service.getAllActive();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RemittanceReasonResponseDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getById(id));
+    public ResponseEntity<ApiResponseDTO<RemittanceReasonResponseDto>> getById(@PathVariable Long id) {
+        ApiResponseDTO<RemittanceReasonResponseDto> response = service.getById(id);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/code/{code}")
-    public ResponseEntity<RemittanceReasonResponseDto> getByCode(@PathVariable String code) {
-        return ResponseEntity.ok(service.getByCode(code));
+    public ResponseEntity<ApiResponseDTO<RemittanceReasonResponseDto>> getByCode(@PathVariable String code) {
+        ApiResponseDTO<RemittanceReasonResponseDto> response = service.getByCode(code);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<RemittanceReasonResponseDto> create(
+    public ResponseEntity<ApiResponseDTO<RemittanceReasonResponseDto>> create(
             @RequestBody RemittanceReasonRequestDto requestDto) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(requestDto));
+        ApiResponseDTO<RemittanceReasonResponseDto> response = service.create(requestDto);
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<RemittanceReasonResponseDto> update(
+    public ResponseEntity<ApiResponseDTO<RemittanceReasonResponseDto>> update(
             @PathVariable Long id,
             @RequestBody RemittanceReasonUpdateDto updateDto) {
-        return ResponseEntity.ok(service.update(id, updateDto));
+        ApiResponseDTO<RemittanceReasonResponseDto> response = service.update(id, updateDto);
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<Void> deactivate(@PathVariable Long id) {
-        service.deactivate(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<ApiResponseDTO<String>> deactivate(@PathVariable Long id) {
+        ApiResponseDTO<String> response = service.deactivate(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponseDTO<String>> delete(
+            @PathVariable Long id
+    ) {
+
+        ApiResponseDTO<String> response = service.delete(id);
+
+        return ResponseEntity.ok(response);
     }
 }

@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.mapping.Component;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -38,6 +39,8 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
                         }
 
                         VestingRefundType entity = mapper.toEntity(requestDto);
+                        entity.setCreatedAt(LocalDateTime.now());
+                        entity.setCreatedBy(requestDto.getCreatedBy());
                         repository.save(entity);
                         List<BenefitComponentTypeMaster> benefitComponentTypeMasters = mapBenefitComponents(entity,
                                         requestDto.getBenefitComponentIds());
@@ -140,4 +143,26 @@ public class VestingRefundTypeServiceImpl implements VestingRefundTypeService {
                 repository.delete(entity);
                 return ApiResponseDTO.success("VestingRefundType deleted successfully");
         }
+
+    @Override
+    public ApiResponseDTO<VestingRefundTypeResponseDto> getByCode(String code) {
+
+        VestingRefundType entity = repository.findByCode(code)
+                .orElseThrow(() ->
+                        ClaimException.notFound(
+                                "VestingRefundType not found with code: " + code
+                        )
+                );
+
+        List<BenefitComponentTypeMaster> benefitComponentTypeMasters =
+                benefitMapRepository
+                        .findByVestingRefundType_Id(entity.getId())
+                        .stream()
+                        .map(VestingRefundBenefitMap::getBenefitComponentType)
+                        .toList();
+
+        return ApiResponseDTO.success(
+                mapper.toDto(entity, benefitComponentTypeMasters)
+        );
+    }
 }

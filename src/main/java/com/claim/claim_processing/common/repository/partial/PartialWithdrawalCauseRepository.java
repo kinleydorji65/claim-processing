@@ -1,5 +1,6 @@
 package com.claim.claim_processing.common.repository.partial;
 
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalCauseMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -13,12 +14,14 @@ public interface PartialWithdrawalCauseRepository extends JpaRepository<PartialW
     // check duplicate code (important for unique constraint handling)
     boolean existsByCode(String code);
 
+    Optional<PartialWithdrawalCauseMaster> findByCode(String code);
+
     // fetch active records only
-    List<PartialWithdrawalCauseMaster> findByIsActive(String isActive);
+    List<PartialWithdrawalCauseMaster> findByIsActive(ActivityEnum isActive);
 
     // optional: fetch by reason (FK filtering)
     List<PartialWithdrawalCauseMaster> findByReason_Id(Long reasonId);
 
     // optional: safe fetch by id + active check
-    Optional<PartialWithdrawalCauseMaster> findByIdAndIsActive(Long id, String isActive);
+    Optional<PartialWithdrawalCauseMaster> findByIdAndIsActive(Long id, ActivityEnum isActive);
 }

@@ -9,7 +9,6 @@ import lombok.*;
 @AllArgsConstructor
 public class ReserveAccountRequestDto {
 
-    private Long id;
 
     private String reserveAccountCode;
 

@@ -210,16 +210,6 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                 .displayName("Rule Service APIs")
                 .build();
     }
-    @Bean
-    public GroupedOpenApi documentApi() {
-        return GroupedOpenApi.builder()
-                .group("Document API Management")
-                .pathsToMatch(
-                        "/api/claim/documents/**"
-                )
-                .displayName("Document APIs")
-                .build();
-    }
 
     @Bean
     public GroupedOpenApi statusMasterApi() {

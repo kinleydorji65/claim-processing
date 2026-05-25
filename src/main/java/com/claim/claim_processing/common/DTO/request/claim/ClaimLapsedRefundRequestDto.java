@@ -4,6 +4,7 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -19,7 +20,8 @@ public class ClaimLapsedRefundRequestDto {
     private Long ruleTypeId;
 
     private String memberCategoryId;
-    private Long benefitTypeId;
+    private List<Long> benefitTypeIds;
+    private List<Long> existingBenefitIds;
 
     private Integer minContributionMonths;
     private Integer maxContributionMonths;

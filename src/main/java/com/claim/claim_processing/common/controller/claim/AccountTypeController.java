@@ -56,9 +56,22 @@ public class AccountTypeController {
     }
 
     // -----------------------------
+// GET BY CODE
+// -----------------------------
+    @GetMapping("/code/{code}")
+    public ResponseEntity<?> getByCode(
+            @PathVariable String code) {
+
+        ApiResponseDTO<AccountTypeResponseDto> response =
+                accountTypeService.getByCode(code);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // -----------------------------
     // UPDATE
     // -----------------------------
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody AccountTypeUpdateRequestDto requestDto) {
@@ -77,6 +90,19 @@ public class AccountTypeController {
 
         ApiResponseDTO<String> response =
                 accountTypeService.deactivate(id);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // -----------------------------
+// DELETE
+// -----------------------------
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(
+            @PathVariable Long id) {
+
+        ApiResponseDTO<String> response =
+                accountTypeService.delete(id);
 
         return ResponseEntity.ok(response);
     }

@@ -14,4 +14,5 @@ public class CessationTypeCreateRequestDto {
     private String code;
     private String name;
     private Long claimCircumstanceId;
+    private String createdBy;
 }

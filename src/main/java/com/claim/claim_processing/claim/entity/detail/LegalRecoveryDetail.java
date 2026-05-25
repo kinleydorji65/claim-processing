@@ -8,11 +8,11 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 
 import com.claim.claim_processing.claim.entity.application.ClaimApplication;
+import com.claim.claim_processing.common.entities.adjustmentMaster.LoanStatusMaster;
+import com.claim.claim_processing.common.entities.adjustmentMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;
-import com.claim.claim_processing.common.entities.loanMaster.LoanStatusMaster;
-import com.claim.claim_processing.common.entities.loanMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 @Entity

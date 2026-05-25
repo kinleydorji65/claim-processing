@@ -1,23 +1,24 @@
 package com.claim.claim_processing.common.service.calculationMaster;
 
 import com.claim.claim_processing.common.DTO.request.calculationMaster.CalculationStageRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.calculationMaster.CalculationStageResponseDto;
 
 import java.util.List;
 
 public interface CalculationStageMasterService {
 
-    CalculationStageResponseDto create(CalculationStageRequestDto request);
+    ApiResponseDTO<CalculationStageResponseDto> create(CalculationStageRequestDto request);
 
-    CalculationStageResponseDto update(Long id, CalculationStageRequestDto request);
+    ApiResponseDTO<CalculationStageResponseDto> update(Long id, CalculationStageRequestDto request);
 
-    CalculationStageResponseDto getById(Long id);
+    ApiResponseDTO<CalculationStageResponseDto> getById(Long id);
 
-    CalculationStageResponseDto getByCode(String code);
+    ApiResponseDTO<CalculationStageResponseDto> getByCode(String code);
 
-    List<CalculationStageResponseDto> getAll();
+    ApiResponseDTO<List<CalculationStageResponseDto>> getAll();
 
-    List<CalculationStageResponseDto> getAllActive();
+    ApiResponseDTO<List<CalculationStageResponseDto>> getAllActive();
 
-    void delete(Long id);
+    ApiResponseDTO<String> delete(Long id);
 }

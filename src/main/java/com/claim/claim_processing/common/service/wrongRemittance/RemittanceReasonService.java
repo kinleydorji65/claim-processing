@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.wrongRemittance;
 
 import com.claim.claim_processing.common.DTO.request.wrongRemittance.RemittanceReasonRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.wrongRemittance.RemittanceReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.wrongRemittance.RemittanceReasonUpdateDto;
 
@@ -8,17 +9,19 @@ import java.util.List;
 
 public interface RemittanceReasonService {
 
-    RemittanceReasonResponseDto create(RemittanceReasonRequestDto requestDto);
+    ApiResponseDTO<RemittanceReasonResponseDto> create(RemittanceReasonRequestDto requestDto);
 
-    RemittanceReasonResponseDto getById(Long id);
+    ApiResponseDTO<RemittanceReasonResponseDto> getById(Long id);
 
-    RemittanceReasonResponseDto getByCode(String code);
+    ApiResponseDTO<RemittanceReasonResponseDto> getByCode(String code);
 
-    List<RemittanceReasonResponseDto> getAll();
+    ApiResponseDTO<List<RemittanceReasonResponseDto>> getAll();
 
-    List<RemittanceReasonResponseDto> getAllActive();
+    ApiResponseDTO<List<RemittanceReasonResponseDto>> getAllActive();
 
-    RemittanceReasonResponseDto update(Long id, RemittanceReasonUpdateDto updateDto);
+    ApiResponseDTO<RemittanceReasonResponseDto> update(Long id, RemittanceReasonUpdateDto updateDto);
 
-    void deactivate(Long id);
+    ApiResponseDTO<String> deactivate(Long id);
+
+    ApiResponseDTO<String> delete(Long id);
 }

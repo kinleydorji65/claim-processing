@@ -1,21 +1,24 @@
 package com.claim.claim_processing.common.service.calculationMaster;
 
 import com.claim.claim_processing.common.DTO.request.calculationMaster.CalculationTriggerTypeRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.calculationMaster.CalculationTriggerTypeResponseDto;
 
 import java.util.List;
 
 public interface CalculationTriggerTypeService {
 
-    CalculationTriggerTypeResponseDto create(CalculationTriggerTypeRequestDto dto);
+    ApiResponseDTO<CalculationTriggerTypeResponseDto> create(CalculationTriggerTypeRequestDto dto);
 
-    CalculationTriggerTypeResponseDto patch(CalculationTriggerTypeRequestDto dto);
+    ApiResponseDTO<CalculationTriggerTypeResponseDto> update(Long id, CalculationTriggerTypeRequestDto dto);
 
-    CalculationTriggerTypeResponseDto getById(Long id);
+    ApiResponseDTO<CalculationTriggerTypeResponseDto> getById(Long id);
 
-    List<CalculationTriggerTypeResponseDto> getAll();
+    ApiResponseDTO<CalculationTriggerTypeResponseDto> getByCode(String code);
 
-    List<CalculationTriggerTypeResponseDto> getAllActive();
+    ApiResponseDTO<List<CalculationTriggerTypeResponseDto>> getAll();
 
-    void delete(Long id); // soft delete recommended
+    ApiResponseDTO<List<CalculationTriggerTypeResponseDto>> getAllActive();
+
+    ApiResponseDTO<String> delete(Long id);
 }

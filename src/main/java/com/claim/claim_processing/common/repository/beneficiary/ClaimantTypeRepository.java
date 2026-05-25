@@ -13,6 +13,6 @@ public interface ClaimantTypeRepository extends JpaRepository<ClaimantTypeMaster
 
     Optional<ClaimantTypeMaster> findByCode(String code);
     boolean existsByCode(String code);
-    List<ClaimantTypeMaster> findByIsActiveOrderByDisplayOrderAsc(ActivityEnum isActive);
+    List<ClaimantTypeMaster> findByIsActive(ActivityEnum isActive);
     Optional<ClaimantTypeMaster> findByCodeAndIsActive(String code, ActivityEnum isActive);
 }

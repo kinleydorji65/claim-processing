@@ -5,9 +5,9 @@ import com.claim.claim_processing.claim.entity.application.ClaimApplicationBankD
 import com.claim.claim_processing.claim.entity.calculation.ClaimApplicationCalculationSummary;
 import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.entities.paymentMaster.PaymentModeMaster;
 import com.claim.claim_processing.common.entities.paymentMaster.PaymentStatusMaster;
-import com.claim.claim_processing.common.entities.statusMaster.ReversalStatusMaster;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -105,7 +105,7 @@ public class ClaimApplicationPayment {
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "REVERSAL_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAP_REVERSAL_STATUS"))
-        private ReversalStatusMaster reversalStatus;
+        private StatusMaster reversalStatus;
 
         @Enumerated(EnumType.STRING)
         @Column(name = "IS_ACTIVE", length = 1)

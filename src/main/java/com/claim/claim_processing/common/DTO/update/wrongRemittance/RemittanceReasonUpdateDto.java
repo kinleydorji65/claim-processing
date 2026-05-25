@@ -13,4 +13,5 @@ public class RemittanceReasonUpdateDto {
     private String description;
     private Integer displayOrder;
     private String isActive;
+    private String updatedBy;
 }

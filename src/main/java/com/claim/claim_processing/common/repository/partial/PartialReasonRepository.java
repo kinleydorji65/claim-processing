@@ -15,5 +15,7 @@ public interface PartialReasonRepository extends JpaRepository<PartialWithdrawal
 
     Optional<PartialWithdrawalReasonMaster> findByCode(String code);
 
+    List<PartialWithdrawalReasonMaster> findByIsActive(ActivityEnum isActive);
+
     List<PartialWithdrawalReasonMaster> findByIsActiveOrderByNameAsc(ActivityEnum isActive);
 }

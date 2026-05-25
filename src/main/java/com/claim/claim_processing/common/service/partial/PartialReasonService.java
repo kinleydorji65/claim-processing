@@ -1,6 +1,7 @@
 package com.claim.claim_processing.common.service.partial;
 
 import com.claim.claim_processing.common.DTO.request.partial.PartialWithdrawalReasonRequestDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.partial.PartialWithdrawalReasonResponseDto;
 import com.claim.claim_processing.common.DTO.update.partial.PartialWithdrawalReasonUpdateDto;
 
@@ -8,17 +9,19 @@ import java.util.List;
 
 public interface PartialReasonService {
 
-    PartialWithdrawalReasonResponseDto create(PartialWithdrawalReasonRequestDto requestDto);
+    ApiResponseDTO<PartialWithdrawalReasonResponseDto> create(PartialWithdrawalReasonRequestDto requestDto);
 
-    PartialWithdrawalReasonResponseDto getById(Long id);
+    ApiResponseDTO<PartialWithdrawalReasonResponseDto> getById(Long id);
 
-    PartialWithdrawalReasonResponseDto getByCode(String code);
+    ApiResponseDTO<PartialWithdrawalReasonResponseDto> getByCode(String code);
 
-    List<PartialWithdrawalReasonResponseDto> getAll();
+    ApiResponseDTO<List<PartialWithdrawalReasonResponseDto>> getAll();
 
-    List<PartialWithdrawalReasonResponseDto> getAllActive();
+    ApiResponseDTO<List<PartialWithdrawalReasonResponseDto>> getAllActive();
 
-    PartialWithdrawalReasonResponseDto update(Long id, PartialWithdrawalReasonUpdateDto updateDto);
+    ApiResponseDTO<PartialWithdrawalReasonResponseDto> update(Long id, PartialWithdrawalReasonUpdateDto updateDto);
 
-    void deactivate(Long id);
+    ApiResponseDTO<String> delete(
+            Long id
+    );
 }
