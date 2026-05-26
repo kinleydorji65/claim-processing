@@ -35,9 +35,6 @@ public class NormalClaimResponseDto {
     private LocalDate relievingOrderDate;
     private LocalDate cessationEffectiveDate;
     private LocalDate exitDate;
-
-    private LocalDate lastPayCertificateDate;
-    private LocalDate auditClearanceDate;
     private LocalDate dateOfServiceJoining;
 
     // ---------- Business Fields ----------
@@ -45,10 +42,9 @@ public class NormalClaimResponseDto {
     private String terminationRemarks;
 
     private String relievingOrderNumber;
+    private String lastPayMonth;
 
-    private String lastPayCertificateNumber;
-    private String auditClearanceNumber;
-
+    private String relievingReferenceNumber;
     private BigDecimal finalBasicSalary;
 
     private Integer nonContributionMonths;

@@ -44,7 +44,7 @@ public class NormalClaimDetail {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
     private PayeeTypeMaster payeeType;
-    
+
     @Column(name = "PF_JOINING_DATE")
     private LocalDate pfJoiningDate;
 
@@ -73,18 +73,6 @@ public class NormalClaimDetail {
     @Column(name = "EXIT_DATE")
     private LocalDate exitDate;
 
-    @Column(name = "LAST_PAY_CERTIFICATE_NUMBER", length = 100)
-    private String lastPayCertificateNumber;
-
-    @Column(name = "LAST_PAY_CERTIFICATE_DATE")
-    private LocalDate lastPayCertificateDate;
-
-    @Column(name = "AUDIT_CLEARANCE_NUMBER", length = 100)
-    private String auditClearanceNumber;
-
-    @Column(name = "AUDIT_CLEARANCE_DATE")
-    private LocalDate auditClearanceDate;
-
     @Column(name = "DATE_OF_SERVICE_JOINING")
     private LocalDate dateOfServiceJoining;
 
@@ -109,6 +97,12 @@ public class NormalClaimDetail {
     @Column(name = "UPDATED_AT")
     private Timestamp updatedAt;
 
+    @Column(name = "LAST_PAY_MONTH", length = 20)
+    private String lastPayMonth;
+
+    @Column(name = "RELIEVING_REFERENCE_NUMBER", length = 100)
+    private String relievingReferenceNumber;
+
     @PrePersist
     public void prePersist() {
         createdAt = new Timestamp(System.currentTimeMillis());
@@ -120,5 +114,4 @@ public class NormalClaimDetail {
         updatedAt = new Timestamp(System.currentTimeMillis());
     }
 
-    
 }

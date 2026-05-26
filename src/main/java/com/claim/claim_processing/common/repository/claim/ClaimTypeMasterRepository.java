@@ -17,9 +17,6 @@ public interface ClaimTypeMasterRepository extends JpaRepository<ClaimTypeMaster
     // 🔹 Active records only
     List<ClaimTypeMaster> findByIsActive(ActivityEnum isActive);
 
-    // 🔹 Category-based filtering (useful for rule grouping/UI filters)
-    List<ClaimTypeMaster> findByCategoryCodeAndIsActive(String categoryCode, ActivityEnum isActive);
-
     // 🔹 Validation before insert
     boolean existsByCode(String code);
 }

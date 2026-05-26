@@ -63,6 +63,12 @@ public class BeneficiarySettlementDetail {
     @JoinColumn(name = "CESSATION_TYPE_ID")
     private CessationTypeMaster cessationType;
 
+    @Column(name = "DECEASED_MEMBER_CODE", length = 100)
+    private String deceasedMemberCode;
+
+    @Column(name = "DECEASED_NPPF_NUMBER", length = 100)
+    private String deceasedNppfNumber;
+
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
 
