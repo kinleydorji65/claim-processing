@@ -27,9 +27,6 @@ public class ClaimTypeMaster {
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "CATEGORY_CODE", length = 50)
-    private String categoryCode;
-
     @Convert(converter = ActivityEnumConverter.class)
     @Column(name = "IS_ACTIVE", length = 1)
     private ActivityEnum isActive;

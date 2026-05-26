@@ -9,7 +9,7 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnumConverter;
 
 @Entity
-@Table(name = "ACTION_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "ACTION_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
