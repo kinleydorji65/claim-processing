@@ -9,10 +9,8 @@ import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
-import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
 import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
-import com.claim.claim_processing.common.repository.claim.ClaimTypeMasterRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
@@ -35,106 +33,93 @@ public class RuleServiceImpl implements RuleService {
     private final CessationTypeRepository cessationTypeRepository;
 
     @Override
-public ApiResponseDTO<List<MatchedConditionRuleDto>> playWithRule(ClaimInitialPreviewRequest request) {
+    public ApiResponseDTO<List<MatchedConditionRuleDto>> playWithRule(ClaimInitialPreviewRequest request) {
 
-    List<ClaimTypeRuleMap> ruleMaps =
-            claimTypeRuleMapRepository.findByClaimType_Id(request.getClaimTypeId());
+        List<ClaimTypeRuleMap> ruleMaps = claimTypeRuleMapRepository.findByClaimType_Id(request.getClaimTypeId());
 
-    if (ruleMaps.isEmpty()) {
-        throw new RuntimeException("No rules configured for claim type id: " + request.getClaimTypeId());
-    }
-
-    MemberContributionSummary contributionSummary =
-            memberContributionService.getContributionSummary(request.getNppfNumber());
-
-    Integer totalMonths = contributionSummary.getTotalContributionMonths();
-
-    LocalDate cessationDate = request.getCessationDate() != null
-            ? request.getCessationDate()
-            : contributionSummary.getContributionEndDate();
-
-    List<MatchedConditionRuleDto> matchedRules = new ArrayList<>();
-
-    for (ClaimTypeRuleMap map : ruleMaps) {
-
-        RuleResponseDto ruleResponseDto = ruleGateWayService
-                .getByTopRuleType(map.getRuleType().getId())
-                .getData();
-
-        if (ruleResponseDto == null || ruleResponseDto.getSubClaimRules() == null) {
-            continue;
+        if (ruleMaps.isEmpty()) {
+            throw new RuntimeException("No rules configured for claim type id: " + request.getClaimTypeId());
         }
 
-        List<MatchedConditionRuleDto> matchedSubRules =
-                ruleResponseDto.getSubClaimRules()
-                        .stream()
-                        .filter(sr -> matchesCessationRuleType(sr, request))
-                        .filter(sr -> matchesRequestFilter(sr, request, cessationDate))
-                        .map(sr -> mapToMatchedRule(sr, request, contributionSummary, totalMonths))
-                        .filter(Objects::nonNull)
+        MemberContributionSummary contributionSummary = memberContributionService
+                .getContributionSummary(request.getNppfNumber());
+
+        Integer totalMonths = contributionSummary.getTotalContributionMonths();
+
+        LocalDate cessationDate = request.getCessationDate() != null
+                ? request.getCessationDate()
+                : contributionSummary.getContributionEndDate();
+
+        List<MatchedConditionRuleDto> matchedRules = new ArrayList<>();
+
+        for (ClaimTypeRuleMap map : ruleMaps) {
+
+            RuleResponseDto ruleResponseDto = ruleGateWayService
+                    .getByTopRuleType(map.getRuleType().getId())
+                    .getData();
+
+            if (ruleResponseDto == null || ruleResponseDto.getSubClaimRules() == null) {
+                continue;
+            }
+
+            boolean terminationClaim = isTerminationClaim(request);
+
+            List<RuleResponseDto.ClaimRuleResponseDto> subRules = ruleResponseDto.getSubClaimRules();
+
+            // NORMAL CLAIM -> exclude termination rules
+            if (!terminationClaim) {
+                subRules = subRules.stream()
+                        .filter(sr -> !isTerminationRuleType(sr))
                         .toList();
+            }
 
-        matchedRules.addAll(matchedSubRules);
+            // TERMINATION CLAIM -> exclude normal rules
+            else {
+                subRules = subRules.stream()
+                        .filter(this::isTerminationRuleType)
+                        .toList();
+            }
+
+            List<MatchedConditionRuleDto> matchedSubRules = subRules.stream()
+                    .filter(sr -> matchesRequestFilter(sr, request, cessationDate))
+                    .map(sr -> mapToMatchedRule(sr, request, contributionSummary, totalMonths))
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            matchedRules.addAll(matchedSubRules);
+        }
+
+        if (matchedRules.isEmpty()) {
+            return ApiResponseDTO.notFound("Rule Does Not Match");
+        }
+
+        return ApiResponseDTO.success(matchedRules);
     }
-
-    if (matchedRules.isEmpty()) {
-        return ApiResponseDTO.notFound("Rule Does Not Match");
-    }
-
-    return ApiResponseDTO.success(matchedRules);
-}
 
     private boolean matchesRequestFilter(
-        RuleResponseDto.ClaimRuleResponseDto sr,
-        ClaimInitialPreviewRequest request,
-        LocalDate cessationDate) {
+            RuleResponseDto.ClaimRuleResponseDto sr,
+            ClaimInitialPreviewRequest request,
+            LocalDate cessationDate) {
 
-    boolean dateMatch = cessationDate == null
-            || (
-                    (sr.getEffectiveFrom() == null || !cessationDate.isBefore(sr.getEffectiveFrom()))
-                    &&
-                    (sr.getEffectiveTo() == null || !cessationDate.isAfter(sr.getEffectiveTo()))
-            );
+        boolean dateMatch = cessationDate == null
+                || ((sr.getEffectiveFrom() == null || !cessationDate.isBefore(sr.getEffectiveFrom()))
+                        &&
+                        (sr.getEffectiveTo() == null || !cessationDate.isAfter(sr.getEffectiveTo())));
 
-    if (!dateMatch) {
-        return false;
-    }
+        if (!dateMatch) {
+            return false;
+        }
 
-    if (request.getLoanTypeId() != null && request.getLoanTypeId() != 0) {
-        return Objects.equals(sr.getLoanTypeId(), request.getLoanTypeId());
-    }
+        if (request.getLoanTypeId() != null && request.getLoanTypeId() != 0) {
+            return Objects.equals(sr.getLoanTypeId(), request.getLoanTypeId());
+        }
 
-    if (request.getReasonTypeId() != null && request.getReasonTypeId() != 0) {
-        return Objects.equals(sr.getPartialReasonId(), request.getReasonTypeId());
-    }
+        if (request.getReasonTypeId() != null && request.getReasonTypeId() != 0) {
+            return Objects.equals(sr.getPartialReasonId(), request.getReasonTypeId());
+        }
 
-    return true;
-}
-
-    private boolean matchesCessationRuleType(
-        RuleResponseDto.ClaimRuleResponseDto sr,
-        ClaimInitialPreviewRequest request) {
-
-    String ruleCode = sr.getRuleCode() == null ? "" : sr.getRuleCode().toUpperCase();
-
-    if (request.getCessationTypeId() == null) {
         return true;
     }
-
-    CessationTypeMaster cessationType = cessationTypeRepository
-            .findById(request.getCessationTypeId())
-            .orElseThrow(() -> new RuntimeException("Cessation type not found"));
-
-    String cessationCode = cessationType.getCode() == null ? "" : cessationType.getCode().toUpperCase();
-
-    if (cessationCode.contains("TERMINATION")) {
-        return ruleCode.startsWith("TERM_")
-                || ruleCode.startsWith("LAPSED_TERM_")
-                || ruleCode.startsWith("VESTING_");
-    }
-
-    return true;
-}
 
     private MatchedConditionRuleDto mapToMatchedRule(
             RuleResponseDto.ClaimRuleResponseDto sr,
@@ -171,6 +156,7 @@ public ApiResponseDTO<List<MatchedConditionRuleDto>> playWithRule(ClaimInitialPr
                                 .map(component -> MatchedConditionRuleDto.Components.builder()
                                         .componentId(component.getComponentId())
                                         .componentName(component.getName())
+                                        .componentCode(component.getCode())
                                         .build())
                                 .toList();
 

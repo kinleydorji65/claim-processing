@@ -29,6 +29,7 @@ public class MatchedConditionRuleDto {
 
     private List<Components> components;
     private List<RefundTypeDTO> refundTypes;
+    private Boolean isLoanRule;
 
     @Data
     @Builder
@@ -55,6 +56,7 @@ public class MatchedConditionRuleDto {
     public static class Components {
         private Long componentId;
         private String componentName;
+        private String componentCode;
     }
 
     @Data

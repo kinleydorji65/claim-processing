@@ -1,5 +1,8 @@
 package com.claim.claim_processing.integration.member.service.impl;
 
+import java.math.BigDecimal;
+import java.util.Objects;
+
 import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
@@ -16,19 +19,65 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class MemberServiceImpl implements MemberService {
-    
+
     private final MemberDetailRepository memberDetailRepository;
     private final MemberContributionService memberContributionService;
     private final MemberDetailMapper memberDetailMapper;
 
+    @Override
     public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String nppfNumber) {
-        MemberContributionSummary contributionSummary = memberContributionService.getContributionSummary(nppfNumber);
-        MemberDetail memberDetail = memberDetailRepository.findByNppfNumber(nppfNumber)
-                .orElseThrow(() -> new RuntimeException("Member not found with NPPF number: " + nppfNumber));  
-        // This is a placeholder implementation and should be replaced with actual logic to call the member service
-        MemberDetailResponseDto responseDto = memberDetailMapper.toMemberDetailResponseDto(memberDetail);
+
+        MemberContributionSummary contributionSummary =
+                memberContributionService.getContributionSummary(nppfNumber);
+
+        MemberDetail memberDetail = memberDetailRepository
+                .findByNppfNumber(nppfNumber)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Member not found with NPPF number: " + nppfNumber));
+
+        MemberDetailResponseDto responseDto =
+                memberDetailMapper.toMemberDetailResponseDto(memberDetail);
+
         responseDto.setPfJoiningDate(contributionSummary.getPfJoiningDate());
         responseDto.setPensionJoiningDate(contributionSummary.getPensionJoiningDate());
+
+        // =========================
+        // TOTAL BALANCE CALCULATION
+        // =========================
+
+        BigDecimal totalBalanceAmount = BigDecimal.ZERO;
+        BigDecimal totalBalanceWithoutInterestAmount = BigDecimal.ZERO;
+
+        if (contributionSummary != null
+                && contributionSummary.getComponentGroups() != null) {
+
+            totalBalanceAmount =
+                    contributionSummary.getComponentGroups()
+                            .stream()
+                            .filter(Objects::nonNull)
+                            .map(component ->
+                                    nullSafe(component.getPrincipal())
+                                            .add(nullSafe(component.getInterest())))
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            totalBalanceWithoutInterestAmount =
+                    contributionSummary.getComponentGroups()
+                            .stream()
+                            .filter(Objects::nonNull)
+                            .map(component ->
+                                    nullSafe(component.getPrincipal()))
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+
+        responseDto.setTotalBalanceAmount(totalBalanceAmount);
+        responseDto.setTotalBalanceWithoutInterestAmount(
+                totalBalanceWithoutInterestAmount);
+
         return ApiResponseDTO.success(responseDto);
+    }
+
+    private BigDecimal nullSafe(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 }

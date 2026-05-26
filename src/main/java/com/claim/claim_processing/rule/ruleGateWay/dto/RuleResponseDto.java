@@ -19,6 +19,7 @@ public class RuleResponseDto {
     private String code;
     private String name;
     private String ruleEffect;
+    private Boolean stopOnSuccess;
     private List<ClaimRuleResponseDto> subClaimRules;
 
     @Data
@@ -92,6 +93,7 @@ public static class ClaimRuleConditionResponse {
         public static class Components{
             private Long componentId;
             private String name;
+            private String code;
         }
 
         @Data

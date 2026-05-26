@@ -147,6 +147,7 @@ public class RuleGateWayServiceImpl implements RuleGateWayService {
                     return Components.builder()
                             .componentId(component.getId())
                             .name(component.getName())
+                            .code(component.getCode())
                             .build();
                 })
                 .toList();

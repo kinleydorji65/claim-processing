@@ -13,8 +13,8 @@ import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 public class ClaimCalculationResponseDTO {
     private String nppfNumber;
     private BigDecimal noOfYearInService;
-    private Boolean loanCheck;
-    private Boolean rentalCheck;
+    private boolean loanCheck;
+    private boolean rentalCheck;
     
     // Service period
     private LocalDate contributionStartDate;
@@ -22,7 +22,15 @@ public class ClaimCalculationResponseDTO {
 
     private Integer totalContributionMonths;
     private Integer totalNonContributionMonths;
-    private List<String> eligibilityNote;
+    private String eligibilityNote;
+
+    private String vestingNote;
+
+    private String lapsedNote;
+
+    private String recommendedBenefitType;
+
+    private List<String> forfeitedComponents;
     private BigDecimal totalPfAmount;
     private BigDecimal totalPensionAmount;
 

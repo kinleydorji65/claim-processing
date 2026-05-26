@@ -108,7 +108,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
 
             // ================= PF Member Contribution (pf_mc) =================
             MemberContributionSummary.ComponentGroup.builder()
-                    .code("pf_mc")
+                    .code("PF_MC")
                     .name("PF Member Contribution")
                     .principal(new BigDecimal("5000"))
                     .interest(new BigDecimal("200"))
@@ -120,11 +120,11 @@ public class MemberContributionServiceImpl implements MemberContributionService 
 
             // ================= PF Member Interest (pf_imc) =================
             MemberContributionSummary.ComponentGroup.builder()
-                    .code("pf_imc")
+                    .code("PF_IMC")
                     .name("PF Member Interest")
-                    .principal(new BigDecimal("0"))
+                    .principal(new BigDecimal("5000"))
                     .interest(new BigDecimal("200"))
-                    .totalBalance(new BigDecimal("200"))
+                    .totalBalance(new BigDecimal("5200"))
                     .interestRate(new BigDecimal("0.08"))
                     .lastInterestDate(LocalDate.of(2024, 12, 31))
                     .lastUpdatedDate(LocalDate.now())
@@ -132,7 +132,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
 
             // ================= PF Employer Contribution (pf_ec) =================
             MemberContributionSummary.ComponentGroup.builder()
-                    .code("pf_ec")
+                    .code("PF_EC")
                     .name("PF Employer Contribution")
                     .principal(new BigDecimal("5000"))
                     .interest(new BigDecimal("200"))
@@ -144,7 +144,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
 
             // ================= PF Employer Interest (pf_iec) =================
             MemberContributionSummary.ComponentGroup.builder()
-                    .code("pf_iec")
+                    .code("PF_IEC")
                     .name("PF Employer Interest")
                     .principal(new BigDecimal("0"))
                     .interest(new BigDecimal("200"))
