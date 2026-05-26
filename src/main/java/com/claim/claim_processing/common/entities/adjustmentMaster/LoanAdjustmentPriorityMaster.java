@@ -9,7 +9,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "LOAN_ADJUSTMENT_PRIORITY_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA", uniqueConstraints = {
+@Table(name = "LOAN_ADJUSTMENT_PRIORITY_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA", uniqueConstraints = {
         @UniqueConstraint(name = "UK_LOAN_ADJ_PRIORITY", columnNames = { "LOAN_TYPE_ID" })
 })
 @Getter

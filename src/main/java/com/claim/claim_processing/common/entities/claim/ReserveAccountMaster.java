@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
 
 @Entity
-@Table(name = "RESERVE_ACCOUNT_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "RESERVE_ACCOUNT_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor

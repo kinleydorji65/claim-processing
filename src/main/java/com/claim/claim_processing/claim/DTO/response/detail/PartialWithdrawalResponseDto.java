@@ -16,12 +16,14 @@ public class PartialWithdrawalResponseDto {
 
     // ---------- Parent ----------
     private Long claimApplicationId;
+    private String applicationNumber;
 
     // ---------- Masters ----------
     private Long payeeTypeId;
     private String payeeTypeName;
 
     private Long partialWithdrawalMasterId;
+    private String partialWithdrawalMasterName;
 
     private Long withdrawalReasonId;
     private String withdrawalReasonName;

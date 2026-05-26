@@ -38,7 +38,7 @@ public class PartialWithdrawalDetail {
     @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true)
     private ClaimApplication claimApplication;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
     private PayeeTypeMaster payeeType;
     

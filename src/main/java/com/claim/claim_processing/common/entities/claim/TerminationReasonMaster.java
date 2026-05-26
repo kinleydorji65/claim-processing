@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "TERMINATION_REASON_MASTER",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",
+        schema = "PPFMS_MASTER_SERVICE_SCHEMA",
         uniqueConstraints = {
                 @UniqueConstraint(name = "UK_TERMINATION_REASON_CODE", columnNames = "CODE")
         }

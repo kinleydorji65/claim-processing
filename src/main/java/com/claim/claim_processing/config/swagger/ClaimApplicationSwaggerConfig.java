@@ -28,4 +28,26 @@ public class ClaimApplicationSwaggerConfig implements SwaggerConfig {
                 .displayName("Normal Claim Detail APIs")
                 .build();
     }
+
+    @Bean
+    public GroupedOpenApi partialClaimDetailApi() {
+        return GroupedOpenApi.builder()
+                .group("Partial Claim Detail API Management")
+                .pathsToMatch(
+                        "/api/claim/partial-withdrawals/**"
+                )
+                .displayName("Partial Claim Detail APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi legalRecoveryClaimDetailApi() {
+        return GroupedOpenApi.builder()
+                .group("Legal Recovery Claim Detail API Management")
+                .pathsToMatch(
+                        "/api/claim/legal-recoveries/**"
+                )
+                .displayName("Legal Recovery Claim Detail APIs")
+                .build();
+    }
 }
