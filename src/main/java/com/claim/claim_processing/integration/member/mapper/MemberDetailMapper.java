@@ -25,7 +25,7 @@ import com.claim.claim_processing.common.repository.others.PersonIdentityReposit
 import com.claim.claim_processing.common.repository.others.RelationTypeRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = org.mapstruct.ReportingPolicy.IGNORE)
 public abstract class MemberDetailMapper {
     @Autowired
     protected PersonIdentityRepository personIdentityRepository;

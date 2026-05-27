@@ -244,11 +244,10 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 LoanAdjustmentResultDto loanAdjustmentResult = null;
 
                 if (isLoanApply) {
-                       loanAdjustmentResult = deductLoanByPriority(
-        request.getNppfNumber(),
-        matchedRules,
-        finalComponents
-);
+                        loanAdjustmentResult = deductLoanByPriority(
+                                        request.getNppfNumber(),
+                                        matchedRules,
+                                        finalComponents);
                 }
                 BigDecimal serviceYears = contributionSummary == null
                                 ? BigDecimal.ZERO
@@ -303,110 +302,107 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         }
 
         private LoanAdjustmentResultDto deductLoanByPriority(
-        String memberCode,
-        List<MatchedConditionRuleDto> matchedRules,
-        List<ComponentBalanceDTO> finalComponents
-) {
-    BigDecimal grossEligibleAmount = finalComponents == null
-            ? BigDecimal.ZERO
-            : finalComponents.stream()
-                    .filter(Objects::nonNull)
-                    .map(ComponentBalanceDTO::getAmount)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        String memberCode,
+                        List<MatchedConditionRuleDto> matchedRules,
+                        List<ComponentBalanceDTO> finalComponents) {
+                BigDecimal grossEligibleAmount = finalComponents == null
+                                ? BigDecimal.ZERO
+                                : finalComponents.stream()
+                                                .filter(Objects::nonNull)
+                                                .map(ComponentBalanceDTO::getAmount)
+                                                .filter(Objects::nonNull)
+                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    BigDecimal remainingEligibleAmount = grossEligibleAmount;
+                BigDecimal remainingEligibleAmount = grossEligibleAmount;
 
-    ApiResponseDTO<List<LoanDetailResponseDto>> loanResponse =
-            loanDetailService.getLoanDetails(memberCode);
+                ApiResponseDTO<List<LoanDetailResponseDto>> loanResponse = loanDetailService.getLoanDetails(memberCode);
 
-    List<LoanDetailResponseDto> loanDetails =
-            loanResponse == null || loanResponse.getData() == null
-                    ? List.of()
-                    : loanResponse.getData();
+                List<LoanDetailResponseDto> loanDetails = loanResponse == null || loanResponse.getData() == null
+                                ? List.of()
+                                : loanResponse.getData();
 
-    if (loanDetails.isEmpty()) {
-        return LoanAdjustmentResultDto.builder()
-                .finalPayableAmount(grossEligibleAmount)
-                .adjustmentNote("No loan found for adjustment.")
-                .build();
-    }
+                if (loanDetails.isEmpty()) {
+                        return LoanAdjustmentResultDto.builder()
+                                        .finalPayableAmount(grossEligibleAmount)
+                                        .adjustmentNote("No loan found for adjustment.")
+                                        .build();
+                }
 
-    List<LoanDeductionDto> loanRules = new ArrayList<>();
+                List<LoanDeductionDto> loanRules = new ArrayList<>();
 
-    for (MatchedConditionRuleDto rule : matchedRules) {
-        if (rule == null || rule.getCondition() == null) {
-            continue;
+                for (MatchedConditionRuleDto rule : matchedRules) {
+                        if (rule == null || rule.getCondition() == null) {
+                                continue;
+                        }
+
+                        if (!Boolean.TRUE.equals(rule.getIsLoanRule())) {
+                                continue;
+                        }
+
+                        String loanTypeName = rule.getLoanType() != null
+                                        ? rule.getLoanType()
+                                        : "Unknown";
+
+                        BigDecimal outstandingAmount = findLoanOutstandingAmount(
+                                        loanDetails,
+                                        loanTypeName);
+
+                        loanRules.add(
+                                        LoanDeductionDto.builder()
+                                                        .loanTypeName(loanTypeName)
+                                                        .prioritySequence(rule.getCondition().getPriorityOrder())
+                                                        .outstandingAmount(outstandingAmount)
+                                                        .build());
+                }
+
+                if (loanRules.isEmpty()) {
+                        return LoanAdjustmentResultDto.builder()
+                                        .finalPayableAmount(grossEligibleAmount)
+                                        .adjustmentNote("Loan adjustment is applicable, but no loan rule was matched.")
+                                        .build();
+                }
+
+                loanRules.sort(Comparator.comparing(
+                                LoanDeductionDto::getPrioritySequence,
+                                Comparator.nullsLast(Comparator.naturalOrder())));
+
+                List<String> adjustmentNotes = new ArrayList<>();
+
+                for (LoanDeductionDto loan : loanRules) {
+                        BigDecimal outstandingAmount = nullSafe(loan.getOutstandingAmount());
+
+                        if (outstandingAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                                adjustmentNotes.add(loan.getLoanTypeName() + " loan has no outstanding amount.");
+                                continue;
+                        }
+
+                        if (remainingEligibleAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                                adjustmentNotes.add(loan.getLoanTypeName()
+                                                + " loan was not adjusted due to insufficient eligible amount.");
+                                continue;
+                        }
+
+                        BigDecimal adjustedAmount = outstandingAmount.min(remainingEligibleAmount);
+                        BigDecimal remainingLoanAmount = outstandingAmount.subtract(adjustedAmount);
+
+                        remainingEligibleAmount = remainingEligibleAmount.subtract(adjustedAmount);
+
+                        if (remainingLoanAmount.compareTo(BigDecimal.ZERO) == 0) {
+                                adjustmentNotes.add(loan.getLoanTypeName() + " loan was fully adjusted with amount "
+                                                + adjustedAmount);
+                        } else {
+                                adjustmentNotes.add(loan.getLoanTypeName() + " loan was partially adjusted with amount "
+                                                + adjustedAmount + ". Remaining loan balance is "
+                                                + remainingLoanAmount);
+                        }
+                }
+
+                return LoanAdjustmentResultDto.builder()
+                                .finalPayableAmount(remainingEligibleAmount)
+                                .adjustmentNote(String.join(". ", adjustmentNotes)
+                                                + ". Final payable amount is " + remainingEligibleAmount + ".")
+                                .build();
         }
-
-        if (!Boolean.TRUE.equals(rule.getIsLoanRule())) {
-            continue;
-        }
-
-        String loanTypeName = rule.getLoanType() != null
-                ? rule.getLoanType()
-                : "Unknown";
-
-        BigDecimal outstandingAmount = findLoanOutstandingAmount(
-                loanDetails,
-                loanTypeName
-        );
-
-        loanRules.add(
-                LoanDeductionDto.builder()
-                        .loanTypeName(loanTypeName)
-                        .prioritySequence(rule.getCondition().getPriorityOrder())
-                        .outstandingAmount(outstandingAmount)
-                        .build()
-        );
-    }
-
-    if (loanRules.isEmpty()) {
-        return LoanAdjustmentResultDto.builder()
-                .finalPayableAmount(grossEligibleAmount)
-                .adjustmentNote("Loan adjustment is applicable, but no loan rule was matched.")
-                .build();
-    }
-
-    loanRules.sort(Comparator.comparing(
-            LoanDeductionDto::getPrioritySequence,
-            Comparator.nullsLast(Comparator.naturalOrder())
-    ));
-
-    List<String> adjustmentNotes = new ArrayList<>();
-
-    for (LoanDeductionDto loan : loanRules) {
-        BigDecimal outstandingAmount = nullSafe(loan.getOutstandingAmount());
-
-        if (outstandingAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            adjustmentNotes.add(loan.getLoanTypeName() + " loan has no outstanding amount.");
-            continue;
-        }
-
-        if (remainingEligibleAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            adjustmentNotes.add(loan.getLoanTypeName() + " loan was not adjusted due to insufficient eligible amount.");
-            continue;
-        }
-
-        BigDecimal adjustedAmount = outstandingAmount.min(remainingEligibleAmount);
-        BigDecimal remainingLoanAmount = outstandingAmount.subtract(adjustedAmount);
-
-        remainingEligibleAmount = remainingEligibleAmount.subtract(adjustedAmount);
-
-        if (remainingLoanAmount.compareTo(BigDecimal.ZERO) == 0) {
-            adjustmentNotes.add(loan.getLoanTypeName() + " loan was fully adjusted with amount " + adjustedAmount);
-        } else {
-            adjustmentNotes.add(loan.getLoanTypeName() + " loan was partially adjusted with amount "
-                    + adjustedAmount + ". Remaining loan balance is " + remainingLoanAmount);
-        }
-    }
-
-    return LoanAdjustmentResultDto.builder()
-            .finalPayableAmount(remainingEligibleAmount)
-            .adjustmentNote(String.join(". ", adjustmentNotes)
-                    + ". Final payable amount is " + remainingEligibleAmount + ".")
-            .build();
-}
 
         private BigDecimal findLoanOutstandingAmount(
                         List<LoanDetailResponseDto> loanDetails,

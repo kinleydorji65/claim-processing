@@ -19,7 +19,7 @@ public class MemberDetailResponseDto {
     private Long schemeTypeId;
     private String memberCode;
     private String identityTypeName;
-    private Long identityNumber;
+    private String identityNumber;
     private String memberCategory;
     private String employmentTypeName;
     @JsonFormat(pattern = "yyyy-MM-dd")
