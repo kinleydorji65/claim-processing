@@ -10,7 +10,7 @@ import java.sql.Timestamp;
 @Entity
 @Table(
         name = "RENTAL_ADJUSTMENT_MASTER",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA",
+        schema = "PPFMS_MASTER_SERVICE_SCHEMA",
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "UK_RENTAL_ADJUSTMENT_NAME",
