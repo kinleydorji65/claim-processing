@@ -39,6 +39,8 @@ public class ClaimCalculationResponseDTO {
 
     private EligibilityEnum pfIsEligible;
     private EligibilityEnum pensionIsEligible;
+    private BigDecimal finalPayableAmount;
+    private String adjustmentNote;
     
     // Component balances (raw components from Table 1)
     private List<ComponentBalanceDTO> components;

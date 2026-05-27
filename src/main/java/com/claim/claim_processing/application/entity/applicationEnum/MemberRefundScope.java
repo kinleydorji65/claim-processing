@@ -1,0 +1,6 @@
+package com.claim.claim_processing.application.entity.applicationEnum;
+
+public enum MemberRefundScope {
+    AGENCY_ON_BEHALF_OF_MEMBER,
+    MEMBER_INITIATED
+}

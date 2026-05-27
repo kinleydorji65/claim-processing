@@ -1,0 +1,415 @@
+package com.claim.claim_processing.application.service.detail.impl;
+
+import com.claim.claim_processing.application.DTO.request.detail.NormalClaimRequestDto;
+import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
+import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
+import com.claim.claim_processing.application.mapper.detail.NormalClaimMapper;
+import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
+import com.claim.claim_processing.application.repository.detail.NormalClaimDetailRepository;
+import com.claim.claim_processing.application.service.detail.NormalClaimService;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
+import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
+import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
+import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
+import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
+import com.claim.claim_processing.common.repository.claim.TerminationReasonRepository;
+import com.claim.claim_processing.common.repository.common.PayeeTypeRepository;
+import com.claim.claim_processing.exceptions.ClaimException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class NormalClaimServiceImpl implements NormalClaimService {
+
+    private final NormalClaimDetailRepository normalClaimDetailRepository;
+    private final ClaimApplicationRepository claimApplicationRepository;
+    private final CessationTypeRepository cessationTypeMasterRepository;
+    private final PayeeTypeRepository payeeTypeMasterRepository;
+    private final TerminationReasonRepository terminationReasonMasterRepository;
+    private final NormalClaimMapper normalClaimMapper;
+
+    @Override
+    public ApiResponseDTO<NormalClaimResponseDto> create(NormalClaimRequestDto request) {
+
+        validateRequired(request);
+
+        if (normalClaimDetailRepository.existsByClaimApplication_Id(request.getClaimApplicationId())) {
+            throw ClaimException.conflict(
+                    "Normal claim detail already exists for claim application id: "
+                            + request.getClaimApplicationId()
+            );
+        }
+
+        ClaimApplication claimApplication = getClaimApplication(request.getClaimApplicationId());
+        CessationTypeMaster cessationType = getCessationType(request.getCessationTypeId());
+        PayeeTypeMaster payeeType = getPayeeType(request.getPayeeTypeId());
+
+        validateByCessationType(request, cessationType.getCode());
+
+        NormalClaimDetail entity = normalClaimMapper.toEntity(request);
+
+        entity.setClaimApplication(claimApplication);
+        entity.setCessationType(cessationType);
+        entity.setPayeeType(payeeType);
+        entity.setTerminationReasonType(getTerminationReasonIfPresent(request.getTerminationReasonTypeId()));
+
+        NormalClaimDetail saved = normalClaimDetailRepository.save(entity);
+
+        return ApiResponseDTO.created(normalClaimMapper.toResponseDto(saved));
+    }
+
+    @Override
+    public ApiResponseDTO<NormalClaimResponseDto> update(Long id, NormalClaimRequestDto request) {
+
+        NormalClaimDetail existing = normalClaimDetailRepository.findById(id)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Normal claim detail",
+                        id.toString()
+                ));
+
+        if (request.getClaimApplicationId() != null) {
+            boolean duplicate = normalClaimDetailRepository
+                    .existsByClaimApplication_IdAndIdNot(request.getClaimApplicationId(), id);
+
+            if (duplicate) {
+                throw ClaimException.conflict(
+                        "Normal claim detail already exists for claim application id: "
+                                + request.getClaimApplicationId()
+                );
+            }
+        }
+        normalClaimMapper.updateEntityFromDto(request, existing);
+
+        if (request.getClaimApplicationId() != null) {
+            existing.setClaimApplication(getClaimApplication(request.getClaimApplicationId()));
+        }
+
+        if (request.getCessationTypeId() != null) {
+            CessationTypeMaster cessationType = getCessationType(request.getCessationTypeId());
+            existing.setCessationType(cessationType);
+            validateByCessationType(request, cessationType.getCode());
+        } else if (existing.getCessationType() != null) {
+            validateByCessationTypeForUpdate(existing);
+        }
+
+        if (request.getPayeeTypeId() != null) {
+            existing.setPayeeType(getPayeeType(request.getPayeeTypeId()));
+        }
+
+        if (request.getTerminationReasonTypeId() != null) {
+            existing.setTerminationReasonType(getTerminationReasonIfPresent(request.getTerminationReasonTypeId()));
+        }
+
+        NormalClaimDetail updated = normalClaimDetailRepository.save(existing);
+
+        return ApiResponseDTO.success(
+                "Normal claim detail updated successfully",
+                normalClaimMapper.toResponseDto(updated)
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<NormalClaimResponseDto> getById(Long id) {
+
+        NormalClaimDetail entity = normalClaimDetailRepository.findById(id)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Normal claim detail",
+                        id.toString()
+                ));
+        return ApiResponseDTO.success(
+                "Normal claim detail fetched successfully",
+                normalClaimMapper.toResponseDto(entity)
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<NormalClaimResponseDto> getByClaimApplicationId(Long claimApplicationId) {
+
+        NormalClaimDetail entity = normalClaimDetailRepository.findByClaimApplication_Id(claimApplicationId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Normal claim detail not found for claim application id: " + claimApplicationId
+                ));
+
+        return ApiResponseDTO.success(
+                "Normal claim detail fetched successfully",
+                normalClaimMapper.toResponseDto(entity)
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApiResponseDTO<List<NormalClaimResponseDto>> getAll() {
+
+        List<NormalClaimResponseDto> response = normalClaimDetailRepository.findAll()
+                .stream()
+                .map(normalClaimMapper::toResponseDto)
+                .toList();
+        if (response.isEmpty()) {
+            throw ClaimException.notFound("No normal claim details found");
+        }
+        return ApiResponseDTO.success("Normal claim details fetched successfully", response);
+    }
+
+    private void validateRequired(NormalClaimRequestDto request) {
+
+        if (request.getClaimApplicationId() == null) {
+            throw ClaimException.singleValidationError(
+                    "claimApplicationId",
+                    "Claim application id is required"
+            );
+        }
+
+        if (request.getCessationTypeId() == null) {
+            throw ClaimException.singleValidationError(
+                    "cessationTypeId",
+                    "Cessation type is required"
+            );
+        }
+
+        if (request.getPayeeTypeId() == null) {
+            throw ClaimException.singleValidationError(
+                    "payeeTypeId",
+                    "Payee type is required"
+            );
+        }
+
+        if (request.getLastPayMonth() == null
+                || request.getLastPayMonth().isBlank()) {
+
+            throw ClaimException.singleValidationError(
+                    "lastPayMonth",
+                    "Last pay month is required"
+            );
+        }
+    }
+
+    private void validateByCessationType(NormalClaimRequestDto request, String cessationTypeCode) {
+
+        if (cessationTypeCode == null || cessationTypeCode.isBlank()) {
+            throw ClaimException.singleValidationError(
+                    "cessationTypeId",
+                    "Cessation type code is missing"
+            );
+        }
+
+        String code = cessationTypeCode.trim().toUpperCase();
+
+        if ("TERMINATION".equals(code)) {
+
+            if (request.getDateOfTermination() == null) {
+                throw ClaimException.singleValidationError(
+                        "dateOfTermination",
+                        "Date of termination is required"
+                );
+            }
+
+            if (request.getCessationEffectiveDate() == null) {
+                throw ClaimException.singleValidationError(
+                        "cessationEffectiveDate",
+                        "Cessation effective date is required"
+                );
+            }
+
+            if (request.getTerminationReasonTypeId() == null) {
+                throw ClaimException.singleValidationError(
+                        "terminationReasonTypeId",
+                        "Termination reason is required"
+                );
+            }
+
+            if (request.getTerminatedBy() == null || request.getTerminatedBy().isBlank()) {
+                throw ClaimException.singleValidationError(
+                        "terminatedBy",
+                        "Terminated By / Issued By is required"
+                );
+            }
+
+            return;
+        }
+
+        if (isRetirementLike(code)) {
+
+            if (request.getRelievingOrderNumber() == null || request.getRelievingOrderNumber().isBlank()) {
+                throw ClaimException.singleValidationError(
+                        "relievingOrderNumber",
+                        "Relieving order number is required"
+                );
+            }
+
+            if (request.getRelievingOrderDate() == null) {
+                throw ClaimException.singleValidationError(
+                        "relievingOrderDate",
+                        "Relieving order date is required"
+                );
+            }
+
+            if (request.getCessationEffectiveDate() == null) {
+                throw ClaimException.singleValidationError(
+                        "cessationEffectiveDate",
+                        "Cessation effective date is required"
+                );
+            }
+
+            return;
+        }
+
+        if (isExitLike(code)) {
+
+            if (request.getCessationEffectiveDate() == null) {
+                throw ClaimException.singleValidationError(
+                        "cessationEffectiveDate",
+                        "Cessation effective date is required"
+                );
+            }
+
+            if (request.getRelievingReferenceNumber() == null || request.getRelievingReferenceNumber().isBlank()) {
+                throw ClaimException.singleValidationError(
+                        "relievingReferenceNumber",
+                        "Relieving reference number is required"
+                );
+            }
+
+            return;
+        }
+
+        if (request.getCessationEffectiveDate() == null) {
+            throw ClaimException.singleValidationError(
+                    "cessationEffectiveDate",
+                    "Cessation effective date is required"
+            );
+        }
+    }
+
+    private void validateByCessationTypeForUpdate(NormalClaimDetail existing) {
+
+        String code = existing.getCessationType().getCode();
+
+        if (code == null || code.isBlank()) {
+            throw ClaimException.singleValidationError(
+                    "cessationTypeId",
+                    "Cessation type code is missing"
+            );
+        }
+
+        code = code.trim().toUpperCase();
+
+        if ("TERMINATION".equals(code)) {
+
+            if (existing.getDateOfTermination() == null) {
+                throw ClaimException.singleValidationError("dateOfTermination", "Date of termination is required");
+            }
+
+            if (existing.getCessationEffectiveDate() == null) {
+                throw ClaimException.singleValidationError("cessationEffectiveDate", "Cessation effective date is required");
+            }
+
+            if (existing.getTerminationReasonType() == null) {
+                throw ClaimException.singleValidationError("terminationReasonTypeId", "Termination reason is required");
+            }
+
+            if (existing.getTerminatedBy() == null || existing.getTerminatedBy().isBlank()) {
+                throw ClaimException.singleValidationError("terminatedBy", "Terminated By / Issued By is required");
+            }
+
+            return;
+        }
+
+        if (isRetirementLike(code)) {
+
+            if (existing.getRelievingOrderNumber() == null || existing.getRelievingOrderNumber().isBlank()) {
+                throw ClaimException.singleValidationError("relievingOrderNumber", "Relieving order number is required");
+            }
+
+            if (existing.getRelievingOrderDate() == null) {
+                throw ClaimException.singleValidationError("relievingOrderDate", "Relieving order date is required");
+            }
+
+            if (existing.getCessationEffectiveDate() == null) {
+                throw ClaimException.singleValidationError("cessationEffectiveDate", "Cessation effective date is required");
+            }
+
+            return;
+        }
+
+        if (isExitLike(code)) {
+
+            if (existing.getCessationEffectiveDate() == null) {
+                throw ClaimException.singleValidationError("cessationEffectiveDate", "Cessation effective date is required");
+            }
+
+            if (existing.getRelievingReferenceNumber() == null || existing.getRelievingReferenceNumber().isBlank()) {
+                throw ClaimException.singleValidationError("relievingReferenceNumber", "Relieving reference number is required");
+            }
+
+            return;
+        }
+
+        if (existing.getCessationEffectiveDate() == null) {
+            throw ClaimException.singleValidationError(
+                    "cessationEffectiveDate",
+                    "Cessation effective date is required"
+            );
+        }
+    }
+
+    private boolean isRetirementLike(String code) {
+        return List.of(
+                "RETIREMENT",
+                "EARLY_RETIREMENT",
+                "COMPULORY_RETIREMENT"
+        ).contains(code);
+    }
+
+    private boolean isExitLike(String code) {
+        return List.of(
+                "RESIGNATION",
+                "SERVICE_RELIEF",
+                "CONTRACT"
+        ).contains(code);
+    }
+
+    private ClaimApplication getClaimApplication(Long id) {
+        return claimApplicationRepository.findById(id)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Claim application",
+                        id.toString()
+                ));
+    }
+
+    private CessationTypeMaster getCessationType(Long id) {
+        return cessationTypeMasterRepository.findById(id)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Cessation type",
+                        id.toString()
+                ));
+    }
+
+    private PayeeTypeMaster getPayeeType(Long id) {
+        return payeeTypeMasterRepository.findById(id)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Payee type",
+                        id.toString()
+                ));
+    }
+
+    private TerminationReasonMaster getTerminationReasonIfPresent(Long id) {
+
+        if (id == null) {
+            return null;
+        }
+
+        return terminationReasonMasterRepository.findById(id)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Termination reason",
+                        id.toString()
+                ));
+    }
+}

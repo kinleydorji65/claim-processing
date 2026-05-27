@@ -110,8 +110,8 @@ public class RuleServiceImpl implements RuleService {
             return false;
         }
 
-        if (request.getLoanTypeId() != null && request.getLoanTypeId() != 0) {
-            return Objects.equals(sr.getLoanTypeId(), request.getLoanTypeId());
+        if (sr.getLoanTypeId() != null && sr.getLoanTypeId() != 0) {
+            return true;
         }
 
         if (request.getReasonTypeId() != null && request.getReasonTypeId() != 0) {

@@ -1,22 +1,23 @@
-package com.claim.claim_processing.document.entity;
+package com.claim.claim_processing.application.entity.application;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Timestamp;
 
-import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.others.BankType;
 import com.claim.claim_processing.common.entities.statusMaster.VerificationStatusMaster;
 
 @Entity
-@Table(name = "CLAIM_APPLICATION_DOCUMENT_DETAIL", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "CLAIM_APPLICATION_BANK_DETAIL", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ClaimApplicationDocumentDetail {
+public class ClaimApplicationBankDetail {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,60 +25,45 @@ public class ClaimApplicationDocumentDetail {
         private Long id;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_CADD_CLAIM_APP"))
+        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_CABD_CLAIM_APP"))
         private ClaimApplication claimApplication;
 
         @Column(name = "BENEFICIARY_IDENTIFIER", length = 100)
         private String beneficiaryIdentifier;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "DOCUMENT_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CADD_DOC_TYPE"))
-        private DocumentTypeMaster documentType;
-
-        @Column(name = "DOCUMENT_NAME", length = 255)
-        private String documentName;
-
-        @Column(name = "DOCUMENT_REFERENCE_NUMBER", length = 100)
-        private String documentReferenceNumber;
-
-        @Column(name = "FILE_NAME", length = 255)
-        private String fileName;
-
-        @Column(name = "FILE_PATH", length = 500)
-        private String filePath;
-
-        @Column(name = "FILE_URL", length = 500)
-        private String fileUrl;
-
-        @Column(name = "FILE_EXTENSION", length = 20)
-        private String fileExtension;
-
-        @Column(name = "FILE_SIZE")
-        private Long fileSize;
-
-        @Column(name = "MIME_TYPE", length = 100)
-        private String mimeType;
-
-        @Column(name = "IS_MANDATORY", length = 1)
-        @Builder.Default
-        private String isMandatory = "N";
-
-        @Column(name = "IS_VERIFIED", length = 1)
-        @Builder.Default
-        private String isVerified = "N";
+        @JoinColumn(name = "CLAIMANT_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CABD_CLAIMANT_TYPE"))
+        private ClaimantTypeMaster claimantType;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "VERIFICATION_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CADD_VER_STATUS"))
-        private VerificationStatusMaster verificationStatus;
+        @JoinColumn(name = "BANK_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CABD_BANK_TYPE"))
+        private BankType bankType;
 
-        @Column(name = "DOCUMENT_REMARKS", length = 1000)
-        private String documentRemarks;
+        @Column(name = "ACCOUNT_NUMBER", length = 100)
+        private String accountNumber;
 
-        @Column(name = "UPLOADED_BY", length = 100)
-        private String uploadedBy;
+        @Column(name = "ACCOUNT_HOLDER_NAME", length = 200)
+        private String accountHolderName;
 
-        @Column(name = "UPLOADED_AT")
-        private Timestamp uploadedAt;
+        @Column(name = "IFSC_OR_ROUTING_CODE", length = 100)
+        private String ifscOrRoutingCode;
+
+        @Enumerated(EnumType.STRING)
+        @Column(name = "IS_DEFAULT_BANK", length = 1)
+        @Builder.Default
+        private ActivityEnum isDefaultBank = ActivityEnum.N;
+
+        @Enumerated(EnumType.STRING)
+        @Column(name = "IS_SELECTED_BANK", length = 1)
+        @Builder.Default
+        private ActivityEnum isSelectedBank = ActivityEnum.N;
+
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "BANK_VERIFICATION_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CABD_VER_STATUS"))
+        private VerificationStatusMaster bankVerificationStatus;
+
+        @Column(name = "REMARKS", length = 1000)
+        private String remarks;
 
         @Column(name = "VERIFIED_BY", length = 100)
         private String verifiedBy;

@@ -13,6 +13,5 @@ public class ClaimInitialPreviewRequest {
     private LocalDate cessationDate;
     private LocalDate serviceJoiningDate; 
     private Boolean isSpecialCase;
-    private Long loanTypeId;
     private Long reasonTypeId;
 }
