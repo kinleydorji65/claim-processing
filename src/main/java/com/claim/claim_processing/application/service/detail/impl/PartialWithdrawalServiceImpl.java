@@ -1,13 +1,13 @@
-package com.claim.claim_processing.claim.service.detail.impl;
+package com.claim.claim_processing.application.service.detail.impl;
 
-import com.claim.claim_processing.claim.DTO.request.detail.PartialWithdrawalRequestDto;
-import com.claim.claim_processing.claim.DTO.response.detail.PartialWithdrawalResponseDto;
-import com.claim.claim_processing.claim.entity.application.ClaimApplication;
-import com.claim.claim_processing.claim.entity.detail.PartialWithdrawalDetail;
-import com.claim.claim_processing.claim.mapper.detail.PartialWithdrawalMapper;
-import com.claim.claim_processing.claim.repository.application.ClaimApplicationRepository;
-import com.claim.claim_processing.claim.repository.detail.PartialWithdrawalDetailRepository;
-import com.claim.claim_processing.claim.service.detail.PartialWithdrawalService;
+import com.claim.claim_processing.application.DTO.request.detail.PartialWithdrawalRequestDto;
+import com.claim.claim_processing.application.DTO.response.detail.PartialWithdrawalResponseDto;
+import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.application.entity.detail.PartialWithdrawalDetail;
+import com.claim.claim_processing.application.mapper.detail.PartialWithdrawalMapper;
+import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
+import com.claim.claim_processing.application.repository.detail.PartialWithdrawalDetailRepository;
+import com.claim.claim_processing.application.service.detail.PartialWithdrawalService;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.partial.*;

@@ -1,6 +1,8 @@
 package com.claim.claim_processing.application.controller.detail;
 
+import com.claim.claim_processing.application.DTO.request.detail.LegalRecoveryRequestDto;
 import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
+import com.claim.claim_processing.application.service.detail.LegalRecoveryService;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
