@@ -1,19 +1,17 @@
 package com.claim.claim_processing.application.entity.calculation;
 
-import com.claim.claim_processing.application.entity.application.ClaimApplication;
-import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
-import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
-import com.claim.claim_processing.common.entities.common.StageMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.rule.ruleGateWay.entities.ClaimRuleMaster;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Timestamp;
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "CLAIM_APPLICATION_RULE_EVALUATION", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "CLAIM_APPLICATION_RULE_EVALUATION", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,112 +19,88 @@ import java.time.LocalDate;
 @Builder
 public class ClaimApplicationRuleEvaluation {
 
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CALCULATION_SUMMARY_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_CARE_CALC_SUMMARY"))
-        private ClaimApplicationCalculationSummary calculationSummary;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CALCULATION_SUMMARY_ID", nullable = false)
+    private ClaimApplicationCalculationSummary calculationSummary;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_CARE_CLAIM_APP"))
-        private ClaimApplication claimApplication;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "RULE_TYPE_ID")
+    private ClaimRuleMaster rule;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "RULE_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CARE_RULE_TYPE"))
-        private RuleTypeMaster ruleType;
+    @Column(name = "RULE_CODE", length = 100)
+    private String ruleCode;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "EVALUATION_STAGE_ID", foreignKey = @ForeignKey(name = "FK_CARE_EVAL_STAGE"))
-        private StageMaster evaluationStage;
+    @Column(name = "RULE_NAME", length = 300)
+    private String ruleName;
 
-        @Column(name = "EVALUATION_TRIGGER_TYPE_ID")
-        private Long evaluationTriggerTypeId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_RULE_MATCHED", length = 1)
+    @Builder.Default
+    private ActivityEnum isRuleMatched = ActivityEnum.N;
 
-        @Column(name = "IS_RULE_MATCHED", length = 1)
-        @Enumerated(EnumType.STRING)
-        @Builder.Default
-        private ActivityEnum isRuleMatched = ActivityEnum.N;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_RULE_APPLIED", length = 1)
+    @Builder.Default
+    private ActivityEnum isRuleApplied = ActivityEnum.N;
 
-        @Column(name = "IS_RULE_APPLIED", length = 1)
-        @Enumerated(EnumType.STRING)
-        @Builder.Default
-        private ActivityEnum isRuleApplied = ActivityEnum.N;
+    @Column(name = "RESULT_MESSAGE", length = 2000)
+    private String resultMessage;
 
-        @Column(name = "IS_MANUAL_OVERRIDE", length = 1)
-        @Enumerated(EnumType.STRING)
-        @Builder.Default
-        private ActivityEnum isManualOverride = ActivityEnum.N;
+    @Lob
+    @Column(name = "INPUT_SNAPSHOT_JSON")
+    private String inputSnapshotJson;
 
-        @Column(name = "OVERRIDE_REASON", length = 1000)
-        private String overrideReason;
+    @Lob
+    @Column(name = "OUTPUT_SNAPSHOT_JSON")
+    private String outputSnapshotJson;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "EVALUATION_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CARE_EVAL_STATUS"))
-        private ReviewStatusMaster evaluationStatus;
+    @Column(name = "EVALUATED_AT")
+    private Timestamp evaluatedAt;
 
-        @Column(name = "EVALUATION_RESULT_CODE", length = 100)
-        private String evaluationResultCode;
+    @Column(name = "EVALUATED_BY", length = 100)
+    private String evaluatedBy;
 
-        @Column(name = "EVALUATION_RESULT_MESSAGE", length = 2000)
-        private String evaluationResultMessage;
+    @Column(name = "REMARKS", length = 1000)
+    private String remarks;
 
-        @Lob
-        @Column(name = "INPUT_SNAPSHOT_JSON")
-        private String inputSnapshotJson;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_ACTIVE", length = 1)
+    @Builder.Default
+    private ActivityEnum isActive = ActivityEnum.Y;
 
-        @Lob
-        @Column(name = "OUTPUT_SNAPSHOT_JSON")
-        private String outputSnapshotJson;
+    @Column(name = "CREATED_BY", length = 100)
+    private String createdBy;
 
-        @Column(name = "RULE_FORMULA", length = 2000)
-        private String ruleFormula;
+    @Column(name = "CREATED_AT")
+    private Timestamp createdAt;
 
-        @Lob
-        @Column(name = "RULE_PARAMETERS_JSON")
-        private String ruleParametersJson;
+    @Column(name = "UPDATED_BY", length = 100)
+    private String updatedBy;
 
-        @Column(name = "EFFECTIVE_FROM")
-        private LocalDate effectiveFrom;
+    @Column(name = "UPDATED_AT")
+    private Timestamp updatedAt;
 
-        @Column(name = "EFFECTIVE_TO")
-        private LocalDate effectiveTo;
+    @OneToMany(mappedBy = "ruleEvaluation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationCalculationComponent> components = new ArrayList<>();
 
-        @Column(name = "EVALUATED_BY", length = 100)
-        private String evaluatedBy;
+    @PrePersist
+    public void prePersist() {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        createdAt = now;
+        updatedAt = now;
 
-        @Column(name = "EVALUATED_AT")
-        private Timestamp evaluatedAt;
-
-        @Column(name = "REMARKS", length = 1000)
-        private String remarks;
-
-        @Enumerated(EnumType.STRING)
-        @Column(name = "IS_ACTIVE", length = 1)
-        @Builder.Default
-        private ActivityEnum isActive = ActivityEnum.Y;
-
-        @Column(name = "CREATED_BY", length = 100)
-        private String createdBy;
-
-        @Column(name = "CREATED_AT", insertable = false, updatable = false)
-        private Timestamp createdAt;
-
-        @Column(name = "UPDATED_BY", length = 100)
-        private String updatedBy;
-
-        @Column(name = "UPDATED_AT", insertable = false, updatable = false)
-        private Timestamp updatedAt;
-
-        @PrePersist
-        public void prePersist() {
-                createdAt = new Timestamp(System.currentTimeMillis());
-                updatedAt = new Timestamp(System.currentTimeMillis());
+        if (evaluatedAt == null) {
+            evaluatedAt = now;
         }
+    }
 
-        @PreUpdate
-        public void preUpdate() {
-                updatedAt = new Timestamp(System.currentTimeMillis());
-        }
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = new Timestamp(System.currentTimeMillis());
+    }
 }

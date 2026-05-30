@@ -1,25 +1,20 @@
 package com.claim.claim_processing.application.entity.calculation;
 
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
-import com.claim.claim_processing.common.entities.arrMaster.ArrRuleMaster;
-import com.claim.claim_processing.common.entities.arrMaster.CreditMethodMaster;
-import com.claim.claim_processing.common.entities.calculationMaster.CalculationTriggerTypeMaster;
-import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.StageMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.others.Currency;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
-
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "CLAIM_APPLICATION_CALCULATION_SUMMARY", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "CLAIM_APPLICATION_CALCULATION_SUMMARY", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,133 +22,81 @@ import java.util.List;
 @Builder
 public class ClaimApplicationCalculationSummary {
 
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_CACS_CLAIM_APP"))
-        private ClaimApplication claimApplication;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false)
+    private ClaimApplication claimApplication;
 
-        @Column(name = "CALCULATION_RUN_NO")
-        private Integer calculationRunNo;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CALCULATION_STAGE_ID")
+    private StageMaster calculationStage;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CALCULATION_STAGE_ID", foreignKey = @ForeignKey(name = "FK_CACS_CALC_STAGE"))
-        private StageMaster calculationStage;
+    @Column(name = "CALCULATION_EFFECTIVE_DATE")
+    private LocalDate calculationEffectiveDate;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CALCULATION_TRIGGER_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CACS_TRIGGER_TYPE"))
-        private CalculationTriggerTypeMaster calculationTriggerType;
+    @Column(name = "FINAL_PAYABLE_AMOUNT", precision = 15, scale = 2)
+    private BigDecimal finalPayableAmount;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CREDIT_METHOD_ID", foreignKey = @ForeignKey(name = "FK_CACS_CREDIT_METHOD"))
-        private CreditMethodMaster creditMethod;
+    @Column(name = "NUMBER_OF_SERVICE_IN_YEAR", precision = 15, scale = 2)
+    private BigDecimal numberOfServiceInYear;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "ARR_RULE_ID", foreignKey = @ForeignKey(name = "FK_CACS_ARR_RULE"))
-        private ArrRuleMaster arrRule;
+    @Column(name = "ACTUAL_AMOUNT_CALCULATED", precision = 15, scale = 2)
+    private BigDecimal actualAmountCalculated;
 
-        @Column(name = "IS_PENSION_BALANCE_INCLUDED", length = 1)
-        @Enumerated(EnumType.STRING)
-        @Builder.Default
-        private ActivityEnum isPensionBalanceIncluded = ActivityEnum.N;
+    @Column(name = "IS_PF_ELIGIBLE", length = 1)
+    @Builder.Default
+    private String isPfEligible = "N";
 
-        @Column(name = "CALCULATION_EFFECTIVE_DATE")
-        private LocalDate calculationEffectiveDate;
+    @Column(name = "IS_PENSION_ELIGIBLE", length = 1)
+    @Builder.Default
+    private String isPensionEligible = "N";
 
-        @Column(name = "BASE_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal baseAmount;
+    @Column(name = "TOTAL_CONTRIBUTION_MONTH", precision = 15, scale = 2)
+    private BigDecimal totalContributionMonth;
 
-        @Column(name = "GROSS_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal grossAmount;
+    @Column(name = "RECOMMENDED_BENEFIT_TYPE", length = 2000)
+    private String recommendedBenefitType;
 
-        @Column(name = "DEDUCTION_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal deductionAmount;
+    @Column(name = "CALCULATION_REMARKS", length = 2000)
+    private String calculationRemarks;
 
-        @Column(name = "LOAN_ADJUSTMENT_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal loanAdjustmentAmount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CALCULATION_STATUS_ID", referencedColumnName = "STATUS_ID")
+    private StatusMaster calculationStatus;
 
-        @Column(name = "REFUND_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal refundAmount;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_ACTIVE", length = 1)
+    @Builder.Default
+    private ActivityEnum isActive = ActivityEnum.Y;
 
-        @Column(name = "RECOVERY_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal recoveryAmount;
+    @Column(name = "CREATED_BY", length = 100)
+    private String createdBy;
 
-        @Column(name = "NET_PAYABLE_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal netPayableAmount;
+    @Column(name = "CREATED_AT")
+    private Timestamp createdAt;
 
-        @Column(name = "SYSTEM_CALCULATED_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal systemCalculatedAmount;
+    @Column(name = "UPDATED_BY", length = 100)
+    private String updatedBy;
 
-        @Column(name = "VERIFIED_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal verifiedAmount;
+    @Column(name = "UPDATED_AT")
+    private Timestamp updatedAt;
 
-        @Column(name = "APPROVED_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal approvedAmount;
+    @OneToMany(mappedBy = "calculationSummary", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimApplicationRuleEvaluation> ruleEvaluations = new ArrayList<>();
 
-        @Column(name = "PAID_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal paidAmount;
+    @PrePersist
+    public void prePersist() {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        createdAt = now;
+        updatedAt = now;
+    }
 
-        @Column(name = "POSTED_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal postedAmount;
-
-        @Column(name = "DIFFERENCE_REASON", length = 1000)
-        private String differenceReason;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "FINAL_PAYABLE_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CACS_FINAL_PAYABLE_REVIEW"))
-        private ReviewStatusMaster finalPayableReviewStatus;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CALCULATION_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CACS_CALC_STATUS"))
-        private StatusMaster calculationStatus;
-
-        @Column(name = "CALCULATION_REMARKS", length = 2000)
-        private String calculationRemarks;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(
-                name = "CURRENCY_ID",
-                foreignKey = @ForeignKey(name = "FK_CACS_CURRENCY")
-        )
-        private Currency currency;
-
-        @Column(name = "CALCULATED_BY", length = 100)
-        private String calculatedBy;
-
-        @Column(name = "CALCULATED_AT")
-        private Timestamp calculatedAt;
-
-        @Column(name = "CREATED_BY", length = 100)
-        private String createdBy;
-
-        @Column(name = "CREATED_AT", insertable = false, updatable = false)
-        private Timestamp createdAt;
-
-        @Column(name = "UPDATED_BY", length = 100)
-        private String updatedBy;
-
-        @Column(name = "UPDATED_AT", insertable = false, updatable = false)
-        private Timestamp updatedAt;
-
-        @OneToMany(mappedBy = "calculationSummary", cascade = CascadeType.ALL, orphanRemoval = true)
-        @Builder.Default
-        private List<ClaimApplicationCalculationComponent> calculationSummary = new java.util.ArrayList<>();
-
-        @OneToMany(mappedBy = "calculationSummary", cascade = CascadeType.ALL, orphanRemoval = true)
-        @Builder.Default
-        private List<ClaimApplicationRuleEvaluation> ruleEvaluations = new java.util.ArrayList<>();
-
-        @PrePersist
-        public void prePersist() {
-                createdAt = new Timestamp(System.currentTimeMillis());
-                updatedAt = new Timestamp(System.currentTimeMillis());
-        }
-
-        @PreUpdate
-        public void preUpdate() {
-                updatedAt = new Timestamp(System.currentTimeMillis());
-        }
-
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = new Timestamp(System.currentTimeMillis());
+    }
 }

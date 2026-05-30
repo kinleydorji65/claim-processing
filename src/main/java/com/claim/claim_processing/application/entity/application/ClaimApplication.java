@@ -18,7 +18,7 @@ import com.claim.claim_processing.application.entity.workFlow.*;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.common.*;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
 import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
@@ -58,8 +58,8 @@ public class ClaimApplication {
     private SubmissionChannelMaster submissionChannel;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SCHEME_TYPE_ID")
-    private SchemeMaster schemeType;
+    @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "SCHEME_TYPE_ID")
+    private SchemeType schemeType;
 
     @Column(name = "TOTAL_CONTRIBUTION_MONTHS")
     private Integer totalContributionMonths;
@@ -179,20 +179,12 @@ public class ClaimApplication {
     @Builder.Default
     private List<ClaimApplicationDeductionDetail> deductionDetails = new ArrayList<>();
 
-    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ClaimApplicationLoanDetail> loanDetails = new ArrayList<>();
-
     // // ---------- Calculation ----------
 
     @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ClaimApplicationCalculationSummary> calculationSummaries = new ArrayList<>();
-
-    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ClaimApplicationRuleEvaluation> ruleEvaluations = new ArrayList<>();
-
+    
     // // ---------- Payment ----------
 
     @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)

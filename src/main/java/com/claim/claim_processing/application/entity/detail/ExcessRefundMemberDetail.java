@@ -8,7 +8,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 
 @Entity
 @Table(
@@ -33,8 +33,8 @@ public class ExcessRefundMemberDetail {
     private String memberNppfNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SCHEME_TYPE_ID")
-    private SchemeMaster schemeType;
+    @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "SCHEME_TYPE_ID")
+    private SchemeType schemeType;
 
     @Column(name = "EMPLOYMENT_TYPE", length = 100)
     private String employmentType;

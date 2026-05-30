@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 
-import com.claim.claim_processing.common.entities.common.DeductionReferenceTypeMaster;
 import com.claim.claim_processing.common.entities.common.DeductionTypeMaster;
 import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -32,10 +31,6 @@ public class ClaimApplicationDeductionDetail {
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "DEDUCTION_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CADD_DED_TYPE"))
         private DeductionTypeMaster deductionType;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "DEDUCTION_REFERENCE_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CADD_DED_REF_TYPE"))
-        private DeductionReferenceTypeMaster deductionReferenceType;
 
         @Column(name = "OUTSTANDING_AMOUNT", precision = 15, scale = 2)
         private BigDecimal outstandingAmount;
@@ -94,16 +89,7 @@ public class ClaimApplicationDeductionDetail {
 
         @OneToMany(mappedBy = "deductionDetail", cascade = CascadeType.ALL, orphanRemoval = true)
         @Builder.Default
-        private List<ClaimApplicationLoanDetail> loanDetails = new java.util.ArrayList<>();
-
-        @OneToMany(mappedBy = "deductionDetail", cascade = CascadeType.ALL, orphanRemoval = true)
-        @Builder.Default
-        private List<ClaimApplicationRentalDeductionDetail> rentalDetails = new java.util.ArrayList<>();
-
-
-        @OneToOne(mappedBy = "deductionDetail", cascade = CascadeType.ALL, orphanRemoval = true)
-        @Builder.Default
-        private ClaimApplicationTdsTaxDetail tdsTaxDetail = new ClaimApplicationTdsTaxDetail();
+        private List<ClaimApplicationDeductionItem> deductionItems = new java.util.ArrayList<>();
 
         @PrePersist
         public void prePersist() {

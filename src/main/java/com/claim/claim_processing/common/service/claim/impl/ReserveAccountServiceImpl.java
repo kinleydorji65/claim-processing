@@ -5,7 +5,7 @@ import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ReserveAccountResponseDto;
 import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ReserveAccountMaster;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.mapper.claim.ReserveAccountMapper;
 import com.claim.claim_processing.common.repository.claim.AccountTypeRepository;
@@ -319,7 +319,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
                 );
     }
 
-    private SchemeMaster getSchemeType(Long id) {
+    private SchemeType getSchemeType(Long id) {
 
         return schemeTypeRepository.findById(id)
                 .orElseThrow(() ->

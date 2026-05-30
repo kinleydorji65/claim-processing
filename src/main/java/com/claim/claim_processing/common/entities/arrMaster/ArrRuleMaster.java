@@ -1,7 +1,7 @@
 
 package com.claim.claim_processing.common.entities.arrMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,8 +30,8 @@ public class ArrRuleMaster {
     private String ruleName;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "ID", nullable = false, foreignKey = @ForeignKey(name = "FK_ARR_SCHEME_TYPE"))
-    private SchemeMaster schemeType;
+    @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "SCHEME_TYPE_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_ARR_SCHEME_TYPE"))
+    private SchemeType schemeType;
 
     @Column(name = "MEMBER_CATEGORY_ID", length = 50)
     private String memberCategoryId;

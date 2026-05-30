@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
-import com.claim.claim_processing.rule.ruleGateWay.dto.MatchedConditionRuleDto;
+import com.claim.claim_processing.rule.ruleGateWay.dto.MatchedSubClaimRuleDto;
 import com.claim.claim_processing.rule.ruleGateWay.dto.RuleResponseDto;
 import com.claim.claim_processing.rule.ruleGateWay.service.RuleGateWayService;
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
@@ -39,11 +39,11 @@ public class RuleServiceController {
             summary = "Preview matched claim rule",
             description = "Fetch matched claim rule based on claim request, conditions, categories, components and refund types"
     )
-    public ResponseEntity<ApiResponseDTO<List<MatchedConditionRuleDto>>> playWithRule(
+    public ResponseEntity<ApiResponseDTO<List<MatchedSubClaimRuleDto>>> playWithRule(
             @RequestBody ClaimInitialPreviewRequest request
     ) {
 
-        ApiResponseDTO<List<MatchedConditionRuleDto>> response =
+        ApiResponseDTO<List<MatchedSubClaimRuleDto>> response =
                 ruleService.playWithRule(request);
 
         return ResponseEntity.ok(response);

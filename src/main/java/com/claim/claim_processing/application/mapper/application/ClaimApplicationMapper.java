@@ -50,9 +50,6 @@ public interface ClaimApplicationMapper {
     @Mapping(target = "actionId", source = "action.id")
     @Mapping(target = "actionName", source = "action.name")
 
-    @Mapping(target = "currencyId", ignore = true)
-    @Mapping(target = "currencyName", source = "currencyCode")
-
     @Mapping(target = "createdAt", source = "createdAt", qualifiedByName = "timestampToLocalDateTime")
     @Mapping(target = "updatedAt", source = "updatedAt", qualifiedByName = "timestampToLocalDateTime")
 
@@ -92,9 +89,7 @@ public interface ClaimApplicationMapper {
 
     @Mapping(target = "bankDetails", ignore = true)
     @Mapping(target = "deductionDetails", ignore = true)
-    @Mapping(target = "loanDetails", ignore = true)
     @Mapping(target = "calculationSummaries", ignore = true)
-    @Mapping(target = "ruleEvaluations", ignore = true)
     @Mapping(target = "payments", ignore = true)
     @Mapping(target = "verifications", ignore = true)
     @Mapping(target = "approvals", ignore = true)

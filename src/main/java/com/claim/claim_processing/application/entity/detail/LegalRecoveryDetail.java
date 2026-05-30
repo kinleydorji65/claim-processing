@@ -11,7 +11,7 @@ import com.claim.claim_processing.application.entity.application.ClaimApplicatio
 import com.claim.claim_processing.common.entities.adjustmentMaster.LoanStatusMaster;
 import com.claim.claim_processing.common.entities.adjustmentMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 
@@ -72,8 +72,8 @@ public class LegalRecoveryDetail {
         private String agencyCode;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "SCHEME_TYPE_ID", foreignKey = @ForeignKey(name = "FK_LRD_SCHEME_TYPE"))
-        private SchemeMaster schemeType;
+        @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "SCHEME_TYPE_ID", foreignKey = @ForeignKey(name = "FK_LRD_SCHEME_TYPE"))
+        private SchemeType schemeType;
 
         @Column(name = "EMPLOYMENT_TYPE", length = 50)
         private String employmentType;

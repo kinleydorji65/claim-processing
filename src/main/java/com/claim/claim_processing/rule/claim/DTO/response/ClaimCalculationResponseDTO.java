@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.claim.claim_processing.integration.loanAdjustment.dto.LoanAdjustmentResultDto;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 
 @Data
@@ -23,10 +24,9 @@ public class ClaimCalculationResponseDTO {
     private Integer totalContributionMonths;
     private Integer totalNonContributionMonths;
     private String eligibilityNote;
+    private LoanAdjustmentResultDto laoanAdjustmentResult;
 
     private String vestingNote;
-
-    private String lapsedNote;
 
     private String recommendedBenefitType;
 

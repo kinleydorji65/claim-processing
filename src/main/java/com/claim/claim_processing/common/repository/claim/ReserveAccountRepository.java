@@ -2,7 +2,7 @@ package com.claim.claim_processing.common.repository.claim;
 
 import com.claim.claim_processing.common.entities.claim.ReserveAccountMaster;
 import com.claim.claim_processing.common.entities.claim.AccountTypeMaster;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -32,7 +32,7 @@ public interface ReserveAccountRepository extends JpaRepository<ReserveAccountMa
     // -------------------------------
     // FIND BY SCHEME TYPE (FK)
     // -------------------------------
-    List<ReserveAccountMaster> findBySchemeType(SchemeMaster schemeType);
+    List<ReserveAccountMaster> findBySchemeType(SchemeType schemeType);
 
     // -------------------------------
     // FIND BY SCHEME TYPE ID (preferred)
