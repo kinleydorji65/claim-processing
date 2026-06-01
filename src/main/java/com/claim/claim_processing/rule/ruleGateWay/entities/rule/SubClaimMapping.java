@@ -74,8 +74,6 @@ public class SubClaimMapping {
         @Column(name = "UPDATED_BY", length = 100)
         private String updatedBy;
 
-        @PreUpdate
-        public void preUpdate() {
-                this.updatedAt = LocalDateTime.now();
-        }
+        @Column(name = "REFUND_TYPE_ID", length = 100)
+        private Long refundTypeId;
 }

@@ -12,10 +12,10 @@ import java.util.Optional;
 public interface SubClaimConditionRepository
         extends JpaRepository<SubClaimCondition, Long> {
 
-    boolean existsByConditionCodeIgnoreCase(String conditionCode);
+    boolean existsByConditionCode(String conditionCode);
 
-    boolean existsByConditionCodeIgnoreCaseAndIdNot(String conditionCode, Long id);
+    boolean existsByConditionCodeAndIdNot(String conditionCode, Long id);
 
-    Optional<SubClaimCondition> findByConditionCodeIgnoreCase(String conditionCode);
+    Optional<SubClaimCondition> findByConditionCode(String conditionCode);
     List<SubClaimCondition> findBySubClaimMapping_SubClaimCode(String subClaimMappingCode);
 }

@@ -19,10 +19,10 @@ import com.claim.claim_processing.rule.ruleGateWay.entities.rule.ClaimComponentM
 import com.claim.claim_processing.rule.ruleGateWay.entities.rule.SubClaimCondition;
 import com.claim.claim_processing.rule.ruleGateWay.entities.rule.SubClaimMapping;
 import com.claim.claim_processing.rule.ruleGateWay.entities.rule.SubClaimTimeIndication;
+import com.claim.claim_processing.rule.ruleGateWay.repositories.RefundTypeRepository;
 import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.CategorySchemeMappingRepository;
 import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.SubClaimConditionRepository;
 import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.SubClaimMappingRepository;
-import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.SubClaimTimeIndicationRepository;
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -50,6 +49,7 @@ public class RuleServiceImpl implements RuleService {
     private final CessationTypeRepository cessationTypeRepository;
     private final MemberService memberService;
     private final MemberContributionService memberContributionService;
+    private final RefundTypeRepository refundTypeRepository;
 
     @Override
     public ApiResponseDTO<List<MatchedSubClaimRuleDto>> playWithRule(
@@ -542,14 +542,13 @@ public class RuleServiceImpl implements RuleService {
                 .subClaimDescription(mapping.getSubClaimDesc())
                 .ruleCode(mapping.getRuleType() != null ? mapping.getRuleType().getCode() : null)
                 .ruleName(mapping.getRuleType() != null ? mapping.getRuleType().getName() : null)
-
+                .refundTypeName(getRefundName(mapping.getRefundTypeId()))
+                .isRefundEligible((mapping.getRefundTypeId() != null && mapping.getRefundTypeId() > 0) ? true : false)
                 // For partial, this is your percentage: SB63 = 50
                 .withdrawalPercentage(mapping.getWithdrawalPercentage())
-
                 .effectiveFrom(mapping.getEffectiveFrom())
                 .effectiveTo(mapping.getEffectiveTo())
                 .categoryScheme(mapCategoryScheme(mapping.getCategorySchemeMapping()))
-
                 .condition(partialClaim
                         ? mapMatchedPartialCondition(
                                 mapping,
@@ -567,6 +566,15 @@ public class RuleServiceImpl implements RuleService {
                 .timeIndication(mapTimeIndication(mapping.getTimeIndication()))
                 .componentMapping(mapComponentMapping(mapping.getComponentMapping()))
                 .build();
+    }
+
+    private String getRefundName(Long refundTypeId) {
+        if (refundTypeId == null || refundTypeId <= 0) {
+            return null;
+        }
+        return refundTypeRepository.findById(refundTypeId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid refund type ID: " + refundTypeId))
+                .getName();
     }
 
     private MatchedSubClaimRuleDto.Condition mapMatchedPartialCondition(
@@ -698,16 +706,16 @@ public class RuleServiceImpl implements RuleService {
         return MatchedSubClaimRuleDto.ComponentMapping.builder()
                 .id(componentMapping.getId())
                 .componentMappingCode(componentMapping.getComponentMappingCode())
-                .hasPf(componentMapping.getHasPf())
-                .hasPc(componentMapping.getHasPc())
-                .hasEc(componentMapping.getHasEc())
-                .hasMc(componentMapping.getHasMc())
-                .hasImc(componentMapping.getHasImc())
-                .hasIec(componentMapping.getHasIec())
-                .hasGc(componentMapping.getHasGc())
-                .hasGic(componentMapping.getHasGic())
-                .hasVc(componentMapping.getHasVc())
-                .hasVic(componentMapping.getHasVic())
+                .hasPf("Y".equals(componentMapping.getHasPf()) ? componentMapping.getHasPf() : "N")
+                .hasPc("Y".equals(componentMapping.getHasPc()) ? componentMapping.getHasPc() : "N")
+                .hasEc("Y".equals(componentMapping.getHasEc()) ? componentMapping.getHasEc() : "N")
+                .hasMc("Y".equals(componentMapping.getHasMc()) ? componentMapping.getHasMc() : "N")
+                .hasImc("Y".equals(componentMapping.getHasImc()) ? componentMapping.getHasImc() : "N")
+                .hasIec("Y".equals(componentMapping.getHasIec()) ? componentMapping.getHasIec() : "N")
+                .hasGc("Y".equals(componentMapping.getHasGc()) ? componentMapping.getHasGc() : "N")
+                .hasGic("Y".equals(componentMapping.getHasGic()) ? componentMapping.getHasGic() : "N")
+                .hasVc("Y".equals(componentMapping.getHasVc()) ? componentMapping.getHasVc() : "N")
+                .hasVic("Y".equals(componentMapping.getHasVic()) ? componentMapping.getHasVic() : "N")
                 .expressions(mapComponentExpressions(componentMapping.getExpressions()))
                 .effectiveFrom(componentMapping.getEffectiveFrom())
                 .effectiveTo(componentMapping.getEffectiveTo())

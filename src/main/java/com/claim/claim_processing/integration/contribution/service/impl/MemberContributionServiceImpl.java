@@ -30,8 +30,8 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         List<MemberContributionSummary.ComponentGroup> groups = List.of(
                 component("PF_MC", "PF Member Contribution", "5000", "200"),
                 component("PF_IMC", "PF Member Interest", "0", "200"),
-                component("PF_EC", "PF Employer Contribution", "5000", "200"),
-                component("PF_IEC", "PF Employer Interest", "0", "200")
+                component("PF_EC", "PF Employer Contribution", "10000", "500"),
+                component("PF_IEC", "PF Employer Interest", "0", "500")
         );
 
         BigDecimal totalPrincipalAmount = groups.stream()

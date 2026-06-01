@@ -125,8 +125,8 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
                     if (vestingResult.getRefundTypeName() != null
                             && !vestingResult.getRefundTypeName().isBlank()) {
-                        vestingNote = "Vesting rule matched. Recommended benefit type: "
-                                + vestingResult.getRefundTypeName();
+                        vestingNote = "Till Date, Your total Contribution Months is " + totalMonths
+                                + ". Recommended benefit type is " + vestingResult.getRefundTypeName() + (vestingResult.isLumpSumEligible() ? " and it is Eligible." : " and it is Not Eligible.");
                     }
 
                 }
@@ -527,13 +527,14 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     }
 
     private VestingResultDto handleVestingRule(MatchedSubClaimRuleDto matchedRule) {
-
         return VestingResultDto.builder()
-                .lumpSumEligible(matchedRule.isRefundEligible() ? true : false)
+                .lumpSumEligible(matchedRule.getRefundTypeName() == null ? false : true)
                 .refundTypeName(matchedRule.getRefundTypeName())
                 .build();
 
     }
+
+    
 
     private LapsedResultDto handleLapsedRule(
             MatchedSubClaimRuleDto matchedRule,
@@ -598,7 +599,6 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         BigDecimal expressionAmount = BigDecimal.ZERO;
         for (MatchedSubClaimRuleDto.ComponentExpression expressionDto : matchedRule.getComponentMapping()
                 .getExpressions()) {
-
             if (expressionDto == null
                     || expressionDto.getExpression() == null
                     || expressionDto.getExpression().isBlank()) {
@@ -607,7 +607,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
             List<String> resolvedCodes = resolveExpressionComponentCodes(
                     expressionDto.getExpression(),
-                    matchedRule.getComponentMapping());
+                    matchedRule.getComponentMapping(), componentAmountMap);
 
             for (String componentCode : resolvedCodes) {
 
@@ -644,20 +644,22 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
     private List<String> resolveExpressionComponentCodes(
             String expression,
-            MatchedSubClaimRuleDto.ComponentMapping mapping) {
+            MatchedSubClaimRuleDto.ComponentMapping mapping,
+            Map<String, BigDecimal> componentAmountMap) {
 
-        if (expression == null || expression.isBlank() || mapping == null) {
+        if (expression == null || expression.isBlank()
+                || mapping == null
+                || componentAmountMap == null) {
             return Collections.emptyList();
         }
 
-        boolean hasPf = "Y".equalsIgnoreCase(mapping.getHasPf());
-        boolean hasPc = "Y".equalsIgnoreCase(mapping.getHasPc());
+        boolean hasPf = isYes(mapping.getHasPf());
+        boolean hasPc = isYes(mapping.getHasPc());
 
-        String cleanExpression = expression
+        String[] tokens = expression
                 .replace(" ", "")
-                .toUpperCase();
-
-        String[] tokens = cleanExpression.split("[+\\-]");
+                .toUpperCase()
+                .split("[+\\-]");
 
         List<String> resolvedCodes = new ArrayList<>();
 
@@ -667,20 +669,53 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 continue;
             }
 
-            String code = token.trim().toUpperCase();
+            String cleanToken = token.trim().toUpperCase();
 
-            if (hasPf) {
-                resolvedCodes.add("PF_" + code);
+            // this checks MC/IMC/EC/IEC flag
+            if (!isComponentFlagEnabled(cleanToken, mapping)) {
+                continue;
             }
 
-            if (hasPc) {
-                resolvedCodes.add("PC_" + code);
+            String pfCode = "PF_" + cleanToken;
+            String pcCode = "PC_" + cleanToken;
+
+            if (hasPf && componentAmountMap.containsKey(pfCode)) {
+                resolvedCodes.add(pfCode);
+            }
+
+            if (hasPc && componentAmountMap.containsKey(pcCode)) {
+                resolvedCodes.add(pcCode);
             }
         }
 
         return resolvedCodes.stream()
                 .distinct()
                 .toList();
+    }
+
+    private boolean isYes(String value) {
+        return "Y".equalsIgnoreCase(value);
+    }
+
+    private boolean isComponentFlagEnabled(
+            String token,
+            MatchedSubClaimRuleDto.ComponentMapping mapping) {
+
+        if (token == null || mapping == null) {
+            return false;
+        }
+
+        return switch (token.trim().toUpperCase()) {
+            case "MC" -> isYes(mapping.getHasMc());
+            case "IMC" -> isYes(mapping.getHasImc());
+            case "EC" -> isYes(mapping.getHasEc());
+            case "IEC" -> isYes(mapping.getHasIec());
+            case "GC" -> isYes(mapping.getHasGc());
+            case "GIC" -> isYes(mapping.getHasGic());
+            case "VC" -> isYes(mapping.getHasVc());
+            case "VIC" -> isYes(mapping.getHasVic());
+            default -> false;
+        };
     }
 
     private BigDecimal evaluateExpression(
