@@ -102,8 +102,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         List<ComponentBalanceDTO> eligibleComponents = new ArrayList<>();
         List<ComponentBalanceDTO> forfeitedComponents = new ArrayList<>();
 
-        List<String> eligibilityNotes = new ArrayList<>();
-        List<String> vestingNotes = new ArrayList<>();
+        String vestingNote = "";
         List<String> recommendedRefundTypes = new ArrayList<>();
         List<String> forfeitedComponentCodes = new ArrayList<>();
 
@@ -128,6 +127,19 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
             if (isVestingRule(ruleCode)) {
 
                 VestingResultDto vestingResult = handleVestingRule(matchedRule);
+
+                if (vestingResult != null && vestingResult.isLumpSumEligible()) {
+
+                    if (vestingResult.getRefundTypeName() != null
+                            && !vestingResult.getRefundTypeName().isBlank()) {
+                        vestingNote = 
+                            "Vesting rule matched. Recommended benefit type: "
+                                    + vestingResult.getRefundTypeName();
+                    }
+
+                    
+                }
+
                 continue;
             }
 
@@ -213,41 +225,33 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
         LoanAdjustmentResultDto loanAdjustmentResult = null;
 
-BigDecimal finalPayableAmount = grossPayableAmount;
+        BigDecimal finalPayableAmount = grossPayableAmount;
 
-if (isLoanApply) {
+        if (isLoanApply) {
 
-    loanAdjustmentResult = deductLoanByPriority(
-            request.getNppfNumber(),
-            finalComponents
-    );
+            loanAdjustmentResult = deductLoanByPriority(
+                    request.getNppfNumber(),
+                    finalComponents);
 
-    if (loanAdjustmentResult != null) {
-        finalPayableAmount =
-                loanAdjustmentResult.getFinalPayableAmount();
-    }
-}
+            if (loanAdjustmentResult != null) {
+                finalPayableAmount = loanAdjustmentResult.getFinalPayableAmount();
+            }
+        }
 
-BigDecimal serviceYears = contributionSummary == null
-        ? BigDecimal.ZERO
-        : calculateServiceYears(
-                contributionSummary.getContributionStartDate(),
-                contributionSummary.getContributionEndDate()
-        );
+        BigDecimal serviceYears = contributionSummary == null
+                ? BigDecimal.ZERO
+                : calculateServiceYears(
+                        contributionSummary.getContributionStartDate(),
+                        contributionSummary.getContributionEndDate());
 
         String eligibilityNote = buildEligibilityPreviewNote(
-        finalComponents,
-        totalPfAmount,
-        totalPensionAmount
-);
+                finalComponents,
+                totalPfAmount,
+                totalPensionAmount);
 
-String vestingNote = buildVestingPreviewNote(
-        recommendedRefundTypes
-);
-
-String loanNote = loanAdjustmentResult != null
-        ? loanAdjustmentResult.getAdjustmentNote()
-        : "No loan adjustment applied.";
+        String loanNote = loanAdjustmentResult != null
+                ? loanAdjustmentResult.getAdjustmentNote()
+                : "No loan adjustment applied.";
         ClaimCalculationResponseDTO response = ClaimCalculationResponseDTO.builder()
                 .nppfNumber(contributionSummary != null ? contributionSummary.getNppfNumber() : null)
                 .contributionStartDate(
@@ -292,48 +296,45 @@ String loanNote = loanAdjustmentResult != null
     }
 
     private String buildEligibilityPreviewNote(
-        List<ComponentBalanceDTO> finalComponents,
-        BigDecimal totalPfAmount,
-        BigDecimal totalPensionAmount
-) {
+            List<ComponentBalanceDTO> finalComponents,
+            BigDecimal totalPfAmount,
+            BigDecimal totalPensionAmount) {
 
-    if (finalComponents == null || finalComponents.isEmpty()) {
-        return "No eligible components found.";
+        if (finalComponents == null || finalComponents.isEmpty()) {
+            return "No eligible components found.";
+        }
+
+        String components = finalComponents.stream()
+                .filter(Objects::nonNull)
+                .map(ComponentBalanceDTO::getCode)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        return "Eligible components: "
+                + components
+                + ". PF Amount: "
+                + totalPfAmount
+                + ", Pension Amount: "
+                + totalPensionAmount
+                + ".";
     }
 
-    String components = finalComponents.stream()
-            .filter(Objects::nonNull)
-            .map(ComponentBalanceDTO::getCode)
-            .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.joining(", "));
+    private String buildVestingPreviewNote(
+            List<String> recommendedRefundTypes) {
 
-    return "Eligible components: "
-            + components
-            + ". PF Amount: "
-            + totalPfAmount
-            + ", Pension Amount: "
-            + totalPensionAmount
-            + ".";
-}
+        if (recommendedRefundTypes == null
+                || recommendedRefundTypes.isEmpty()) {
 
-private String buildVestingPreviewNote(
-        List<String> recommendedRefundTypes
-) {
+            return "No vesting benefit recommendation available.";
+        }
 
-    if (recommendedRefundTypes == null
-            || recommendedRefundTypes.isEmpty()) {
-
-        return "No vesting benefit recommendation available.";
+        return "Recommended benefit type(s): "
+                + recommendedRefundTypes.stream()
+                        .distinct()
+                        .collect(Collectors.joining(", "))
+                + ".";
     }
-
-    return "Recommended benefit type(s): "
-            + recommendedRefundTypes.stream()
-                    .distinct()
-                    .collect(Collectors.joining(", "))
-            + ".";
-}
-    
 
     private BigDecimal calculateServiceYears(
             LocalDate contributionStartDate,
@@ -702,30 +703,29 @@ private String buildVestingPreviewNote(
     }
 
     private BigDecimal getTokenValue(
-        String token,
-        Map<String, BigDecimal> componentAmountMap
-) {
+            String token,
+            Map<String, BigDecimal> componentAmountMap) {
 
-    if (token == null || token.isBlank()) {
-        return BigDecimal.ZERO;
+        if (token == null || token.isBlank()) {
+            return BigDecimal.ZERO;
+        }
+
+        String code = token.trim().toUpperCase();
+
+        if (componentAmountMap.containsKey(code)) {
+            return componentAmountMap.get(code);
+        }
+
+        String pfCode = "PF_" + code;
+
+        if (componentAmountMap.containsKey(pfCode)) {
+            return componentAmountMap.get(pfCode);
+        }
+
+        String pcCode = "PC_" + code;
+
+        return componentAmountMap.getOrDefault(pcCode, BigDecimal.ZERO);
     }
-
-    String code = token.trim().toUpperCase();
-
-    if (componentAmountMap.containsKey(code)) {
-        return componentAmountMap.get(code);
-    }
-
-    String pfCode = "PF_" + code;
-
-    if (componentAmountMap.containsKey(pfCode)) {
-        return componentAmountMap.get(pfCode);
-    }
-
-    String pcCode = "PC_" + code;
-
-    return componentAmountMap.getOrDefault(pcCode, BigDecimal.ZERO);
-}
 
     private List<ComponentBalanceDTO> getComponentsFromRule(
             MatchedSubClaimRuleDto matchedRule,
@@ -792,81 +792,90 @@ private String buildVestingPreviewNote(
     }
 
     private List<String> extractComponentCodesFromMapping(
-        MatchedSubClaimRuleDto matchedRule
-) {
+            MatchedSubClaimRuleDto matchedRule) {
 
-    List<String> codes = new ArrayList<>();
+        List<String> codes = new ArrayList<>();
 
-    if (matchedRule == null || matchedRule.getComponentMapping() == null) {
-        return codes;
+        if (matchedRule == null || matchedRule.getComponentMapping() == null) {
+            return codes;
+        }
+
+        var mapping = matchedRule.getComponentMapping();
+
+        boolean hasPf = "Y".equalsIgnoreCase(mapping.getHasPf());
+        boolean hasPc = "Y".equalsIgnoreCase(mapping.getHasPc());
+
+        if (hasPf) {
+            if ("Y".equalsIgnoreCase(mapping.getHasMc()))
+                codes.add("PF_MC");
+            if ("Y".equalsIgnoreCase(mapping.getHasImc()))
+                codes.add("PF_IMC");
+            if ("Y".equalsIgnoreCase(mapping.getHasEc()))
+                codes.add("PF_EC");
+            if ("Y".equalsIgnoreCase(mapping.getHasIec()))
+                codes.add("PF_IEC");
+            if ("Y".equalsIgnoreCase(mapping.getHasGc()))
+                codes.add("PF_GC");
+            if ("Y".equalsIgnoreCase(mapping.getHasGic()))
+                codes.add("PF_GIC");
+            if ("Y".equalsIgnoreCase(mapping.getHasVc()))
+                codes.add("PF_VC");
+            if ("Y".equalsIgnoreCase(mapping.getHasVic()))
+                codes.add("PF_VIC");
+        }
+
+        if (hasPc) {
+            codes.add("PC");
+        }
+
+        return codes.stream()
+                .distinct()
+                .toList();
     }
-
-    var mapping = matchedRule.getComponentMapping();
-
-    boolean hasPf = "Y".equalsIgnoreCase(mapping.getHasPf());
-    boolean hasPc = "Y".equalsIgnoreCase(mapping.getHasPc());
-
-    if (hasPf) {
-        if ("Y".equalsIgnoreCase(mapping.getHasMc())) codes.add("PF_MC");
-        if ("Y".equalsIgnoreCase(mapping.getHasImc())) codes.add("PF_IMC");
-        if ("Y".equalsIgnoreCase(mapping.getHasEc())) codes.add("PF_EC");
-        if ("Y".equalsIgnoreCase(mapping.getHasIec())) codes.add("PF_IEC");
-        if ("Y".equalsIgnoreCase(mapping.getHasGc())) codes.add("PF_GC");
-        if ("Y".equalsIgnoreCase(mapping.getHasGic())) codes.add("PF_GIC");
-        if ("Y".equalsIgnoreCase(mapping.getHasVc())) codes.add("PF_VC");
-        if ("Y".equalsIgnoreCase(mapping.getHasVic())) codes.add("PF_VIC");
-    }
-
-    if (hasPc) {
-        codes.add("PC");
-    }
-
-    return codes.stream()
-            .distinct()
-            .toList();
-}
 
     private Map<String, BigDecimal> buildContributionComponentMap(
-        MemberContributionSummary contributionSummary
-) {
+            MemberContributionSummary contributionSummary) {
 
-    Map<String, BigDecimal> map = new HashMap<>();
+        Map<String, BigDecimal> map = new HashMap<>();
 
-    if (contributionSummary == null
-            || contributionSummary.getComponentGroups() == null) {
+        if (contributionSummary == null
+                || contributionSummary.getComponentGroups() == null) {
+            return map;
+        }
+
+        for (MemberContributionSummary.ComponentGroup component : contributionSummary.getComponentGroups()) {
+
+            if (component == null || component.getComponentCode() == null) {
+                continue;
+            }
+
+            String fullCode = component.getComponentCode().trim().toUpperCase();
+
+            String shortCode = fullCode.contains("_")
+                    ? fullCode.substring(fullCode.lastIndexOf("_") + 1)
+                    : fullCode;
+
+            BigDecimal amount;
+
+            if (shortCode.startsWith("I")) {
+                amount = component.getInterestAmount() == null
+                        ? BigDecimal.ZERO
+                        : component.getInterestAmount();
+            } else {
+                amount = component.getPrincipalAmount() == null
+                        ? BigDecimal.ZERO
+                        : component.getPrincipalAmount();
+            }
+
+            map.put(fullCode, amount);
+            map.put(shortCode, amount);
+        }
+
         return map;
     }
 
-    for (MemberContributionSummary.ComponentGroup component
-            : contributionSummary.getComponentGroups()) {
+    // private String buildVestingPreviewNote() {
 
-        if (component == null || component.getComponentCode() == null) {
-            continue;
-        }
-
-        String fullCode = component.getComponentCode().trim().toUpperCase();
-
-        String shortCode = fullCode.contains("_")
-                ? fullCode.substring(fullCode.lastIndexOf("_") + 1)
-                : fullCode;
-
-        BigDecimal amount;
-
-        if (shortCode.startsWith("I")) {
-            amount = component.getInterestAmount() == null
-                    ? BigDecimal.ZERO
-                    : component.getInterestAmount();
-        } else {
-            amount = component.getPrincipalAmount() == null
-                    ? BigDecimal.ZERO
-                    : component.getPrincipalAmount();
-        }
-
-        map.put(fullCode, amount);
-        map.put(shortCode, amount);
-    }
-
-    return map;
-}
+    // }
 
 }
