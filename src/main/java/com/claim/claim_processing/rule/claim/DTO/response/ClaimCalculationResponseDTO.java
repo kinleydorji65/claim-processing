@@ -44,8 +44,18 @@ public class ClaimCalculationResponseDTO {
     
     // Component balances (raw components from Table 1)
     private List<ComponentBalanceDTO> components;
+    private List<ExpressionCalculationDTO> expressionCalculations;
     
-
+    
+    @Data
+    @Builder
+    public static class ExpressionCalculationDTO {
+        private String expression;          // MC+IMC
+        private List<String> resolvedCodes; // PF_MC, PF_IMC
+        private BigDecimal expressionAmount; // 5200
+        private BigDecimal withdrawalPercentage;
+        private String type;                // ELIGIBLE / FORFEITED
+    }
     @Data
     @Builder
     public static class ComponentBalanceDTO {

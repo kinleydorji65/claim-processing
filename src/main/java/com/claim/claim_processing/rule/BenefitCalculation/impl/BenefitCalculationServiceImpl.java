@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -21,10 +20,8 @@ import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
-import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary.ComponentGroup;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.integration.loanAdjustment.dto.LoanAdjustmentResultDto;
-import com.claim.claim_processing.integration.loanAdjustment.dto.LoanDeductionDto;
 import com.claim.claim_processing.integration.loanAdjustment.dto.LoanDetailResponseDto;
 import com.claim.claim_processing.integration.loanAdjustment.service.LoanDetailService;
 import com.claim.claim_processing.rule.BenefitCalculation.BenefitCalculationService;
@@ -36,12 +33,10 @@ import com.claim.claim_processing.rule.claim.DTO.response.LapsedResultDto;
 import com.claim.claim_processing.rule.claim.DTO.response.LoanAdjustmentDetailDto;
 import com.claim.claim_processing.rule.claim.DTO.response.VestingResultDto;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
-import com.claim.claim_processing.rule.formula.dto.ClaimFormulaResponseDto;
-import com.claim.claim_processing.rule.formula.dto.FormulaComponentMapResponseDto;
-import com.claim.claim_processing.rule.formula.service.FormulaService;
 import com.claim.claim_processing.rule.ruleGateWay.dto.MatchedSubClaimRuleDto;
 import com.claim.claim_processing.rule.ruleGateWay.entities.rule.LoanDeductionMapping;
 import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.LoanDeductionMappingRepository;
+import com.claim.claim_processing.rule.ruleProcessing.service.PartialWithdrawalRuleService;
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 
 import lombok.AllArgsConstructor;
@@ -52,7 +47,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
     private final MemberContributionService memberContributionService;
     private final RuleService ruleService;
-    private final FormulaService formulaService;
+    private final PartialWithdrawalRuleService partialWithdrawalRuleService;
     private final LoanDetailService loanDetailService;
     private final ClaimTypeRuleMapRepository claimTypeRuleMapRepository;
     private final LoanDeductionMappingRepository loanDeductionMappingRepository;
@@ -60,7 +55,9 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     @Override
     public ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(
             ClaimInitialPreviewRequest request) {
-
+        if (isPartialWithdrawalRule(request.getClaimTypeId())) {
+            return partialWithdrawalRuleService.calculatePartialWithdrawal(request);
+        }
         MemberContributionSummary contributionSummary = memberContributionService
                 .getContributionSummary(request.getNppfNumber());
 
@@ -69,7 +66,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         List<MatchedSubClaimRuleDto> matchedRules = ruleResponse == null || ruleResponse.getData() == null
                 ? List.of()
                 : ruleResponse.getData();
-
+        System.out.println("check the rule: " + ruleResponse);
         if (matchedRules.isEmpty()) {
             return ApiResponseDTO.notFound("No matched rules found");
         }
@@ -109,6 +106,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         Integer totalMonths = contributionSummary == null
                 ? null
                 : contributionSummary.getTotalContributionMonths();
+        List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations = new ArrayList<>();
 
         for (MatchedSubClaimRuleDto matchedRule : matchedRules) {
 
@@ -119,11 +117,6 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
             String ruleCode = safeUpper(matchedRule.getRuleCode());
 
-            if (isPartialWithdrawalRule(request.getClaimTypeId())) {
-
-                continue;
-            }
-
             if (isVestingRule(ruleCode)) {
 
                 VestingResultDto vestingResult = handleVestingRule(matchedRule);
@@ -132,12 +125,10 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
                     if (vestingResult.getRefundTypeName() != null
                             && !vestingResult.getRefundTypeName().isBlank()) {
-                        vestingNote = 
-                            "Vesting rule matched. Recommended benefit type: "
-                                    + vestingResult.getRefundTypeName();
+                        vestingNote = "Vesting rule matched. Recommended benefit type: "
+                                + vestingResult.getRefundTypeName();
                     }
 
-                    
                 }
 
                 continue;
@@ -148,7 +139,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 LapsedResultDto lapsedResult = handleLapsedRule(
                         matchedRule,
                         request,
-                        contributionSummary);
+                        contributionSummary, expressionCalculations);
 
                 if (lapsedResult != null && lapsedResult.isForfeited()) {
                     forfeitedComponents.addAll(lapsedResult.getForfeitedComponents());
@@ -161,7 +152,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
             EligibilityResultDto eligibilityResult = handleEligibilityRule(
                     matchedRule,
                     request,
-                    contributionSummary);
+                    contributionSummary, expressionCalculations);
 
             if (eligibilityResult != null && eligibilityResult.getEligibleComponents() != null) {
                 eligibleComponents.addAll(eligibilityResult.getEligibleComponents());
@@ -172,9 +163,13 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 .toList();
 
         BigDecimal totalPfAmount = BigDecimal.ZERO;
+        BigDecimal backUpTotalPfAmount = BigDecimal.ZERO;
         BigDecimal totalPensionAmount = BigDecimal.ZERO;
+        BigDecimal backupTotalPensionAmount = BigDecimal.ZERO;
         BigDecimal totalPfInterestAmount = BigDecimal.ZERO;
+        BigDecimal backupTotalPfInterestAmount = BigDecimal.ZERO;
         BigDecimal totalPensionInterestAmount = BigDecimal.ZERO;
+        BigDecimal backupTotalPensionInterestAmount = BigDecimal.ZERO;
 
         for (ComponentBalanceDTO component : finalComponents) {
 
@@ -189,27 +184,36 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                     : component.getAmount();
 
             switch (code) {
-                case "MC":
-                case "EC":
-                case "GC":
-                case "VC":
-                case "PF":
+                case "PF_MC":
+                case "PF_EC":
+                case "PF_GC":
+                case "PF_VC":
                     totalPfAmount = totalPfAmount.add(amount);
+                    backUpTotalPfAmount = backUpTotalPfAmount.add(amount);
                     break;
 
-                case "IMC":
-                case "IEC":
-                case "GIC":
-                case "VIC":
+                case "PF_IMC":
+                case "PF_IEC":
+                case "PF_GIC":
+                case "PF_VIC":
                     totalPfInterestAmount = totalPfInterestAmount.add(amount);
+                    backupTotalPfInterestAmount = backupTotalPfInterestAmount.add(amount);
                     break;
 
-                case "PC":
+                case "PC_MC":
+                case "PC_EC":
+                case "PC_GC":
+                case "PC_VC":
                     totalPensionAmount = totalPensionAmount.add(amount);
+                    backupTotalPensionAmount = backupTotalPensionAmount.add(amount);
                     break;
 
-                case "IPC":
+                case "PC_IMC":
+                case "PC_IEC":
+                case "PC_GIC":
+                case "PC_VIC":
                     totalPensionInterestAmount = totalPensionInterestAmount.add(amount);
+                    backupTotalPensionInterestAmount = backupTotalPensionInterestAmount.add(amount);
                     break;
 
                 default:
@@ -271,16 +275,17 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                                 : null)
                 .noOfYearInService(serviceYears)
                 .components(finalComponents)
+                .expressionCalculations(expressionCalculations)
                 .loanCheck(isLoanApply)
                 .rentalCheck(isRentalApply)
-                .totalPfAmount(totalPfAmount)
-                .totalPensionAmount(totalPensionAmount)
-                .totalPfInterestAmount(totalPfInterestAmount)
-                .totalPensionInterestAmount(totalPensionInterestAmount)
-                .pfIsEligible(totalPfAmount.compareTo(BigDecimal.ZERO) > 0
+                .totalPfAmount(backUpTotalPfAmount)
+                .totalPensionAmount(backupTotalPensionAmount)
+                .totalPfInterestAmount(backupTotalPfInterestAmount)
+                .totalPensionInterestAmount(backupTotalPensionInterestAmount)
+                .pfIsEligible(backUpTotalPfAmount.compareTo(BigDecimal.ZERO) > 0
                         ? EligibilityEnum.ELIGIBLE
                         : EligibilityEnum.NOT_ELIGIBLE)
-                .pensionIsEligible(totalPensionAmount.compareTo(BigDecimal.ZERO) > 0
+                .pensionIsEligible(backupTotalPensionAmount.compareTo(BigDecimal.ZERO) > 0
                         ? EligibilityEnum.ELIGIBLE
                         : EligibilityEnum.NOT_ELIGIBLE)
                 .eligibilityNote(eligibilityNote)
@@ -320,22 +325,6 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 + ".";
     }
 
-    private String buildVestingPreviewNote(
-            List<String> recommendedRefundTypes) {
-
-        if (recommendedRefundTypes == null
-                || recommendedRefundTypes.isEmpty()) {
-
-            return "No vesting benefit recommendation available.";
-        }
-
-        return "Recommended benefit type(s): "
-                + recommendedRefundTypes.stream()
-                        .distinct()
-                        .collect(Collectors.joining(", "))
-                + ".";
-    }
-
     private BigDecimal calculateServiceYears(
             LocalDate contributionStartDate,
             LocalDate contributionEndDate) {
@@ -359,13 +348,14 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     private EligibilityResultDto handleEligibilityRule(
             MatchedSubClaimRuleDto matchedRule,
             ClaimInitialPreviewRequest request,
-            MemberContributionSummary contributionSummary) {
+            MemberContributionSummary contributionSummary,
+            List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations) {
 
         List<ComponentBalanceDTO> eligible = getRuleAmountUsingFormulaIfAvailable(
                 matchedRule,
                 request,
                 contributionSummary,
-                "ELIGIBLE");
+                "ELIGIBLE", expressionCalculations);
 
         if (eligible == null || eligible.isEmpty()) {
 
@@ -513,7 +503,8 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     }
 
     private boolean isLapsedRule(String ruleCode) {
-        return "LAPSED".contains(ruleCode);
+        return ruleCode != null
+                && ruleCode.toUpperCase().contains("NORMAL_LAPSED");
     }
 
     private boolean isVestingRule(String ruleCode) {
@@ -532,7 +523,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 .filter(Objects::nonNull)
                 .map(RuleTypeMaster::getCode)
                 .filter(Objects::nonNull)
-                .anyMatch(code -> code.toUpperCase().contains("PARTIAL_WITHDRAWAL"));
+                .anyMatch(code -> code.toUpperCase().contains("PARTIAL"));
     }
 
     private VestingResultDto handleVestingRule(MatchedSubClaimRuleDto matchedRule) {
@@ -547,13 +538,14 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     private LapsedResultDto handleLapsedRule(
             MatchedSubClaimRuleDto matchedRule,
             ClaimInitialPreviewRequest request,
-            MemberContributionSummary contributionSummary) {
+            MemberContributionSummary contributionSummary,
+            List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations) {
 
         List<ComponentBalanceDTO> forfeited = getRuleAmountUsingFormulaIfAvailable(
                 matchedRule,
                 request,
                 contributionSummary,
-                "FORFEITED");
+                "FORFEITED", expressionCalculations);
 
         if (forfeited == null || forfeited.isEmpty()) {
 
@@ -589,7 +581,8 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
             MatchedSubClaimRuleDto matchedRule,
             ClaimInitialPreviewRequest request,
             MemberContributionSummary contributionSummary,
-            String calculationType) {
+            String calculationType,
+            List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations) {
 
         if (matchedRule == null
                 || matchedRule.getComponentMapping() == null
@@ -602,36 +595,92 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         Map<String, BigDecimal> componentAmountMap = buildContributionComponentMap(contributionSummary);
 
         List<ComponentBalanceDTO> results = new ArrayList<>();
+        BigDecimal expressionAmount = BigDecimal.ZERO;
+        for (MatchedSubClaimRuleDto.ComponentExpression expressionDto : matchedRule.getComponentMapping()
+                .getExpressions()) {
 
-        matchedRule.getComponentMapping()
-                .getExpressions()
-                .forEach(expressionDto -> {
+            if (expressionDto == null
+                    || expressionDto.getExpression() == null
+                    || expressionDto.getExpression().isBlank()) {
+                continue;
+            }
 
-                    if (expressionDto == null
-                            || expressionDto.getExpression() == null
-                            || expressionDto.getExpression().isBlank()) {
-                        return;
-                    }
+            List<String> resolvedCodes = resolveExpressionComponentCodes(
+                    expressionDto.getExpression(),
+                    matchedRule.getComponentMapping());
 
-                    String expression = expressionDto.getExpression();
+            for (String componentCode : resolvedCodes) {
 
-                    BigDecimal calculatedAmount = evaluateExpression(
-                            expression,
-                            componentAmountMap);
+                BigDecimal amount = componentAmountMap.getOrDefault(
+                        componentCode,
+                        BigDecimal.ZERO);
 
-                    results.add(
-                            ComponentBalanceDTO.builder()
-                                    .code(expression)
-                                    .name(
-                                            "FORFEITED".equalsIgnoreCase(calculationType)
-                                                    ? "Forfeited Component"
-                                                    : "Eligible Component")
-                                    .type(calculationType)
-                                    .amount(calculatedAmount)
-                                    .build());
-                });
+                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+
+                expressionAmount = expressionAmount.add(
+                        componentAmountMap.getOrDefault(componentCode, BigDecimal.ZERO));
+
+                results.add(
+                        ComponentBalanceDTO.builder()
+                                .code(componentCode)
+                                .name(componentCode)
+                                .type(calculationType)
+                                .amount(amount)
+                                .build());
+            }
+            expressionCalculations.add(
+                    ClaimCalculationResponseDTO.ExpressionCalculationDTO.builder()
+                            .expression(expressionDto.getExpression())
+                            .resolvedCodes(resolvedCodes)
+                            .expressionAmount(expressionAmount)
+                            .type(calculationType)
+                            .build());
+        }
 
         return results;
+    }
+
+    private List<String> resolveExpressionComponentCodes(
+            String expression,
+            MatchedSubClaimRuleDto.ComponentMapping mapping) {
+
+        if (expression == null || expression.isBlank() || mapping == null) {
+            return Collections.emptyList();
+        }
+
+        boolean hasPf = "Y".equalsIgnoreCase(mapping.getHasPf());
+        boolean hasPc = "Y".equalsIgnoreCase(mapping.getHasPc());
+
+        String cleanExpression = expression
+                .replace(" ", "")
+                .toUpperCase();
+
+        String[] tokens = cleanExpression.split("[+\\-]");
+
+        List<String> resolvedCodes = new ArrayList<>();
+
+        for (String token : tokens) {
+
+            if (token == null || token.isBlank()) {
+                continue;
+            }
+
+            String code = token.trim().toUpperCase();
+
+            if (hasPf) {
+                resolvedCodes.add("PF_" + code);
+            }
+
+            if (hasPc) {
+                resolvedCodes.add("PC_" + code);
+            }
+        }
+
+        return resolvedCodes.stream()
+                .distinct()
+                .toList();
     }
 
     private BigDecimal evaluateExpression(
