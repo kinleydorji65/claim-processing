@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -49,7 +50,6 @@ public class RuleServiceImpl implements RuleService {
     private final CessationTypeRepository cessationTypeRepository;
     private final MemberService memberService;
     private final MemberContributionService memberContributionService;
-    private final SubClaimTimeIndicationRepository subClaimTimeIndicationRepository;
 
     @Override
     public ApiResponseDTO<List<MatchedSubClaimRuleDto>> playWithRule(
@@ -57,34 +57,24 @@ public class RuleServiceImpl implements RuleService {
 
         validateRequest(request);
 
-        if (isPartialWithdrawalClaim(request.getClaimTypeId())) {
-            return ApiResponseDTO.notFound("Partial Withdrawal does not use this rule flow");
-        }
-
-        if (isWrongRemittanceClaim(request.getClaimTypeId())) {
-            return ApiResponseDTO.notFound("Wrong Remittance does not use this rule flow");
-        }
-
         MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
-
         MemberContributionSummary contributionSummary = getContributionSummary(request.getNppfNumber());
 
         String memberCategoryId = memberDetail.getMemberCategoryId();
         Long schemeTypeId = contributionSummary.getSchemeTypeId();
 
         LocalDate cessationDate = resolveEndDate(request, contributionSummary);
-
         LocalDate serviceStartDate = toLocalDate(memberDetail.getDateOfServiceJoiningDate());
 
         Integer totalServiceMonths = calculateMonths(serviceStartDate, cessationDate);
-
         Integer totalServiceYears = totalServiceMonths == null ? null : totalServiceMonths / 12;
 
         Integer totalContributionMonths = contributionSummary.getTotalContributionMonths();
-
         Integer totalContributionYears = contributionSummary.getTotalContributionYears();
-
         Integer totalNonContributionMonths = contributionSummary.getTotalNonContributionMonths();
+
+        boolean partialClaim = isPartialWithdrawalClaim(request.getClaimTypeId());
+        boolean terminationClaim = isTerminationClaim(request.getCessationTypeId());
 
         List<String> ruleTypeCodes = getClaimTypeRuleMaps(request.getClaimTypeId())
                 .stream()
@@ -97,101 +87,98 @@ public class RuleServiceImpl implements RuleService {
 
         List<SubClaimMapping> subClaimMappings = getSubClaimMappings(ruleTypeCodes);
 
-        System.out.println("\n===== ALL RULES =====");
-        subClaimMappings.forEach(rule -> System.out.println(
-                rule.getId()
-                        + " | "
-                        + rule.getSubClaimCode()
-                        + " | "
-                        + rule.getSubClaimType()));
-        boolean terminationClaim = isTerminationClaim(request.getCessationTypeId());
-
         CategorySchemeMapping categorySchemeMapping = getCategorySchemeMapping(schemeTypeId, memberCategoryId);
 
-        List<SubClaimMapping> terminationFiltered = subClaimMappings.stream()
-                .filter(Objects::nonNull)
-                .filter(mapping -> terminationClaim
-                        ? isTerminationRule(mapping)
-                        : !isTerminationRule(mapping))
+        List<SubClaimMapping> reasonOrTerminationFiltered;
+
+        if (partialClaim) {
+            reasonOrTerminationFiltered = subClaimMappings.stream()
+                    .filter(Objects::nonNull)
+                    .filter(mapping -> Objects.equals(
+                            mapping.getPartialReasonId(),
+                            request.getReasonTypeId()))
+                    .toList();
+        } else {
+            reasonOrTerminationFiltered = subClaimMappings.stream()
+                    .filter(Objects::nonNull)
+                    .filter(mapping -> terminationClaim
+                            ? isTerminationRule(mapping)
+                            : !isTerminationRule(mapping))
+                    .toList();
+        }
+
+        List<SubClaimMapping> categoryFiltered = reasonOrTerminationFiltered.stream()
+                .filter(mapping -> matchesCategoryScheme(mapping, categorySchemeMapping))
                 .toList();
-
-        System.out.println("\n===== AFTER TERMINATION FILTER =====");
-        terminationFiltered.forEach(rule -> System.out.println(
-                rule.getId()
-                        + " | "
-                        + rule.getSubClaimCode()
-                        + " | "
-                        + rule.getSubClaimType()));
-
-        List<SubClaimMapping> categoryFiltered = terminationFiltered.stream()
-                .filter(mapping -> matchesCategoryScheme(
-                        mapping,
-                        categorySchemeMapping))
-                .toList();
-
-        System.out.println("\n===== AFTER CATEGORY FILTER =====");
-        categoryFiltered.forEach(rule -> System.out.println(
-                rule.getId()
-                        + " | "
-                        + rule.getSubClaimCode()
-                        + " | "
-                        + rule.getSubClaimType()));
 
         List<SubClaimMapping> timeFiltered = categoryFiltered.stream()
                 .filter(mapping -> matchesTimeIndication(
                         mapping.getTimeIndication(),
                         cessationDate))
                 .toList();
-        System.out.println("\n===== AFTER TIME FILTER =====");
-        timeFiltered.forEach(rule -> System.out.println(
-                rule.getId()
-                        + " | "
-                        + rule.getSubClaimCode()
-                        + " | "
-                        + rule.getSubClaimType()
-                        + " | "
-                        + (rule.getTimeIndication() != null
-                                ? rule.getTimeIndication().getTimeIndicationCode()
-                                : "NO_TIME_INDICATION")));
+
         List<SubClaimMapping> matchedMappings = timeFiltered.stream()
-                .filter(mapping -> {
-
-                    boolean matched = matchesMappingCondition(
-                            mapping,
-                            cessationDate,
-                            totalContributionMonths,
-                            totalContributionYears,
-                            totalNonContributionMonths,
-                            totalServiceMonths,
-                            totalServiceYears);
-
-                    System.out.println(
-                            "CONDITION => "
-                                    + mapping.getSubClaimCode()
-                                    + " = "
-                                    + matched);
-
-                    return matched;
-                })
+                .filter(mapping -> partialClaim
+                        ? matchesPartialMappingCondition(
+                                mapping,
+                                cessationDate,
+                                totalContributionMonths)
+                        : matchesMappingCondition(
+                                mapping,
+                                cessationDate,
+                                totalContributionMonths,
+                                totalContributionYears,
+                                totalNonContributionMonths,
+                                totalServiceMonths,
+                                totalServiceYears))
                 .toList();
-
-        System.out.println("\n===== FINAL MATCHED RULES =====");
-        matchedMappings.forEach(rule -> System.out.println(
-                rule.getId()
-                        + " | "
-                        + rule.getSubClaimCode()
-                        + " | "
-                        + rule.getSubClaimType()));
 
         if (matchedMappings.isEmpty()) {
             return ApiResponseDTO.notFound("No matching rule found");
         }
 
         List<MatchedSubClaimRuleDto> response = matchedMappings.stream()
-                .map(this::mapToMatchedSubClaimRuleDto)
+                .map(mapping -> mapToMatchedSubClaimRuleDto(
+                        mapping,
+                        partialClaim,
+                        cessationDate,
+                        totalContributionMonths,
+                        totalContributionYears,
+                        totalNonContributionMonths,
+                        totalServiceMonths,
+                        totalServiceYears))
                 .toList();
 
         return ApiResponseDTO.success(response);
+    }
+
+    private boolean matchesPartialMappingCondition(
+            SubClaimMapping mapping,
+            LocalDate cessationDate,
+            Integer totalContributionMonths) {
+
+        if (mapping == null || mapping.getSubClaimCode() == null) {
+            return false;
+        }
+
+        List<SubClaimCondition> conditions = subClaimConditionRepository.findBySubClaimMapping_SubClaimCode(
+                mapping.getSubClaimCode());
+
+        if (conditions == null || conditions.isEmpty()) {
+            return false;
+        }
+
+        return conditions.stream()
+                .filter(Objects::nonNull)
+                .filter(condition -> matchesEffectiveDate(condition, cessationDate))
+                .anyMatch(condition -> matchesCondition(
+                        condition,
+                        cessationDate,
+                        totalContributionMonths,
+                        null,
+                        null,
+                        null,
+                        null));
     }
 
     private boolean matchesMappingCondition(
@@ -503,13 +490,11 @@ public class RuleServiceImpl implements RuleService {
 
     private boolean isTerminationClaim(Long cessationTypeId) {
 
-        if (cessationTypeId == null) {
+        if (cessationTypeId == null || cessationTypeId <= 0) {
             return false;
         }
-
         CessationTypeMaster cessationType = cessationTypeRepository.findById(cessationTypeId)
-                .orElseThrow(() -> ClaimException.notFound(
-                        "Cessation type not found with id: " + cessationTypeId));
+                .orElseThrow(() -> ClaimException.notFound(null));
 
         String code = cessationType.getCode();
 
@@ -537,7 +522,14 @@ public class RuleServiceImpl implements RuleService {
     }
 
     private MatchedSubClaimRuleDto mapToMatchedSubClaimRuleDto(
-            SubClaimMapping mapping) {
+            SubClaimMapping mapping,
+            boolean partialClaim,
+            LocalDate cessationDate,
+            Integer totalContributionMonths,
+            Integer totalContributionYears,
+            Integer totalNonContributionMonths,
+            Integer totalServiceMonths,
+            Integer totalServiceYears) {
 
         if (mapping == null) {
             return null;
@@ -548,27 +540,117 @@ public class RuleServiceImpl implements RuleService {
                 .subClaimCode(mapping.getSubClaimCode())
                 .subClaimType(mapping.getSubClaimType())
                 .subClaimDescription(mapping.getSubClaimDesc())
-                .ruleCode(mapping.getRuleType() != null
-                        ? mapping.getRuleType().getCode()
-                        : null)
-                .ruleName(mapping.getRuleType() != null
-                        ? mapping.getRuleType().getName()
-                        : null)
+                .ruleCode(mapping.getRuleType() != null ? mapping.getRuleType().getCode() : null)
+                .ruleName(mapping.getRuleType() != null ? mapping.getRuleType().getName() : null)
+
+                // For partial, this is your percentage: SB63 = 50
                 .withdrawalPercentage(mapping.getWithdrawalPercentage())
+
                 .effectiveFrom(mapping.getEffectiveFrom())
                 .effectiveTo(mapping.getEffectiveTo())
+                .categoryScheme(mapCategoryScheme(mapping.getCategorySchemeMapping()))
 
-                .categoryScheme(mapCategoryScheme(
-                        mapping.getCategorySchemeMapping()))
+                .condition(partialClaim
+                        ? mapMatchedPartialCondition(
+                                mapping,
+                                cessationDate,
+                                totalContributionMonths)
+                        : mapMatchedCondition(
+                                mapping,
+                                cessationDate,
+                                totalContributionMonths,
+                                totalContributionYears,
+                                totalNonContributionMonths,
+                                totalServiceMonths,
+                                totalServiceYears))
 
-                // .condition(mapCondition(
-                // mapping.()))
-                .timeIndication(mapTimeIndication(
-                        mapping.getTimeIndication()))
+                .timeIndication(mapTimeIndication(mapping.getTimeIndication()))
+                .componentMapping(mapComponentMapping(mapping.getComponentMapping()))
+                .build();
+    }
 
-                .componentMapping(mapComponentMapping(
-                        mapping.getComponentMapping()))
+    private MatchedSubClaimRuleDto.Condition mapMatchedPartialCondition(
+            SubClaimMapping mapping,
+            LocalDate cessationDate,
+            Integer totalContributionMonths) {
 
+        if (mapping == null || mapping.getSubClaimCode() == null) {
+            return null;
+        }
+
+        List<SubClaimCondition> conditions = subClaimConditionRepository.findBySubClaimMapping_SubClaimCode(
+                mapping.getSubClaimCode());
+
+        if (conditions == null || conditions.isEmpty()) {
+            return null;
+        }
+
+        return conditions.stream()
+                .filter(Objects::nonNull)
+                .filter(condition -> matchesEffectiveDate(condition, cessationDate))
+                .filter(condition -> matchesCondition(
+                        condition,
+                        cessationDate,
+                        totalContributionMonths,
+                        null,
+                        null,
+                        null,
+                        null))
+                .findFirst()
+                .map(this::mapCondition)
+                .orElse(null);
+    }
+
+    private MatchedSubClaimRuleDto.Condition mapMatchedCondition(
+            SubClaimMapping mapping,
+            LocalDate cessationDate,
+            Integer totalContributionMonths,
+            Integer totalContributionYears,
+            Integer totalNonContributionMonths,
+            Integer totalServiceMonths,
+            Integer totalServiceYears) {
+
+        if (mapping == null || mapping.getSubClaimCode() == null) {
+            return null;
+        }
+
+        List<SubClaimCondition> conditions = subClaimConditionRepository.findBySubClaimMapping_SubClaimCode(
+                mapping.getSubClaimCode());
+
+        if (conditions == null || conditions.isEmpty()) {
+            return null;
+        }
+
+        return conditions.stream()
+                .filter(Objects::nonNull)
+                .filter(condition -> matchesCondition(
+                        condition,
+                        cessationDate,
+                        totalContributionMonths,
+                        totalContributionYears,
+                        totalNonContributionMonths,
+                        totalServiceMonths,
+                        totalServiceYears))
+                .findFirst()
+                .map(this::mapCondition)
+                .orElse(null);
+    }
+
+    private MatchedSubClaimRuleDto.Condition mapCondition(
+            SubClaimCondition condition) {
+
+        if (condition == null) {
+            return null;
+        }
+
+        return MatchedSubClaimRuleDto.Condition.builder()
+                .id(condition.getId())
+                .conditionCode(condition.getConditionCode())
+                .conditionCheck(condition.getConditionCheck())
+                .expression(condition.getExpression())
+                .duration(condition.getDuration())
+                .effectiveFrom(condition.getEffectiveFrom())
+                .effectiveTo(condition.getEffectiveTo())
                 .build();
     }
 
