@@ -18,7 +18,7 @@ import com.claim.claim_processing.common.entities.partial.PartialWithdrawalRuleM
 @Entity
 @Table(
         name = "PARTIAL_WITHDRAWAL_DETAIL",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
+        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA"
 )
 @Getter
 @Setter

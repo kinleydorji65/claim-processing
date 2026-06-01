@@ -50,4 +50,26 @@ public class ClaimApplicationSwaggerConfig implements SwaggerConfig {
                 .displayName("Legal Recovery Claim Detail APIs")
                 .build();
     }
+
+    @Bean
+    public GroupedOpenApi wrongRemittanceClaimDetailApi() {
+        return GroupedOpenApi.builder()
+                .group("Wrong Remittance Claim Detail API Management")
+                .pathsToMatch(
+                        "/api/claim/wrong-remittance-details/**"
+                )
+                .displayName("Wrong Remittance Claim Detail APIs")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi beneficiarySettlementDetailApi() {
+        return GroupedOpenApi.builder()
+                .group("Beneficiary settlement Detail API Management")
+                .pathsToMatch(
+                        "/api/claim/beneficiary-settlement-details/**"
+                )
+                .displayName("Beneficiary settlement Detail APIs")
+                .build();
+    }
 }
