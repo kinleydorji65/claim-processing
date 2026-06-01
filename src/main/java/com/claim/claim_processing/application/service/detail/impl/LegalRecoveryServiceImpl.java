@@ -12,7 +12,7 @@ import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.adjustmentMaster.LoanStatusMaster;
 import com.claim.claim_processing.common.entities.adjustmentMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.repository.adjustmentMaster.LoanStatusRepository;
@@ -251,7 +251,7 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
                 ));
     }
 
-    private SchemeMaster getSchemeTypeIfPresent(Long id) {
+    private SchemeType getSchemeTypeIfPresent(Long id) {
         if (id == null) {
             return null;
         }

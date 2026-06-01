@@ -14,9 +14,9 @@ public interface ClaimEligibilityPreviewMapper {
     
     ClaimEligibilityPreviewMapper INSTANCE = Mappers.getMapper(ClaimEligibilityPreviewMapper.class);
 
-    @Mapping(target = "matchingRuleCode", source = "matchingRule.ruleCode")
-    @Mapping(target = "matchingRuleName", source = "matchingRule.ruleName")
-    @Mapping(target = "eligibleBenefits", source = "categoryBenefitsList")
+    // @Mapping(target = "matchingRuleCode", source = "matchingRule.ruleCode")
+    // @Mapping(target = "matchingRuleName", source = "matchingRule.ruleName")
+    // @Mapping(target = "eligibleBenefits", source = "categoryBenefitsList")
 
     ClaimEligibilityPreviewResponse toResponse(
         List<EligibleBenefitComponentDTO> categoryBenefitsList,

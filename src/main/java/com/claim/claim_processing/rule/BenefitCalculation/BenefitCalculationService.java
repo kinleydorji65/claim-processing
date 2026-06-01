@@ -9,5 +9,5 @@ import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
 
 public interface BenefitCalculationService {
     ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(ClaimInitialPreviewRequest request);
-    ApiResponseDTO<BigDecimal> getFinalAmountAfterDeduction(BigDecimal calculatedAmount, Boolean isLoanThere);
+    // ApiResponseDTO<BigDecimal> getFinalAmountAfterDeduction(BigDecimal calculatedAmount, Boolean isLoanThere);
 }

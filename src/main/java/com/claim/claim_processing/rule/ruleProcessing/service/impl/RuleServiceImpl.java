@@ -1,329 +1,669 @@
 package com.claim.claim_processing.rule.ruleProcessing.service.impl;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-import org.springframework.stereotype.Service;
-
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
+import com.claim.claim_processing.common.DTO.response.others.member.MemberDetailResponseDto;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
+import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
+import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
+import com.claim.claim_processing.integration.member.service.MemberService;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
-import com.claim.claim_processing.rule.ruleGateWay.dto.MatchedConditionRuleDto;
-import com.claim.claim_processing.rule.ruleGateWay.dto.MatchedConditionRuleDto.MatchedConditionResponse;
-import com.claim.claim_processing.rule.ruleGateWay.dto.RuleResponseDto;
-import com.claim.claim_processing.rule.ruleGateWay.dto.RuleResponseDto.ClaimRuleResponseDto.ClaimRuleConditionResponse;
-import com.claim.claim_processing.rule.ruleGateWay.service.RuleGateWayService;
+import com.claim.claim_processing.rule.ruleGateWay.dto.MatchedSubClaimRuleDto;
+import com.claim.claim_processing.rule.ruleGateWay.entities.rule.CategorySchemeMapping;
+import com.claim.claim_processing.rule.ruleGateWay.entities.rule.ClaimComponentExpressionMapping;
+import com.claim.claim_processing.rule.ruleGateWay.entities.rule.ClaimComponentMapping;
+import com.claim.claim_processing.rule.ruleGateWay.entities.rule.SubClaimCondition;
+import com.claim.claim_processing.rule.ruleGateWay.entities.rule.SubClaimMapping;
+import com.claim.claim_processing.rule.ruleGateWay.entities.rule.SubClaimTimeIndication;
+import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.CategorySchemeMappingRepository;
+import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.SubClaimConditionRepository;
+import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.SubClaimMappingRepository;
+import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.SubClaimTimeIndicationRepository;
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class RuleServiceImpl implements RuleService {
-    private final RuleGateWayService ruleGateWayService;
+
+    private static final Long PARTIAL_WITHDRAWAL_CLAIM_TYPE_ID = 2L;
+    private static final Long WRONG_REMITTANCE_CLAIM_TYPE_ID = 5L;
+
     private final ClaimTypeRuleMapRepository claimTypeRuleMapRepository;
-    private final MemberContributionService memberContributionService;
+    private final SubClaimMappingRepository subClaimMappingRepository;
+    private final SubClaimConditionRepository subClaimConditionRepository;
+    private final CategorySchemeMappingRepository categorySchemeMappingRepository;
     private final CessationTypeRepository cessationTypeRepository;
+    private final MemberService memberService;
+    private final MemberContributionService memberContributionService;
+    private final SubClaimTimeIndicationRepository subClaimTimeIndicationRepository;
 
     @Override
-    public ApiResponseDTO<List<MatchedConditionRuleDto>> playWithRule(ClaimInitialPreviewRequest request) {
+    public ApiResponseDTO<List<MatchedSubClaimRuleDto>> playWithRule(
+            ClaimInitialPreviewRequest request) {
 
-        List<ClaimTypeRuleMap> ruleMaps = claimTypeRuleMapRepository.findByClaimType_Id(request.getClaimTypeId());
+        validateRequest(request);
 
-        if (ruleMaps.isEmpty()) {
-            throw new RuntimeException("No rules configured for claim type id: " + request.getClaimTypeId());
+        if (isPartialWithdrawalClaim(request.getClaimTypeId())) {
+            return ApiResponseDTO.notFound("Partial Withdrawal does not use this rule flow");
         }
 
-        MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(request.getNppfNumber());
-
-        Integer totalMonths = contributionSummary.getTotalContributionMonths();
-
-        LocalDate cessationDate = request.getCessationDate() != null
-                ? request.getCessationDate()
-                : contributionSummary.getContributionEndDate();
-
-        List<MatchedConditionRuleDto> matchedRules = new ArrayList<>();
-
-        for (ClaimTypeRuleMap map : ruleMaps) {
-
-            RuleResponseDto ruleResponseDto = ruleGateWayService
-                    .getByTopRuleType(map.getRuleType().getId())
-                    .getData();
-
-            if (ruleResponseDto == null || ruleResponseDto.getSubClaimRules() == null) {
-                continue;
-            }
-
-            boolean terminationClaim = isTerminationClaim(request);
-
-            List<RuleResponseDto.ClaimRuleResponseDto> subRules = ruleResponseDto.getSubClaimRules();
-
-            // NORMAL CLAIM -> exclude termination rules
-            if (!terminationClaim) {
-                subRules = subRules.stream()
-                        .filter(sr -> !isTerminationRuleType(sr))
-                        .toList();
-            }
-
-            // TERMINATION CLAIM -> exclude normal rules
-            else {
-                subRules = subRules.stream()
-                        .filter(this::isTerminationRuleType)
-                        .toList();
-            }
-
-            List<MatchedConditionRuleDto> matchedSubRules = subRules.stream()
-                    .filter(sr -> matchesRequestFilter(sr, request, cessationDate))
-                    .map(sr -> mapToMatchedRule(sr, request, contributionSummary, totalMonths))
-                    .filter(Objects::nonNull)
-                    .toList();
-
-            matchedRules.addAll(matchedSubRules);
+        if (isWrongRemittanceClaim(request.getClaimTypeId())) {
+            return ApiResponseDTO.notFound("Wrong Remittance does not use this rule flow");
         }
 
-        if (matchedRules.isEmpty()) {
-            return ApiResponseDTO.notFound("Rule Does Not Match");
+        MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
+
+        MemberContributionSummary contributionSummary = getContributionSummary(request.getNppfNumber());
+
+        String memberCategoryId = memberDetail.getMemberCategoryId();
+        Long schemeTypeId = contributionSummary.getSchemeTypeId();
+
+        LocalDate cessationDate = resolveEndDate(request, contributionSummary);
+
+        LocalDate serviceStartDate = toLocalDate(memberDetail.getDateOfServiceJoiningDate());
+
+        Integer totalServiceMonths = calculateMonths(serviceStartDate, cessationDate);
+
+        Integer totalServiceYears = totalServiceMonths == null ? null : totalServiceMonths / 12;
+
+        Integer totalContributionMonths = contributionSummary.getTotalContributionMonths();
+
+        Integer totalContributionYears = contributionSummary.getTotalContributionYears();
+
+        Integer totalNonContributionMonths = contributionSummary.getTotalNonContributionMonths();
+
+        List<String> ruleTypeCodes = getClaimTypeRuleMaps(request.getClaimTypeId())
+                .stream()
+                .filter(Objects::nonNull)
+                .map(ClaimTypeRuleMap::getRuleType)
+                .filter(Objects::nonNull)
+                .map(RuleTypeMaster::getCode)
+                .filter(Objects::nonNull)
+                .toList();
+
+        List<SubClaimMapping> subClaimMappings = getSubClaimMappings(ruleTypeCodes);
+
+        System.out.println("\n===== ALL RULES =====");
+        subClaimMappings.forEach(rule -> System.out.println(
+                rule.getId()
+                        + " | "
+                        + rule.getSubClaimCode()
+                        + " | "
+                        + rule.getSubClaimType()));
+        boolean terminationClaim = isTerminationClaim(request.getCessationTypeId());
+
+        CategorySchemeMapping categorySchemeMapping = getCategorySchemeMapping(schemeTypeId, memberCategoryId);
+
+        List<SubClaimMapping> terminationFiltered = subClaimMappings.stream()
+                .filter(Objects::nonNull)
+                .filter(mapping -> terminationClaim
+                        ? isTerminationRule(mapping)
+                        : !isTerminationRule(mapping))
+                .toList();
+
+        System.out.println("\n===== AFTER TERMINATION FILTER =====");
+        terminationFiltered.forEach(rule -> System.out.println(
+                rule.getId()
+                        + " | "
+                        + rule.getSubClaimCode()
+                        + " | "
+                        + rule.getSubClaimType()));
+
+        List<SubClaimMapping> categoryFiltered = terminationFiltered.stream()
+                .filter(mapping -> matchesCategoryScheme(
+                        mapping,
+                        categorySchemeMapping))
+                .toList();
+
+        System.out.println("\n===== AFTER CATEGORY FILTER =====");
+        categoryFiltered.forEach(rule -> System.out.println(
+                rule.getId()
+                        + " | "
+                        + rule.getSubClaimCode()
+                        + " | "
+                        + rule.getSubClaimType()));
+
+        List<SubClaimMapping> timeFiltered = categoryFiltered.stream()
+                .filter(mapping -> matchesTimeIndication(
+                        mapping.getTimeIndication(),
+                        cessationDate))
+                .toList();
+        System.out.println("\n===== AFTER TIME FILTER =====");
+        timeFiltered.forEach(rule -> System.out.println(
+                rule.getId()
+                        + " | "
+                        + rule.getSubClaimCode()
+                        + " | "
+                        + rule.getSubClaimType()
+                        + " | "
+                        + (rule.getTimeIndication() != null
+                                ? rule.getTimeIndication().getTimeIndicationCode()
+                                : "NO_TIME_INDICATION")));
+        List<SubClaimMapping> matchedMappings = timeFiltered.stream()
+                .filter(mapping -> {
+
+                    boolean matched = matchesMappingCondition(
+                            mapping,
+                            cessationDate,
+                            totalContributionMonths,
+                            totalContributionYears,
+                            totalNonContributionMonths,
+                            totalServiceMonths,
+                            totalServiceYears);
+
+                    System.out.println(
+                            "CONDITION => "
+                                    + mapping.getSubClaimCode()
+                                    + " = "
+                                    + matched);
+
+                    return matched;
+                })
+                .toList();
+
+        System.out.println("\n===== FINAL MATCHED RULES =====");
+        matchedMappings.forEach(rule -> System.out.println(
+                rule.getId()
+                        + " | "
+                        + rule.getSubClaimCode()
+                        + " | "
+                        + rule.getSubClaimType()));
+
+        if (matchedMappings.isEmpty()) {
+            return ApiResponseDTO.notFound("No matching rule found");
         }
 
-        return ApiResponseDTO.success(matchedRules);
+        List<MatchedSubClaimRuleDto> response = matchedMappings.stream()
+                .map(this::mapToMatchedSubClaimRuleDto)
+                .toList();
+
+        return ApiResponseDTO.success(response);
     }
 
-    private boolean matchesRequestFilter(
-            RuleResponseDto.ClaimRuleResponseDto sr,
-            ClaimInitialPreviewRequest request,
-            LocalDate cessationDate) {
+    private boolean matchesMappingCondition(
+            SubClaimMapping mapping,
+            LocalDate cessationDate,
+            Integer totalContributionMonths,
+            Integer totalContributionYears,
+            Integer totalNonContributionMonths,
+            Integer totalServiceMonths,
+            Integer totalServiceYears) {
 
-        boolean dateMatch = cessationDate == null
-                || ((sr.getEffectiveFrom() == null || !cessationDate.isBefore(sr.getEffectiveFrom()))
-                        &&
-                        (sr.getEffectiveTo() == null || !cessationDate.isAfter(sr.getEffectiveTo())));
-
-        if (!dateMatch) {
+        if (mapping == null || mapping.getId() == null) {
             return false;
         }
 
-        if (sr.getLoanTypeId() != null && sr.getLoanTypeId() != 0) {
+        List<SubClaimCondition> conditions = subClaimConditionRepository
+                .findBySubClaimMapping_SubClaimCode(mapping.getSubClaimCode());
+
+        return conditions.stream()
+                .anyMatch(condition -> matchesCondition(
+                        condition,
+                        cessationDate,
+                        totalContributionMonths,
+                        totalContributionYears,
+                        totalNonContributionMonths,
+                        totalServiceMonths,
+                        totalServiceYears));
+    }
+
+    private boolean matchesTimeIndication(
+            SubClaimTimeIndication timeIndication,
+            LocalDate cessationDate) {
+
+        if (timeIndication == null) {
             return true;
         }
 
-        if (request.getReasonTypeId() != null && request.getReasonTypeId() != 0) {
-            return Objects.equals(sr.getPartialReasonId(), request.getReasonTypeId());
+        if (cessationDate == null) {
+            return false;
+        }
+
+        String indication = timeIndication.getTimeIndication();
+
+        if (indication == null || indication.isBlank()) {
+            return true;
+        }
+
+        LocalDate startDate = timeIndication.getStartDate();
+        LocalDate endDate = timeIndication.getEndDate();
+
+        return switch (indication.trim().toUpperCase()) {
+            case "AFTER" -> startDate != null && !cessationDate.isBefore(startDate);
+            case "BEFORE" -> endDate != null && !cessationDate.isAfter(endDate);
+            case "BETWEEN" -> startDate != null && endDate != null
+                    && !cessationDate.isBefore(startDate)
+                    && !cessationDate.isAfter(endDate);
+            case "ANY" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean matchesCondition(
+            SubClaimCondition condition,
+            LocalDate endDate,
+            Integer totalContributionMonths,
+            Integer totalContributionYears,
+            Integer totalNonContributionMonths,
+            Integer totalServiceMonths,
+            Integer totalServiceYears) {
+
+        if (condition == null) {
+            return false;
+        }
+
+        if (!matchesEffectiveDate(condition, endDate)) {
+            return false;
+        }
+
+        String conditionCheck = condition.getConditionCheck();
+        String expression = condition.getExpression();
+        Long duration = condition.getDuration();
+
+        if (conditionCheck == null || expression == null || duration == null) {
+            return false;
+        }
+
+        Long actualValue = getActualValue(
+                conditionCheck,
+                totalContributionMonths,
+                totalContributionYears,
+                totalNonContributionMonths,
+                totalServiceMonths,
+                totalServiceYears);
+
+        if (actualValue == null) {
+            return false;
+        }
+
+        return evaluateExpression(actualValue, duration, expression);
+    }
+
+    private Long getActualValue(
+            String conditionCheck,
+            Integer totalContributionMonths,
+            Integer totalContributionYears,
+            Integer totalNonContributionMonths,
+            Integer totalServiceMonths,
+            Integer totalServiceYears) {
+
+        return switch (conditionCheck.trim().toUpperCase()) {
+
+            case "TOTAL_CONTRIBUTION_MONTHS" ->
+                totalContributionMonths == null ? null : totalContributionMonths.longValue();
+
+            case "TOTAL_CONTRIBUTION_YEARS" ->
+                totalContributionYears == null ? null : totalContributionYears.longValue();
+
+            case "TOTAL_NON_CONTRIBUTION_MONTHS" ->
+                totalNonContributionMonths == null ? null : totalNonContributionMonths.longValue();
+
+            case "TOTAL_SERVICE_MONTHS" ->
+                totalServiceMonths == null ? null : totalServiceMonths.longValue();
+
+            case "TOTAL_SERVICE_YEARS" ->
+                totalServiceYears == null ? null : totalServiceYears.longValue();
+
+            default -> null;
+        };
+    }
+
+    private boolean evaluateExpression(
+            Long actualValue,
+            Long ruleValue,
+            String expression) {
+
+        if (actualValue == null || ruleValue == null || expression == null) {
+            return false;
+        }
+
+        return switch (expression.trim().toUpperCase()) {
+
+            case "GREATER_THAN" -> actualValue > ruleValue;
+
+            case "GREATER_THAN_EQUAL" -> actualValue >= ruleValue;
+
+            case "LESS_THAN" -> actualValue < ruleValue;
+
+            case "LESS_THAN_EQUAL" -> actualValue <= ruleValue;
+
+            case "EQUAL" -> actualValue.equals(ruleValue);
+
+            case "NOT_EQUAL" -> !actualValue.equals(ruleValue);
+
+            default -> false;
+        };
+    }
+
+    private boolean matchesEffectiveDate(
+            SubClaimCondition condition,
+            LocalDate endDate) {
+
+        if (endDate == null) {
+            return true;
+        }
+
+        if (condition.getEffectiveFrom() != null
+                && endDate.isBefore(condition.getEffectiveFrom())) {
+            return false;
+        }
+
+        if (condition.getEffectiveTo() != null
+                && endDate.isAfter(condition.getEffectiveTo())) {
+            return false;
         }
 
         return true;
     }
 
-    private MatchedConditionRuleDto mapToMatchedRule(
-            RuleResponseDto.ClaimRuleResponseDto sr,
+    private void validateRequest(ClaimInitialPreviewRequest request) {
+
+        if (request == null) {
+            throw ClaimException.notFound("Request cannot be null");
+        }
+
+        if (request.getClaimTypeId() == null) {
+            throw ClaimException.notFound("Claim type is required");
+        }
+
+        if (request.getNppfNumber() == null || request.getNppfNumber().isBlank()) {
+            throw ClaimException.notFound("NPPF number is required");
+        }
+    }
+
+    private MemberDetailResponseDto getMemberDetail(String nppfNumber) {
+
+        ApiResponseDTO<MemberDetailResponseDto> response = memberService.getMemberDetails(nppfNumber);
+
+        if (response == null || response.getData() == null) {
+            throw ClaimException.notFound(
+                    "Member detail not found for nppfNumber: " + nppfNumber);
+        }
+
+        return response.getData();
+    }
+
+    private MemberContributionSummary getContributionSummary(String nppfNumber) {
+
+        MemberContributionSummary summary = memberContributionService.getContributionSummary(nppfNumber);
+
+        if (summary == null) {
+            throw ClaimException.notFound(
+                    "Contribution detail not found for nppfNumber: " + nppfNumber);
+        }
+
+        return summary;
+    }
+
+    private List<ClaimTypeRuleMap> getClaimTypeRuleMaps(Long claimTypeId) {
+
+        List<ClaimTypeRuleMap> ruleMaps = claimTypeRuleMapRepository.findByClaimType_Id(claimTypeId);
+
+        if (ruleMaps == null || ruleMaps.isEmpty()) {
+            throw ClaimException.notFound(
+                    "No rules configured for claim type id: " + claimTypeId);
+        }
+
+        return ruleMaps;
+    }
+
+    private List<SubClaimMapping> getSubClaimMappings(List<String> ruleTypeCodes) {
+
+        if (ruleTypeCodes == null || ruleTypeCodes.isEmpty()) {
+            return List.of();
+        }
+
+        return ruleTypeCodes.stream()
+                .map(subClaimMappingRepository::findByRuleType_CodeIgnoreCase)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private CategorySchemeMapping getCategorySchemeMapping(
+            Long schemeTypeId,
+            String memberCategoryId) {
+
+        return categorySchemeMappingRepository
+                .findBySchemeType_IdAndAgencyCategory_CategoryId(
+                        schemeTypeId,
+                        memberCategoryId)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "No category scheme mapping found for schemeTypeId: "
+                                + schemeTypeId
+                                + " and memberCategoryId: "
+                                + memberCategoryId));
+    }
+
+    private LocalDate resolveEndDate(
             ClaimInitialPreviewRequest request,
-            MemberContributionSummary contributionSummary,
-            Integer totalMonths) {
-        MatchedConditionRuleDto.MatchedConditionResponse matchedCondition = matchesCondition(sr.getClaimRuleCondition(),
-                contributionSummary, totalMonths);
+            MemberContributionSummary contributionSummary) {
 
-        if (matchedCondition == null) {
+        if (request.getCessationDate() != null) {
+            return request.getCessationDate();
+        }
+
+        if (contributionSummary.getContributionEndDate() != null) {
+            return contributionSummary.getContributionEndDate();
+        }
+
+        return LocalDate.now();
+    }
+
+    private LocalDate toLocalDate(Date date) {
+
+        if (date == null) {
             return null;
         }
 
-        RuleResponseDto.ClaimRuleResponseDto.AgencyCategories matchedCategory = null;
-
-        if (sr.getClaimRuleCondition().getAgencyCategories() != null
-                && request.getMemberCategoryId() != null) {
-
-            matchedCategory = sr.getClaimRuleCondition()
-                    .getAgencyCategories()
-                    .stream()
-                    .filter(category -> Objects.equals(
-                            category.getCategoryId(),
-                            request.getMemberCategoryId()))
-                    .findFirst()
-                    .orElse(null);
+        if (date instanceof java.sql.Date) {
+            return ((java.sql.Date) date).toLocalDate(); // ← This works!
         }
 
-        List<MatchedConditionRuleDto.Components> components = matchedCategory == null
-                || matchedCategory.getComponents() == null
-                        ? List.of()
-                        : matchedCategory.getComponents()
-                                .stream()
-                                .map(component -> MatchedConditionRuleDto.Components.builder()
-                                        .componentId(component.getComponentId())
-                                        .componentName(component.getName())
-                                        .componentCode(component.getCode())
-                                        .build())
-                                .toList();
+        // For java.util.Date
+        return date.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+    }
 
-        List<MatchedConditionRuleDto.RefundTypeDTO> refundTypes = matchedCategory == null
-                || matchedCategory.getRefundTypes() == null
-                        ? List.of()
-                        : matchedCategory.getRefundTypes()
-                                .stream()
-                                .map(refund -> MatchedConditionRuleDto.RefundTypeDTO.builder()
-                                        .id(refund.getId())
-                                        .name(refund.getName())
-                                        .build())
-                                .toList();
+    private Integer calculateMonths(
+            LocalDate startDate,
+            LocalDate endDate) {
 
-        return MatchedConditionRuleDto.builder()
-                .subRuleId(sr.getId())
-                .ruleCode(sr.getRuleCode())
-                .ruleName(sr.getRuleName())
-                .loanTypeId(sr.getLoanTypeId())
-                .loanType(sr.getLoanType())
-                .reasonId(sr.getPartialReasonId())
-                .reasonName(sr.getPartialReason())
-                .effectiveFrom(sr.getEffectiveFrom())
-                .effectiveTo(sr.getEffectiveTo())
-                .condition(matchedCondition)
-                .components(components)
-                .refundTypes(refundTypes)
+        if (startDate == null || endDate == null) {
+            return null;
+        }
+
+        return Math.toIntExact(
+                ChronoUnit.MONTHS.between(startDate, endDate));
+    }
+
+    private boolean isPartialWithdrawalClaim(Long claimTypeId) {
+        return Objects.equals(claimTypeId, PARTIAL_WITHDRAWAL_CLAIM_TYPE_ID);
+    }
+
+    private boolean isWrongRemittanceClaim(Long claimTypeId) {
+        return Objects.equals(claimTypeId, WRONG_REMITTANCE_CLAIM_TYPE_ID);
+    }
+
+    private boolean isTerminationClaim(Long cessationTypeId) {
+
+        if (cessationTypeId == null) {
+            return false;
+        }
+
+        CessationTypeMaster cessationType = cessationTypeRepository.findById(cessationTypeId)
+                .orElseThrow(() -> ClaimException.notFound(
+                        "Cessation type not found with id: " + cessationTypeId));
+
+        String code = cessationType.getCode();
+
+        return code != null && code.equalsIgnoreCase("TERMINATION");
+    }
+
+    private boolean isTerminationRule(SubClaimMapping mapping) {
+
+        if (mapping == null) {
+            return false;
+        }
+
+        String code = mapping.getRuleType() == null
+                ? ""
+                : mapping.getRuleType().getCode().toUpperCase();
+
+        String name = mapping.getRuleType() == null
+                ? ""
+                : mapping.getRuleType().getName().toUpperCase();
+
+        return code.contains("TERM")
+                || code.contains("TERMINATION")
+                || name.contains("TERM")
+                || name.contains("TERMINATION");
+    }
+
+    private MatchedSubClaimRuleDto mapToMatchedSubClaimRuleDto(
+            SubClaimMapping mapping) {
+
+        if (mapping == null) {
+            return null;
+        }
+
+        return MatchedSubClaimRuleDto.builder()
+                .subClaimMappingId(mapping.getId())
+                .subClaimCode(mapping.getSubClaimCode())
+                .subClaimType(mapping.getSubClaimType())
+                .subClaimDescription(mapping.getSubClaimDesc())
+                .ruleCode(mapping.getRuleType() != null
+                        ? mapping.getRuleType().getCode()
+                        : null)
+                .ruleName(mapping.getRuleType() != null
+                        ? mapping.getRuleType().getName()
+                        : null)
+                .withdrawalPercentage(mapping.getWithdrawalPercentage())
+                .effectiveFrom(mapping.getEffectiveFrom())
+                .effectiveTo(mapping.getEffectiveTo())
+
+                .categoryScheme(mapCategoryScheme(
+                        mapping.getCategorySchemeMapping()))
+
+                // .condition(mapCondition(
+                // mapping.()))
+                .timeIndication(mapTimeIndication(
+                        mapping.getTimeIndication()))
+
+                .componentMapping(mapComponentMapping(
+                        mapping.getComponentMapping()))
+
                 .build();
     }
 
-    private MatchedConditionResponse matchesCondition(
-            ClaimRuleConditionResponse condition,
-            MemberContributionSummary contributionSummary,
-            Integer totalMonths) {
+    private boolean matchesCategoryScheme(
+            SubClaimMapping mapping,
+            CategorySchemeMapping categorySchemeMapping) {
 
-        if (condition == null) {
-            return null;
-        }
-
-        if (!"Y".equalsIgnoreCase(condition.getIsActive())) {
-            return null;
-        }
-
-        if (condition.getSchemeTypeId() != null
-                && contributionSummary != null
-                && contributionSummary.getSchemeTypeId() != null
-                && !Objects.equals(condition.getSchemeTypeId(), contributionSummary.getSchemeTypeId())) {
-            return null;
-        }
-
-        if (totalMonths == null) {
-            return null;
-        }
-
-        boolean hasMin = condition.getMinMonths() != null;
-        boolean hasMax = condition.getMaxMonths() != null;
-        boolean hasTotal = condition.getTotalContributionNumber() != null;
-        boolean hasComparison = condition.getComparisonType() != null
-                && !condition.getComparisonType().isBlank();
-
-        if (hasTotal) {
-            if (!hasComparison) {
-                return null;
-            }
-
-            return compare(totalMonths,
-                    condition.getTotalContributionNumber().intValue(),
-                    condition.getComparisonType())
-                            ? buildMatchedCondition(condition)
-                            : null;
-        }
-
-        if (hasComparison) {
-
-            if (hasMin && !hasMax) {
-                return compare(totalMonths,
-                        condition.getMinMonths().intValue(),
-                        condition.getComparisonType())
-                                ? buildMatchedCondition(condition)
-                                : null;
-            }
-
-            if (!hasMin && hasMax) {
-                return compare(totalMonths,
-                        condition.getMaxMonths().intValue(),
-                        condition.getComparisonType())
-                                ? buildMatchedCondition(condition)
-                                : null;
-            }
-
-            if (hasMin && hasMax) {
-                return totalMonths >= condition.getMinMonths().intValue()
-                        && totalMonths <= condition.getMaxMonths().intValue()
-                                ? buildMatchedCondition(condition)
-                                : null;
-            }
-        }
-
-        if (hasMin && totalMonths < condition.getMinMonths().intValue()) {
-            return null;
-        }
-
-        if (hasMax && totalMonths > condition.getMaxMonths().intValue()) {
-            return null;
-        }
-
-        return buildMatchedCondition(condition);
-    }
-
-    private boolean isTerminationClaim(ClaimInitialPreviewRequest request) {
-        if (request.getCessationTypeId() == null) {
+        if (mapping == null || categorySchemeMapping == null) {
             return false;
         }
 
-        CessationTypeMaster cessationType = cessationTypeRepository.findById(request.getCessationTypeId())
-                .orElseThrow(() -> new RuntimeException("Cessation type not found"));
+        if (mapping.getCategorySchemeMapping() == null) {
+            return false;
+        }
 
-        return cessationType.getCode() != null
-                && cessationType.getCode().toUpperCase().contains("TERMINATION");
+        return Objects.equals(
+                mapping.getCategorySchemeMapping().getCategorySchemeCode(),
+                categorySchemeMapping.getCategorySchemeCode());
     }
 
-    private MatchedConditionResponse buildMatchedCondition(ClaimRuleConditionResponse condition) {
-        return MatchedConditionResponse.builder()
-                .id(condition.getId())
-                .schemeTypeName(condition.getSchemeTypeName())
-                .schemeTypeId(condition.getSchemeTypeId())
-                .priorityOrder(condition.getPriorityOrder())
-                .totalContributionNumber(condition.getTotalContributionNumber())
-                .withdrawalPercentage(condition.getWithdrawalPercentage())
-                .minMonths(condition.getMinMonths())
-                .maxMonths(condition.getMaxMonths())
-                .comparisonType(condition.getComparisonType())
-                .isActive(condition.getIsActive())
-                .accumulation(condition.getAccumulation())
+    private MatchedSubClaimRuleDto.CategoryScheme mapCategoryScheme(CategorySchemeMapping categorySchemeMapping) {
+
+        if (categorySchemeMapping == null) {
+            return null;
+        }
+
+        return MatchedSubClaimRuleDto.CategoryScheme.builder()
+                .categoryId(categorySchemeMapping.getId())
+                .categorySchemeCode(categorySchemeMapping.getCategorySchemeCode())
+                .categoryCode(categorySchemeMapping.getCategoryCode())
+                .schemeCode(categorySchemeMapping.getSchemeCode())
+                .categoryName(categorySchemeMapping.getAgencyCategory().getCategoryName())
+                .schemeTypeId(categorySchemeMapping.getSchemeType().getId())
+                .schemeTypeName(categorySchemeMapping.getSchemeType().getName())
                 .build();
     }
 
-    private boolean isTerminationRuleType(RuleResponseDto.ClaimRuleResponseDto sr) {
-        if (sr == null) {
-            return false;
+    private MatchedSubClaimRuleDto.ComponentMapping mapComponentMapping(
+            ClaimComponentMapping componentMapping) {
+
+        if (componentMapping == null) {
+            return null;
         }
 
-        // Check both ruleCode and ruleName
-        String code = sr.getRuleCode() != null ? sr.getRuleCode().toUpperCase() : "";
-        String name = sr.getRuleName() != null ? sr.getRuleName().toUpperCase() : "";
-
-        return code.contains("TERM") ||
-                code.contains("TERMINATION") ||
-                name.contains("TERM") ||
-                name.contains("TERMINATION");
+        return MatchedSubClaimRuleDto.ComponentMapping.builder()
+                .id(componentMapping.getId())
+                .componentMappingCode(componentMapping.getComponentMappingCode())
+                .hasPf(componentMapping.getHasPf())
+                .hasPc(componentMapping.getHasPc())
+                .hasEc(componentMapping.getHasEc())
+                .hasMc(componentMapping.getHasMc())
+                .hasImc(componentMapping.getHasImc())
+                .hasIec(componentMapping.getHasIec())
+                .hasGc(componentMapping.getHasGc())
+                .hasGic(componentMapping.getHasGic())
+                .hasVc(componentMapping.getHasVc())
+                .hasVic(componentMapping.getHasVic())
+                .expressions(mapComponentExpressions(componentMapping.getExpressions()))
+                .effectiveFrom(componentMapping.getEffectiveFrom())
+                .effectiveTo(componentMapping.getEffectiveTo())
+                .build();
     }
 
-    private boolean compare(
-            Integer actualValue,
-            Integer ruleValue,
-            String comparisonType) {
-        if (actualValue == null || ruleValue == null || comparisonType == null) {
-            return false;
+    private List<MatchedSubClaimRuleDto.ComponentExpression> mapComponentExpressions(
+            List<ClaimComponentExpressionMapping> expressions) {
+
+        if (expressions == null || expressions.isEmpty()) {
+            return List.of();
         }
 
-        return switch (comparisonType) {
-            case "GREATER_THAN" -> actualValue > ruleValue;
-            case "GREATER_THAN_OR_EQUAL" -> actualValue >= ruleValue;
-            case "LESS_THAN" -> actualValue < ruleValue;
-            case "LESS_THAN_OR_EQUAL" -> actualValue <= ruleValue;
-            case "EQUAL" -> actualValue.equals(ruleValue);
-            default -> false;
-        };
+        return expressions.stream()
+                .filter(Objects::nonNull)
+                .map(expression -> MatchedSubClaimRuleDto.ComponentExpression.builder()
+                        .id(expression.getId())
+                        .componentMappingCode(expression.getComponentMapping().getComponentMappingCode())
+                        .expression(expression.getExpression())
+                        .build())
+                .toList();
+    }
+
+    private MatchedSubClaimRuleDto.TimeIndication mapTimeIndication(
+            SubClaimTimeIndication timeIndication) {
+
+        if (timeIndication == null) {
+            return null;
+        }
+
+        return MatchedSubClaimRuleDto.TimeIndication.builder()
+                .id(timeIndication.getId())
+                .timeIndicationCode(timeIndication.getTimeIndicationCode())
+                .timeIndication(timeIndication.getTimeIndication())
+                .startDate(timeIndication.getStartDate())
+                .endDate(timeIndication.getEndDate())
+                .effectiveFrom(timeIndication.getEffectiveFrom())
+                .effectiveTo(timeIndication.getEffectiveTo())
+                .build();
     }
 }

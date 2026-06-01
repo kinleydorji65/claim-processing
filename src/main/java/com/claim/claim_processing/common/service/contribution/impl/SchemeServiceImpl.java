@@ -5,7 +5,7 @@ import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.contribution.SchemeUpdateRequestDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.mapper.contribution.SchemeTypeMapper;
 import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
 import com.claim.claim_processing.common.service.contribution.SchemeService;
@@ -39,13 +39,13 @@ public class SchemeServiceImpl implements SchemeService {
                 );
             }
 
-            SchemeMaster entity = mapper.toEntity(dto);
+            SchemeType entity = mapper.toEntity(dto);
 
             if (entity.getIsActive() == null) {
-                entity.setIsActive(ActivityEnum.Y);
+                entity.setIsActive("A");
             }
 
-            SchemeMaster savedEntity = repository.save(entity);
+            SchemeType savedEntity = repository.save(entity);
 
             return ApiResponseDTO.created(
                     mapper.toResponseDto(savedEntity)
@@ -73,7 +73,7 @@ public class SchemeServiceImpl implements SchemeService {
 
         try {
 
-            SchemeMaster entity = repository.findById(id)
+            SchemeType entity = repository.findById(id)
                     .orElseThrow(() ->
                             ClaimException.resourceNotFound(
                                     "Scheme",
@@ -83,7 +83,7 @@ public class SchemeServiceImpl implements SchemeService {
 
             mapper.updateEntityFromDto(dto, entity);
 
-            SchemeMaster updatedEntity = repository.save(entity);
+            SchemeType updatedEntity = repository.save(entity);
 
             return ApiResponseDTO.success(
                     "Scheme updated successfully",
@@ -112,7 +112,7 @@ public class SchemeServiceImpl implements SchemeService {
 
         try {
 
-            SchemeMaster entity = repository.findById(id)
+            SchemeType entity = repository.findById(id)
                     .orElseThrow(() ->
                             ClaimException.resourceNotFound(
                                     "Scheme",
@@ -195,7 +195,7 @@ public class SchemeServiceImpl implements SchemeService {
 
         try {
 
-            SchemeMaster entity = repository.findById(id)
+            SchemeType entity = repository.findById(id)
                     .orElseThrow(() ->
                             ClaimException.resourceNotFound(
                                     "Scheme",

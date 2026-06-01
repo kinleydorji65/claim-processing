@@ -20,6 +20,7 @@ public class MemberDetailResponseDto {
     private String memberCode;
     private String identityTypeName;
     private String identityNumber;
+    private String memberCategoryId;
     private String memberCategory;
     private String employmentTypeName;
     @JsonFormat(pattern = "yyyy-MM-dd")

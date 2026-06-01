@@ -1,6 +1,6 @@
 package com.claim.claim_processing.common.mapper.contribution;
 
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.DTO.request.contribution.SchemeCreateRequestDto;
 import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
 import com.claim.claim_processing.common.DTO.update.contribution.SchemeUpdateRequestDto;
@@ -21,11 +21,11 @@ public interface SchemeTypeMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    SchemeMaster toEntity(SchemeCreateRequestDto dto);
+    SchemeType toEntity(SchemeCreateRequestDto dto);
 
-    SchemeTypeResponseDto toResponseDto(SchemeMaster entity);
+    SchemeTypeResponseDto toResponseDto(SchemeType entity);
 
-    List<SchemeTypeResponseDto> toResponseDtoList(List<SchemeMaster> entities);
+    List<SchemeTypeResponseDto> toResponseDtoList(List<SchemeType> entities);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
@@ -34,5 +34,5 @@ public interface SchemeTypeMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    void updateEntityFromDto(SchemeUpdateRequestDto dto, @MappingTarget SchemeMaster entity);
+    void updateEntityFromDto(SchemeUpdateRequestDto dto, @MappingTarget SchemeType entity);
 }

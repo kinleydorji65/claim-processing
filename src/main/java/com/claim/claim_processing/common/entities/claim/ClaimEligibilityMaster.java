@@ -10,7 +10,7 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 
 @Entity
 @Table(name = "CLAIM_ELIGIBILITY_MASTER", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
@@ -42,9 +42,9 @@ public class ClaimEligibilityMaster {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "SCHEME_TYPE_ID",
-            referencedColumnName = "ID"
+            referencedColumnName = "SCHEME_TYPE_ID"
     )
-    private SchemeMaster schemeType;
+    private SchemeType schemeType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(

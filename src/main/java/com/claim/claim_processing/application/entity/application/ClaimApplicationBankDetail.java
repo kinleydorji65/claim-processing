@@ -53,15 +53,6 @@ public class ClaimApplicationBankDetail {
         @Builder.Default
         private ActivityEnum isDefaultBank = ActivityEnum.N;
 
-        @Enumerated(EnumType.STRING)
-        @Column(name = "IS_SELECTED_BANK", length = 1)
-        @Builder.Default
-        private ActivityEnum isSelectedBank = ActivityEnum.N;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "BANK_VERIFICATION_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CABD_VER_STATUS"))
-        private VerificationStatusMaster bankVerificationStatus;
-
         @Column(name = "REMARKS", length = 1000)
         private String remarks;
 

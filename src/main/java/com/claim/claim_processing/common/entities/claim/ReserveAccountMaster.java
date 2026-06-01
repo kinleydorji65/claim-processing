@@ -8,7 +8,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 
 @Entity
 @Table(name = "RESERVE_ACCOUNT_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
@@ -41,10 +41,10 @@ public class ReserveAccountMaster {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "SCHEME_TYPE_ID",
-            referencedColumnName = "ID",
+            referencedColumnName = "SCHEME_TYPE_ID",
             foreignKey = @ForeignKey(name = "FK_RESERVE_ACCOUNT_SCHEME")
     )
-    private SchemeMaster schemeType;
+    private SchemeType schemeType;
 
     @Convert(converter = ActivityEnumConverter.class)
     @Column(name = "IS_ACTIVE", length = 1)

@@ -1,20 +1,16 @@
 package com.claim.claim_processing.application.entity.calculation;
 
-import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.others.StatusMaster;
-
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.time.LocalDate;
 
 @Entity
 @Table(
         name = "CLAIM_APPLICATION_CALCULATION_COMPONENT",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
+        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA"
 )
 @Getter
 @Setter
@@ -25,117 +21,36 @@ public class ClaimApplicationCalculationComponent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "CALCULATION_SUMMARY_ID",
+            name = "RULE_EVALUATION_ID",
             nullable = false,
             foreignKey = @ForeignKey(name = "FK_CACC_CALC_SUMMARY")
     )
-    private ClaimApplicationCalculationSummary calculationSummary;
+    private ClaimApplicationRuleEvaluation ruleEvaluation;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "CLAIM_APPLICATION_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_CACC_CLAIM_APP")
-    )
-    private ClaimApplication claimApplication;
+    @Column(name = "COMPONENT_CODE", length = 100)
+    private String componentCode;
 
-    @Column(name = "BENEFICIARY_IDENTIFIER", length = 100)
-    private String beneficiaryIdentifier;
+    @Column(name = "COMPONENT_NAME", length = 300)
+    private String componentName;
 
-    @Column(name = "COMPONENT_TYPE_ID")
-    private Long componentTypeId;
+    @Column(name = "COMPONENT_TYPE", length = 50)
+    private String componentType;
 
-    @Column(name = "DISPLAY_ORDER")
-    private Integer displayOrder;
+    @Column(name = "AMOUNT", precision = 15, scale = 2)
+    private BigDecimal amount;
 
-    @Column(name = "IS_PENSION_RELATED", length = 1)
     @Enumerated(EnumType.STRING)
+    @Column(name = "IS_DEDUCTION", length = 1)
     @Builder.Default
-    private ActivityEnum isPensionRelated = ActivityEnum.N;
+    private ActivityEnum isDeduction = ActivityEnum.N;
 
-    @Column(name = "IS_INTEREST_COMPONENT", length = 1)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ActivityEnum isInterestComponent = ActivityEnum.N;
-
-    @Column(name = "IS_DEDUCTION_COMPONENT", length = 1)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ActivityEnum isDeductionComponent = ActivityEnum.N;
-
-    @Column(name = "BASE_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal baseAmount;
-
-    @Column(name = "ELIGIBLE_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal eligibleAmount;
-
-    @Column(name = "CONTRIBUTION_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal contributionAmount;
-
-    @Column(name = "BALANCE_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal balanceAmount;
-
-    @Column(name = "RATE_APPLIED", precision = 10, scale = 4)
-    private BigDecimal rateApplied;
-
-    @Column(name = "RATE_TYPE_CODE", length = 50)
-    private String rateTypeCode;
-
-    @Column(name = "PERIOD_FROM")
-    private LocalDate periodFrom;
-
-    @Column(name = "PERIOD_TO")
-    private LocalDate periodTo;
-
-    @Column(name = "CONTRIBUTION_MONTHS")
-    private Integer contributionMonths;
-
-    @Column(name = "INTEREST_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal interestAmount;
-
-    @Column(name = "GROSS_COMPONENT_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal grossComponentAmount;
-
-    @Column(name = "DEDUCTION_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal deductionAmount;
-
-    @Column(name = "NET_COMPONENT_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal netComponentAmount;
-
-    @Column(name = "VERIFIED_COMPONENT_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal verifiedComponentAmount;
-
-    @Column(name = "APPROVED_COMPONENT_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal approvedComponentAmount;
-
-    @Column(name = "PAID_COMPONENT_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal paidComponentAmount;
-
-    @Column(name = "POSTED_COMPONENT_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal postedComponentAmount;
-
-    @Column(name = "CALCULATION_FORMULA", length = 2000)
-    private String calculationFormula;
-
-    @Column(name = "FORMULA_DESCRIPTION", length = 2000)
-    private String formulaDescription;
-
-    @Column(name = "RULE_REFERENCE", length = 500)
-    private String ruleReference;
-
-    @Column(name = "CALCULATION_NOTES", length = 2000)
-    private String calculationNotes;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "CALCULATION_STATUS_ID",
-            foreignKey = @ForeignKey(name = "FK_CACC_CALC_STATUS")
-    )
-    private StatusMaster calculationStatus;
+    @Column(name = "NOTES", length = 1000)
+    private String notes;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
@@ -153,15 +68,4 @@ public class ClaimApplicationCalculationComponent {
 
     @Column(name = "UPDATED_AT", insertable = false, updatable = false)
     private Timestamp updatedAt;
-
-    @PrePersist
-    public void prePersist() {
-        createdAt = new Timestamp(System.currentTimeMillis());
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = new Timestamp(System.currentTimeMillis());
-    }
 }

@@ -17,7 +17,7 @@ public class LoanDetailServiceImpl implements LoanDetailService {
     public ApiResponseDTO<List<LoanDetailResponseDto>> getLoanDetails(String accountNumber) {
         return ApiResponseDTO.success(List.of(
                 LoanDetailResponseDto.builder()
-                        .loanName("Home Loan")
+                        .loanName("Housing Loan")
                         .status("Active")
                         .loanAmount(new BigDecimal("850000.00"))
                         .outstandingAmount(new BigDecimal("420000.00"))

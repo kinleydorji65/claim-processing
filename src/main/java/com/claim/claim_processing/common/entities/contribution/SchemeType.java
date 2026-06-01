@@ -9,31 +9,28 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "SCHEME_MASTER", schema = "PPFMS_CONTRIBUTIONS_PAYMENTS_SERVICE_SCHEMA")
+@Table(name = "SCHEME_TYPES", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SchemeMaster {
+public class SchemeType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
+    @Column(name = "SCHEME_TYPE_ID")
     private Long id;
 
-    @Column(name = "CODE", nullable = false, unique = true, length = 30)
+    @Column(name = "SCHEME_TYPE_CODE", nullable = false, unique = true, length = 30)
     private String code;
 
-    @Column(name = "NAME", nullable = false, length = 100)
+    @Column(name = "SCHEME_TYPE_NAME", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "DESCRIPTION", length = 255)
-    private String description;
-
-    @Convert(converter = ActivityEnumConverter.class)
-    @Column(name = "IS_ACTIVE", length = 1)
-    private ActivityEnum isActive;
+    @Column(name = "STATUS", length = 1)
+    @Builder.Default
+    private String isActive = "A";
 
     @Column(name = "CREATED_AT", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -49,9 +46,6 @@ public class SchemeMaster {
 
     @PrePersist
     public void prePersist() {
-        if (isActive == null) {
-            isActive = ActivityEnum.Y;
-        }
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
         }

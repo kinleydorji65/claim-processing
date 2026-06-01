@@ -74,11 +74,6 @@ public class ClaimApplicationResponseDto {
     private LocalDate contributionEndDate;
 
     private ActivityEnum isSpecialCase;
-    private ActivityEnum requiresManualReview;
-    private ActivityEnum isFinancialCase;
-    private ActivityEnum isPaymentRequired;
-    private ActivityEnum isPostingRequired;
-    private ActivityEnum requiresManualApproval;
     private ActivityEnum isActive;
 
     private Long parentClaimApplicationId;
@@ -103,9 +98,7 @@ public class ClaimApplicationResponseDto {
 
     // ---------------------------------
     // Misc
-    // ---------------------------------
-    private Long currencyId;
-    private String currencyName;
+    // -------------------------
     private String remarks;
 
     // ---------------------------------

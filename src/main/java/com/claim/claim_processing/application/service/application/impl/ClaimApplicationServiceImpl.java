@@ -10,7 +10,7 @@ import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.common.*;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.contribution.SchemeMaster;
+import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
 import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
@@ -406,7 +406,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
                 ));
     }
 
-    private SchemeMaster getSchemeType(Long id) {
+    private SchemeType getSchemeType(Long id) {
         return schemeMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
                         "Scheme type not found with id: " + id

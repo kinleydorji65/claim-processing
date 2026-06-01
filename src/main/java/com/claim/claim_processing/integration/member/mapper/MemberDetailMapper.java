@@ -51,6 +51,7 @@ protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberD
     String employmentTypeName = employmentTypeRepository.findById(memberDetail.getWorkInfo().getEmploymentTypeId()).orElseThrow(()-> ClaimException.notFound("Employment type not found with ID: " + memberDetail.getId())).getEmploymentTypeName();
     responseDto.setDateOfServiceJoiningDate(memberDetail.getWorkInfo().getServiceJoiningDate());
     responseDto.setMemberCategory(getAgencyCategoryName(memberDetail.getAgencyCategoryId()));
+    responseDto.setMemberCategoryId(memberDetail.getAgencyCategoryId());
     responseDto.setIdentityTypeName(identityTypeName);
     responseDto.setEmploymentTypeName(employmentTypeName);
     responseDto.setMemberStatus(memberDetail.getStatus());

@@ -53,21 +53,21 @@ public class MemberServiceImpl implements MemberService {
                 && contributionSummary.getComponentGroups() != null) {
 
             totalBalanceAmount =
-                    contributionSummary.getComponentGroups()
-                            .stream()
-                            .filter(Objects::nonNull)
-                            .map(component ->
-                                    nullSafe(component.getPrincipal())
-                                            .add(nullSafe(component.getInterest())))
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        contributionSummary.getComponentGroups()
+                .stream()
+                .filter(Objects::nonNull)
+                .map(component ->
+                        nullSafe(component.getPrincipalAmount())
+                                .add(nullSafe(component.getInterestAmount())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            totalBalanceWithoutInterestAmount =
-                    contributionSummary.getComponentGroups()
-                            .stream()
-                            .filter(Objects::nonNull)
-                            .map(component ->
-                                    nullSafe(component.getPrincipal()))
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+totalBalanceWithoutInterestAmount =
+        contributionSummary.getComponentGroups()
+                .stream()
+                .filter(Objects::nonNull)
+                .map(component ->
+                        nullSafe(component.getPrincipalAmount()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
         responseDto.setTotalBalanceAmount(totalBalanceAmount);
