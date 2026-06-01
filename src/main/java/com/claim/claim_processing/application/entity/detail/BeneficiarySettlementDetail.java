@@ -12,7 +12,7 @@ import java.util.List;
 @Entity
 @Table(
         name = "BENEFICIARY_SETTLEMENT_DETAIL",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
+        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA"
 )
 @Getter
 @Setter

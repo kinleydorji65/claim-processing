@@ -31,6 +31,10 @@ public class BeneficiarySettlementResponseDto {
     private LocalDate serviceJoiningDate;
     private LocalDate lastContributionDate;
 
+    private String deceasedMemberCode;
+
+    private String deceasedNppfNumber;
+
     // ---------- Business ----------
     private Integer nonContributionMonths;
 

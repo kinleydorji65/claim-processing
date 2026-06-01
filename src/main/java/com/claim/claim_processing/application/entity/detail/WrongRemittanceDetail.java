@@ -17,7 +17,7 @@ import com.claim.claim_processing.common.entities.wrongRemittanceMaster.WrongRem
 @Entity
 @Table(
         name = "WRONG_REMITTANCE_DETAIL",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
+        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA"
 )
 @Data
 @Builder

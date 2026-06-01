@@ -9,7 +9,7 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnumConverter;
 
 @Entity
-@Table(name = "CONTRIBUTION_TYPE_MASTER", schema = "PPFMS_CONTRIBUTIONS_PAYMENTS_SERVICE_SCHEMA", uniqueConstraints = {
+@Table(name = "CONTRIBUTION_TYPE_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA", uniqueConstraints = {
         @UniqueConstraint(name = "UK_CONTRIBUTION_TYPE_CODE", columnNames = { "CODE" })
 })
 @Data

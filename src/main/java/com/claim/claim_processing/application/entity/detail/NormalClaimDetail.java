@@ -15,7 +15,7 @@ import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 @Entity
 @Table(
         name = "NORMAL_CLAIM_DETAIL",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
+        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA"
 )
 @Data
 @Builder
@@ -41,7 +41,7 @@ public class NormalClaimDetail {
     @Column(name = "DATE_OF_TERMINATION")
     private LocalDate dateOfTermination;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
     private PayeeTypeMaster payeeType;
 
