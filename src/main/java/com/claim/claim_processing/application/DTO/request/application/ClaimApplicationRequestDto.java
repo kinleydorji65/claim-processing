@@ -23,6 +23,8 @@ public class ClaimApplicationRequestDto {
 
     private Long schemeTypeId;
 
+    private ActivityEnum onBehalfOfMember;
+
     /**
      * In your entity MEMBER_CATEGORY_ID references AgencyCategory.CATEGORY_ID.
      * If CATEGORY_ID is String, keep this as String.

@@ -95,8 +95,9 @@ public class ClaimApplication {
     @Column(name = "APPLICATION_DATE", nullable = false)
     private LocalDate applicationDate;
 
-    @Column(name = "SUBMITTED_BY", length = 100)
-    private String submittedBy;
+    @Column(name = "ON_BEHALF_OF_MEMBER", length = 1)
+    @Builder.Default
+    private String onBehalfOfMember = "N";
 
     @Column(name = "INITIATED_BY", length = 100)
     private String initiatedBy;
