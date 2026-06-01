@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,16 +20,31 @@ public class BeneficiaryClaimantResponseDto {
 
     // ---------- Relationships ----------
     private Long nomineeId;
-    private String nomineeName;
+    private String nomineeFirstName;
+    private String nomineeMiddleName;
+    private String nomineeLastName;
 
     private Long dependentId;
-    private String dependentName;
+    private String dependentFirstName;
+    private String dependentMiddleName;
+    private String dependentLastName;
 
     private Long claimantTypeId;
     private String claimantTypeName;
 
     private Long payeeTypeId;
     private String payeeTypeName;
+
+    private String beneficiaryIdentifier;
+
+    private Long relationshipTypeId;
+    private String relationshipTypeName;
+
+    private String beneficiaryName;
+
+    private LocalDate dateOfBirth;
+
+    private BigDecimal beneficiarySharePercentage;
 
     // ---------- Business Fields ----------
     private Integer priorityOrder;

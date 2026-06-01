@@ -72,4 +72,15 @@ public class ClaimApplicationSwaggerConfig implements SwaggerConfig {
                 .displayName("Beneficiary settlement Detail APIs")
                 .build();
     }
+
+    @Bean
+    public GroupedOpenApi beneficiaryClaimantDetailApi() {
+        return GroupedOpenApi.builder()
+                .group("Beneficiary Claimant Detail API Management")
+                .pathsToMatch(
+                        "/api/beneficiary-claimants/**"
+                )
+                .displayName("Beneficiary Claimant Detail APIs")
+                .build();
+    }
 }
