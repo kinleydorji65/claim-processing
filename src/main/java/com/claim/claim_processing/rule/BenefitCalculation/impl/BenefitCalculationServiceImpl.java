@@ -2,7 +2,9 @@ package com.claim.claim_processing.rule.BenefitCalculation.impl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Date;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,14 +18,17 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
+import com.claim.claim_processing.common.DTO.response.others.member.MemberDetailResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
+import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.integration.loanAdjustment.dto.LoanAdjustmentResultDto;
 import com.claim.claim_processing.integration.loanAdjustment.dto.LoanDetailResponseDto;
 import com.claim.claim_processing.integration.loanAdjustment.service.LoanDetailService;
+import com.claim.claim_processing.integration.member.service.MemberService;
 import com.claim.claim_processing.rule.BenefitCalculation.BenefitCalculationService;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
@@ -51,6 +56,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     private final LoanDetailService loanDetailService;
     private final ClaimTypeRuleMapRepository claimTypeRuleMapRepository;
     private final LoanDeductionMappingRepository loanDeductionMappingRepository;
+    private final MemberService memberService;
 
     @Override
     public ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(
@@ -58,6 +64,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         if (isPartialWithdrawalRule(request.getClaimTypeId())) {
             return partialWithdrawalRuleService.calculatePartialWithdrawal(request);
         }
+        MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
         MemberContributionSummary contributionSummary = memberContributionService
                 .getContributionSummary(request.getNppfNumber());
 
@@ -126,7 +133,9 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                     if (vestingResult.getRefundTypeName() != null
                             && !vestingResult.getRefundTypeName().isBlank()) {
                         vestingNote = "Till Date, Your total Contribution Months is " + totalMonths
-                                + ". Recommended benefit type is " + vestingResult.getRefundTypeName() + (vestingResult.isLumpSumEligible() ? " and it is Eligible." : " and it is Not Eligible.");
+                                + ". Recommended benefit type is " + vestingResult.getRefundTypeName()
+                                + (vestingResult.isLumpSumEligible() ? " and it is Eligible."
+                                        : " and it is Not Eligible.");
                     }
 
                 }
@@ -232,7 +241,6 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         BigDecimal finalPayableAmount = grossPayableAmount;
 
         if (isLoanApply) {
-
             loanAdjustmentResult = deductLoanByPriority(
                     request.getNppfNumber(),
                     finalComponents);
@@ -241,12 +249,15 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 finalPayableAmount = loanAdjustmentResult.getFinalPayableAmount();
             }
         }
+        LocalDate joiningDate = toLocalDate(memberDetail.getDateOfServiceJoiningDate());
 
         BigDecimal serviceYears = contributionSummary == null
                 ? BigDecimal.ZERO
                 : calculateServiceYears(
-                        contributionSummary.getContributionStartDate(),
-                        contributionSummary.getContributionEndDate());
+                        joiningDate,
+                        request.getCessationDate() != null
+                                ? request.getCessationDate()
+                                : contributionSummary.getContributionEndDate());
 
         String eligibilityNote = buildEligibilityPreviewNote(
                 finalComponents,
@@ -300,6 +311,21 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         return ApiResponseDTO.success(response);
     }
 
+    private LocalDate toLocalDate(Date date) {
+
+        if (date == null) {
+            return null;
+        }
+
+        if (date instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+
+        return date.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+    }
+
     private String buildEligibilityPreviewNote(
             List<ComponentBalanceDTO> finalComponents,
             BigDecimal totalPfAmount,
@@ -326,23 +352,17 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     }
 
     private BigDecimal calculateServiceYears(
-            LocalDate contributionStartDate,
-            LocalDate contributionEndDate) {
+            LocalDate joiningDate,
+            LocalDate endDate) {
 
-        if (contributionStartDate == null || contributionEndDate == null) {
+        if (joiningDate == null || endDate == null) {
             return BigDecimal.ZERO;
         }
 
-        if (contributionEndDate.isBefore(contributionStartDate)) {
-            return BigDecimal.ZERO;
-        }
+        long months = ChronoUnit.MONTHS.between(joiningDate, endDate);
 
-        long totalMonths = ChronoUnit.MONTHS.between(
-                contributionStartDate,
-                contributionEndDate);
-
-        return BigDecimal.valueOf(totalMonths)
-                .divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
+        return BigDecimal.valueOf(months)
+                .divide(BigDecimal.valueOf(12), 1, RoundingMode.HALF_UP);
     }
 
     private EligibilityResultDto handleEligibilityRule(
@@ -534,8 +554,6 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
     }
 
-    
-
     private LapsedResultDto handleLapsedRule(
             MatchedSubClaimRuleDto matchedRule,
             ClaimInitialPreviewRequest request,
@@ -718,97 +736,16 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         };
     }
 
-    private BigDecimal evaluateExpression(
-            String expression,
-            Map<String, BigDecimal> componentAmountMap) {
+    private MemberDetailResponseDto getMemberDetail(String nppfNumber) {
 
-        if (expression == null || expression.isBlank()) {
-            return BigDecimal.ZERO;
+        ApiResponseDTO<MemberDetailResponseDto> response = memberService.getMemberDetails(nppfNumber);
+
+        if (response == null || response.getData() == null) {
+            throw ClaimException.notFound(
+                    "Member detail not found for nppfNumber: " + nppfNumber);
         }
 
-        if (componentAmountMap == null || componentAmountMap.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        String cleanExpression = expression
-                .replace(" ", "")
-                .toUpperCase();
-
-        List<String> tokens = new ArrayList<>();
-        List<Character> operators = new ArrayList<>();
-
-        StringBuilder currentToken = new StringBuilder();
-
-        for (char ch : cleanExpression.toCharArray()) {
-
-            if (ch == '+' || ch == '-') {
-
-                tokens.add(currentToken.toString());
-                operators.add(ch);
-
-                currentToken.setLength(0);
-                continue;
-            }
-
-            currentToken.append(ch);
-        }
-
-        tokens.add(currentToken.toString());
-
-        BigDecimal result = getTokenValue(
-                tokens.get(0),
-                componentAmountMap);
-
-        for (int i = 1; i < tokens.size(); i++) {
-
-            BigDecimal value = getTokenValue(
-                    tokens.get(i),
-                    componentAmountMap);
-
-            char operator = operators.get(i - 1);
-
-            switch (operator) {
-
-                case '+':
-                    result = result.add(value);
-                    break;
-
-                case '-':
-                    result = result.subtract(value);
-                    break;
-
-                default:
-                    throw new IllegalArgumentException(
-                            "Unsupported operator: " + operator);
-            }
-        }
-
-        return result;
-    }
-
-    private BigDecimal getTokenValue(
-            String token,
-            Map<String, BigDecimal> componentAmountMap) {
-
-        if (token == null || token.isBlank()) {
-            return BigDecimal.ZERO;
-        }
-
-        String code = token.trim().toUpperCase();
-
-        if (componentAmountMap.containsKey(code)) {
-            return componentAmountMap.get(code);
-        }
-
-        String pfCode = "PF_" + code;
-
-        if (componentAmountMap.containsKey(pfCode)) {
-            return componentAmountMap.get(pfCode);
-        }
-
-        String pcCode = "PC_" + code;
-
-        return componentAmountMap.getOrDefault(pcCode, BigDecimal.ZERO);
+        return response.getData();
     }
 
     private List<ComponentBalanceDTO> getComponentsFromRule(
