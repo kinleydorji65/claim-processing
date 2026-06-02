@@ -23,7 +23,7 @@ public class BeneficiaryClaimantDetailController {
         return beneficiaryClaimantDetailService.create(request);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ApiResponseDTO<BeneficiaryClaimantResponseDto> update(
             @PathVariable Long id,
             @RequestBody BeneficiaryClaimantRequestDto request) {
