@@ -73,11 +73,6 @@ public class ClaimApplicationRequestDto {
 
     private Integer totalContributionYears;
 
-    // ---------------------------------
-    // Users
-    // ---------------------------------
-    private String submittedBy;
-
     private String initiatedBy;
 
     // ---------------------------------

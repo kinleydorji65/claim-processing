@@ -2,7 +2,6 @@ package com.claim.claim_processing.application.DTO.request.detail;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 
 @Data
