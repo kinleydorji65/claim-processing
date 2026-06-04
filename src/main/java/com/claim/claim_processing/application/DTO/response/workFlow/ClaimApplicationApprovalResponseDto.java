@@ -1,7 +1,7 @@
 package com.claim.claim_processing.application.DTO.response.workFlow;
 
 import com.claim.claim_processing.common.DTO.response.common.DecisionResponseDto;
-import com.claim.claim_processing.common.DTO.response.others.StatusMasterResponseDto;
+import com.claim.claim_processing.common.DTO.response.others.StatusResponseDTO;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -19,9 +19,10 @@ public class ClaimApplicationApprovalResponseDto {
     private Long id;
 
     private Long claimApplicationId;
+    private String applicationNumber;
     private Integer approvalLevel;
 
-    private StatusMasterResponseDto approvalStatus;
+    private StatusResponseDTO approvalStatus;
     private DecisionResponseDto approvalDecision;
 
     // ---------- Amounts ----------

@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import com.claim.claim_processing.common.DTO.response.common.DecisionResponseDto;
 import com.claim.claim_processing.common.DTO.response.common.ReviewStatusResponseDto;
-import com.claim.claim_processing.common.DTO.response.others.StatusResponseDTO;
+import com.claim.claim_processing.common.DTO.response.statusMaster.VerificationStatusResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -22,7 +22,7 @@ public class ClaimApplicationVerificationResponseDto {
     private Integer verificationLevel;
 
     private DecisionResponseDto verificationDecision;
-    private StatusResponseDTO verificationStatus;
+    private VerificationStatusResponseDto verificationStatus;
 
     // ---------- Flags ----------
     private ActivityEnum isEligible;

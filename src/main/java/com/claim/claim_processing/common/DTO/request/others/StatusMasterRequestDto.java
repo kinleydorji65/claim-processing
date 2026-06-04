@@ -8,5 +8,5 @@ import lombok.*;
 @AllArgsConstructor
 public class StatusMasterRequestDto {
 
-    private String statuseName;
+    private String statusName;
 }
