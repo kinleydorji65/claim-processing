@@ -1,7 +1,7 @@
 package com.claim.claim_processing.application.entity.calculation;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.rule.ruleGateWay.entities.ClaimRuleMaster;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.SubClaimMapping;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,19 +28,8 @@ public class ClaimApplicationRuleEvaluation {
     private ClaimApplicationCalculationSummary calculationSummary;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RULE_TYPE_ID")
-    private ClaimRuleMaster rule;
-
-    @Column(name = "RULE_CODE", length = 100)
-    private String ruleCode;
-
-    @Column(name = "RULE_NAME", length = 300)
-    private String ruleName;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "IS_RULE_MATCHED", length = 1)
-    @Builder.Default
-    private ActivityEnum isRuleMatched = ActivityEnum.N;
+    @JoinColumn(name = "SUB_CLAIM_CODE", referencedColumnName = "SUB_CLAIM_CODE", nullable = false, foreignKey = @ForeignKey(name = "FK_CARE_SUB_CLAIM_MAPPING"))
+    private SubClaimMapping subRule;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_RULE_APPLIED", length = 1)
@@ -49,14 +38,6 @@ public class ClaimApplicationRuleEvaluation {
 
     @Column(name = "RESULT_MESSAGE", length = 2000)
     private String resultMessage;
-
-    @Lob
-    @Column(name = "INPUT_SNAPSHOT_JSON")
-    private String inputSnapshotJson;
-
-    @Lob
-    @Column(name = "OUTPUT_SNAPSHOT_JSON")
-    private String outputSnapshotJson;
 
     @Column(name = "EVALUATED_AT")
     private Timestamp evaluatedAt;

@@ -21,11 +21,6 @@ public interface PartialWithdrawalDetailRepository
     List<PartialWithdrawalDetail> findByPayeeType_Id(Long payeeTypeId);
 
     List<PartialWithdrawalDetail> findByWithdrawalReason_Id(Long withdrawalReasonId);
-
-    List<PartialWithdrawalDetail> findByWithdrawalCause_Id(Long withdrawalCauseId);
-
-    List<PartialWithdrawalDetail> findByPartialWithdrawalMaster_Id(Long partialWithdrawalMasterId);
-
     List<PartialWithdrawalDetail> findByDisasterType_Id(Long disasterTypeId);
 
     List<PartialWithdrawalDetail> findByBusinessType_Id(Long businessTypeId);

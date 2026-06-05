@@ -40,9 +40,6 @@ public class ClaimApplicationCalculationSummary {
     @Column(name = "FINAL_PAYABLE_AMOUNT", precision = 15, scale = 2)
     private BigDecimal finalPayableAmount;
 
-    @Column(name = "NUMBER_OF_SERVICE_IN_YEAR", precision = 15, scale = 2)
-    private BigDecimal numberOfServiceInYear;
-
     @Column(name = "ACTUAL_AMOUNT_CALCULATED", precision = 15, scale = 2)
     private BigDecimal actualAmountCalculated;
 
@@ -55,13 +52,10 @@ public class ClaimApplicationCalculationSummary {
     private String isPensionEligible = "N";
 
     @Column(name = "TOTAL_CONTRIBUTION_MONTH", precision = 15, scale = 2)
-    private BigDecimal totalContributionMonth;
+    private Integer totalContributionMonth;
 
     @Column(name = "RECOMMENDED_BENEFIT_TYPE", length = 2000)
     private String recommendedBenefitType;
-
-    @Column(name = "CALCULATION_REMARKS", length = 2000)
-    private String calculationRemarks;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CALCULATION_STATUS_ID", referencedColumnName = "STATUS_ID")

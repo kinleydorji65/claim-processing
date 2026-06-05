@@ -41,14 +41,14 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
 
         validateRequired(request);
 
-        if (partialWithdrawalRepository.existsByClaimApplication_Id(request.getClaimApplicationId())) {
-            throw ClaimException.conflict(
-                    "Partial withdrawal detail already exists for claim application id: "
-                            + request.getClaimApplicationId()
-            );
-        }
+        // if (partialWithdrawalRepository.existsByClaimApplication_Id(request.getClaimApplicationId())) {
+        //     throw ClaimException.conflict(
+        //             "Partial withdrawal detail already exists for claim application id: "
+        //                     + request.getClaimApplicationId()
+        //     );
+        // }
 
-        ClaimApplication claimApplication = getClaimApplication(request.getClaimApplicationId());
+        ClaimApplication claimApplication = null;
         PayeeTypeMaster payeeType = getPayeeType(request.getPayeeTypeId());
         PartialWithdrawalReasonMaster reason = getWithdrawalReason(request.getWithdrawalReasonId());
 
@@ -59,8 +59,6 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
         entity.setClaimApplication(claimApplication);
         entity.setPayeeType(payeeType);
         entity.setWithdrawalReason(reason);
-        entity.setPartialWithdrawalMaster(getPartialWithdrawalRuleIfPresent(request.getPartialWithdrawalMasterId()));
-        entity.setWithdrawalCause(getWithdrawalCauseIfPresent(request.getWithdrawalCauseId()));
         entity.setDisasterType(getDisasterTypeIfPresent(request.getDisasterTypeId()));
         entity.setBusinessType(getBusinessTypeIfPresent(request.getBusinessTypeId()));
 
@@ -78,41 +76,31 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
                         id.toString()
                 ));
 
-        if (request.getClaimApplicationId() != null) {
-            boolean duplicate = partialWithdrawalRepository
-                    .existsByClaimApplication_IdAndIdNot(request.getClaimApplicationId(), id);
+        // if (request.getClaimApplicationId() != null) {
+        //     boolean duplicate = partialWithdrawalRepository
+        //             .existsByClaimApplication_IdAndIdNot(request.getClaimApplicationId(), id);
 
-            if (duplicate) {
-                throw ClaimException.conflict(
-                        "Partial withdrawal detail already exists for claim application id: "
-                                + request.getClaimApplicationId()
-                );
-            }
-        }
+        //     if (duplicate) {
+        //         throw ClaimException.conflict(
+        //                 "Partial withdrawal detail already exists for claim application id: "
+        //                         + request.getClaimApplicationId()
+        //         );
+        //     }
+        // }
 
-        partialWithdrawalMapper.updateEntityFromDto(request, existing);
+        // partialWithdrawalMapper.updateEntityFromDto(request, existing);
 
-        if (request.getClaimApplicationId() != null) {
-            existing.setClaimApplication(getClaimApplication(request.getClaimApplicationId()));
-        }
+        // if (request.getClaimApplicationId() != null) {
+        //     existing.setClaimApplication(getClaimApplication(request.getClaimApplicationId()));
+        // }
 
         if (request.getPayeeTypeId() != null) {
             existing.setPayeeType(getPayeeType(request.getPayeeTypeId()));
         }
 
-        if (request.getPartialWithdrawalMasterId() != null) {
-            existing.setPartialWithdrawalMaster(
-                    getPartialWithdrawalRuleIfPresent(request.getPartialWithdrawalMasterId())
-            );
-        }
-
         if (request.getWithdrawalReasonId() != null) {
             PartialWithdrawalReasonMaster reason = getWithdrawalReason(request.getWithdrawalReasonId());
             existing.setWithdrawalReason(reason);
-        }
-
-        if (request.getWithdrawalCauseId() != null) {
-            existing.setWithdrawalCause(getWithdrawalCauseIfPresent(request.getWithdrawalCauseId()));
         }
 
         if (request.getDisasterTypeId() != null) {
@@ -203,12 +191,12 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
 
     private void validateRequired(PartialWithdrawalRequestDto request) {
 
-        if (request.getClaimApplicationId() == null) {
-            throw ClaimException.singleValidationError(
-                    "claimApplicationId",
-                    "Claim application id is required"
-            );
-        }
+        // if (request.getClaimApplicationId() == null) {
+        //     throw ClaimException.singleValidationError(
+        //             "claimApplicationId",
+        //             "Claim application id is required"
+        //     );
+        // }
 
         if (request.getPayeeTypeId() == null) {
             throw ClaimException.singleValidationError(
@@ -251,12 +239,6 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
         String code = reasonCode.trim().toUpperCase();
 
         if ("UNEMPLOYMENT".equals(code)) {
-            if (request.getWithdrawalCauseId() == null) {
-                throw ClaimException.singleValidationError(
-                        "withdrawalCauseId",
-                        "Withdrawal cause is required for unemployment"
-                );
-            }
 
             if (request.getUnemploymentStartDate() == null) {
                 throw ClaimException.singleValidationError(
@@ -335,12 +317,6 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
         String code = existing.getWithdrawalReason().getCode().trim().toUpperCase();
 
         if ("UNEMPLOYMENT".equals(code)) {
-            if (existing.getWithdrawalCause() == null) {
-                throw ClaimException.singleValidationError(
-                        "withdrawalCauseId",
-                        "Withdrawal cause is required for unemployment"
-                );
-            }
 
             if (existing.getUnemploymentStartDate() == null) {
                 throw ClaimException.singleValidationError(
@@ -424,30 +400,6 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
         return withdrawalReasonRepository.findById(id)
                 .orElseThrow(() -> ClaimException.resourceNotFound(
                         "Withdrawal reason",
-                        id.toString()
-                ));
-    }
-
-    private PartialWithdrawalRuleMaster getPartialWithdrawalRuleIfPresent(Long id) {
-        if (id == null) {
-            return null;
-        }
-
-        return partialWithdrawalRuleRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Partial withdrawal rule",
-                        id.toString()
-                ));
-    }
-
-    private PartialWithdrawalCauseMaster getWithdrawalCauseIfPresent(Long id) {
-        if (id == null) {
-            return null;
-        }
-
-        return withdrawalCauseRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Withdrawal cause",
                         id.toString()
                 ));
     }

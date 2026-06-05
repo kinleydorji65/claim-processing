@@ -1,12 +1,10 @@
 package com.claim.claim_processing.application.service.application.impl;
 
 import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationRequestDto;
-import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.mapper.application.ClaimApplicationMapper;
 import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationService;
-import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.common.*;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -59,7 +57,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     private String claimPrefix;
 
     @Override
-    public ApiResponseDTO<ClaimApplicationResponseDto> create(ClaimApplicationRequestDto request) {
+    public ClaimApplication create(ClaimApplicationRequestDto request) {
 
         validateCreateRequest(request);
 
@@ -81,11 +79,11 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
         ClaimApplication saved = claimApplicationRepository.save(entity);
 
-        return ApiResponseDTO.created(claimApplicationMapper.toResponseDto(saved));
+        return saved;
     }
 
     @Override
-    public ApiResponseDTO<ClaimApplicationResponseDto> update(Long id, ClaimApplicationRequestDto request) {
+    public ClaimApplication update(Long id, ClaimApplicationRequestDto request) {
 
         ClaimApplication existing = claimApplicationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Claim application not found with id: " + id));
@@ -96,30 +94,24 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
         ClaimApplication updated = claimApplicationRepository.save(existing);
 
-        return ApiResponseDTO.success(
-                "Claim application updated successfully",
-                claimApplicationMapper.toResponseDto(updated)
-        );
+        return updated;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ApiResponseDTO<ClaimApplicationResponseDto> getById(Long id) {
+    public ClaimApplication getById(Long id) {
 
         ClaimApplication entity = claimApplicationRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
                         "Claim application not found with id: " + id
                 ));
 
-        return ApiResponseDTO.success(
-                "Claim application fetched successfully",
-                claimApplicationMapper.toResponseDto(entity)
-        );
+        return entity;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ApiResponseDTO<ClaimApplicationResponseDto> getByApplicationNumber(
+    public ClaimApplication getByApplicationNumber(
             String applicationNumber
     ) {
 
@@ -130,42 +122,30 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
                                 + applicationNumber
                 ));
 
-        return ApiResponseDTO.success(
-                "Claim application fetched successfully",
-                claimApplicationMapper.toResponseDto(entity)
-        );
+        return entity;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ApiResponseDTO<List<ClaimApplicationResponseDto>> getAll() {
+    public List<ClaimApplication> getAll() {
 
-        List<ClaimApplicationResponseDto> response = claimApplicationRepository.findAll()
-                .stream()
-                .map(claimApplicationMapper::toResponseDto)
-                .toList();
+        List<ClaimApplication> response = claimApplicationRepository.findAll();
 
         if (response.isEmpty()) {
             throw ClaimException.notFound("No claim applications found");
         }
 
-        return ApiResponseDTO.success(
-                "Claim applications fetched successfully",
-                response
-        );
+        return response;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ApiResponseDTO<List<ClaimApplicationResponseDto>> getByMemberCode(
+    public List<ClaimApplication> getByMemberCode(
             String memberCode
     ) {
 
-        List<ClaimApplicationResponseDto> response =
-                claimApplicationRepository.findByMemberCode(memberCode)
-                        .stream()
-                        .map(claimApplicationMapper::toResponseDto)
-                        .toList();
+        List<ClaimApplication> response =
+                claimApplicationRepository.findByMemberCode(memberCode);
 
         if (response.isEmpty()) {
             throw ClaimException.notFound(
@@ -173,23 +153,17 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
             );
         }
 
-        return ApiResponseDTO.success(
-                "Claim applications fetched successfully",
-                response
-        );
+        return response;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ApiResponseDTO<List<ClaimApplicationResponseDto>> getByNppfNumber(
+    public List<ClaimApplication> getByNppfNumber(
             String nppfNumber
     ) {
 
-        List<ClaimApplicationResponseDto> response =
-                claimApplicationRepository.findByNppfNumber(nppfNumber)
-                        .stream()
-                        .map(claimApplicationMapper::toResponseDto)
-                        .toList();
+        List<ClaimApplication> response =
+                claimApplicationRepository.findByNppfNumber(nppfNumber);
 
         if (response.isEmpty()) {
             throw ClaimException.notFound(
@@ -197,10 +171,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
             );
         }
 
-        return ApiResponseDTO.success(
-                "Claim applications fetched successfully",
-                response
-        );
+        return response;
     }
 
     private void validateCreateRequest(ClaimApplicationRequestDto request) {
@@ -225,10 +196,6 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     private void resolveAndSetForeignKeys(ClaimApplication entity, ClaimApplicationRequestDto request) {
 
         entity.setClaimType(getClaimType(request.getClaimTypeId()));
-
-        if (request.getClaimSourceId() != null) {
-            entity.setClaimSource(getClaimSource(request.getClaimSourceId()));
-        }
 
         if (request.getSubmissionChannelId() != null) {
             entity.setSubmissionChannel(getSubmissionChannel(request.getSubmissionChannelId()));
@@ -274,10 +241,6 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
         if (request.getClaimTypeId() != null) {
             entity.setClaimType(getClaimType(request.getClaimTypeId()));
-        }
-
-        if (request.getClaimSourceId() != null) {
-            entity.setClaimSource(getClaimSource(request.getClaimSourceId()));
         }
 
         if (request.getSubmissionChannelId() != null) {

@@ -1,6 +1,10 @@
 package com.claim.claim_processing.application.entity.calculation;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.ClaimComponentMapping;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.SubClaimMapping;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,21 +29,21 @@ public class ClaimApplicationCalculationComponent {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "RULE_EVALUATION_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_CACC_CALC_SUMMARY")
-    )
-    private ClaimApplicationRuleEvaluation ruleEvaluation;
+@JoinColumn(
+        name = "RULE_EVALUATION_ID",
+        nullable = false,
+        foreignKey = @ForeignKey(name = "FK_CACC_RULE_EVAL")
+)
+private ClaimApplicationRuleEvaluation ruleEvaluation;
 
-    @Column(name = "COMPONENT_CODE", length = 100)
-    private String componentCode;
-
-    @Column(name = "COMPONENT_NAME", length = 300)
-    private String componentName;
-
-    @Column(name = "COMPONENT_TYPE", length = 50)
-    private String componentType;
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(
+        name = "COMPONENT_CODE",
+        referencedColumnName = "CODE",
+        nullable = false,
+        foreignKey = @ForeignKey(name = "FK_CACC_COMPONENT")
+)
+private ComponentMaster componentMaster;
 
     @Column(name = "AMOUNT", precision = 15, scale = 2)
     private BigDecimal amount;

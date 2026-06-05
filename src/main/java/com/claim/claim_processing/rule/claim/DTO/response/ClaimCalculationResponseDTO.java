@@ -14,6 +14,7 @@ import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 public class ClaimCalculationResponseDTO {
     private String nppfNumber;
     private BigDecimal noOfYearInService;
+    private String subClaimCode;
     private boolean loanCheck;
     private boolean rentalCheck;
     

@@ -2,23 +2,23 @@ package com.claim.claim_processing.application.service.application;
 
 import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationRequestDto;
 import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationResponseDto;
-import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
+import com.claim.claim_processing.application.entity.application.ClaimApplication;
 
 import java.util.List;
 
 public interface ClaimApplicationService {
 
-    ApiResponseDTO<ClaimApplicationResponseDto> create(ClaimApplicationRequestDto request);
+    ClaimApplication create(ClaimApplicationRequestDto request);
 
-    ApiResponseDTO<ClaimApplicationResponseDto> update(Long id, ClaimApplicationRequestDto request);
+    ClaimApplication update(Long id, ClaimApplicationRequestDto request);
 
-    ApiResponseDTO<ClaimApplicationResponseDto> getById(Long id);
+    ClaimApplication getById(Long id);
 
-    ApiResponseDTO<ClaimApplicationResponseDto> getByApplicationNumber(String applicationNumber);
+    ClaimApplication getByApplicationNumber(String applicationNumber);
 
-    ApiResponseDTO<List<ClaimApplicationResponseDto>> getAll();
+    List<ClaimApplication> getAll();
 
-    ApiResponseDTO<List<ClaimApplicationResponseDto>> getByMemberCode(String memberCode);
+    List<ClaimApplication> getByMemberCode(String memberCode);
 
-    ApiResponseDTO<List<ClaimApplicationResponseDto>> getByNppfNumber(String nppfNumber);
+    List<ClaimApplication> getByNppfNumber(String nppfNumber);
 }

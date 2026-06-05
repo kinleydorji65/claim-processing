@@ -12,33 +12,9 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class PartialWithdrawalRequestDto {
 
-    // ---------------------------------
-    // Parent Claim
-    // ---------------------------------
-    private Long claimApplicationId;
-
-    // ---------------------------------
-    // Payee Information
-    // ---------------------------------
     private Long payeeTypeId;
 
-    // ---------------------------------
-    // Joining Information
-    // ---------------------------------
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pfJoiningDate;
-
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pensionJoiningDate;
-
-    // ---------------------------------
-    // Rule / Withdrawal Information
-    // ---------------------------------
-    private Long partialWithdrawalMasterId;
-
     private Long withdrawalReasonId;
-
-    private Long withdrawalCauseId;
 
     private BigDecimal requestedWithdrawalAmount;
 
@@ -87,11 +63,6 @@ public class PartialWithdrawalRequestDto {
     private String propertyLocation;
 
     private BigDecimal estimatedCost;
-
-    // ---------------------------------
-    // Miscellaneous
-    // ---------------------------------
-    private String description;
 
     // ---------------------------------
     // Audit

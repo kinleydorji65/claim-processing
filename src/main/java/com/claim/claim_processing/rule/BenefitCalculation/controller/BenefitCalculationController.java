@@ -25,10 +25,4 @@ public class BenefitCalculationController {
         ApiResponseDTO<ClaimCalculationResponseDTO> response = benefitCalculationService.calculateBenefit(request);
         return ResponseEntity.ok(response);
     }
-
-    // @GetMapping("/total-accumulation/{memberCode}")
-    // public ResponseEntity<?> getTotalAccumulationAmount(@PathVariable String memberCode) {
-    //     ApiResponseDTO<BigDecimal> response = benefitCalculationService.getTotalAccumulationAmount(memberCode);
-    //     return ResponseEntity.ok(response);
-    // }
 }

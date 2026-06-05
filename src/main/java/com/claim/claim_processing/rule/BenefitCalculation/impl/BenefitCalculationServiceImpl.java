@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -38,9 +39,9 @@ import com.claim.claim_processing.rule.claim.DTO.response.LapsedResultDto;
 import com.claim.claim_processing.rule.claim.DTO.response.LoanAdjustmentDetailDto;
 import com.claim.claim_processing.rule.claim.DTO.response.VestingResultDto;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
-import com.claim.claim_processing.rule.ruleGateWay.dto.MatchedSubClaimRuleDto;
-import com.claim.claim_processing.rule.ruleGateWay.entities.rule.LoanDeductionMapping;
-import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.LoanDeductionMappingRepository;
+import com.claim.claim_processing.rule.ruleProcessing.dto.MatchedSubClaimRuleDto;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.LoanDeductionMapping;
+import com.claim.claim_processing.rule.ruleProcessing.repositories.rule.LoanDeductionMappingRepository;
 import com.claim.claim_processing.rule.ruleProcessing.service.PartialWithdrawalRuleService;
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 
@@ -114,7 +115,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 ? null
                 : contributionSummary.getTotalContributionMonths();
         List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations = new ArrayList<>();
-
+        List<String> matchedRuleCodes = new ArrayList<>();
         for (MatchedSubClaimRuleDto matchedRule : matchedRules) {
 
             if (matchedRule == null) {
@@ -164,6 +165,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                     contributionSummary, expressionCalculations);
 
             if (eligibilityResult != null && eligibilityResult.getEligibleComponents() != null) {
+                matchedRuleCodes.add(matchedRule.getRuleCode());
                 eligibleComponents.addAll(eligibilityResult.getEligibleComponents());
             }
         }
@@ -267,12 +269,17 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         String loanNote = loanAdjustmentResult != null
                 ? loanAdjustmentResult.getAdjustmentNote()
                 : "No loan adjustment applied.";
+        String ruleCode = matchedRuleCodes.stream()
+        .filter(Objects::nonNull)
+        .distinct()
+        .collect(Collectors.joining(","));
         ClaimCalculationResponseDTO response = ClaimCalculationResponseDTO.builder()
                 .nppfNumber(contributionSummary != null ? contributionSummary.getNppfNumber() : null)
                 .contributionStartDate(
                         contributionSummary != null
                                 ? contributionSummary.getContributionStartDate()
                                 : null)
+                .subClaimCode(ruleCode)
                 .contributionEndDate(contributionSummary != null
                         ? contributionSummary.getContributionEndDate()
                         : null)
@@ -528,7 +535,8 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     }
 
     private boolean isVestingRule(String ruleCode) {
-        return "VESTING".contains(ruleCode);
+        return ruleCode != null
+                && ruleCode.toUpperCase().contains("VESTING");
     }
 
     private String safeUpper(String value) {
@@ -666,74 +674,23 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
             Map<String, BigDecimal> componentAmountMap) {
 
         if (expression == null || expression.isBlank()
-                || mapping == null
-                || componentAmountMap == null) {
+                || componentAmountMap == null
+                || componentAmountMap.isEmpty()) {
             return Collections.emptyList();
         }
-
-        boolean hasPf = isYes(mapping.getHasPf());
-        boolean hasPc = isYes(mapping.getHasPc());
 
         String[] tokens = expression
                 .replace(" ", "")
                 .toUpperCase()
                 .split("[+\\-]");
 
-        List<String> resolvedCodes = new ArrayList<>();
-
-        for (String token : tokens) {
-
-            if (token == null || token.isBlank()) {
-                continue;
-            }
-
-            String cleanToken = token.trim().toUpperCase();
-
-            // this checks MC/IMC/EC/IEC flag
-            if (!isComponentFlagEnabled(cleanToken, mapping)) {
-                continue;
-            }
-
-            String pfCode = "PF_" + cleanToken;
-            String pcCode = "PC_" + cleanToken;
-
-            if (hasPf && componentAmountMap.containsKey(pfCode)) {
-                resolvedCodes.add(pfCode);
-            }
-
-            if (hasPc && componentAmountMap.containsKey(pcCode)) {
-                resolvedCodes.add(pcCode);
-            }
-        }
-
-        return resolvedCodes.stream()
+        return Arrays.stream(tokens)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(token -> !token.isBlank())
+                .filter(componentAmountMap::containsKey)
                 .distinct()
                 .toList();
-    }
-
-    private boolean isYes(String value) {
-        return "Y".equalsIgnoreCase(value);
-    }
-
-    private boolean isComponentFlagEnabled(
-            String token,
-            MatchedSubClaimRuleDto.ComponentMapping mapping) {
-
-        if (token == null || mapping == null) {
-            return false;
-        }
-
-        return switch (token.trim().toUpperCase()) {
-            case "MC" -> isYes(mapping.getHasMc());
-            case "IMC" -> isYes(mapping.getHasImc());
-            case "EC" -> isYes(mapping.getHasEc());
-            case "IEC" -> isYes(mapping.getHasIec());
-            case "GC" -> isYes(mapping.getHasGc());
-            case "GIC" -> isYes(mapping.getHasGic());
-            case "VC" -> isYes(mapping.getHasVc());
-            case "VIC" -> isYes(mapping.getHasVic());
-            default -> false;
-        };
     }
 
     private MemberDetailResponseDto getMemberDetail(String nppfNumber) {
@@ -815,43 +772,77 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     private List<String> extractComponentCodesFromMapping(
             MatchedSubClaimRuleDto matchedRule) {
 
-        List<String> codes = new ArrayList<>();
-
         if (matchedRule == null || matchedRule.getComponentMapping() == null) {
-            return codes;
+            return Collections.emptyList();
         }
 
         var mapping = matchedRule.getComponentMapping();
 
-        boolean hasPf = "Y".equalsIgnoreCase(mapping.getHasPf());
-        boolean hasPc = "Y".equalsIgnoreCase(mapping.getHasPc());
+        List<String> codes = new ArrayList<>();
 
-        if (hasPf) {
-            if ("Y".equalsIgnoreCase(mapping.getHasMc()))
-                codes.add("PF_MC");
-            if ("Y".equalsIgnoreCase(mapping.getHasImc()))
-                codes.add("PF_IMC");
-            if ("Y".equalsIgnoreCase(mapping.getHasEc()))
-                codes.add("PF_EC");
-            if ("Y".equalsIgnoreCase(mapping.getHasIec()))
-                codes.add("PF_IEC");
-            if ("Y".equalsIgnoreCase(mapping.getHasGc()))
-                codes.add("PF_GC");
-            if ("Y".equalsIgnoreCase(mapping.getHasGic()))
-                codes.add("PF_GIC");
-            if ("Y".equalsIgnoreCase(mapping.getHasVc()))
-                codes.add("PF_VC");
-            if ("Y".equalsIgnoreCase(mapping.getHasVic()))
-                codes.add("PF_VIC");
+        if (isYes(mapping.getHasPfMc())) {
+            codes.add("PF_MC");
         }
 
-        if (hasPc) {
-            codes.add("PC");
+        if (isYes(mapping.getHasPfEc())) {
+            codes.add("PF_EC");
+        }
+
+        if (isYes(mapping.getHasPfImc())) {
+            codes.add("PF_IMC");
+        }
+
+        if (isYes(mapping.getHasPfIec())) {
+            codes.add("PF_IEC");
+        }
+
+        if (isYes(mapping.getHasPMc())) {
+            codes.add("P_MC");
+        }
+
+        if (isYes(mapping.getHasPEc())) {
+            codes.add("P_EC");
+        }
+
+        if (isYes(mapping.getHasPImc())) {
+            codes.add("P_IMC");
+        }
+
+        if (isYes(mapping.getHasPIec())) {
+            codes.add("P_IEC");
+        }
+
+        if (isYes(mapping.getHasGc())) {
+            codes.add("GC");
+        }
+
+        if (isYes(mapping.getHasGic())) {
+            codes.add("GIC");
+        }
+
+        if (isYes(mapping.getHasVc())) {
+            codes.add("VC");
+        }
+
+        if (isYes(mapping.getHasVic())) {
+            codes.add("VIC");
+        }
+
+        if (isYes(mapping.getHasIvc())) {
+            codes.add("IVC");
+        }
+
+        if (isYes(mapping.getHasIgc())) {
+            codes.add("IGC");
         }
 
         return codes.stream()
                 .distinct()
                 .toList();
+    }
+
+    private boolean isYes(String value) {
+        return "Y".equalsIgnoreCase(value);
     }
 
     private Map<String, BigDecimal> buildContributionComponentMap(
@@ -894,9 +885,4 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
         return map;
     }
-
-    // private String buildVestingPreviewNote() {
-
-    // }
-
 }

@@ -12,24 +12,7 @@ import java.util.List;
 @Builder
 public class BeneficiarySettlementDetailRequestDto {
 
-    private Long id;
-
-    /**
-     * Claim Application Reference
-     */
-    private Long claimApplicationId;
-
-    /**
-     * Beneficiary Claimants
-     */
     private List<Long> beneficiaryClaimantDetailIds;
-
-    /**
-     * Service / Membership Details
-     */
-    private LocalDate pfJoiningDate;
-
-    private LocalDate pensionJoiningDate;
 
     private LocalDate dateOfDeath;
 
@@ -40,21 +23,10 @@ public class BeneficiarySettlementDetailRequestDto {
     private Integer nonContributionMonths;
 
     /**
-     * Usually DEATH
-     */
-    private Long cessationTypeId;
-
-    /**
-     * Deceased Member Details
-     */
-    private String deceasedMemberCode;
-
-    private String deceasedNppfNumber;
-
-    /**
      * Audit
      */
     private String createdBy;
 
     private String updatedBy;
+    private List<BeneficiaryClaimantRequestDto> beneficiaryClaimants;
 }

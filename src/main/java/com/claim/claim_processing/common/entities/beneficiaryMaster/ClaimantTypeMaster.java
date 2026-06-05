@@ -50,20 +50,4 @@ public class ClaimantTypeMaster {
 
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void prePersist() {
-        if (this.displayOrder == null) {
-            this.displayOrder = 1;
-        }
-        if (this.isActive == null) {
-            this.isActive = ActivityEnum.Y;
-        }
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }

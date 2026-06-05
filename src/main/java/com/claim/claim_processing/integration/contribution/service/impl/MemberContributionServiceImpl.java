@@ -28,10 +28,10 @@ public class MemberContributionServiceImpl implements MemberContributionService 
     private MemberContributionSummary emptySummary(String nppfNumber) {
 
         List<MemberContributionSummary.ComponentGroup> groups = List.of(
-                component("PF_MC", "PF Member Contribution", "5000", "200"),
-                component("PF_IMC", "PF Member Interest", "0", "200"),
-                component("PF_EC", "PF Employer Contribution", "10000", "500"),
-                component("PF_IEC", "PF Employer Interest", "0", "500")
+                component("PF_MC", "PF Member Contribution", "500000", "2000"),
+                component("PF_IMC", "PF Member Interest", "0", "2000"),
+                component("PF_EC", "PF Employer Contribution", "1000000", "15000"),
+                component("PF_IEC", "PF Employer Interest", "0", "15000")
         );
 
         BigDecimal totalPrincipalAmount = groups.stream()
@@ -51,8 +51,8 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                 .schemeTypeId(1L)
                 .pfJoiningDate(LocalDate.of(2024, 6, 1))
                 .pensionJoiningDate(LocalDate.of(2024, 6, 1))
-                .totalContributionMonths(8)
-                .totalContributionYears(0)
+                .totalContributionMonths(130)
+                .totalContributionYears(23)
                 .totalNonContributionMonths(6)
                 .contributionStartDate(LocalDate.of(2024, 6, 1))
                 .contributionEndDate(LocalDate.of(2025, 2, 1))

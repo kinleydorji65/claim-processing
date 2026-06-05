@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.claim.claim_processing.rule.ruleGateWay.dto.RuleResponseDto;
+import com.claim.claim_processing.rule.ruleProcessing.dto.RuleResponseDto;
 
 import lombok.*;
 

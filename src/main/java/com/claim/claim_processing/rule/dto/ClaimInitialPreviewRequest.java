@@ -2,9 +2,15 @@ package com.claim.claim_processing.rule.dto;
 
 import java.time.LocalDate;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ClaimInitialPreviewRequest {
 
     private Long claimTypeId;

@@ -12,17 +12,17 @@ import com.claim.claim_processing.integration.contribution.dto.MemberContributio
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.integration.member.service.MemberService;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
-import com.claim.claim_processing.rule.ruleGateWay.dto.MatchedSubClaimRuleDto;
-import com.claim.claim_processing.rule.ruleGateWay.entities.rule.CategorySchemeMapping;
-import com.claim.claim_processing.rule.ruleGateWay.entities.rule.ClaimComponentExpressionMapping;
-import com.claim.claim_processing.rule.ruleGateWay.entities.rule.ClaimComponentMapping;
-import com.claim.claim_processing.rule.ruleGateWay.entities.rule.SubClaimCondition;
-import com.claim.claim_processing.rule.ruleGateWay.entities.rule.SubClaimMapping;
-import com.claim.claim_processing.rule.ruleGateWay.entities.rule.SubClaimTimeIndication;
-import com.claim.claim_processing.rule.ruleGateWay.repositories.RefundTypeRepository;
-import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.CategorySchemeMappingRepository;
-import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.SubClaimConditionRepository;
-import com.claim.claim_processing.rule.ruleGateWay.repositories.rule.SubClaimMappingRepository;
+import com.claim.claim_processing.rule.ruleProcessing.dto.MatchedSubClaimRuleDto;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.CategorySchemeMapping;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.ClaimComponentExpressionMapping;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.ClaimComponentMapping;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.SubClaimCondition;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.SubClaimMapping;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.SubClaimTimeIndication;
+import com.claim.claim_processing.rule.ruleProcessing.repositories.RefundTypeRepository;
+import com.claim.claim_processing.rule.ruleProcessing.repositories.rule.CategorySchemeMappingRepository;
+import com.claim.claim_processing.rule.ruleProcessing.repositories.rule.SubClaimConditionRepository;
+import com.claim.claim_processing.rule.ruleProcessing.repositories.rule.SubClaimMappingRepository;
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 
 import lombok.RequiredArgsConstructor;
@@ -52,9 +52,10 @@ public class RuleServiceImpl implements RuleService {
     private final RefundTypeRepository refundTypeRepository;
 
     @Override
-    public ApiResponseDTO<List<MatchedSubClaimRuleDto>> playWithRule(
-            ClaimInitialPreviewRequest request) {
+public ApiResponseDTO<List<MatchedSubClaimRuleDto>> playWithRule(
+        ClaimInitialPreviewRequest request) {
 
+    try {
         validateRequest(request);
 
         MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
@@ -87,7 +88,11 @@ public class RuleServiceImpl implements RuleService {
 
         List<SubClaimMapping> subClaimMappings = getSubClaimMappings(ruleTypeCodes);
 
-        CategorySchemeMapping categorySchemeMapping = getCategorySchemeMapping(schemeTypeId, memberCategoryId);
+        CategorySchemeMapping normalCategorySchemeMapping =
+                getCategorySchemeMapping(schemeTypeId, memberCategoryId);
+
+        CategorySchemeMapping vestingCategorySchemeMapping =
+                getVestingCategorySchemeMapping(memberCategoryId);
 
         List<SubClaimMapping> reasonOrTerminationFiltered;
 
@@ -101,14 +106,34 @@ public class RuleServiceImpl implements RuleService {
         } else {
             reasonOrTerminationFiltered = subClaimMappings.stream()
                     .filter(Objects::nonNull)
-                    .filter(mapping -> terminationClaim
-                            ? isTerminationRule(mapping)
-                            : !isTerminationRule(mapping))
+                    .filter(mapping -> {
+
+                        if (isVestingRule(mapping)) {
+                            return true;
+                        }
+
+                        return terminationClaim
+                                ? isTerminationRule(mapping)
+                                : !isTerminationRule(mapping);
+                    })
                     .toList();
         }
 
         List<SubClaimMapping> categoryFiltered = reasonOrTerminationFiltered.stream()
-                .filter(mapping -> matchesCategoryScheme(mapping, categorySchemeMapping))
+                .filter(mapping -> {
+
+                    if (isVestingRule(mapping)) {
+                        return matchesCategoryScheme(
+                                mapping,
+                                vestingCategorySchemeMapping
+                        );
+                    }
+
+                    return matchesCategoryScheme(
+                            mapping,
+                            normalCategorySchemeMapping
+                    );
+                })
                 .toList();
 
         List<SubClaimMapping> timeFiltered = categoryFiltered.stream()
@@ -150,6 +175,34 @@ public class RuleServiceImpl implements RuleService {
                 .toList();
 
         return ApiResponseDTO.success(response);
+
+    } catch (ClaimException ex) {
+        ex.printStackTrace();
+        return ApiResponseDTO.notFound(ex.getMessage());
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        throw ClaimException.internalError(
+                "An unexpected error occurred: " + ex.getMessage());
+    }
+}
+
+    private boolean isVestingRule(SubClaimMapping mapping) {
+
+        if (mapping == null) {
+            return false;
+        }
+        System.out.println("Checking if mapping is vesting rule for mapping: " + mapping.getRuleType().getCode());
+        String ruleType = mapping.getRuleType() == null
+                ? ""
+                : mapping.getRuleType().getCode().trim().toUpperCase();
+
+        String subClaimType = mapping.getRuleType() == null
+                ? ""
+                : mapping.getRuleType().getCode().trim().toUpperCase();
+
+        return ruleType.contains("VEST")
+                || subClaimType.contains("VEST");
     }
 
     private boolean matchesPartialMappingCondition(
@@ -196,7 +249,12 @@ public class RuleServiceImpl implements RuleService {
 
         List<SubClaimCondition> conditions = subClaimConditionRepository
                 .findBySubClaimMapping_SubClaimCode(mapping.getSubClaimCode());
-
+        System.out.println("CHECKING CONDITIONS FOR RULE: "
+            + mapping.getSubClaimCode()
+            + " | "
+            + (mapping.getRuleType() == null ? "" : mapping.getRuleType().getCode())
+            + " | condition count = "
+            + (conditions == null ? 0 : conditions.size()));
         return conditions.stream()
                 .anyMatch(condition -> matchesCondition(
                         condition,
@@ -253,6 +311,17 @@ public class RuleServiceImpl implements RuleService {
             return false;
         }
 
+        System.out.println("CONDITION DEBUG => "
+            + "code=" + condition.getConditionCode()
+            + ", check=" + condition.getConditionCheck()
+            + ", expression=" + condition.getExpression()
+            + ", duration=" + condition.getDuration()
+            + ", endDate=" + endDate
+            + ", totalContributionMonths=" + totalContributionMonths
+            + ", totalContributionYears=" + totalContributionYears
+            + ", totalServiceMonths=" + totalServiceMonths
+            + ", totalServiceYears=" + totalServiceYears);
+
         if (!matchesEffectiveDate(condition, endDate)) {
             return false;
         }
@@ -281,33 +350,49 @@ public class RuleServiceImpl implements RuleService {
     }
 
     private Long getActualValue(
-            String conditionCheck,
-            Integer totalContributionMonths,
-            Integer totalContributionYears,
-            Integer totalNonContributionMonths,
-            Integer totalServiceMonths,
-            Integer totalServiceYears) {
+        String conditionCheck,
+        Integer totalContributionMonths,
+        Integer totalContributionYears,
+        Integer totalNonContributionMonths,
+        Integer totalServiceMonths,
+        Integer totalServiceYears) {
 
-        return switch (conditionCheck.trim().toUpperCase()) {
-
-            case "TOTAL_CONTRIBUTION_MONTHS" ->
-                totalContributionMonths == null ? null : totalContributionMonths.longValue();
-
-            case "TOTAL_CONTRIBUTION_YEARS" ->
-                totalContributionYears == null ? null : totalContributionYears.longValue();
-
-            case "TOTAL_NON_CONTRIBUTION_MONTHS" ->
-                totalNonContributionMonths == null ? null : totalNonContributionMonths.longValue();
-
-            case "TOTAL_SERVICE_MONTHS" ->
-                totalServiceMonths == null ? null : totalServiceMonths.longValue();
-
-            case "TOTAL_SERVICE_YEARS" ->
-                totalServiceYears == null ? null : totalServiceYears.longValue();
-
-            default -> null;
-        };
+    if (conditionCheck == null) {
+        return null;
     }
+
+    switch (conditionCheck.trim().toUpperCase()) {
+
+        case "TOTAL_CONTRIBUTION_MONTHS":
+        case "CONTRIBUTION_MONTHS_BEFORE_CUTOFF":
+            return totalContributionMonths == null
+                    ? null
+                    : totalContributionMonths.longValue();
+
+        case "TOTAL_CONTRIBUTION_YEARS":
+            return totalContributionYears == null
+                    ? null
+                    : totalContributionYears.longValue();
+
+        case "TOTAL_NON_CONTRIBUTION_MONTHS":
+            return totalNonContributionMonths == null
+                    ? null
+                    : totalNonContributionMonths.longValue();
+
+        case "TOTAL_SERVICE_MONTHS":
+            return totalServiceMonths == null
+                    ? null
+                    : totalServiceMonths.longValue();
+
+        case "TOTAL_SERVICE_YEARS":
+            return totalServiceYears == null
+                    ? null
+                    : totalServiceYears.longValue();
+
+        default:
+            return null;
+    }
+}
 
     private boolean evaluateExpression(
             Long actualValue,
@@ -423,19 +508,24 @@ public class RuleServiceImpl implements RuleService {
     }
 
     private CategorySchemeMapping getCategorySchemeMapping(
-            Long schemeTypeId,
-            String memberCategoryId) {
+        Long schemeTypeId,
+        String memberCategoryId) {
 
-        return categorySchemeMappingRepository
-                .findBySchemeType_IdAndAgencyCategory_CategoryId(
-                        schemeTypeId,
-                        memberCategoryId)
-                .orElseThrow(() -> ClaimException.notFound(
-                        "No category scheme mapping found for schemeTypeId: "
-                                + schemeTypeId
-                                + " and memberCategoryId: "
-                                + memberCategoryId));
-    }
+    return categorySchemeMappingRepository
+            .findBySchemeType_IdAndAgencyCategory_CategoryId(
+                    schemeTypeId,
+                    memberCategoryId)
+            .orElse(null);
+}
+
+private CategorySchemeMapping getVestingCategorySchemeMapping(
+        String memberCategoryId) {
+
+    return categorySchemeMappingRepository
+            .findByAgencyCategory_CategoryIdAndSchemeTypeIsNull(
+                    memberCategoryId)
+            .orElse(null);
+}
 
     private LocalDate resolveEndDate(
             ClaimInitialPreviewRequest request,
@@ -663,21 +753,20 @@ public class RuleServiceImpl implements RuleService {
     }
 
     private boolean matchesCategoryScheme(
-            SubClaimMapping mapping,
-            CategorySchemeMapping categorySchemeMapping) {
+        SubClaimMapping mapping,
+        CategorySchemeMapping categorySchemeMapping) {
 
-        if (mapping == null || categorySchemeMapping == null) {
-            return false;
-        }
-
-        if (mapping.getCategorySchemeMapping() == null) {
-            return false;
-        }
-
-        return Objects.equals(
-                mapping.getCategorySchemeMapping().getCategorySchemeCode(),
-                categorySchemeMapping.getCategorySchemeCode());
+    if (mapping == null
+            || mapping.getCategorySchemeMapping() == null
+            || categorySchemeMapping == null) {
+        return false;
     }
+
+    return Objects.equals(
+            mapping.getCategorySchemeMapping().getCategorySchemeCode(),
+            categorySchemeMapping.getCategorySchemeCode()
+    );
+}
 
     private MatchedSubClaimRuleDto.CategoryScheme mapCategoryScheme(CategorySchemeMapping categorySchemeMapping) {
 
@@ -690,9 +779,9 @@ public class RuleServiceImpl implements RuleService {
                 .categorySchemeCode(categorySchemeMapping.getCategorySchemeCode())
                 .categoryCode(categorySchemeMapping.getCategoryCode())
                 .schemeCode(categorySchemeMapping.getSchemeCode())
-                .categoryName(categorySchemeMapping.getAgencyCategory().getCategoryName())
-                .schemeTypeId(categorySchemeMapping.getSchemeType().getId())
-                .schemeTypeName(categorySchemeMapping.getSchemeType().getName())
+                .categoryName(categorySchemeMapping.getAgencyCategory() != null ? categorySchemeMapping.getAgencyCategory().getCategoryName() : null)
+                .schemeTypeId(categorySchemeMapping.getSchemeType() != null ? categorySchemeMapping.getSchemeType().getId() : null)
+                .schemeTypeName(categorySchemeMapping.getSchemeType() != null ? categorySchemeMapping.getSchemeType().getName() : null)
                 .build();
     }
 
@@ -706,20 +795,32 @@ public class RuleServiceImpl implements RuleService {
         return MatchedSubClaimRuleDto.ComponentMapping.builder()
                 .id(componentMapping.getId())
                 .componentMappingCode(componentMapping.getComponentMappingCode())
-                .hasPf("Y".equals(componentMapping.getHasPf()) ? componentMapping.getHasPf() : "N")
-                .hasPc("Y".equals(componentMapping.getHasPc()) ? componentMapping.getHasPc() : "N")
-                .hasEc("Y".equals(componentMapping.getHasEc()) ? componentMapping.getHasEc() : "N")
-                .hasMc("Y".equals(componentMapping.getHasMc()) ? componentMapping.getHasMc() : "N")
-                .hasImc("Y".equals(componentMapping.getHasImc()) ? componentMapping.getHasImc() : "N")
-                .hasIec("Y".equals(componentMapping.getHasIec()) ? componentMapping.getHasIec() : "N")
-                .hasGc("Y".equals(componentMapping.getHasGc()) ? componentMapping.getHasGc() : "N")
-                .hasGic("Y".equals(componentMapping.getHasGic()) ? componentMapping.getHasGic() : "N")
-                .hasVc("Y".equals(componentMapping.getHasVc()) ? componentMapping.getHasVc() : "N")
-                .hasVic("Y".equals(componentMapping.getHasVic()) ? componentMapping.getHasVic() : "N")
+
+                .hasPfMc(toYN(componentMapping.getHasPfMc()))
+                .hasPfEc(toYN(componentMapping.getHasPfEc()))
+                .hasPfImc(toYN(componentMapping.getHasPfImc()))
+                .hasPfIec(toYN(componentMapping.getHasPfIec()))
+
+                .hasPMc(toYN(componentMapping.getHasPMc()))
+                .hasPEc(toYN(componentMapping.getHasPEc()))
+                .hasPImc(toYN(componentMapping.getHasPImc()))
+                .hasPIec(toYN(componentMapping.getHasPIec()))
+
+                .hasGc(toYN(componentMapping.getHasGc()))
+                .hasGic(toYN(componentMapping.getHasGic()))
+                .hasVc(toYN(componentMapping.getHasVc()))
+                .hasVic(toYN(componentMapping.getHasVic()))
+                .hasIvc(toYN(componentMapping.getHasIvc()))
+                .hasIgc(toYN(componentMapping.getHasIgc()))
+
                 .expressions(mapComponentExpressions(componentMapping.getExpressions()))
                 .effectiveFrom(componentMapping.getEffectiveFrom())
                 .effectiveTo(componentMapping.getEffectiveTo())
                 .build();
+    }
+
+    private String toYN(String value) {
+        return "Y".equalsIgnoreCase(value) ? "Y" : "N";
     }
 
     private List<MatchedSubClaimRuleDto.ComponentExpression> mapComponentExpressions(
