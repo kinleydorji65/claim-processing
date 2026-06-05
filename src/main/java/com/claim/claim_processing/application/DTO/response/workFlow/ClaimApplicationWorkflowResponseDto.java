@@ -1,18 +1,25 @@
 package com.claim.claim_processing.application.DTO.response.workFlow;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.*;
+
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
-import lombok.Data;
-
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ClaimApplicationWorkflowResponseDto {
-    private Long id;
-    private Long applicationId;
 
-    private Long stageId;
-    private String stageName;
+    private Long id;
+
+    private Long claimApplicationId;
+    private String applicationNumber;
+
+    private Integer workflowLevel;
+
+    private Long workflowStageId;
+    private String workflowStageName;
 
     private Long fromStatusId;
     private String fromStatusName;
@@ -27,20 +34,27 @@ public class ClaimApplicationWorkflowResponseDto {
     private String decisionName;
 
     private String returnReason;
+
     private String rejectionReason;
+
+    private Long approvalReasonId;
+    private String approvalReasonName;
+
     private String actionBy;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime actionAt;
 
     private Long officeId;
     private String officeName;
 
     private String referenceNumber;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime actionAt;
+
     private String remarks;
-    private String createdBy;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
-    private String updatedBy;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 }
