@@ -21,30 +21,18 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public class ClaimApplicationResponseDto {
 
     private Long id;
-
-    // ---------------------------------
-    // Basic Info
-    // ---------------------------------
     private String applicationNumber;
 
     private Long claimTypeId;
-    private String claimTypeCode;
     private String claimTypeName;
 
-    private Long claimSourceId;
-    private String claimSourceCode;
-    private String claimSourceName;
-
     private Long submissionChannelId;
-    private String submissionChannelCode;
     private String submissionChannelName;
 
     private Long schemeTypeId;
-    private String schemeTypeCode;
     private String schemeTypeName;
 
-    private Long memberCategoryId;
-    private String memberCategoryCode;
+    private String memberCategoryId;
     private String memberCategoryName;
 
     private String employmentType;
@@ -52,41 +40,31 @@ public class ClaimApplicationResponseDto {
     private String nppfNumber;
     private String agencyCode;
     private Long officeId;
-    private String officeName;
 
-    // ---------------------------------
-    // Dates
-    // ---------------------------------
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate applicationDate;
 
-    // ---------------------------------
-    // Users
-    // ---------------------------------
-    private String submittedBy;
-    private String initiatedBy;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate pfJoiningDate;
 
-    private Integer totalContributionMonths;
-    private Integer totalContributionYears;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate contributionStartDate;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate contributionEndDate;
+    private LocalDate pensionJoiningDate;
+
+    private String onBehalfOfMember;
+    private String initiatedBy;
+    private String remarks;
 
     private ActivityEnum isSpecialCase;
     private ActivityEnum isActive;
 
     private Long parentClaimApplicationId;
+    private String parentApplicationNumber;
 
-    // ---------------------------------
-    // Special Case
-    // ---------------------------------
     private Long specialCaseAuthorityId;
     private String specialCaseAuthorityName;
 
-    // ---------------------------------
-    // Workflow
-    // ---------------------------------
+    private String currencyCode;
+
     private Long currentStageId;
     private String currentStageName;
 
@@ -96,34 +74,21 @@ public class ClaimApplicationResponseDto {
     private Long actionId;
     private String actionName;
 
-    // ---------------------------------
-    // Misc
-    // -------------------------
-    private String remarks;
+    // private List<ClaimApplicationBankResponseDto> bankDetails;
+    // private List<ClaimApplicationDeductionResponseDto> deductionDetails;
+    // private List<ClaimApplicationCalculationSummaryResponseDto> calculationSummaries;
+    // private List<ClaimApplicationPaymentResponseDto> payments;
+    // private List<ClaimApplicationVerificationResponseDto> verifications;
+    // private List<ClaimApplicationApprovalResponseDto> approvals;
+    // private List<ClaimApplicationWorkflowResponseDto> workflows;
 
-    // ---------------------------------
-    // Children (summaries only - avoid full nesting explosion)
-    // ---------------------------------
-    private List<ClaimApplicationBankResponseDto> bankDetails;
-
-    private List<ClaimApplicationDeductionResponseDto> deductionDetails;
-
-    private List<ClaimApplicationLoanResponseDto> loanDetails;
-
-    // Optional (enable only if needed)
-    private List<ClaimApplicationCalculationSummaryResponseDto> calculationSummaries;
-    private List<ClaimApplicationPaymentResponseDto> payments;
-    private List<ClaimApplicationVerificationResponseDto> verifications;
-    private List<ClaimApplicationApprovalResponseDto> approvals;
-    private List<ClaimApplicationWorkflowResponseDto> workflows;
-
-    // ---------------------------------
-    // Audit
-    // ---------------------------------
     private String createdBy;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
     private String updatedBy;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 }

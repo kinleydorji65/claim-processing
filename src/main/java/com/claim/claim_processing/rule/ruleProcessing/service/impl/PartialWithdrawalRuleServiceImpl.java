@@ -8,7 +8,7 @@ import com.claim.claim_processing.integration.member.service.MemberService;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO.ComponentBalanceDTO;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
-import com.claim.claim_processing.rule.ruleGateWay.dto.MatchedSubClaimRuleDto;
+import com.claim.claim_processing.rule.ruleProcessing.dto.MatchedSubClaimRuleDto;
 import com.claim.claim_processing.rule.ruleProcessing.service.PartialWithdrawalRuleService;
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 
@@ -46,7 +46,7 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
                 : ruleResponse.getData();
 
         if (matchedRules.isEmpty()) {
-            return ApiResponseDTO.notFound("No partial withdrawal rule found");
+            return ApiResponseDTO.notFound("No partial withdrawal rule found OR Your minimum contribution is less than the required threshold for partial withdrawal.");
         }
 
         List<ComponentBalanceDTO> components = new ArrayList<>();
@@ -56,52 +56,49 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
 
         for (MatchedSubClaimRuleDto matchedRule : matchedRules) {
 
-    BigDecimal withdrawalPercentage = matchedRule.getWithdrawalPercentage();
+            BigDecimal withdrawalPercentage = matchedRule.getWithdrawalPercentage();
 
-    if (withdrawalPercentage == null
-            || withdrawalPercentage.compareTo(BigDecimal.ZERO) <= 0) {
-        continue;
-    }
+            if (withdrawalPercentage == null
+                    || withdrawalPercentage.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
 
-    List<ComponentBalanceDTO> resolvedComponents =
-            getRuleAmountUsingFormulaIfAvailable(
+            List<ComponentBalanceDTO> resolvedComponents = getRuleAmountUsingFormulaIfAvailable(
                     matchedRule,
                     request,
                     contributionSummary,
                     "PARTIAL_WITHDRAWAL",
-                    expressionCalculations
-            );
+                    expressionCalculations);
 
-    if (resolvedComponents == null || resolvedComponents.isEmpty()) {
-        continue;
-    }
+            if (resolvedComponents == null || resolvedComponents.isEmpty()) {
+                continue;
+            }
 
-    for (ComponentBalanceDTO component : resolvedComponents) {
+            for (ComponentBalanceDTO component : resolvedComponents) {
 
-        BigDecimal baseAmount = component.getAmount() == null
-                ? BigDecimal.ZERO
-                : component.getAmount();
+                BigDecimal baseAmount = component.getAmount() == null
+                        ? BigDecimal.ZERO
+                        : component.getAmount();
 
-        BigDecimal partialAmount = baseAmount
-                .multiply(withdrawalPercentage)
-                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                BigDecimal partialAmount = baseAmount
+                        .multiply(withdrawalPercentage)
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-        if (partialAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            continue;
+                if (partialAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+
+                components.add(
+                        ComponentBalanceDTO.builder()
+                                .code(component.getCode())
+                                .name(component.getName())
+                                .type("PARTIAL_WITHDRAWAL")
+                                .amount(component.getAmount())
+                                .build());
+
+                finalPayableAmount = finalPayableAmount.add(partialAmount);
+            }
         }
-
-        components.add(
-                ComponentBalanceDTO.builder()
-                        .code(component.getCode())
-                        .name(component.getName())
-                        .type("PARTIAL_WITHDRAWAL")
-                        .amount(component.getAmount())
-                        .build()
-        );
-
-        finalPayableAmount = finalPayableAmount.add(partialAmount);
-    }
-}
 
         ClaimCalculationResponseDTO response = ClaimCalculationResponseDTO.builder()
                 .nppfNumber(contributionSummary.getNppfNumber())
@@ -119,277 +116,97 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
     }
 
     private List<ComponentBalanceDTO> getRuleAmountUsingFormulaIfAvailable(
-        MatchedSubClaimRuleDto matchedRule,
-        ClaimInitialPreviewRequest request,
-        MemberContributionSummary contributionSummary,
-        String calculationType,
-        List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations
-) {
+            MatchedSubClaimRuleDto matchedRule,
+            ClaimInitialPreviewRequest request,
+            MemberContributionSummary contributionSummary,
+            String calculationType,
+            List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations) {
 
-    if (matchedRule == null
-            || matchedRule.getComponentMapping() == null
-            || matchedRule.getComponentMapping().getExpressions() == null
-            || matchedRule.getComponentMapping().getExpressions().isEmpty()) {
-        return Collections.emptyList();
-    }
-
-    Map<String, BigDecimal> componentAmountMap =
-            buildContributionComponentMap(contributionSummary);
-
-    List<ComponentBalanceDTO> results = new ArrayList<>();
-
-    for (MatchedSubClaimRuleDto.ComponentExpression expressionDto
-            : matchedRule.getComponentMapping().getExpressions()) {
-
-        if (expressionDto == null
-                || expressionDto.getExpression() == null
-                || expressionDto.getExpression().isBlank()) {
-            continue;
-        }
-
-        String expression = expressionDto.getExpression();
-
-        List<String> resolvedCodes = resolveExpressionComponentCodes(
-                expression,
-                matchedRule.getComponentMapping(),
-                componentAmountMap
-        );
-
-        BigDecimal expressionAmount = resolvedCodes.stream()
-                .map(code -> componentAmountMap.getOrDefault(code, BigDecimal.ZERO))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (expressionCalculations != null) {
-            expressionCalculations.add(
-                    ClaimCalculationResponseDTO.ExpressionCalculationDTO.builder()
-                            .expression(expression)
-                            .resolvedCodes(resolvedCodes)
-                            .expressionAmount(expressionAmount)
-                            .withdrawalPercentage(matchedRule.getWithdrawalPercentage())
-                            .type(calculationType)
-                            .build()
-            );
-        }
-
-        for (String componentCode : resolvedCodes) {
-
-            BigDecimal amount = componentAmountMap.getOrDefault(
-                    componentCode,
-                    BigDecimal.ZERO
-            );
-
-            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
-
-            results.add(
-                    ComponentBalanceDTO.builder()
-                            .code(componentCode)
-                            .name(componentCode)
-                            .type(calculationType)
-                            .amount(amount)
-                            .build()
-            );
-        }
-    }
-
-    return results;
-}
-
-private List<String> resolveExpressionComponentCodes(
-        String expression,
-        MatchedSubClaimRuleDto.ComponentMapping mapping,
-        Map<String, BigDecimal> componentAmountMap
-) {
-
-    if (expression == null || expression.isBlank()
-            || mapping == null
-            || componentAmountMap == null) {
-        return Collections.emptyList();
-    }
-
-    boolean hasPf = isYes(mapping.getHasPf());
-    boolean hasPc = isYes(mapping.getHasPc());
-
-    String[] tokens = expression
-            .replace(" ", "")
-            .toUpperCase()
-            .split("[+\\-]");
-
-    List<String> resolvedCodes = new ArrayList<>();
-
-    for (String token : tokens) {
-
-        if (token == null || token.isBlank()) {
-            continue;
-        }
-
-        String cleanToken = token.trim().toUpperCase();
-
-        if (!isComponentFlagEnabled(cleanToken, mapping)) {
-            continue;
-        }
-
-        String pfCode = "PF_" + cleanToken;
-        String pcCode = "PC_" + cleanToken;
-
-        if (hasPf && componentAmountMap.containsKey(pfCode)) {
-            resolvedCodes.add(pfCode);
-        }
-
-        if (hasPc && componentAmountMap.containsKey(pcCode)) {
-            resolvedCodes.add(pcCode);
-        }
-    }
-
-    return resolvedCodes.stream()
-            .distinct()
-            .toList();
-}
-
-private boolean isYes(String value) {
-    return "Y".equalsIgnoreCase(value);
-}
-
-private boolean isComponentFlagEnabled(
-        String token,
-        MatchedSubClaimRuleDto.ComponentMapping mapping
-) {
-
-    if (token == null || mapping == null) {
-        return false;
-    }
-
-    return switch (token.trim().toUpperCase()) {
-        case "MC" -> isYes(mapping.getHasMc());
-        case "IMC" -> isYes(mapping.getHasImc());
-        case "EC" -> isYes(mapping.getHasEc());
-        case "IEC" -> isYes(mapping.getHasIec());
-        case "GC" -> isYes(mapping.getHasGc());
-        case "GIC" -> isYes(mapping.getHasGic());
-        case "VC" -> isYes(mapping.getHasVc());
-        case "VIC" -> isYes(mapping.getHasVic());
-        default -> false;
-    };
-}
-    
-
-    private BigDecimal calculatePartialWithdrawalAmount(
-        MatchedSubClaimRuleDto matchedRule,
-        MemberContributionSummary contributionSummary,
-        List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations
-) {
-
-    if (matchedRule == null || matchedRule.getComponentMapping() == null) {
-        return BigDecimal.ZERO;
-    }
-
-    BigDecimal withdrawalPercentage = matchedRule.getWithdrawalPercentage();
-
-    if (withdrawalPercentage == null) {
-        withdrawalPercentage = getWithdrawalPercentageFromCondition(matchedRule);
-    }
-
-    if (withdrawalPercentage == null || withdrawalPercentage.compareTo(BigDecimal.ZERO) <= 0) {
-        return BigDecimal.ZERO;
-    }
-
-    Map<String, BigDecimal> componentMap = buildContributionComponentMap(contributionSummary);
-
-    List<MatchedSubClaimRuleDto.ComponentExpression> expressions =
-            matchedRule.getComponentMapping().getExpressions();
-
-    if (expressions == null || expressions.isEmpty()) {
-        return BigDecimal.ZERO;
-    }
-
-    BigDecimal totalExpressionAmount = BigDecimal.ZERO;
-
-    for (MatchedSubClaimRuleDto.ComponentExpression expressionDto : expressions) {
-
-        if (expressionDto == null
-                || expressionDto.getExpression() == null
-                || expressionDto.getExpression().isBlank()) {
-            continue;
-        }
-
-        String expression = expressionDto.getExpression();
-
-        BigDecimal expressionAmount = evaluateExpression(
-                expression,
-                componentMap
-        );
-
-        totalExpressionAmount = totalExpressionAmount.add(expressionAmount);
-
-        expressionCalculations.add(
-                ClaimCalculationResponseDTO.ExpressionCalculationDTO.builder()
-                        .expression(expression)
-                        .resolvedCodes(resolveExpressionComponentCodes(
-                                expression,
-                                matchedRule.getComponentMapping()
-                        ))
-                        .expressionAmount(expressionAmount)
-                        .withdrawalPercentage(withdrawalPercentage)
-                        .type("PARTIAL_WITHDRAWAL")
-                        .build()
-        );
-    }
-
-    return totalExpressionAmount
-            .multiply(withdrawalPercentage)
-            .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-}
-
-private BigDecimal getWithdrawalPercentageFromCondition(
-        MatchedSubClaimRuleDto matchedRule
-) {
-
-    if (matchedRule == null || matchedRule.getCondition() == null) {
-        return BigDecimal.ZERO;
-    }
-
-    Long duration = matchedRule.getCondition().getDuration();
-
-    return duration == null
-            ? BigDecimal.ZERO
-            : BigDecimal.valueOf(duration);
-}
-
-    private List<String> resolveExpressionComponentCodes(
-            String expression,
-            MatchedSubClaimRuleDto.ComponentMapping mapping) {
-
-        if (expression == null || expression.isBlank() || mapping == null) {
+        if (matchedRule == null
+                || matchedRule.getComponentMapping() == null
+                || matchedRule.getComponentMapping().getExpressions() == null
+                || matchedRule.getComponentMapping().getExpressions().isEmpty()) {
             return Collections.emptyList();
         }
 
-        boolean hasPf = "Y".equalsIgnoreCase(mapping.getHasPf());
-        boolean hasPc = "Y".equalsIgnoreCase(mapping.getHasPc());
+        Map<String, BigDecimal> componentAmountMap = buildContributionComponentMap(contributionSummary);
+
+        List<ComponentBalanceDTO> results = new ArrayList<>();
+
+        for (MatchedSubClaimRuleDto.ComponentExpression expressionDto : matchedRule.getComponentMapping()
+                .getExpressions()) {
+
+            if (expressionDto == null
+                    || expressionDto.getExpression() == null
+                    || expressionDto.getExpression().isBlank()) {
+                continue;
+            }
+
+            String expression = expressionDto.getExpression();
+
+            List<String> resolvedCodes = resolveExpressionComponentCodes(
+                    expression,
+                    matchedRule.getComponentMapping(),
+                    componentAmountMap);
+
+            BigDecimal expressionAmount = resolvedCodes.stream()
+                    .map(code -> componentAmountMap.getOrDefault(code, BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            if (expressionCalculations != null) {
+                expressionCalculations.add(
+                        ClaimCalculationResponseDTO.ExpressionCalculationDTO.builder()
+                                .expression(expression)
+                                .resolvedCodes(resolvedCodes)
+                                .expressionAmount(expressionAmount)
+                                .withdrawalPercentage(matchedRule.getWithdrawalPercentage())
+                                .type(calculationType)
+                                .build());
+            }
+
+            for (String componentCode : resolvedCodes) {
+
+                BigDecimal amount = componentAmountMap.getOrDefault(
+                        componentCode,
+                        BigDecimal.ZERO);
+
+                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+
+                results.add(
+                        ComponentBalanceDTO.builder()
+                                .code(componentCode)
+                                .name(componentCode)
+                                .type(calculationType)
+                                .amount(amount)
+                                .build());
+            }
+        }
+
+        return results;
+    }
+
+    private List<String> resolveExpressionComponentCodes(
+            String expression,
+            MatchedSubClaimRuleDto.ComponentMapping mapping,
+            Map<String, BigDecimal> componentAmountMap) {
+
+        if (expression == null || expression.isBlank()
+                || componentAmountMap == null) {
+            return Collections.emptyList();
+        }
 
         String[] tokens = expression
                 .replace(" ", "")
                 .toUpperCase()
                 .split("[+\\-]");
 
-        List<String> resolvedCodes = new ArrayList<>();
-
-        for (String token : tokens) {
-
-            if (token == null || token.isBlank()) {
-                continue;
-            }
-
-            if (hasPf) {
-                resolvedCodes.add("PF_" + token);
-            }
-
-            if (hasPc) {
-                resolvedCodes.add("PC_" + token);
-            }
-        }
-
-        return resolvedCodes.stream()
+        return Arrays.stream(tokens)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(token -> !token.isBlank())
+                .filter(componentAmountMap::containsKey)
                 .distinct()
                 .toList();
     }
@@ -433,95 +250,6 @@ private BigDecimal getWithdrawalPercentageFromCondition(
         }
 
         return map;
-    }
-
-    private BigDecimal evaluateExpression(
-            String expression,
-            Map<String, BigDecimal> componentAmountMap) {
-
-        if (expression == null || expression.isBlank()) {
-            return BigDecimal.ZERO;
-        }
-
-        if (componentAmountMap == null || componentAmountMap.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        String cleanExpression = expression
-                .replace(" ", "")
-                .toUpperCase();
-
-        List<String> tokens = new ArrayList<>();
-        List<Character> operators = new ArrayList<>();
-
-        StringBuilder currentToken = new StringBuilder();
-
-        for (char ch : cleanExpression.toCharArray()) {
-
-            if (ch == '+' || ch == '-') {
-                tokens.add(currentToken.toString());
-                operators.add(ch);
-                currentToken.setLength(0);
-                continue;
-            }
-
-            currentToken.append(ch);
-        }
-
-        tokens.add(currentToken.toString());
-
-        BigDecimal result = getTokenValue(
-                tokens.get(0),
-                componentAmountMap);
-
-        for (int i = 1; i < tokens.size(); i++) {
-
-            BigDecimal value = getTokenValue(
-                    tokens.get(i),
-                    componentAmountMap);
-
-            char operator = operators.get(i - 1);
-
-            switch (operator) {
-                case '+':
-                    result = result.add(value);
-                    break;
-
-                case '-':
-                    result = result.subtract(value);
-                    break;
-
-                default:
-                    throw new IllegalArgumentException("Unsupported operator: " + operator);
-            }
-        }
-
-        return result;
-    }
-
-    private BigDecimal getTokenValue(
-            String token,
-            Map<String, BigDecimal> componentAmountMap) {
-
-        if (token == null || token.isBlank()) {
-            return BigDecimal.ZERO;
-        }
-
-        String code = token.trim().toUpperCase();
-
-        if (componentAmountMap.containsKey(code)) {
-            return componentAmountMap.get(code);
-        }
-
-        String pfCode = "PF_" + code;
-
-        if (componentAmountMap.containsKey(pfCode)) {
-            return componentAmountMap.get(pfCode);
-        }
-
-        String pcCode = "PC_" + code;
-
-        return componentAmountMap.getOrDefault(pcCode, BigDecimal.ZERO);
     }
 
     private MemberDetailResponseDto getMemberDetail(String nppfNumber) {

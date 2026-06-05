@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -50,10 +51,6 @@ public class ClaimApplication {
     private ClaimTypeMaster claimType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLAIM_SOURCE_ID")
-    private ClaimSourceMaster claimSource;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "SUBMISSION_CHANNEL_ID")
     private SubmissionChannelMaster submissionChannel;
 
@@ -61,17 +58,11 @@ public class ClaimApplication {
     @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "SCHEME_TYPE_ID")
     private SchemeType schemeType;
 
-    @Column(name = "TOTAL_CONTRIBUTION_MONTHS")
-    private Integer totalContributionMonths;
+    @Column(name = "PF_JOINING_DATE")
+    private LocalDate pfJoiningDate;
 
-    @Column(name = "TOTAL_CONTRIBUTION_YEARS")
-    private Integer totalContributionYears;
-
-    @Column(name = "CONTRIBUTION_START_DATE")
-    private LocalDate contributionStartDate;
-
-    @Column(name = "CONTRIBUTION_END_DATE")
-    private LocalDate contributionEndDate;
+    @Column(name = "PENSION_JOINING_DATE")
+    private LocalDate pensionJoiningDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "MEMBER_CATEGORY_ID", referencedColumnName = "CATEGORY_ID")
@@ -135,6 +126,9 @@ public class ClaimApplication {
     @JoinColumn(name = "ACTION_ID")
     private ActionMaster action;
 
+    @Column(name = "NUMBER_OF_YEAR_IN_SERVICE", length = 100)
+    private BigDecimal numberOfYearInService;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)
     private ActivityEnum isActive;
@@ -160,9 +154,6 @@ public class ClaimApplication {
 
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BeneficiarySettlementDetail beneficiarySettlementDetail;
-
-    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private ExcessRefundDetail excessRefundDetail;
 
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private LegalRecoveryDetail legalRecoveryDetail;

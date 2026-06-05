@@ -20,14 +20,8 @@ public interface PartialWithdrawalMapper {
     @Mapping(target = "payeeTypeId", source = "payeeType.id")
     @Mapping(target = "payeeTypeName", source = "payeeType.name")
 
-    @Mapping(target = "partialWithdrawalMasterId", source = "partialWithdrawalMaster.id")
-    @Mapping(target = "partialWithdrawalMasterName", ignore = true)
-
     @Mapping(target = "withdrawalReasonId", source = "withdrawalReason.id")
     @Mapping(target = "withdrawalReasonName", source = "withdrawalReason.name")
-
-    @Mapping(target = "withdrawalCauseId", source = "withdrawalCause.id")
-    @Mapping(target = "withdrawalCauseName", source = "withdrawalCause.name")
 
     @Mapping(target = "disasterTypeId", source = "disasterType.id")
     @Mapping(target = "disasterTypeName", source = "disasterType.name")
@@ -42,9 +36,7 @@ public interface PartialWithdrawalMapper {
 
     @Mapping(target = "claimApplication", ignore = true)
     @Mapping(target = "payeeType", ignore = true)
-    @Mapping(target = "partialWithdrawalMaster", ignore = true)
     @Mapping(target = "withdrawalReason", ignore = true)
-    @Mapping(target = "withdrawalCause", ignore = true)
     @Mapping(target = "disasterType", ignore = true)
     @Mapping(target = "businessType", ignore = true)
 
@@ -59,9 +51,7 @@ public interface PartialWithdrawalMapper {
 
     @Mapping(target = "claimApplication", ignore = true)
     @Mapping(target = "payeeType", ignore = true)
-    @Mapping(target = "partialWithdrawalMaster", ignore = true)
     @Mapping(target = "withdrawalReason", ignore = true)
-    @Mapping(target = "withdrawalCause", ignore = true)
     @Mapping(target = "disasterType", ignore = true)
     @Mapping(target = "businessType", ignore = true)
 

@@ -4,6 +4,7 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -13,22 +14,14 @@ import java.time.LocalDate;
 public class ClaimApplicationRequestDto {
 
     // ---------------------------------
-    // Basic Info / FK IDs
+    // Master References
     // ---------------------------------
     private Long claimTypeId;
-
-    private Long claimSourceId;
 
     private Long submissionChannelId;
 
     private Long schemeTypeId;
 
-    private ActivityEnum onBehalfOfMember;
-
-    /**
-     * In your entity MEMBER_CATEGORY_ID references AgencyCategory.CATEGORY_ID.
-     * If CATEGORY_ID is String, keep this as String.
-     */
     private String memberCategoryId;
 
     private Long parentClaimApplicationId;
@@ -41,8 +34,10 @@ public class ClaimApplicationRequestDto {
 
     private Long actionId;
 
+    private BigDecimal numberOfYearInService;
+
     // ---------------------------------
-    // Member / Agency Info
+    // Member Information
     // ---------------------------------
     private String employmentType;
 
@@ -61,19 +56,21 @@ public class ClaimApplicationRequestDto {
     private LocalDate applicationDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate contributionStartDate;
+    private LocalDate pfJoiningDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate contributionEndDate;
+    private LocalDate pensionJoiningDate;
 
     // ---------------------------------
-    // Contribution Snapshot
+    // Claim Information
     // ---------------------------------
-    private Integer totalContributionMonths;
-
-    private Integer totalContributionYears;
+    private String onBehalfOfMember; // Y / N
 
     private String initiatedBy;
+
+    private String currencyCode;
+
+    private String remarks;
 
     // ---------------------------------
     // Flags
@@ -81,13 +78,6 @@ public class ClaimApplicationRequestDto {
     private ActivityEnum isSpecialCase;
 
     private ActivityEnum isActive;
-
-    // ---------------------------------
-    // Misc
-    // ---------------------------------
-    private String currencyCode;
-
-    private String remarks;
 
     // ---------------------------------
     // Audit

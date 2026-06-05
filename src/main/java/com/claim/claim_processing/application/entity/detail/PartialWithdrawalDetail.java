@@ -49,27 +49,12 @@ public class PartialWithdrawalDetail {
     private LocalDate pensionJoiningDate;
 
     /**
-     * Optional partial withdrawal master
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PARTIAL_WITHDRAWAL_MASTER_ID")
-    private PartialWithdrawalRuleMaster partialWithdrawalMaster;
-
-    /**
      * Main reason:
      * UNEMPLOYMENT / BUSINESS_INVESTMENT / HOUSING
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "WITHDRAWAL_REASON_ID", nullable = false)
     private PartialWithdrawalReasonMaster withdrawalReason;
-
-    /**
-     * Optional cause, mainly for unemployment:
-     * DISABILITY / PANDEMIC / NATURAL_DISASTER
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "WITHDRAWAL_CAUSE_ID")
-    private PartialWithdrawalCauseMaster withdrawalCause;
 
     @Column(name = "REQUESTED_WITHDRAWAL_AMOUNT", precision = 15, scale = 2)
     private BigDecimal requestedWithdrawalAmount;

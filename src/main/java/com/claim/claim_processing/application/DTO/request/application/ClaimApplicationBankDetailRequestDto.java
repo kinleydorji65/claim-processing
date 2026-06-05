@@ -9,9 +9,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClaimApplicationBankDetailRequestDto {
-
-    private Long claimApplicationId;
-
+    private Long id;
     private String beneficiaryIdentifier;
 
     private Long claimantTypeId;
