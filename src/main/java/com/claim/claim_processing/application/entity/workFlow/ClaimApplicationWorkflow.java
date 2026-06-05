@@ -99,7 +99,7 @@ public class ClaimApplicationWorkflow {
             name = "OFFICE_ID",
             foreignKey = @ForeignKey(name = "FK_CACS_NPPF_OFFICE")
     )
-    private NppfOfficeMaster offices;
+    private NppfOfficeMaster office;
 
     @Column(name = "REFERENCE_NUMBER", length = 100)
     private String referenceNumber;
