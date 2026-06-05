@@ -26,4 +26,5 @@ public interface LoanDeductionMappingRepository
         List<LoanDeductionMapping> findByRuleType_Id(Long ruleTypeId);
 
         List<LoanDeductionMapping> findByLoanType_Id(Long loanTypeId);
+        List<LoanDeductionMapping> findByRuleType_IdIn(List<Long> ruleTypeIds);
 }

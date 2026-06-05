@@ -15,6 +15,6 @@ public class RentalDetailResponseDto {
     private String rentalType;
     private String status;
     private BigDecimal rentalPercentage;
-    private BigDecimal amount;
+    private BigDecimal outstandingAmount;
     private BigDecimal rentalAmount;
 }

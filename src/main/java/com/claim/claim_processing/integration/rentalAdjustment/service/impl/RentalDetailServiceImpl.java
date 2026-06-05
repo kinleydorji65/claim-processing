@@ -27,7 +27,7 @@ public class RentalDetailServiceImpl implements RentalDetailService {
                         .rentalType("Residential")
                         .status("Active")
                         .rentalPercentage(percentage)
-                        .amount(new BigDecimal(30000))
+                        .outstandingAmount(new BigDecimal(30000))
                         .rentalAmount(new BigDecimal(5000.00))
                         .build(),
 
@@ -35,7 +35,7 @@ public class RentalDetailServiceImpl implements RentalDetailService {
                         .rentalType("Commercial")
                         .status("Completed")
                         .rentalPercentage(percentage)
-                        .amount(new BigDecimal(50000))
+                        .outstandingAmount(new BigDecimal(50000))
                         .rentalAmount(new BigDecimal(10000.00))
                         .build()
         );

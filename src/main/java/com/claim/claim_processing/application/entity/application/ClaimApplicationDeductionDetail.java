@@ -12,7 +12,7 @@ import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 
 @Entity
-@Table(name = "CLAIM_APPLICATION_DEDUCTION_DETAIL", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "CLAIM_APPLICATION_DEDUCTION_DETAIL", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,9 +46,6 @@ public class ClaimApplicationDeductionDetail {
 
         @Column(name = "DEDUCTED_AMOUNT", precision = 15, scale = 2)
         private BigDecimal deductedAmount;
-
-        @Column(name = "PRIORITY_ORDER")
-        private Integer priorityOrder;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "DEDUCTION_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CADD_DED_REVIEW_STATUS"))

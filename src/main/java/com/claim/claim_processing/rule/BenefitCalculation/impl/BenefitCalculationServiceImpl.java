@@ -14,22 +14,30 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberDetailResponseDto;
+import com.claim.claim_processing.common.entities.adjustmentMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
+import com.claim.claim_processing.common.entities.common.RentalMaster;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
+import com.claim.claim_processing.common.repository.adjustmentMaster.LoanTypeRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
+import com.claim.claim_processing.common.repository.common.RentalMasterRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.integration.loanAdjustment.dto.LoanAdjustmentResultDto;
 import com.claim.claim_processing.integration.loanAdjustment.dto.LoanDetailResponseDto;
+import com.claim.claim_processing.integration.loanAdjustment.dto.RentalAdjustmentResultDto;
 import com.claim.claim_processing.integration.loanAdjustment.service.LoanDetailService;
 import com.claim.claim_processing.integration.member.service.MemberService;
+import com.claim.claim_processing.integration.rentalAdjustment.dto.RentalDetailResponseDto;
+import com.claim.claim_processing.integration.rentalAdjustment.service.RentalDetailService;
 import com.claim.claim_processing.rule.BenefitCalculation.BenefitCalculationService;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
@@ -37,11 +45,14 @@ import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationRespon
 import com.claim.claim_processing.rule.claim.DTO.response.EligibilityResultDto;
 import com.claim.claim_processing.rule.claim.DTO.response.LapsedResultDto;
 import com.claim.claim_processing.rule.claim.DTO.response.LoanAdjustmentDetailDto;
+import com.claim.claim_processing.rule.claim.DTO.response.RentalAdjustmentDetailDto;
 import com.claim.claim_processing.rule.claim.DTO.response.VestingResultDto;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
 import com.claim.claim_processing.rule.ruleProcessing.dto.MatchedSubClaimRuleDto;
 import com.claim.claim_processing.rule.ruleProcessing.entities.rule.LoanDeductionMapping;
+import com.claim.claim_processing.rule.ruleProcessing.entities.rule.RentalDeductionMapping;
 import com.claim.claim_processing.rule.ruleProcessing.repositories.rule.LoanDeductionMappingRepository;
+import com.claim.claim_processing.rule.ruleProcessing.repositories.rule.RentalDeductionMappingRepository;
 import com.claim.claim_processing.rule.ruleProcessing.service.PartialWithdrawalRuleService;
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 
@@ -58,6 +69,9 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     private final ClaimTypeRuleMapRepository claimTypeRuleMapRepository;
     private final LoanDeductionMappingRepository loanDeductionMappingRepository;
     private final MemberService memberService;
+    private final RentalDetailService rentalDetailService;
+    private final RentalDeductionMappingRepository rentalDeductionMappingRepository;
+    private final LoanTypeRepository loanTypeRepository;
 
     @Override
     public ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(
@@ -137,6 +151,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                                 + ". Recommended benefit type is " + vestingResult.getRefundTypeName()
                                 + (vestingResult.isLumpSumEligible() ? " and it is Eligible."
                                         : " and it is Not Eligible.");
+                        recommendedRefundTypes.add(vestingResult.getRefundTypeName());
                     }
 
                 }
@@ -239,16 +254,30 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         LoanAdjustmentResultDto loanAdjustmentResult = null;
-
+        RentalAdjustmentResultDto rentalAdjustmentResult = null;
         BigDecimal finalPayableAmount = grossPayableAmount;
-
+        List<Long> ruleTypeIds = claimRuleMaps.stream()
+                .filter(Objects::nonNull)
+                .filter(map -> map.getRuleType() != null)
+                .map(map -> map.getRuleType().getId())
+                .toList();
         if (isLoanApply) {
             loanAdjustmentResult = deductLoanByPriority(
                     request.getNppfNumber(),
-                    finalComponents);
+                    finalPayableAmount, ruleTypeIds);
 
             if (loanAdjustmentResult != null) {
                 finalPayableAmount = loanAdjustmentResult.getFinalPayableAmount();
+            }
+        }
+
+        if (isRentalApply) {
+            rentalAdjustmentResult = deductRental(
+                    request.getNppfNumber(),
+                    finalPayableAmount, ruleTypeIds);
+
+            if (rentalAdjustmentResult != null) {
+                finalPayableAmount = rentalAdjustmentResult.getFinalPayableAmount();
             }
         }
         LocalDate joiningDate = toLocalDate(memberDetail.getDateOfServiceJoiningDate());
@@ -266,13 +295,10 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 totalPfAmount,
                 totalPensionAmount);
 
-        String loanNote = loanAdjustmentResult != null
-                ? loanAdjustmentResult.getAdjustmentNote()
-                : "No loan adjustment applied.";
         String ruleCode = matchedRuleCodes.stream()
-        .filter(Objects::nonNull)
-        .distinct()
-        .collect(Collectors.joining(","));
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.joining(","));
         ClaimCalculationResponseDTO response = ClaimCalculationResponseDTO.builder()
                 .nppfNumber(contributionSummary != null ? contributionSummary.getNppfNumber() : null)
                 .contributionStartDate(
@@ -280,6 +306,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                                 ? contributionSummary.getContributionStartDate()
                                 : null)
                 .subClaimCode(ruleCode)
+                .rentalAdjustmentResult(rentalAdjustmentResult)
                 .contributionEndDate(contributionSummary != null
                         ? contributionSummary.getContributionEndDate()
                         : null)
@@ -291,6 +318,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                         contributionSummary != null
                                 ? contributionSummary.getTotalNonContributionMonths()
                                 : null)
+                .loanAdjustmentResult(loanAdjustmentResult)
                 .noOfYearInService(serviceYears)
                 .components(finalComponents)
                 .expressionCalculations(expressionCalculations)
@@ -310,13 +338,173 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 .vestingNote(vestingNote)
                 .recommendedBenefitType(String.join(" ", recommendedRefundTypes))
                 .finalPayableAmount(finalPayableAmount)
-                .adjustmentNote(loanNote)
-                .forfeitedComponents(forfeitedComponentCodes)
+                .forfeitedComponents(forfeitedComponents)
 
                 .build();
 
         return ApiResponseDTO.success(response);
     }
+
+    private RentalAdjustmentResultDto deductRental(
+        String nppfNumber,
+        BigDecimal availableAmount,
+        List<Long> ruleTypeIds
+) {
+
+    BigDecimal remainingPayableAmount =
+            availableAmount != null ? availableAmount : BigDecimal.ZERO;
+
+    BigDecimal totalRentalAdjustedAmount = BigDecimal.ZERO;
+
+    List<RentalAdjustmentDetailDto> adjustmentDetails = new ArrayList<>();
+
+    if (nppfNumber == null || nppfNumber.isBlank()) {
+        return RentalAdjustmentResultDto.builder()
+                .totalAdjustedAmount(BigDecimal.ZERO)
+                .finalPayableAmount(remainingPayableAmount)
+                .deductions(Collections.emptyList())
+                .adjustmentNote("NPPF number is missing.")
+                .build();
+    }
+
+    if (ruleTypeIds == null || ruleTypeIds.isEmpty()) {
+        return RentalAdjustmentResultDto.builder()
+                .totalAdjustedAmount(BigDecimal.ZERO)
+                .finalPayableAmount(remainingPayableAmount)
+                .deductions(Collections.emptyList())
+                .adjustmentNote("No rental deduction rule found for this claim type.")
+                .build();
+    }
+
+    List<RentalDetailResponseDto> rentalDetails =
+            rentalDetailService.getRentalDetails(nppfNumber).getData();
+
+    if (rentalDetails == null || rentalDetails.isEmpty()) {
+        return RentalAdjustmentResultDto.builder()
+                .totalAdjustedAmount(BigDecimal.ZERO)
+                .finalPayableAmount(remainingPayableAmount)
+                .deductions(Collections.emptyList())
+                .adjustmentNote("No outstanding rental found.")
+                .build();
+    }
+
+    LocalDate today = LocalDate.now();
+
+    List<RentalDeductionMapping> mappings =
+            rentalDeductionMappingRepository.findByRuleType_IdIn(ruleTypeIds)
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .filter(mapping -> mapping.getRentalType() != null)
+                    .filter(mapping -> mapping.getRentalType().getId() != null)
+                    .filter(mapping -> mapping.getRentalType().getRentalType() != null)
+                    .filter(mapping -> mapping.getEffectiveFrom() != null)
+                    .filter(mapping -> !mapping.getEffectiveFrom().isAfter(today))
+                    .filter(mapping -> mapping.getEffectiveTo() == null
+                            || !mapping.getEffectiveTo().isBefore(today))
+                    .toList();
+
+    if (mappings.isEmpty()) {
+        return RentalAdjustmentResultDto.builder()
+                .totalAdjustedAmount(BigDecimal.ZERO)
+                .finalPayableAmount(remainingPayableAmount)
+                .deductions(Collections.emptyList())
+                .adjustmentNote("No active rental deduction mapping found.")
+                .build();
+    }
+
+    Map<String, RentalDeductionMapping> mappingMap =
+            mappings.stream()
+                    .collect(Collectors.toMap(
+                            mapping -> normalizeName(mapping.getRentalType().getRentalType()),
+                            mapping -> mapping,
+                            (oldValue, newValue) -> oldValue
+                    ));
+
+    List<RentalDetailResponseDto> applicableRentalDetails =
+            rentalDetails.stream()
+                    .filter(Objects::nonNull)
+                    .filter(rental -> rental.getRentalType() != null)
+                    .filter(rental -> rental.getOutstandingAmount() != null)
+                    .filter(rental -> rental.getOutstandingAmount().compareTo(BigDecimal.ZERO) > 0)
+                    .filter(rental -> mappingMap.containsKey(
+                            normalizeName(rental.getRentalType())
+                    ))
+                    .toList();
+
+    if (applicableRentalDetails.isEmpty()) {
+        return RentalAdjustmentResultDto.builder()
+                .totalAdjustedAmount(BigDecimal.ZERO)
+                .finalPayableAmount(remainingPayableAmount)
+                .deductions(Collections.emptyList())
+                .adjustmentNote("No applicable outstanding rental found for deduction.")
+                .build();
+    }
+
+    for (RentalDetailResponseDto rental : applicableRentalDetails) {
+
+        if (remainingPayableAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            break;
+        }
+
+        RentalDeductionMapping mapping =
+                mappingMap.get(normalizeName(rental.getRentalType()));
+
+        if (mapping == null) {
+            continue;
+        }
+
+        BigDecimal outstandingAmount = rental.getOutstandingAmount();
+
+        BigDecimal adjustedAmount =
+                remainingPayableAmount.min(outstandingAmount);
+
+        BigDecimal remainingOutstandingAmount =
+                outstandingAmount.subtract(adjustedAmount);
+
+        remainingPayableAmount =
+                remainingPayableAmount.subtract(adjustedAmount);
+
+        totalRentalAdjustedAmount =
+                totalRentalAdjustedAmount.add(adjustedAmount);
+
+        adjustmentDetails.add(
+                RentalAdjustmentDetailDto.builder()
+                        .rentalId(mapping.getRentalType().getId())
+                        .rentalName(mapping.getRentalType().getRentalType())
+                        .outstandingAmount(outstandingAmount)
+                        .adjustedAmount(adjustedAmount)
+                        .remainingOutstandingAmount(remainingOutstandingAmount)
+                        .status(
+                                remainingOutstandingAmount.compareTo(BigDecimal.ZERO) == 0
+                                        ? "FULLY_ADJUSTED"
+                                        : "PARTIALLY_ADJUSTED"
+                        )
+                        .build()
+        );
+    }
+
+    return RentalAdjustmentResultDto.builder()
+            .totalAdjustedAmount(totalRentalAdjustedAmount)
+            .finalPayableAmount(remainingPayableAmount)
+            .deductions(adjustmentDetails)
+            .adjustmentNote(
+                    "Rental adjusted. Total adjusted amount: "
+                            + totalRentalAdjustedAmount
+                            + ". Final payable amount: "
+                            + remainingPayableAmount
+            )
+            .build();
+}
+
+private String normalizeName(String value) {
+    if (value == null) {
+        return null;
+    }
+
+    return value.trim()
+            .toUpperCase()
+            .replaceAll("\\s+", " ");
+}
 
     private LocalDate toLocalDate(Date date) {
 
@@ -399,54 +587,107 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 .build();
     }
 
-    private LoanAdjustmentResultDto deductLoanByPriority(
-            String nppfNumber,
-            List<ComponentBalanceDTO> finalComponents) {
+    private LoanAdjustmentResultDto deductLoanByPriority(String nppfNumber, BigDecimal availableAmount,
+            List<Long> ruleTypeIds) {
 
-        BigDecimal grossPayableAmount = finalComponents == null
-                ? BigDecimal.ZERO
-                : finalComponents.stream()
-                        .filter(Objects::nonNull)
-                        .map(ComponentBalanceDTO::getAmount)
-                        .filter(Objects::nonNull)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal remainingPayableAmount = availableAmount != null ? availableAmount : BigDecimal.ZERO;
 
-        BigDecimal remainingPayableAmount = grossPayableAmount;
-        BigDecimal totalLoanOutstandingAmount = BigDecimal.ZERO;
         BigDecimal totalLoanAdjustedAmount = BigDecimal.ZERO;
-
         List<LoanAdjustmentDetailDto> adjustmentDetails = new ArrayList<>();
+
+        if (nppfNumber == null || nppfNumber.isBlank()) {
+            return LoanAdjustmentResultDto.builder()
+                    .totalAdjustedAmount(BigDecimal.ZERO)
+                    .finalPayableAmount(remainingPayableAmount)
+                    .deductions(Collections.emptyList())
+                    .adjustmentNote("NPPF number is missing.")
+                    .build();
+        }
+
+        if (ruleTypeIds == null || ruleTypeIds.isEmpty()) {
+            return LoanAdjustmentResultDto.builder()
+                    .totalAdjustedAmount(BigDecimal.ZERO)
+                    .finalPayableAmount(remainingPayableAmount)
+                    .deductions(Collections.emptyList())
+                    .adjustmentNote("No loan deduction rule found for this claim type.")
+                    .build();
+        }
 
         List<LoanDetailResponseDto> loanDetails = loanDetailService.getLoanDetails(nppfNumber).getData();
 
         if (loanDetails == null || loanDetails.isEmpty()) {
-
             return LoanAdjustmentResultDto.builder()
                     .totalAdjustedAmount(BigDecimal.ZERO)
-                    .finalPayableAmount(grossPayableAmount)
+                    .finalPayableAmount(remainingPayableAmount)
                     .deductions(Collections.emptyList())
                     .adjustmentNote("No outstanding loan found.")
                     .build();
         }
 
-        List<LoanDeductionMapping> mappings = loanDeductionMappingRepository.findAll();
-
-        Map<Long, Integer> priorityMap = mappings.stream()
+        LocalDate today = LocalDate.now();
+        Map<String, LoanTypeMaster> loanTypeMasterMap = loanDetails.stream()
+        .filter(Objects::nonNull)
+        .filter(loan -> loan.getLoanName() != null)
+        .map(loan -> loanTypeRepository.findByName(loan.getLoanName()).orElse(null))
+        .filter(Objects::nonNull)
+        .collect(Collectors.toMap(
+                loanType -> loanType.getName().trim().toUpperCase(),
+                loanType -> loanType,
+                (oldValue, newValue) -> oldValue
+        ));
+        
+        List<LoanDeductionMapping> mappings =
+        loanDeductionMappingRepository.findByRuleType_IdIn(ruleTypeIds)
+                .stream()
                 .filter(Objects::nonNull)
+                .filter(mapping -> mapping.getLoanType() != null)
+                .filter(mapping -> mapping.getLoanType().getId() != null)
+                .filter(mapping -> mapping.getLoanType().getName() != null)
+                .filter(mapping -> mapping.getEffectiveFrom() != null)
+                .filter(mapping -> !mapping.getEffectiveFrom().isAfter(today))
+                .filter(mapping -> mapping.getEffectiveTo() == null
+                        || !mapping.getEffectiveTo().isBefore(today))
+                .toList();
+
+        if (mappings.isEmpty()) {
+            return LoanAdjustmentResultDto.builder()
+                    .totalAdjustedAmount(BigDecimal.ZERO)
+                    .finalPayableAmount(remainingPayableAmount)
+                    .deductions(Collections.emptyList())
+                    .adjustmentNote("No active loan deduction mapping found.")
+                    .build();
+        }
+
+        Map<String, LoanDeductionMapping> mappingMap =
+        mappings.stream()
                 .collect(Collectors.toMap(
-                        mapping -> mapping.getLoanType().getId(),
-                        LoanDeductionMapping::getPriorityOrder));
+                        mapping -> mapping.getLoanType().getName().trim().toUpperCase(),
+                        mapping -> mapping,
+                        (oldValue, newValue) -> oldValue
+                ));
 
         List<LoanDetailResponseDto> sortedLoanDetails = loanDetails.stream()
                 .filter(Objects::nonNull)
                 .filter(loan -> loan.getOutstandingAmount() != null)
                 .filter(loan -> loan.getOutstandingAmount().compareTo(BigDecimal.ZERO) > 0)
-                .sorted(
-                        Comparator.comparing(
-                                loan -> priorityMap.getOrDefault(
-                                        loan.getLoanId(),
-                                        Integer.MAX_VALUE)))
+                .filter(loan -> loan.getLoanName() != null)
+                .filter(loan -> mappingMap.containsKey(loan.getLoanName().trim().toUpperCase()))
+                .sorted(Comparator.comparing(loan -> {
+                    LoanDeductionMapping mapping = mappingMap.get(loan.getLoanName().trim().toUpperCase());
+                    return mapping.getPriorityOrder() != null
+                            ? mapping.getPriorityOrder()
+                            : Integer.MAX_VALUE;
+                }))
                 .toList();
+
+        if (sortedLoanDetails.isEmpty()) {
+            return LoanAdjustmentResultDto.builder()
+                    .totalAdjustedAmount(BigDecimal.ZERO)
+                    .finalPayableAmount(remainingPayableAmount)
+                    .deductions(Collections.emptyList())
+                    .adjustmentNote("No applicable outstanding loan found for deduction.")
+                    .build();
+        }
 
         for (LoanDetailResponseDto loan : sortedLoanDetails) {
 
@@ -455,22 +696,24 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
             }
 
             BigDecimal outstandingAmount = loan.getOutstandingAmount();
-
-            totalLoanOutstandingAmount = totalLoanOutstandingAmount.add(outstandingAmount);
-
             BigDecimal adjustedAmount = remainingPayableAmount.min(outstandingAmount);
-
             BigDecimal remainingOutstandingAmount = outstandingAmount.subtract(adjustedAmount);
 
             remainingPayableAmount = remainingPayableAmount.subtract(adjustedAmount);
-
             totalLoanAdjustedAmount = totalLoanAdjustedAmount.add(adjustedAmount);
+
+            LoanDeductionMapping mapping =
+        mappingMap.get(loan.getLoanName().trim().toUpperCase());
 
             adjustmentDetails.add(
                     LoanAdjustmentDetailDto.builder()
-                            .loanTypeId(loan.getLoanId())
-                            .loanTypeName(loan.getLoanName())
-                            .priorityOrder(priorityMap.getOrDefault(loan.getLoanId(), Integer.MAX_VALUE))
+                            .loanTypeId(mapping.getLoanType().getId())
+                            .loanTypeName(mapping.getLoanType().getName())
+                            .priorityOrder(
+                                    mapping.getPriorityOrder() != null
+                                            ? mapping.getPriorityOrder()
+                                            : Integer.MAX_VALUE
+                            )
                             .outstandingAmount(outstandingAmount)
                             .adjustedAmount(adjustedAmount)
                             .remainingOutstandingAmount(remainingOutstandingAmount)

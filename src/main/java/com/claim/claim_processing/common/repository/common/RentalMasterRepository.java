@@ -9,6 +9,7 @@ import com.claim.claim_processing.common.entities.common.RentalMaster;
 public interface RentalMasterRepository extends JpaRepository<RentalMaster, Long> {
 
     boolean existsByRentalTypeIgnoreCase(String rentalType);
+    RentalMaster findByRentalTypeIgnoreCase(String rentalType);
 
     boolean existsByRentalTypeIgnoreCaseAndIdNot(String rentalType, Long id);
 }

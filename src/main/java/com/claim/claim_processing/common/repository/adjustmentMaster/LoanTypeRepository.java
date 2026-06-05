@@ -14,6 +14,7 @@ public interface LoanTypeRepository extends JpaRepository<LoanTypeMaster, Long> 
 
     // 🔹 Find by unique code
     Optional<LoanTypeMaster> findByCode(String code);
+    Optional<LoanTypeMaster> findByName(String name);
 
     // 🔹 Duplicate check (create)
     boolean existsByCode(String code);

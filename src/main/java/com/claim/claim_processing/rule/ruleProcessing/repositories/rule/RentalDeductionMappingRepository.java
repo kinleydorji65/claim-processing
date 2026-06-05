@@ -26,4 +26,5 @@ public interface RentalDeductionMappingRepository
         List<RentalDeductionMapping> findByRuleType_Id(Long ruleTypeId);
 
         List<RentalDeductionMapping> findByRentalType_Id(Long rentalTypeId);
+        List<RentalDeductionMapping> findByRuleType_IdIn(List<Long> ruleTypeIds);
 }
