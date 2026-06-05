@@ -9,7 +9,7 @@ import java.util.Optional;
 @Repository
 public interface StatusMasterRepository extends JpaRepository<StatusMaster, Long> {
 
-    Optional<StatusMaster> findByStatuseName(String statuseName);
+    Optional<StatusMaster> findByStatusName(String statusName);
 
-    boolean existsByStatuseName(String statuseName);
+    boolean existsByStatusName(String statusName);
 }

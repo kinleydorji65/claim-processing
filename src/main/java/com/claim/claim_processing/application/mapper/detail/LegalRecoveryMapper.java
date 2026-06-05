@@ -25,7 +25,7 @@ public interface LegalRecoveryMapper {
     @Mapping(target = "schemeTypeName", source = "schemeType.name")
 
     @Mapping(target = "currentStatusId", source = "currentStatus.statusId")
-    @Mapping(target = "currentStatusName", source = "currentStatus.statuseName")
+    @Mapping(target = "currentStatusName", source = "currentStatus.statusName")
 
     @Mapping(target = "loanTypeId", source = "loanType.id")
     @Mapping(target = "loanTypeName", source = "loanType.name")

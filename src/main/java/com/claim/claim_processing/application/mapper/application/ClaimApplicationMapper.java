@@ -37,7 +37,7 @@ public interface ClaimApplicationMapper {
     @Mapping(target = "currentStageName", source = "currentStage.name")
 
     @Mapping(target = "statusId", source = "status.statusId")
-    @Mapping(target = "statusName", source = "status.statuseName")
+    @Mapping(target = "statusName", source = "status.statusName")
 
     @Mapping(target = "actionId", source = "action.id")
     @Mapping(target = "actionName", source = "action.name")

@@ -15,6 +15,6 @@ public class StatusMaster {
     @Column(name = "status_id")
     private Long statusId;
 
-    @Column(name = "statuse_name", nullable = false, length = 100)
-    private String statuseName;
+    @Column(name = "status_name", nullable = false, length = 100)
+    private String statusName;
 }
