@@ -53,7 +53,7 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
                         entity.getCalculationStatus() != null
                                 ? StatusMasterResponseDto.builder()
                                 .statusId(entity.getCalculationStatus().getStatusId())
-                                .statuseName(entity.getCalculationStatus().getStatusName())
+                                .statusName(entity.getCalculationStatus().getStatusName())
                                 .build()
                                 : null
                 )
