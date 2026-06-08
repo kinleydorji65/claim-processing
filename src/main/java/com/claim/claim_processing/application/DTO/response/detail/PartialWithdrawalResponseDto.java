@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,77 +16,52 @@ public class PartialWithdrawalResponseDto {
 
     private Long id;
 
-    // ---------- Parent ----------
     private Long claimApplicationId;
     private String applicationNumber;
 
-    // ---------- Masters ----------
     private Long payeeTypeId;
     private String payeeTypeName;
-
-    private Long partialWithdrawalMasterId;
-    private String partialWithdrawalMasterName;
 
     private Long withdrawalReasonId;
     private String withdrawalReasonName;
 
-    private Long withdrawalCauseId;
-    private String withdrawalCauseName;
-
-    // ---------- Dates ----------
-    private LocalDate pfJoiningDate;
-    private LocalDate pensionJoiningDate;
-
-    // ---------- Amounts ----------
     private BigDecimal requestedWithdrawalAmount;
     private BigDecimal actualWithdrawalAmount;
 
-    // ---------- Common ----------
-    private String reasonDescription;
-
-    // ======================================================
-    // 🟡 UNEMPLOYMENT SECTION
-    // ======================================================
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate unemploymentStartDate;
-    private Integer unemploymentDurationMonths;
 
-    // ======================================================
-    // 🟡 DISABILITY SECTION
-    // ======================================================
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate disabilityDate;
 
-    // ======================================================
-    // 🟡 DISASTER SECTION
-    // ======================================================
-    private Long disasterTypeId;
-    private String disasterTypeName;
+    private Long unemploymentCauseId;
+    private String unemploymentCauseCode;
+    private String unemploymentCauseName;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate incidentDate;
+
     private String placeOfIncident;
 
-    // ======================================================
-    // 🟡 BUSINESS SECTION
-    // ======================================================
     private Long businessTypeId;
     private String businessTypeName;
 
     private String businessName;
     private BigDecimal proposedInvestmentAmount;
 
-    // ======================================================
-    // 🟡 HOUSING SECTION
-    // ======================================================
     private String housePurchaseType;
     private String propertyLocation;
     private BigDecimal estimatedCost;
 
-    // ---------- Extra ----------
     private String description;
 
-    // ---------- Audit ----------
     private String createdBy;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     private String updatedBy;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 }

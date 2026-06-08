@@ -49,9 +49,6 @@ public class ClaimApplicationDeductionItem {
     @Column(name = "PRIORITY_ORDER")
     private Integer priorityOrder;
 
-    @Column(name = "DETAIL_JSON", length = 4000)
-    private String detailJson;
-
     @Column(name = "REMARKS", length = 1000)
     private String remarks;
 

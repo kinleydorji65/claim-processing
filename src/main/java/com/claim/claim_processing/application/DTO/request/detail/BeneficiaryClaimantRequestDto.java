@@ -11,14 +11,12 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BeneficiaryClaimantRequestDto {
-
+    private Long beneficiaryClaimantDetailId;
     private Long nomineeId;
 
     private Long dependentId;
 
     private Long claimantTypeId;
-
-    private Long beneficiarySettlementDetailId;
 
     private Long relationshipTypeId;
 
@@ -31,8 +29,6 @@ public class BeneficiaryClaimantRequestDto {
     private BigDecimal beneficiarySharePercentage;
 
     private Long payeeTypeId;
-
-    private Integer priorityOrder;
 
     private ActivityEnum isMemberFamily;
 

@@ -1,7 +1,6 @@
 package com.claim.claim_processing.application.mapper.detail;
 
 import com.claim.claim_processing.application.DTO.request.detail.NormalClaimRequestDto;
-import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
 import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 
 import org.mapstruct.*;
@@ -11,20 +10,6 @@ import org.mapstruct.*;
         unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public interface NormalClaimMapper {
-
-    // ---------- Entity -> Response ----------
-    @Mapping(target = "claimApplicationId", source = "claimApplication.id")
-
-    @Mapping(target = "cessationTypeId", source = "cessationType.id")
-    @Mapping(target = "cessationTypeName", source = "cessationType.name")
-
-    @Mapping(target = "payeeTypeId", source = "payeeType.id")
-    @Mapping(target = "payeeTypeName", source = "payeeType.name")
-
-    @Mapping(target = "terminationReasonTypeId", source = "terminationReasonType.id")
-    @Mapping(target = "terminationReasonTypeName", source = "terminationReasonType.name")
-    NormalClaimResponseDto toResponseDto(NormalClaimDetail entity);
-
 
     // ---------- Request -> Entity ----------
     @Mapping(target = "id", ignore = true)

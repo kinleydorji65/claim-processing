@@ -1,347 +1,253 @@
-// package com.claim.claim_processing.application.service.detail.impl;
+package com.claim.claim_processing.application.service.detail.impl;
 
-// import com.claim.claim_processing.application.DTO.request.detail.BeneficiarySettlementDetailRequestDto;
-// import com.claim.claim_processing.application.DTO.response.detail.BeneficiarySettlementResponseDto;
-// import com.claim.claim_processing.application.entity.application.ClaimApplication;
-// import com.claim.claim_processing.application.entity.detail.BeneficiaryClaimantDetail;
-// import com.claim.claim_processing.application.entity.detail.BeneficiarySettlementDetail;
-// import com.claim.claim_processing.application.mapper.detail.BeneficiarySettlementDetailMapper;
-// import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
-// import com.claim.claim_processing.application.repository.detail.BeneficiaryClaimantDetailRepository;
-// import com.claim.claim_processing.application.repository.detail.BeneficiarySettlementDetailRepository;
-// import com.claim.claim_processing.application.service.detail.BeneficiarySettlementDetailService;
-// import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
-// import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
-// import com.claim.claim_processing.exceptions.ClaimException;
-// import lombok.RequiredArgsConstructor;
-// import org.springframework.stereotype.Service;
-// import org.springframework.transaction.annotation.Transactional;
+import com.claim.claim_processing.application.DTO.request.detail.BeneficiaryClaimantRequestDto;
+import com.claim.claim_processing.application.DTO.request.detail.BeneficiarySettlementDetailRequestDto;
+import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.application.entity.detail.BeneficiaryClaimantDetail;
+import com.claim.claim_processing.application.entity.detail.BeneficiarySettlementDetail;
+import com.claim.claim_processing.application.mapper.detail.BeneficiaryClaimantDetailMapper;
+import com.claim.claim_processing.application.mapper.detail.BeneficiarySettlementDetailMapper;
+import com.claim.claim_processing.application.repository.detail.BeneficiaryClaimantDetailRepository;
+import com.claim.claim_processing.application.repository.detail.BeneficiarySettlementDetailRepository;
+import com.claim.claim_processing.application.service.detail.BeneficiarySettlementDetailService;
+import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
+import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
+import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
+import com.claim.claim_processing.common.entities.others.RelationType;
+import com.claim.claim_processing.common.entities.others.member.MemberFamily;
+import com.claim.claim_processing.common.entities.others.member.MemberNominee;
+import com.claim.claim_processing.common.repository.beneficiary.ClaimantTypeRepository;
+import com.claim.claim_processing.common.repository.claim.CessationTypeRepository;
+import com.claim.claim_processing.common.repository.common.PayeeTypeRepository;
+import com.claim.claim_processing.common.repository.others.MemberFamilyRepository;
+import com.claim.claim_processing.common.repository.others.MemberNomineeRepository;
+import com.claim.claim_processing.common.repository.others.RelationTypeRepository;
+import com.claim.claim_processing.exceptions.ClaimException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-// import java.time.LocalDate;
-// import java.util.List;
-// import java.util.Objects;
+import java.time.LocalDate;
+import java.util.List;
 
-// @Service
-// @RequiredArgsConstructor
-// @Transactional
-// public class BeneficiarySettlementDetailServiceImpl
-//         implements BeneficiarySettlementDetailService {
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class BeneficiarySettlementDetailServiceImpl
+        implements BeneficiarySettlementDetailService {
 
-//     private final BeneficiarySettlementDetailRepository repository;
-//     private final ClaimApplicationRepository claimApplicationRepository;
-//     private final BeneficiaryClaimantDetailRepository beneficiaryClaimantDetailRepository;
-//     private final CessationTypeRepository cessationTypeMasterRepository;
-//     private final BeneficiarySettlementDetailMapper mapper;
+    private final BeneficiarySettlementDetailRepository repository;
+    private final BeneficiaryClaimantDetailMapper beneficiaryClaimantDetailMapper;
+    private final BeneficiaryClaimantDetailRepository beneficiaryClaimantDetailRepository;
+    private final CessationTypeRepository cessationTypeMasterRepository;
+    private final BeneficiarySettlementDetailMapper mapper;
+    private final MemberFamilyRepository memberFamilyRepository;
+    private final MemberNomineeRepository memberNomineeRepository;
+    private final ClaimantTypeRepository claimantTypeMasterRepository;
+    private final PayeeTypeRepository payeeTypeMasterRepository;
+    private final RelationTypeRepository relationTypeRepository;
 
-//     @Override
-//     public BeneficiarySettlementResponseDto create(
-//             BeneficiarySettlementDetailRequestDto request
-//     ) {
-//         validateCreateRequest(request);
+    @Override
+    @Transactional
+    public BeneficiarySettlementDetail create(
+            ClaimApplication claimApplication,
+            BeneficiarySettlementDetailRequestDto request) {
+        if (claimApplication == null) {
+            throw ClaimException.badRequest("Claim application is required");
+        }
 
-//         if (repository.existsByClaimApplication_Id(request.getClaimApplicationId())) {
-//             throw ClaimException.conflict(
-//                     "Beneficiary settlement detail already exists for claim application id: "
-//                             + request.getClaimApplicationId()
-//             );
-//         }
+        validateCreateRequest(request);
 
-//         BeneficiarySettlementDetail entity = mapper.toEntity(request);
+        BeneficiarySettlementDetail entity = mapper.toEntity(request);
 
-//         applyRequiredForeignKeys(entity, request);
-//         applyOptionalForeignKeys(entity, request);
+        entity.setClaimApplication(claimApplication);
 
-//         BeneficiarySettlementDetail saved = repository.save(entity);
-//         return mapper.toResponseDto(saved);
-//     }
+        if (request.getCessationTypeId() != null) {
+            CessationTypeMaster cessationType = cessationTypeMasterRepository
+                    .findById(request.getCessationTypeId())
+                    .orElseThrow(() -> ClaimException.resourceNotFound(
+                            "Cessation type",
+                            String.valueOf(request.getCessationTypeId())));
 
-//     @Override
-//     public BeneficiarySettlementResponseDto patch(
-//             Long id,
-//             BeneficiarySettlementDetailRequestDto request
-//     ) {
-//         if (id == null) {
-//             throw ClaimException.badRequest("Beneficiary settlement detail id is required");
-//         }
+            entity.setCessationType(cessationType);
+        }
 
-//         if (request == null) {
-//             throw ClaimException.badRequest("Request body is required");
-//         }
+        entity.setCreatedBy(request.getCreatedBy());
+        repository.saveAndFlush(entity);
+        createClaimantDetails(entity, request.getBeneficiaryClaimants());
+        return entity;
+    }
 
-//         BeneficiarySettlementDetail entity = repository.findById(id)
-//                 .orElseThrow(() -> ClaimException.resourceNotFound(
-//                         "Beneficiary settlement detail",
-//                         String.valueOf(id)
-//                 ));
+    @Override
+    @Transactional
+    public BeneficiarySettlementDetail patch(
+            BeneficiarySettlementDetailRequestDto request) {
+        if (request == null) {
+            throw ClaimException.badRequest("Request body is required");
+        }
 
-//         validatePatchRequest(request);
-//         validateClaimApplicationForPatch(id, request.getClaimApplicationId());
+        if (request.getBeneficiarySettlementDetailId() == null) {
+            throw ClaimException.badRequest("Beneficiary settlement detail id is required");
+        }
 
-//         mapper.patchEntity(entity, request);
+        BeneficiarySettlementDetail entity = repository.findById(
+                request.getBeneficiarySettlementDetailId())
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Beneficiary settlement detail",
+                        String.valueOf(request.getBeneficiarySettlementDetailId())));
 
-//         applyPatchForeignKeys(entity, request);
+        validatePatchRequest(request);
 
-//         BeneficiarySettlementDetail updated = repository.save(entity);
-//         return mapper.toResponseDto(updated);
-//     }
+        mapper.patchEntity(entity, request);
 
-//     @Override
-//     @Transactional(readOnly = true)
-//     public BeneficiarySettlementResponseDto getById(Long id) {
-//         if (id == null) {
-//             throw ClaimException.badRequest("Beneficiary settlement detail id is required");
-//         }
+        if (request.getCessationTypeId() != null) {
+            CessationTypeMaster cessationType = cessationTypeMasterRepository
+                    .findById(request.getCessationTypeId())
+                    .orElseThrow(() -> ClaimException.resourceNotFound(
+                            "Cessation type",
+                            String.valueOf(request.getCessationTypeId())));
 
-//         BeneficiarySettlementDetail entity = repository.findById(id)
-//                 .orElseThrow(() -> ClaimException.resourceNotFound(
-//                         "Beneficiary settlement detail",
-//                         String.valueOf(id)
-//                 ));
+            entity.setCessationType(cessationType);
+        }
 
-//         return mapper.toResponseDto(entity);
-//     }
+        if (request.getUpdatedBy() != null) {
+            entity.setUpdatedBy(request.getUpdatedBy());
+        }
+        repository.saveAndFlush(entity);
+        updateClaimantDetails(entity, request.getBeneficiaryClaimants());
+        return entity;
+    }
 
-//     @Override
-//     @Transactional(readOnly = true)
-//     public BeneficiarySettlementResponseDto getByClaimApplicationId(
-//             Long claimApplicationId
-//     ) {
-//         if (claimApplicationId == null) {
-//             throw ClaimException.badRequest("Claim application id is required");
-//         }
+    @Override
+    public void delete(Long id) {
+        if (id == null) {
+            throw ClaimException.badRequest("Beneficiary settlement detail id is required");
+        }
 
-//         BeneficiarySettlementDetail entity = repository
-//                 .findByClaimApplication_Id(claimApplicationId)
-//                 .orElseThrow(() -> ClaimException.notFound(
-//                         "Beneficiary settlement detail not found for claim application id: "
-//                                 + claimApplicationId
-//                 ));
+        BeneficiarySettlementDetail entity = repository.findById(id)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Beneficiary settlement detail",
+                        String.valueOf(id)));
 
-//         return mapper.toResponseDto(entity);
-//     }
+        repository.delete(entity);
+    }
 
-//     @Override
-//     @Transactional(readOnly = true)
-//     public BeneficiarySettlementResponseDto getByDeceasedMemberCode(
-//             String deceasedMemberCode
-//     ) {
-//         if (isBlank(deceasedMemberCode)) {
-//             throw ClaimException.badRequest("Deceased member code is required");
-//         }
+    private void validateCreateRequest(BeneficiarySettlementDetailRequestDto request) {
+        if (request == null) {
+            throw ClaimException.badRequest("Request body is required");
+        }
 
-//         BeneficiarySettlementDetail entity = repository
-//                 .findByDeceasedMemberCode(deceasedMemberCode.trim())
-//                 .orElseThrow(() -> ClaimException.notFound(
-//                         "Beneficiary settlement detail not found for deceased member code: "
-//                                 + deceasedMemberCode
-//                 ));
+        if (request.getCessationTypeId() == null) {
+            throw ClaimException.singleValidationError(
+                    "cessationTypeId",
+                    "Cessation type id is required");
+        }
 
-//         return mapper.toResponseDto(entity);
-//     }
+        if (request.getDateOfDeath() == null) {
+            throw ClaimException.singleValidationError(
+                    "dateOfDeath",
+                    "Date of death is required");
+        }
 
-//     @Override
-//     @Transactional(readOnly = true)
-//     public List<BeneficiarySettlementResponseDto> getAll() {
-//         List<BeneficiarySettlementDetail> list = repository.findAll();
+        validateDates(request);
+    }
 
-//         if (list.isEmpty()) {
-//             throw ClaimException.notFound("No beneficiary settlement details found");
-//         }
+    private void validatePatchRequest(BeneficiarySettlementDetailRequestDto request) {
+        validateDates(request);
+    }
 
-//         return list.stream()
-//                 .map(mapper::toResponseDto)
-//                 .toList();
-//     }
+    private void validateDates(BeneficiarySettlementDetailRequestDto request) {
+        LocalDate today = LocalDate.now();
 
-//     @Override
-//     public void delete(Long id) {
-//         if (id == null) {
-//             throw ClaimException.badRequest("Beneficiary settlement detail id is required");
-//         }
+        if (request.getDateOfDeath() != null
+                && request.getDateOfDeath().isAfter(today)) {
+            throw ClaimException.badRequest("Date of death cannot be in the future");
+        }
 
-//         BeneficiarySettlementDetail entity = repository.findById(id)
-//                 .orElseThrow(() -> ClaimException.resourceNotFound(
-//                         "Beneficiary settlement detail",
-//                         String.valueOf(id)
-//                 ));
+        if (request.getLastContributionDate() != null
+                && request.getDateOfDeath() != null
+                && request.getLastContributionDate().isAfter(request.getDateOfDeath())) {
+            throw ClaimException.badRequest(
+                    "Last contribution date cannot be after date of death");
+        }
 
-//         repository.delete(entity);
-//     }
+        if (request.getNonContributionMonths() != null
+                && request.getNonContributionMonths() < 0) {
+            throw ClaimException.badRequest(
+                    "Non contribution months cannot be negative");
+        }
+    }
 
-//     private void validateCreateRequest(BeneficiarySettlementDetailRequestDto request) {
-//         if (request == null) {
-//             throw ClaimException.badRequest("Request body is required");
-//         }
+    //added the claimant detail
+    private List<BeneficiaryClaimantDetail> createClaimantDetails(BeneficiarySettlementDetail settlementDetail, List<BeneficiaryClaimantRequestDto> requests) {
+        List<BeneficiaryClaimantDetail> claimantDetails = requests.stream()
+                .map(request -> {
+                    BeneficiaryClaimantDetail detail = beneficiaryClaimantDetailMapper.toEntity(request);
+                    detail.setBeneficiarySettlementDetail(settlementDetail);
+                    detail.setDependent(getMemberFamily(request.getDependentId()));
+                    detail.setNominee(getMemberNominee(request.getNomineeId()));
+                    detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
+                    detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
+                    detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
+                    beneficiaryClaimantDetailRepository.saveAndFlush(detail);
+                    return detail;
+                })
+                .toList();
+        return claimantDetails;
+    }
 
-//         if (request.getClaimApplicationId() == null) {
-//             throw ClaimException.singleValidationError(
-//                     "claimApplicationId",
-//                     "Claim application id is required"
-//             );
-//         }
+    private List<BeneficiaryClaimantDetail> updateClaimantDetails(BeneficiarySettlementDetail settlementDetail, List<BeneficiaryClaimantRequestDto> requests) {
+        List<BeneficiaryClaimantDetail> claimantDetails = requests.stream()
+                .map(request -> {
+                    BeneficiaryClaimantDetail detail = beneficiaryClaimantDetailRepository.findById(request.getBeneficiaryClaimantDetailId())
+                            .orElseThrow(() -> ClaimException.resourceNotFound(
+                                    "Beneficiary claimant detail",
+                                    String.valueOf(request.getBeneficiaryClaimantDetailId())));
+                    detail.setBeneficiarySettlementDetail(settlementDetail);
+                    detail.setDependent(getMemberFamily(request.getDependentId()));
+                    detail.setNominee(getMemberNominee(request.getNomineeId()));
+                    detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
+                    detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
+                    detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
+                    beneficiaryClaimantDetailRepository.saveAndFlush(detail);
+                    return detail;
+                })
+                .toList();
+        return claimantDetails;
+    }
 
-//         if (request.getCessationTypeId() == null) {
-//             throw ClaimException.singleValidationError(
-//                     "cessationTypeId",
-//                     "Cessation type id is required"
-//             );
-//         }
+    private MemberFamily getMemberFamily(Long memberFamilyId) {
+        return memberFamilyRepository.findById(memberFamilyId)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Member family",
+                        String.valueOf(memberFamilyId)));
+    }
 
-//         if (isBlank(request.getDeceasedMemberCode())) {
-//             throw ClaimException.singleValidationError(
-//                     "deceasedMemberCode",
-//                     "Deceased member code is required"
-//             );
-//         }
+    private MemberNominee getMemberNominee(Long memberNomineeId) {
+        return memberNomineeRepository.findById(memberNomineeId)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Member nominee",
+                        String.valueOf(memberNomineeId)));
+    }
 
-//         if (isBlank(request.getDeceasedNppfNumber())) {
-//             throw ClaimException.singleValidationError(
-//                     "deceasedNppfNumber",
-//                     "Deceased NPPF number is required"
-//             );
-//         }
+    private ClaimantTypeMaster getClaimantType(Long claimantTypeId) {
+        return claimantTypeMasterRepository.findById(claimantTypeId)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Claimant type",
+                        String.valueOf(claimantTypeId)));
+    }
 
-//         if (request.getDateOfDeath() == null) {
-//             throw ClaimException.singleValidationError(
-//                     "dateOfDeath",
-//                     "Date of death is required"
-//             );
-//         }
+    private PayeeTypeMaster getPayeeType(Long payeeTypeId) {
+        return payeeTypeMasterRepository.findById(payeeTypeId)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Payee type",
+                        String.valueOf(payeeTypeId)));
+    }
 
-//         validateDates(request);
-//     }
-
-//     private void validatePatchRequest(BeneficiarySettlementDetailRequestDto request) {
-//         validateDates(request);
-//     }
-
-//     private void validateDates(BeneficiarySettlementDetailRequestDto request) {
-//         LocalDate today = LocalDate.now();
-
-//         if (request.getDateOfDeath() != null
-//                 && request.getDateOfDeath().isAfter(today)) {
-//             throw ClaimException.badRequest("Date of death cannot be in the future");
-//         }
-
-//         if (request.getServiceJoiningDate() != null
-//                 && request.getDateOfDeath() != null
-//                 && request.getServiceJoiningDate().isAfter(request.getDateOfDeath())) {
-//             throw ClaimException.badRequest(
-//                     "Service joining date cannot be after date of death"
-//             );
-//         }
-
-//         if (request.getLastContributionDate() != null
-//                 && request.getDateOfDeath() != null
-//                 && request.getLastContributionDate().isAfter(request.getDateOfDeath())) {
-//             throw ClaimException.badRequest(
-//                     "Last contribution date cannot be after date of death"
-//             );
-//         }
-
-//         if (request.getNonContributionMonths() != null
-//                 && request.getNonContributionMonths() < 0) {
-//             throw ClaimException.badRequest(
-//                     "Non contribution months cannot be negative"
-//             );
-//         }
-//     }
-
-//     private void validateClaimApplicationForPatch(
-//             Long currentId,
-//             Long newClaimApplicationId
-//     ) {
-//         if (newClaimApplicationId == null) {
-//             return;
-//         }
-
-//         repository.findByClaimApplication_Id(newClaimApplicationId)
-//                 .ifPresent(existing -> {
-//                     if (!Objects.equals(existing.getId(), currentId)) {
-//                         throw ClaimException.conflict(
-//                                 "Beneficiary settlement detail already exists for claim application id: "
-//                                         + newClaimApplicationId
-//                         );
-//                     }
-//                 });
-//     }
-
-//     private void applyRequiredForeignKeys(
-//             BeneficiarySettlementDetail entity,
-//             BeneficiarySettlementDetailRequestDto request
-//     ) {
-//         ClaimApplication claimApplication = claimApplicationRepository
-//                 .findById(request.getClaimApplicationId())
-//                 .orElseThrow(() -> ClaimException.resourceNotFound(
-//                         "Claim application",
-//                         String.valueOf(request.getClaimApplicationId())
-//                 ));
-
-//         CessationTypeMaster cessationType = cessationTypeMasterRepository
-//                 .findById(request.getCessationTypeId())
-//                 .orElseThrow(() -> ClaimException.resourceNotFound(
-//                         "Cessation type",
-//                         String.valueOf(request.getCessationTypeId())
-//                 ));
-
-//         entity.setClaimApplication(claimApplication);
-//         entity.setCessationType(cessationType);
-//     }
-
-//     private void applyOptionalForeignKeys(
-//             BeneficiarySettlementDetail entity,
-//             BeneficiarySettlementDetailRequestDto request
-//     ) {
-//         if (request.getBeneficiaryClaimantDetailIds() == null
-//                 || request.getBeneficiaryClaimantDetailIds().isEmpty()) {
-//             return;
-//         }
-
-//         List<BeneficiaryClaimantDetail> claimantDetails =
-//                 beneficiaryClaimantDetailRepository.findAllById(
-//                         request.getBeneficiaryClaimantDetailIds()
-//                 );
-
-//         if (claimantDetails.size()
-//                 != request.getBeneficiaryClaimantDetailIds().size()) {
-//             throw ClaimException.badRequest(
-//                     "One or more beneficiary claimant detail ids are invalid"
-//             );
-//         }
-
-//         entity.setBeneficiaryClaimantDetails(claimantDetails);
-//     }
-
-//     private void applyPatchForeignKeys(
-//             BeneficiarySettlementDetail entity,
-//             BeneficiarySettlementDetailRequestDto request
-//     ) {
-//         if (request.getClaimApplicationId() != null) {
-//             ClaimApplication claimApplication = claimApplicationRepository
-//                     .findById(request.getClaimApplicationId())
-//                     .orElseThrow(() -> ClaimException.resourceNotFound(
-//                             "Claim application",
-//                             String.valueOf(request.getClaimApplicationId())
-//                     ));
-
-//             entity.setClaimApplication(claimApplication);
-//         }
-
-//         if (request.getCessationTypeId() != null) {
-//             CessationTypeMaster cessationType = cessationTypeMasterRepository
-//                     .findById(request.getCessationTypeId())
-//                     .orElseThrow(() -> ClaimException.resourceNotFound(
-//                             "Cessation type",
-//                             String.valueOf(request.getCessationTypeId())
-//                     ));
-
-//             entity.setCessationType(cessationType);
-//         }
-
-//         applyOptionalForeignKeys(entity, request);
-//     }
-
-//     private boolean isBlank(String value) {
-//         return value == null || value.trim().isEmpty();
-//     }
-// }
+    private RelationType getRelationshipType(Long relationshipTypeId) {
+        return relationTypeRepository.findById(relationshipTypeId)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Relationship type",
+                        String.valueOf(relationshipTypeId)));
+    }
+}

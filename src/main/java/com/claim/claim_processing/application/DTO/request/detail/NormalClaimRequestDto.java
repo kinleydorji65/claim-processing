@@ -11,9 +11,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class NormalClaimRequestDto {
 
-    // ---------- Parent ----------
-    private Long claimApplicationId;
-
+    private Long normalClaimId;
     // ---------- Masters ----------
     private Long cessationTypeId;
 

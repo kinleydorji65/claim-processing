@@ -84,9 +84,6 @@ public class BeneficiaryClaimantDetail {
     @JoinColumn(name = "PAYEE_TYPE_ID", foreignKey = @ForeignKey(name = "FK_BCD_PAYEE_TYPE"))
     private PayeeTypeMaster payeeType;
 
-    @Column(name = "PRIORITY_ORDER")
-    private Integer priorityOrder;
-
     @Column(name = "IS_MEMBER_FAMILY", length = 1)
     @Enumerated(EnumType.STRING)
     @Builder.Default
@@ -105,16 +102,6 @@ public class BeneficiaryClaimantDetail {
 
     @Column(name = "BENEFIT_AMOUNT", precision = 15, scale = 2)
     private BigDecimal benefitAmount;
-
-    @Column(name = "IS_ELIGIBLE", length = 1)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ActivityEnum isEligible = ActivityEnum.Y;
-
-    @Column(name = "IS_SELECTED", length = 1)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ActivityEnum isSelected = ActivityEnum.Y;
 
     @Column(name = "REMARKS", length = 1000)
     private String remarks;
@@ -141,12 +128,6 @@ public class BeneficiaryClaimantDetail {
         }
         if (isMinor == null) {
             isMinor = ActivityEnum.N;
-        }
-        if (isEligible == null) {
-            isEligible = ActivityEnum.Y;
-        }
-        if (isSelected == null) {
-            isSelected = ActivityEnum.Y;
         }
     }
 

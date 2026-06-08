@@ -3,6 +3,7 @@ package com.claim.claim_processing.rule.ruleProcessing.entities.rule;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -33,6 +34,9 @@ public class RentalDeductionMapping {
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "RENTAL_TYPE_ID", referencedColumnName = "ID", nullable = false)
         private RentalMaster rentalType;
+
+        @Column(name = "PERCENTAGE", precision = 5, scale = 2)
+        private BigDecimal percentage;
 
         @Column(name = "EFFECTIVE_FROM", nullable = false)
         private LocalDate effectiveFrom;

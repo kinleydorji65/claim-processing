@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PartialWithdrawalRequestDto {
-
+    private Long partialWithdrawalId;
     private Long payeeTypeId;
 
     private Long withdrawalReasonId;
@@ -19,16 +19,8 @@ public class PartialWithdrawalRequestDto {
     private BigDecimal requestedWithdrawalAmount;
 
     private BigDecimal actualWithdrawalAmount;
-
-    private String reasonDescription;
-
-    // ---------------------------------
-    // Unemployment Details
-    // ---------------------------------
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate unemploymentStartDate;
-
-    private Integer unemploymentDurationMonths;
 
     // ---------------------------------
     // Disability Details
@@ -37,9 +29,9 @@ public class PartialWithdrawalRequestDto {
     private LocalDate disabilityDate;
 
     // ---------------------------------
-    // Disaster Details
+    // Unemployment Details
     // ---------------------------------
-    private Long disasterTypeId;
+    private Long unemploymentCauseId;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate incidentDate;
@@ -61,6 +53,8 @@ public class PartialWithdrawalRequestDto {
     private String housePurchaseType;
 
     private String propertyLocation;
+
+    private String description;
 
     private BigDecimal estimatedCost;
 

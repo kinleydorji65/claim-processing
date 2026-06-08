@@ -11,12 +11,11 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class BeneficiarySettlementDetailRequestDto {
-
-    private List<Long> beneficiaryClaimantDetailIds;
+    private Long beneficiarySettlementDetailId;
 
     private LocalDate dateOfDeath;
 
-    private LocalDate serviceJoiningDate;
+    private Long cessationTypeId;
 
     private LocalDate lastContributionDate;
 

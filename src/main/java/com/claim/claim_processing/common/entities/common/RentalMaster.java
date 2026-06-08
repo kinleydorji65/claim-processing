@@ -3,6 +3,7 @@ package com.claim.claim_processing.common.entities.common;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity

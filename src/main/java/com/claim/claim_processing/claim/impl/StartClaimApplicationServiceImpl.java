@@ -2,7 +2,7 @@ package com.claim.claim_processing.claim.impl;
 
 import org.springframework.stereotype.Service;
 
-import com.claim.claim_processing.application.DTO.request.application.ClaimRequest;
+import com.claim.claim_processing.application.DTO.request.application.GeneralClaimCreateRequest;
 import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.service.application.ClaimApplicationService;
@@ -20,7 +20,7 @@ public class StartClaimApplicationServiceImpl implements StartClaimApplicationSe
     
     @Override
     @Transactional
-    public ApiResponseDTO<GeneralClaimResponse> startClaimApplication(ClaimRequest request) {
+    public ApiResponseDTO<GeneralClaimResponse> startClaimApplication(GeneralClaimCreateRequest request) {
         
         ClaimApplication claimApplicationResponse = claimApplicationService.create(request.getClaimApplication());
         return null;

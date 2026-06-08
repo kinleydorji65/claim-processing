@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClaimApplicationRequestDto {
-
+    private Long applicationId;
     // ---------------------------------
     // Master References
     // ---------------------------------
@@ -85,4 +85,10 @@ public class ClaimApplicationRequestDto {
     private String createdBy;
 
     private String updatedBy;
+
+    private Long fromStageId;
+    private Long toStageId;
+    private Long fromStatusId;
+    private Long toStatusId;
+    private String reason;
 }

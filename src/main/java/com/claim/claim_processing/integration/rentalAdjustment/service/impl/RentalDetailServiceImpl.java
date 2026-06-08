@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
-import com.claim.claim_processing.common.repository.adjustmentMaster.RentalAdjustmentMasterRepository;
 import com.claim.claim_processing.integration.rentalAdjustment.dto.RentalDetailResponseDto;
 import com.claim.claim_processing.integration.rentalAdjustment.service.RentalDetailService;
 
@@ -15,12 +14,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RentalDetailServiceImpl implements RentalDetailService {
 
-    private final RentalAdjustmentMasterRepository repository;
-
     @Override
     public ApiResponseDTO<List<RentalDetailResponseDto>> getRentalDetails(String identityId) {
 
-        BigDecimal percentage = repository.findAll().get(0).getPercentage();
+        BigDecimal percentage = new BigDecimal("0.10");
         List<RentalDetailResponseDto> response = List.of(
 
                 RentalDetailResponseDto.builder()

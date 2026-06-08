@@ -1,7 +1,6 @@
 package com.claim.claim_processing.application.mapper.application;
 
 import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationRequestDto;
-import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 
 import org.mapstruct.*;
@@ -14,39 +13,6 @@ import java.time.LocalDateTime;
         unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public interface ClaimApplicationMapper {
-
-    // ---------- Entity -> Response ----------
-    @Mapping(target = "claimTypeId", source = "claimType.id")
-    @Mapping(target = "claimTypeName", source = "claimType.name")
-
-    @Mapping(target = "submissionChannelId", source = "submissionChannel.id")
-    @Mapping(target = "submissionChannelName", source = "submissionChannel.name")
-
-    @Mapping(target = "schemeTypeId", source = "schemeType.id")
-    @Mapping(target = "schemeTypeName", source = "schemeType.name")
-
-    @Mapping(target = "memberCategoryId", source = "memberCategory.categoryId")
-    @Mapping(target = "memberCategoryName", source = "memberCategory.categoryName")
-
-    @Mapping(target = "parentClaimApplicationId", source = "parentClaimApplication.id")
-
-    @Mapping(target = "specialCaseAuthorityId", source = "specialCaseAuthority.id")
-    @Mapping(target = "specialCaseAuthorityName", source = "specialCaseAuthority.name")
-
-    @Mapping(target = "currentStageId", source = "currentStage.id")
-    @Mapping(target = "currentStageName", source = "currentStage.name")
-
-    @Mapping(target = "statusId", source = "status.statusId")
-    @Mapping(target = "statusName", source = "status.statusName")
-
-    @Mapping(target = "actionId", source = "action.id")
-    @Mapping(target = "actionName", source = "action.name")
-
-    @Mapping(target = "createdAt", source = "createdAt", qualifiedByName = "timestampToLocalDateTime")
-    @Mapping(target = "updatedAt", source = "updatedAt", qualifiedByName = "timestampToLocalDateTime")
-
-    ClaimApplicationResponseDto toResponseDto(ClaimApplication entity);
-
 
     // ---------- Request -> Entity ----------
     @Mapping(target = "id", ignore = true)

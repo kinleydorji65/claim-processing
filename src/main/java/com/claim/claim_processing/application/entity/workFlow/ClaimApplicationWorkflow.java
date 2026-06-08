@@ -7,16 +7,14 @@ import java.sql.Timestamp;
 
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.ActionMaster;
-import com.claim.claim_processing.common.entities.common.DecisionMaster;
 import com.claim.claim_processing.common.entities.common.NppfOfficeMaster;
 import com.claim.claim_processing.common.entities.common.StageMaster;
-import com.claim.claim_processing.common.entities.common.WorkflowReasonMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 @Entity
 @Table(
         name = "CLAIM_APPLICATION_WORKFLOW",
-        schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA"
+        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA"
 )
 @Getter
 @Setter
@@ -27,6 +25,7 @@ public class ClaimApplicationWorkflow {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,56 +36,32 @@ public class ClaimApplicationWorkflow {
     )
     private ClaimApplication claimApplication;
 
-    @Column(name = "WORKFLOW_LEVEL")
-    private Integer workflowLevel;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FROM_STAGE_ID")
+    private StageMaster fromStage;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "WORKFLOW_STAGE_ID",
-            foreignKey = @ForeignKey(name = "FK_CAW_STAGE")
-    )
-    private StageMaster workflowStage;
+    @JoinColumn(name = "TO_STAGE_ID")
+    private StageMaster toStage;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "FROM_STATUS_ID",
-            foreignKey = @ForeignKey(name = "FK_CAW_FROM_STATUS")
-    )
+    @JoinColumn(name = "FROM_STATUS_ID")
     private StatusMaster fromStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "TO_STATUS_ID",
-            foreignKey = @ForeignKey(name = "FK_CAW_TO_STATUS")
-    )
+    @JoinColumn(name = "TO_STATUS_ID")
     private StatusMaster toStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "ACTION_ID",
-            foreignKey = @ForeignKey(name = "FK_CAW_ACTION")
-    )
+    @JoinColumn(name = "ACTION_ID")
     private ActionMaster action;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "DECISION_ID",
-            foreignKey = @ForeignKey(name = "FK_CAW_DECISION")
-    )
-    private DecisionMaster decision;
-
-    @Column(name = "RETURN_REASON", length = 1000)
-    private String returnReason;
-
-    @Column(name = "REJECTION_REASON", length = 1000)
-    private String rejectionReason;
+    @Column(name = "REASON", length = 1000)
+    private String reason;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "APPROVAL_REASON_ID",
-            foreignKey = @ForeignKey(name = "FK_CAW_APPROVAL_REASON")
-    )
-    private WorkflowReasonMaster approvalReason;
+    @JoinColumn(name = "OFFICE_ID")
+    private NppfOfficeMaster office;
 
     @Column(name = "ACTION_BY", length = 100)
     private String actionBy;
@@ -94,33 +69,22 @@ public class ClaimApplicationWorkflow {
     @Column(name = "ACTION_AT")
     private Timestamp actionAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "OFFICE_ID",
-            foreignKey = @ForeignKey(name = "FK_CACS_NPPF_OFFICE")
-    )
-    private NppfOfficeMaster office;
-
-    @Column(name = "REFERENCE_NUMBER", length = 100)
-    private String referenceNumber;
-
-    @Column(name = "REMARKS", length = 1000)
-    private String remarks;
-
-    @Column(name = "CREATED_AT", insertable = false, updatable = false)
+    @Column(name = "CREATED_AT")
     private Timestamp createdAt;
-
-    @Column(name = "UPDATED_AT", insertable = false, updatable = false)
-    private Timestamp updatedAt;
 
     @PrePersist
     public void prePersist() {
-        createdAt = new Timestamp(System.currentTimeMillis());
-        updatedAt = new Timestamp(System.currentTimeMillis());
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+
+        if (actionAt == null) {
+            actionAt = now;
+        }
+
+        createdAt = now;
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = new Timestamp(System.currentTimeMillis());
+        actionAt = new Timestamp(System.currentTimeMillis());
     }
 }

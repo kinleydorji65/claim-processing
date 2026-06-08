@@ -18,7 +18,5 @@ public class RentalAdjustmentDetailDto {
 
     private BigDecimal adjustedAmount;
 
-    private BigDecimal remainingOutstandingAmount;
-
-    private String status;
+    private BigDecimal appliedPercentageAmount;
 }

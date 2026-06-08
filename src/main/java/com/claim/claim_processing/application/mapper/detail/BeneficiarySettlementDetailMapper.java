@@ -16,22 +16,11 @@ public interface BeneficiarySettlementDetailMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "claimApplication", ignore = true)
-    @Mapping(target = "beneficiaryClaimantDetails", ignore = true)
     @Mapping(target = "cessationType", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     BeneficiarySettlementDetail toEntity(
             BeneficiarySettlementDetailRequestDto dto
-    );
-
-    /**
-     * ENTITY -> RESPONSE DTO
-     */
-    @Mapping(target = "claimApplicationId", source = "claimApplication.id")
-    @Mapping(target = "cessationTypeId", source = "cessationType.id")
-    @Mapping(target = "cessationTypeName", source = "cessationType.name")
-    BeneficiarySettlementResponseDto toResponseDto(
-            BeneficiarySettlementDetail entity
     );
 
     /**
@@ -43,7 +32,6 @@ public interface BeneficiarySettlementDetailMapper {
     )
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "claimApplication", ignore = true)
-    @Mapping(target = "beneficiaryClaimantDetails", ignore = true)
     @Mapping(target = "cessationType", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)

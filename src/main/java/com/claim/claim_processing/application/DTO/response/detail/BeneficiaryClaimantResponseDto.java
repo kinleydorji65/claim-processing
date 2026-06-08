@@ -18,7 +18,6 @@ public class BeneficiaryClaimantResponseDto {
 
     private Long beneficiarySettlementDetailId;
 
-    // ---------- Relationships ----------
     private Long nomineeId;
     private String nomineeFirstName;
     private String nomineeMiddleName;
@@ -35,34 +34,30 @@ public class BeneficiaryClaimantResponseDto {
     private Long payeeTypeId;
     private String payeeTypeName;
 
-    private String beneficiaryIdentifier;
-
     private Long relationshipTypeId;
     private String relationshipTypeName;
 
+    private String beneficiaryIdentifier;
+
     private String beneficiaryName;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateOfBirth;
 
     private BigDecimal beneficiarySharePercentage;
 
-    // ---------- Business Fields ----------
-    private Integer priorityOrder;
-
     private ActivityEnum isMemberFamily;
+
     private ActivityEnum isMinor;
 
     private String guardianName;
+
     private String guardianIdentifier;
 
     private BigDecimal benefitAmount;
 
-    private ActivityEnum isEligible;
-    private ActivityEnum isSelected;
-
     private String remarks;
 
-    // ---------- Audit ----------
     private String createdBy;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

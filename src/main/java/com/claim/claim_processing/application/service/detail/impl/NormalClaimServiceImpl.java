@@ -35,18 +35,17 @@ public class NormalClaimServiceImpl implements NormalClaimService {
     private final NormalClaimMapper normalClaimMapper;
 
     @Override
-    public ApiResponseDTO<NormalClaimResponseDto> create(NormalClaimRequestDto request) {
+    public NormalClaimDetail create(ClaimApplication claimApplication, NormalClaimRequestDto request) {
 
         validateRequired(request);
 
-        if (normalClaimDetailRepository.existsByClaimApplication_Id(request.getClaimApplicationId())) {
+        if (normalClaimDetailRepository.existsByClaimApplication_Id(claimApplication.getId())) {
             throw ClaimException.conflict(
                     "Normal claim detail already exists for claim application id: "
-                            + request.getClaimApplicationId()
+                            + claimApplication.getId()
             );
         }
 
-        ClaimApplication claimApplication = getClaimApplication(request.getClaimApplicationId());
         CessationTypeMaster cessationType = getCessationType(request.getCessationTypeId());
         PayeeTypeMaster payeeType = getPayeeType(request.getPayeeTypeId());
 
@@ -61,33 +60,33 @@ public class NormalClaimServiceImpl implements NormalClaimService {
 
         NormalClaimDetail saved = normalClaimDetailRepository.save(entity);
 
-        return ApiResponseDTO.created(normalClaimMapper.toResponseDto(saved));
+        return saved;
     }
 
     @Override
-    public ApiResponseDTO<NormalClaimResponseDto> update(Long id, NormalClaimRequestDto request) {
+    public NormalClaimDetail update(ClaimApplication claimApplication, NormalClaimRequestDto request) {
 
-        NormalClaimDetail existing = normalClaimDetailRepository.findById(id)
+        NormalClaimDetail existing = normalClaimDetailRepository.findById(request.getNormalClaimId())
                 .orElseThrow(() -> ClaimException.resourceNotFound(
                         "Normal claim detail",
-                        id.toString()
+                        request.getNormalClaimId().toString()
                 ));
 
-        if (request.getClaimApplicationId() != null) {
+        if (claimApplication != null) {
             boolean duplicate = normalClaimDetailRepository
-                    .existsByClaimApplication_IdAndIdNot(request.getClaimApplicationId(), id);
+                    .existsByClaimApplication_IdAndIdNot(claimApplication.getId(), request.getNormalClaimId());
 
             if (duplicate) {
                 throw ClaimException.conflict(
                         "Normal claim detail already exists for claim application id: "
-                                + request.getClaimApplicationId()
+                                + claimApplication.getId()
                 );
             }
         }
         normalClaimMapper.updateEntityFromDto(request, existing);
 
-        if (request.getClaimApplicationId() != null) {
-            existing.setClaimApplication(getClaimApplication(request.getClaimApplicationId()));
+        if (claimApplication != null) {
+            existing.setClaimApplication(claimApplication);
         }
 
         if (request.getCessationTypeId() != null) {
@@ -108,64 +107,10 @@ public class NormalClaimServiceImpl implements NormalClaimService {
 
         NormalClaimDetail updated = normalClaimDetailRepository.save(existing);
 
-        return ApiResponseDTO.success(
-                "Normal claim detail updated successfully",
-                normalClaimMapper.toResponseDto(updated)
-        );
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ApiResponseDTO<NormalClaimResponseDto> getById(Long id) {
-
-        NormalClaimDetail entity = normalClaimDetailRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Normal claim detail",
-                        id.toString()
-                ));
-        return ApiResponseDTO.success(
-                "Normal claim detail fetched successfully",
-                normalClaimMapper.toResponseDto(entity)
-        );
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ApiResponseDTO<NormalClaimResponseDto> getByClaimApplicationId(Long claimApplicationId) {
-
-        NormalClaimDetail entity = normalClaimDetailRepository.findByClaimApplication_Id(claimApplicationId)
-                .orElseThrow(() -> new RuntimeException(
-                        "Normal claim detail not found for claim application id: " + claimApplicationId
-                ));
-
-        return ApiResponseDTO.success(
-                "Normal claim detail fetched successfully",
-                normalClaimMapper.toResponseDto(entity)
-        );
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ApiResponseDTO<List<NormalClaimResponseDto>> getAll() {
-
-        List<NormalClaimResponseDto> response = normalClaimDetailRepository.findAll()
-                .stream()
-                .map(normalClaimMapper::toResponseDto)
-                .toList();
-        if (response.isEmpty()) {
-            throw ClaimException.notFound("No normal claim details found");
-        }
-        return ApiResponseDTO.success("Normal claim details fetched successfully", response);
+        return updated;
     }
 
     private void validateRequired(NormalClaimRequestDto request) {
-
-        if (request.getClaimApplicationId() == null) {
-            throw ClaimException.singleValidationError(
-                    "claimApplicationId",
-                    "Claim application id is required"
-            );
-        }
 
         if (request.getCessationTypeId() == null) {
             throw ClaimException.singleValidationError(

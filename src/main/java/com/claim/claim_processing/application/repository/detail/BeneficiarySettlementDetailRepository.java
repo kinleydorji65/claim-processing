@@ -15,6 +15,4 @@ public interface BeneficiarySettlementDetailRepository
     Optional<BeneficiarySettlementDetail> findByClaimApplication_Id(Long claimApplicationId);
 
     void deleteByClaimApplication_Id(Long claimApplicationId);
-
-    Optional<BeneficiarySettlementDetail> findByDeceasedMemberCode(String deceasedMemberCode);
 }

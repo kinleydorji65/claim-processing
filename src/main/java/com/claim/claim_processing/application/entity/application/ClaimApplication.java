@@ -195,6 +195,10 @@ public class ClaimApplication {
 
     @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    private List<ClaimApplicationForfeitedComponent> forfeitedComponents = new ArrayList<>();
+
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ClaimApplicationWorkflow> workflows = new ArrayList<>();
 
 

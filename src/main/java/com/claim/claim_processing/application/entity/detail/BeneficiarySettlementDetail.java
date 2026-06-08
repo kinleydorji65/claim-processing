@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -32,42 +33,15 @@ public class BeneficiarySettlementDetail {
     @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true)
     private ClaimApplication claimApplication;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "BENEFICIARY_CLAIMANT_DETAIL_ID",
-            nullable = false
-    )
-    private List<BeneficiaryClaimantDetail> beneficiaryClaimantDetails;
-    
-    @Column(name = "PF_JOINING_DATE")
-    private LocalDate pfJoiningDate;
-
-    @Column(name = "PENSION_JOINING_DATE")
-    private LocalDate pensionJoiningDate;
     @Column(name = "DATE_OF_DEATH")
     private LocalDate dateOfDeath;
-
-    @Column(name = "SERVICE_JOINING_DATE")
-    private LocalDate serviceJoiningDate;
 
     @Column(name = "LAST_CONTRIBUTION_DATE")
     private LocalDate lastContributionDate;
 
-    @Column(name = "NON_CONTRIBUTION_MONTHS")
-    private Integer nonContributionMonths;
-
-    /**
-     * Usually DEATH for beneficiary settlement
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CESSATION_TYPE_ID")
     private CessationTypeMaster cessationType;
-
-    @Column(name = "DECEASED_MEMBER_CODE", length = 100)
-    private String deceasedMemberCode;
-
-    @Column(name = "DECEASED_NPPF_NUMBER", length = 100)
-    private String deceasedNppfNumber;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
@@ -80,6 +54,14 @@ public class BeneficiarySettlementDetail {
 
     @Column(name = "UPDATED_AT", insertable = false)
     private Timestamp updatedAt;
+
+    @OneToMany(
+        mappedBy = "beneficiarySettlementDetail",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+)
+@Builder.Default
+private List<BeneficiaryClaimantDetail> claimantDetails = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

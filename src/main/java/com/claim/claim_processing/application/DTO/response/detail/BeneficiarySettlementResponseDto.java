@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,34 +15,32 @@ public class BeneficiarySettlementResponseDto {
 
     private Long id;
 
-    // ---------- Parent ----------
+    // Parent
     private Long claimApplicationId;
+    private String applicationNumber;
 
-    private List<BeneficiaryClaimantResponseDto> beneficiaryClaimantDetails;  
+    // Claimants
+    private List<BeneficiaryClaimantResponseDto> beneficiaryClaimantDetails;
 
-    // ---------- Master ----------
+    // Master
     private Long cessationTypeId;
     private String cessationTypeName;
 
-    // ---------- Dates ----------
-    private LocalDate pfJoiningDate;
-    private LocalDate pensionJoiningDate;
-
+    // Dates
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateOfDeath;
-    private LocalDate serviceJoiningDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate lastContributionDate;
 
-    private String deceasedMemberCode;
-
-    private String deceasedNppfNumber;
-
-    // ---------- Business ----------
-    private Integer nonContributionMonths;
-
-    // ---------- Audit ----------
+    // Audit
     private String createdBy;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     private String updatedBy;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 }

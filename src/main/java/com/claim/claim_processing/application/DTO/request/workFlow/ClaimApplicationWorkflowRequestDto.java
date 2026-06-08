@@ -8,32 +8,12 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ClaimApplicationWorkflowRequestDto {
-
-    private Long claimApplicationId;
-
-    private Integer workflowLevel;
-
-    private Long workflowStageId;
-
+    private Long fromStageId;
+    private Long toStageId;
     private Long fromStatusId;
-
     private Long toStatusId;
-
     private Long actionId;
-
-    private Long decisionId;
-
-    private String returnReason;
-
-    private String rejectionReason;
-
-    private Long approvalReasonId;
-
-    private String actionBy;
-
+    private String reason;
     private Long officeId;
-
-    private String referenceNumber;
-
-    private String remarks;
+    private String actionBy;
 }

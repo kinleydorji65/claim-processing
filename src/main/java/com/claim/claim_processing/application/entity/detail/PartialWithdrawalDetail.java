@@ -10,10 +10,8 @@ import java.time.LocalDate;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 import com.claim.claim_processing.common.entities.partial.BusinessTypeMaster;
-import com.claim.claim_processing.common.entities.partial.DisasterTypeMaster;
-import com.claim.claim_processing.common.entities.partial.PartialWithdrawalCauseMaster;
 import com.claim.claim_processing.common.entities.partial.PartialWithdrawalReasonMaster;
-import com.claim.claim_processing.common.entities.partial.PartialWithdrawalRuleMaster;
+import com.claim.claim_processing.common.entities.partial.UnemploymentCauseMaster;
 
 @Entity
 @Table(
@@ -41,17 +39,7 @@ public class PartialWithdrawalDetail {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
     private PayeeTypeMaster payeeType;
-    
-    @Column(name = "PF_JOINING_DATE")
-    private LocalDate pfJoiningDate;
 
-    @Column(name = "PENSION_JOINING_DATE")
-    private LocalDate pensionJoiningDate;
-
-    /**
-     * Main reason:
-     * UNEMPLOYMENT / BUSINESS_INVESTMENT / HOUSING
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "WITHDRAWAL_REASON_ID", nullable = false)
     private PartialWithdrawalReasonMaster withdrawalReason;
@@ -62,17 +50,11 @@ public class PartialWithdrawalDetail {
     @Column(name = "ACTUAL_WITHDRAWAL_AMOUNT", precision = 15, scale = 2)
     private BigDecimal actualWithdrawalAmount;
 
-    @Column(name = "REASON_DESCRIPTION", length = 1000)
-    private String reasonDescription;
-
     /**
      * Unemployment details
      */
     @Column(name = "UNEMPLOYMENT_START_DATE")
     private LocalDate unemploymentStartDate;
-
-    @Column(name = "UNEMPLOYMENT_DURATION_MONTHS")
-    private Integer unemploymentDurationMonths;
 
     /**
      * Disability details
@@ -84,8 +66,8 @@ public class PartialWithdrawalDetail {
      * Disaster details
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "DISASTER_TYPE_ID")
-    private DisasterTypeMaster disasterType;
+    @JoinColumn(name = "UNEMPLOYMENT_CAUSE_ID")
+    private UnemploymentCauseMaster unemploymentCauseMaster;
 
     @Column(name = "INCIDENT_DATE")
     private LocalDate incidentDate;

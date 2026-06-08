@@ -83,10 +83,10 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     }
 
     @Override
-    public ClaimApplication update(Long id, ClaimApplicationRequestDto request) {
+    public ClaimApplication update(ClaimApplicationRequestDto request) {
 
-        ClaimApplication existing = claimApplicationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Claim application not found with id: " + id));
+        ClaimApplication existing = claimApplicationRepository.findById(request.getApplicationId())
+                .orElseThrow(() -> new RuntimeException("Claim application not found with id: " + request.getApplicationId()));
 
         claimApplicationMapper.updateEntityFromDto(request, existing);
 

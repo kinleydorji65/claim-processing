@@ -31,16 +31,25 @@ public class ClaimApplicationWorkflowMapper {
                                 : null
                 )
 
-                .workflowLevel(entity.getWorkflowLevel())
-
-                .workflowStageId(
-                        entity.getWorkflowStage() != null
-                                ? entity.getWorkflowStage().getId()
+                .fromStageId(
+                        entity.getFromStage() != null
+                                ? entity.getFromStage().getId()
                                 : null
                 )
-                .workflowStageName(
-                        entity.getWorkflowStage() != null
-                                ? entity.getWorkflowStage().getName()
+                .fromStageName(
+                        entity.getFromStage() != null
+                                ? entity.getFromStage().getName()
+                                : null
+                )
+
+                .toStageId(
+                        entity.getToStage() != null
+                                ? entity.getToStage().getId()
+                                : null
+                )
+                .toStageName(
+                        entity.getToStage() != null
+                                ? entity.getToStage().getName()
                                 : null
                 )
 
@@ -76,37 +85,9 @@ public class ClaimApplicationWorkflowMapper {
                                 ? entity.getAction().getName()
                                 : null
                 )
-
-                .decisionId(
-                        entity.getDecision() != null
-                                ? entity.getDecision().getId()
-                                : null
-                )
-                .decisionName(
-                        entity.getDecision() != null
-                                ? entity.getDecision().getName()
-                                : null
-                )
-
-                .returnReason(entity.getReturnReason())
-                .rejectionReason(entity.getRejectionReason())
-
-                .approvalReasonId(
-                        entity.getApprovalReason() != null
-                                ? entity.getApprovalReason().getId()
-                                : null
-                )
-                .approvalReasonName(
-                        entity.getApprovalReason() != null
-                                ? entity.getApprovalReason().getName()
-                                : null
-                )
-
-                .actionBy(entity.getActionBy())
-
-                .actionAt(
-                        entity.getActionAt() != null
-                                ? entity.getActionAt().toLocalDateTime()
+                .reason(
+                        entity.getReason() != null
+                                ? entity.getReason()
                                 : null
                 )
 
@@ -121,18 +102,16 @@ public class ClaimApplicationWorkflowMapper {
                                 : null
                 )
 
-                .referenceNumber(entity.getReferenceNumber())
-                .remarks(entity.getRemarks())
+                .actionBy(entity.getActionBy())
+                .actionAt(
+                        entity.getActionAt() != null
+                                ? entity.getActionAt().toLocalDateTime()
+                                : null
+                )
 
                 .createdAt(
                         entity.getCreatedAt() != null
                                 ? entity.getCreatedAt().toLocalDateTime()
-                                : null
-                )
-
-                .updatedAt(
-                        entity.getUpdatedAt() != null
-                                ? entity.getUpdatedAt().toLocalDateTime()
                                 : null
                 )
 

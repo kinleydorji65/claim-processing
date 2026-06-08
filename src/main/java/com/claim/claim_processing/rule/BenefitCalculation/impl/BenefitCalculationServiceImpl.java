@@ -71,6 +71,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     private final MemberService memberService;
     private final RentalDetailService rentalDetailService;
     private final RentalDeductionMappingRepository rentalDeductionMappingRepository;
+    private final RentalMasterRepository rentalMasterRepository;
     private final LoanTypeRepository loanTypeRepository;
 
     @Override
@@ -355,37 +356,30 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
             availableAmount != null ? availableAmount : BigDecimal.ZERO;
 
     BigDecimal totalRentalAdjustedAmount = BigDecimal.ZERO;
-
     List<RentalAdjustmentDetailDto> adjustmentDetails = new ArrayList<>();
 
     if (nppfNumber == null || nppfNumber.isBlank()) {
-        return RentalAdjustmentResultDto.builder()
-                .totalAdjustedAmount(BigDecimal.ZERO)
-                .finalPayableAmount(remainingPayableAmount)
-                .deductions(Collections.emptyList())
-                .adjustmentNote("NPPF number is missing.")
-                .build();
+        return buildEmptyRentalResult(
+                remainingPayableAmount,
+                "NPPF number is missing."
+        );
     }
 
     if (ruleTypeIds == null || ruleTypeIds.isEmpty()) {
-        return RentalAdjustmentResultDto.builder()
-                .totalAdjustedAmount(BigDecimal.ZERO)
-                .finalPayableAmount(remainingPayableAmount)
-                .deductions(Collections.emptyList())
-                .adjustmentNote("No rental deduction rule found for this claim type.")
-                .build();
+        return buildEmptyRentalResult(
+                remainingPayableAmount,
+                "No rental deduction rule found for this claim type."
+        );
     }
 
     List<RentalDetailResponseDto> rentalDetails =
             rentalDetailService.getRentalDetails(nppfNumber).getData();
 
     if (rentalDetails == null || rentalDetails.isEmpty()) {
-        return RentalAdjustmentResultDto.builder()
-                .totalAdjustedAmount(BigDecimal.ZERO)
-                .finalPayableAmount(remainingPayableAmount)
-                .deductions(Collections.emptyList())
-                .adjustmentNote("No outstanding rental found.")
-                .build();
+        return buildEmptyRentalResult(
+                remainingPayableAmount,
+                "No outstanding rental found."
+        );
     }
 
     LocalDate today = LocalDate.now();
@@ -396,7 +390,6 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                     .filter(Objects::nonNull)
                     .filter(mapping -> mapping.getRentalType() != null)
                     .filter(mapping -> mapping.getRentalType().getId() != null)
-                    .filter(mapping -> mapping.getRentalType().getRentalType() != null)
                     .filter(mapping -> mapping.getEffectiveFrom() != null)
                     .filter(mapping -> !mapping.getEffectiveFrom().isAfter(today))
                     .filter(mapping -> mapping.getEffectiveTo() == null
@@ -404,50 +397,44 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                     .toList();
 
     if (mappings.isEmpty()) {
-        return RentalAdjustmentResultDto.builder()
-                .totalAdjustedAmount(BigDecimal.ZERO)
-                .finalPayableAmount(remainingPayableAmount)
-                .deductions(Collections.emptyList())
-                .adjustmentNote("No active rental deduction mapping found.")
-                .build();
+        return buildEmptyRentalResult(
+                remainingPayableAmount,
+                "No active rental deduction mapping found."
+        );
     }
 
-    Map<String, RentalDeductionMapping> mappingMap =
+    Map<Long, RentalDeductionMapping> mappingByRentalTypeId =
             mappings.stream()
                     .collect(Collectors.toMap(
-                            mapping -> normalizeName(mapping.getRentalType().getRentalType()),
+                            mapping -> mapping.getRentalType().getId(),
                             mapping -> mapping,
                             (oldValue, newValue) -> oldValue
                     ));
 
-    List<RentalDetailResponseDto> applicableRentalDetails =
-            rentalDetails.stream()
-                    .filter(Objects::nonNull)
-                    .filter(rental -> rental.getRentalType() != null)
-                    .filter(rental -> rental.getOutstandingAmount() != null)
-                    .filter(rental -> rental.getOutstandingAmount().compareTo(BigDecimal.ZERO) > 0)
-                    .filter(rental -> mappingMap.containsKey(
-                            normalizeName(rental.getRentalType())
-                    ))
-                    .toList();
-
-    if (applicableRentalDetails.isEmpty()) {
-        return RentalAdjustmentResultDto.builder()
-                .totalAdjustedAmount(BigDecimal.ZERO)
-                .finalPayableAmount(remainingPayableAmount)
-                .deductions(Collections.emptyList())
-                .adjustmentNote("No applicable outstanding rental found for deduction.")
-                .build();
-    }
-
-    for (RentalDetailResponseDto rental : applicableRentalDetails) {
+    for (RentalDetailResponseDto rental : rentalDetails) {
 
         if (remainingPayableAmount.compareTo(BigDecimal.ZERO) <= 0) {
             break;
         }
 
+        if (rental == null
+                || rental.getRentalType() == null
+                || rental.getOutstandingAmount() == null
+                || rental.getOutstandingAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            continue;
+        }
+
+        RentalMaster rentalMaster =
+                rentalMasterRepository
+                        .findByRentalTypeIgnoreCase(rental.getRentalType())
+                        .orElse(null);
+
+        if (rentalMaster == null) {
+            continue;
+        }
+
         RentalDeductionMapping mapping =
-                mappingMap.get(normalizeName(rental.getRentalType()));
+                mappingByRentalTypeId.get(rentalMaster.getId());
 
         if (mapping == null) {
             continue;
@@ -455,11 +442,18 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
         BigDecimal outstandingAmount = rental.getOutstandingAmount();
 
-        BigDecimal adjustedAmount =
-                remainingPayableAmount.min(outstandingAmount);
+        BigDecimal deductionPercentage =
+                mapping.getPercentage() != null
+                        ? mapping.getPercentage()
+                        : BigDecimal.valueOf(100);
 
-        BigDecimal remainingOutstandingAmount =
-                outstandingAmount.subtract(adjustedAmount);
+        BigDecimal allowedDeductionAmount =
+                outstandingAmount
+                        .multiply(deductionPercentage)
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+        BigDecimal adjustedAmount =
+                remainingPayableAmount.min(allowedDeductionAmount);
 
         remainingPayableAmount =
                 remainingPayableAmount.subtract(adjustedAmount);
@@ -469,17 +463,19 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
         adjustmentDetails.add(
                 RentalAdjustmentDetailDto.builder()
-                        .rentalId(mapping.getRentalType().getId())
-                        .rentalName(mapping.getRentalType().getRentalType())
+                        .rentalId(rentalMaster.getId())
+                        .rentalName(rentalMaster.getRentalType())
                         .outstandingAmount(outstandingAmount)
                         .adjustedAmount(adjustedAmount)
-                        .remainingOutstandingAmount(remainingOutstandingAmount)
-                        .status(
-                                remainingOutstandingAmount.compareTo(BigDecimal.ZERO) == 0
-                                        ? "FULLY_ADJUSTED"
-                                        : "PARTIALLY_ADJUSTED"
-                        )
+                        .appliedPercentageAmount(deductionPercentage)
                         .build()
+        );
+    }
+
+    if (adjustmentDetails.isEmpty()) {
+        return buildEmptyRentalResult(
+                availableAmount != null ? availableAmount : BigDecimal.ZERO,
+                "No applicable outstanding rental found for deduction."
         );
     }
 
@@ -493,6 +489,18 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                             + ". Final payable amount: "
                             + remainingPayableAmount
             )
+            .build();
+}
+
+private RentalAdjustmentResultDto buildEmptyRentalResult(
+        BigDecimal finalPayableAmount,
+        String note
+) {
+    return RentalAdjustmentResultDto.builder()
+            .totalAdjustedAmount(BigDecimal.ZERO)
+            .finalPayableAmount(finalPayableAmount)
+            .deductions(Collections.emptyList())
+            .adjustmentNote(note)
             .build();
 }
 

@@ -13,48 +13,51 @@ public class ClaimApplicationWorkflowResponseDto {
 
     private Long id;
 
+    // ----------------------------
+    // Claim Application
+    // ----------------------------
     private Long claimApplicationId;
     private String applicationNumber;
 
-    private Integer workflowLevel;
+    // ----------------------------
+    // Stage Transition
+    // ----------------------------
+    private Long fromStageId;
+    private String fromStageName;
 
-    private Long workflowStageId;
-    private String workflowStageName;
+    private Long toStageId;
+    private String toStageName;
 
+    // ----------------------------
+    // Status Transition
+    // ----------------------------
     private Long fromStatusId;
     private String fromStatusName;
 
     private Long toStatusId;
     private String toStatusName;
 
+    // ----------------------------
+    // Action & Decision
+    // ----------------------------
     private Long actionId;
     private String actionName;
 
-    private Long decisionId;
-    private String decisionName;
+    private String reason;
 
-    private String returnReason;
+    // ----------------------------
+    // Office
+    // ----------------------------
+    private Long officeId;
+    private String officeName;
 
-    private String rejectionReason;
-
-    private Long approvalReasonId;
-    private String approvalReasonName;
-
+    // ----------------------------
+    // Workflow Action
+    // ----------------------------
     private String actionBy;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime actionAt;
-
-    private Long officeId;
-    private String officeName;
-
-    private String referenceNumber;
-
-    private String remarks;
-
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updatedAt;
 }
