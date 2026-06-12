@@ -2,9 +2,6 @@ package com.claim.claim_processing.application.entity.calculation;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
-import com.claim.claim_processing.rule.ruleProcessing.entities.rule.ClaimComponentMapping;
-import com.claim.claim_processing.rule.ruleProcessing.entities.rule.SubClaimMapping;
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,8 +28,7 @@ public class ClaimApplicationCalculationComponent {
     @ManyToOne(fetch = FetchType.LAZY)
 @JoinColumn(
         name = "RULE_EVALUATION_ID",
-        nullable = false,
-        foreignKey = @ForeignKey(name = "FK_CACC_RULE_EVAL")
+        nullable = false
 )
 private ClaimApplicationRuleEvaluation ruleEvaluation;
 
@@ -40,8 +36,7 @@ private ClaimApplicationRuleEvaluation ruleEvaluation;
 @JoinColumn(
         name = "COMPONENT_CODE",
         referencedColumnName = "CODE",
-        nullable = false,
-        foreignKey = @ForeignKey(name = "FK_CACC_COMPONENT")
+        nullable = false
 )
 private ComponentMaster componentMaster;
 

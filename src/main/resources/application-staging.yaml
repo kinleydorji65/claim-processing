@@ -69,6 +69,7 @@ app:
       path: /videos
   master:
     base-url: http://10.15.15.20:8082
+    # base-url: http://localhost:8082
     endpoints:
       types: /api/master-data/codes/types
       generate: /api/master-data/codes/generate

@@ -22,19 +22,6 @@ public class ClaimApplicationDeductionResponseMapper {
 
         return ClaimApplicationDeductionResponseDto.builder()
                 .id(entity.getId())
-
-                .deductionTypeId(
-                        entity.getDeductionType() != null
-                                ? entity.getDeductionType().getId()
-                                : null
-                )
-
-                .deductionTypeName(
-                        entity.getDeductionType() != null
-                                ? entity.getDeductionType().getName()
-                                : null
-                )
-
                 .outstandingAmount(entity.getOutstandingAmount())
                 .systemDeductedAmount(entity.getSystemDeductedAmount())
                 .verifiedDeductedAmount(entity.getVerifiedDeductedAmount())

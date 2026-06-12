@@ -1,6 +1,7 @@
 package com.claim.claim_processing.application.entity.detail;
 
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,10 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(
-        name = "BENEFICIARY_SETTLEMENT_DETAIL",
-        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA"
-)
+@Table(name = "BENEFICIARY_SETTLEMENT_DETAIL", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,6 +30,10 @@ public class BeneficiarySettlementDetail {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true)
     private ClaimApplication claimApplication;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CLAIM_DETAIL_ID", nullable = false, unique = true)
+    private ClaimDetail claimDetail;
 
     @Column(name = "DATE_OF_DEATH")
     private LocalDate dateOfDeath;
@@ -55,13 +57,9 @@ public class BeneficiarySettlementDetail {
     @Column(name = "UPDATED_AT", insertable = false)
     private Timestamp updatedAt;
 
-    @OneToMany(
-        mappedBy = "beneficiarySettlementDetail",
-        cascade = CascadeType.ALL,
-        orphanRemoval = true
-)
-@Builder.Default
-private List<BeneficiaryClaimantDetail> claimantDetails = new ArrayList<>();
+    @OneToMany(mappedBy = "beneficiarySettlementDetail", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<BeneficiaryClaimantDetail> claimantDetails = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

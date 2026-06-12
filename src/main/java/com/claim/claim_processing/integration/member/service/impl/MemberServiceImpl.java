@@ -20,64 +20,57 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MemberServiceImpl implements MemberService {
 
-    private final MemberDetailRepository memberDetailRepository;
-    private final MemberContributionService memberContributionService;
-    private final MemberDetailMapper memberDetailMapper;
+        private final MemberDetailRepository memberDetailRepository;
+        private final MemberContributionService memberContributionService;
+        private final MemberDetailMapper memberDetailMapper;
 
-    @Override
-    public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String nppfNumber) {
+        @Override
+        public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String nppfNumber) {
 
-        MemberContributionSummary contributionSummary =
-                memberContributionService.getContributionSummary(nppfNumber);
+                MemberContributionSummary contributionSummary = memberContributionService
+                                .getContributionSummary(nppfNumber);
 
-        MemberDetail memberDetail = memberDetailRepository
-                .findByNppfNumber(nppfNumber)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Member not found with NPPF number: " + nppfNumber));
+                MemberDetail memberDetail = memberDetailRepository
+                                .findByNppfNumber(nppfNumber)
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Member not found with NPPF number: " + nppfNumber));
 
-        MemberDetailResponseDto responseDto =
-                memberDetailMapper.toMemberDetailResponseDto(memberDetail);
+                MemberDetailResponseDto responseDto = memberDetailMapper.toMemberDetailResponseDto(memberDetail);
 
-        responseDto.setPfJoiningDate(contributionSummary.getPfJoiningDate());
-        responseDto.setPensionJoiningDate(contributionSummary.getPensionJoiningDate());
+                responseDto.setPfJoiningDate(contributionSummary.getPfJoiningDate());
+                responseDto.setPensionJoiningDate(contributionSummary.getPensionJoiningDate());
 
-        // =========================
-        // TOTAL BALANCE CALCULATION
-        // =========================
+                // =========================
+                // TOTAL BALANCE CALCULATION
+                // =========================
 
-        BigDecimal totalBalanceAmount = BigDecimal.ZERO;
-        BigDecimal totalBalanceWithoutInterestAmount = BigDecimal.ZERO;
+                BigDecimal totalBalanceAmount = BigDecimal.ZERO;
+                BigDecimal totalBalanceWithoutInterestAmount = BigDecimal.ZERO;
 
-        if (contributionSummary != null
-                && contributionSummary.getComponentGroups() != null) {
+                if (contributionSummary != null && contributionSummary.getComponentGroups() != null) {
 
-            totalBalanceAmount =
-        contributionSummary.getComponentGroups()
-                .stream()
-                .filter(Objects::nonNull)
-                .map(component ->
-                        nullSafe(component.getPrincipalAmount())
-                                .add(nullSafe(component.getInterestAmount())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        // CORRECT WAY: Use TotalAmount directly (already includes principal + interest)
+                        totalBalanceAmount = contributionSummary.getComponentGroups()
+                                        .stream()
+                                        .filter(Objects::nonNull)
+                                        .map(component -> nullSafe(component.getTotalAmount())) // Use getTotalAmount()
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-totalBalanceWithoutInterestAmount =
-        contributionSummary.getComponentGroups()
-                .stream()
-                .filter(Objects::nonNull)
-                .map(component ->
-                        nullSafe(component.getPrincipalAmount()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        // This is correct - sum only principal amounts
+                        totalBalanceWithoutInterestAmount = contributionSummary.getComponentGroups()
+                                        .stream()
+                                        .filter(Objects::nonNull)
+                                        .map(component -> nullSafe(component.getPrincipalAmount()))
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                }
+
+                responseDto.setTotalBalanceAmount(totalBalanceAmount);
+                responseDto.setTotalBalanceWithoutInterestAmount(totalBalanceWithoutInterestAmount);
+
+                return ApiResponseDTO.success(responseDto);
         }
 
-        responseDto.setTotalBalanceAmount(totalBalanceAmount);
-        responseDto.setTotalBalanceWithoutInterestAmount(
-                totalBalanceWithoutInterestAmount);
-
-        return ApiResponseDTO.success(responseDto);
-    }
-
-    private BigDecimal nullSafe(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
-    }
+        private BigDecimal nullSafe(BigDecimal value) {
+                return value == null ? BigDecimal.ZERO : value;
+        }
 }

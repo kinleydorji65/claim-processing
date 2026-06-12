@@ -3,16 +3,12 @@ package com.claim.claim_processing.application.entity.detail;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
-import com.claim.claim_processing.common.entities.adjustmentMaster.LoanStatusMaster;
-import com.claim.claim_processing.common.entities.adjustmentMaster.LoanTypeMaster;
+import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
-import com.claim.claim_processing.common.entities.contribution.SchemeType;
-import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 @Entity
@@ -30,68 +26,29 @@ public class LegalRecoveryDetail {
         private Long id;
 
         @OneToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true, foreignKey = @ForeignKey(name = "FK_LRD_CLAIM_APP"))
+        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true)
         private ClaimApplication claimApplication;
 
-        @Column(name = "LEGAL_CASE_REFERENCE_NUMBER", length = 100)
-        private String legalCaseReferenceNumber;
+        @OneToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "CLAIM_DETAIL_ID", nullable = false, unique = true)
+        private ClaimDetail claimDetail;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "RECOVERY_REASON_ID", foreignKey = @ForeignKey(name = "FK_LEGAL_RECOVERY_REASON"))
-        private RecoveryReasonMaster recoveryReason;
+        @Column(name = "JUDGEMENT_NUMBER", length = 100)
+        private String judgementNumber;
 
         @OneToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
         private PayeeTypeMaster payeeType;
-        
-        @Column(name = "PF_JOINING_DATE")
-        private LocalDate pfJoiningDate;
 
-        @Column(name = "PENSION_JOINING_DATE")
-        private LocalDate pensionJoiningDate;
+        @Column(name = "JUDGEMENT_DATE")
+        private LocalDate judgementDate;
 
-        @Column(name = "CASE_SETTLEMENT_DATE")
-        private LocalDate caseSettlementDate;
-
-        @Column(name = "RECOVERY_DATE")
-        private LocalDate recoveryDate;
-
-        @Column(name = "RECOVERY_REQUESTED_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal recoveryRequestedAmount;
-
-        @Column(name = "REMARKS", length = 1000)
-        private String remarks;
-
-        @Column(name = "MEMBER_CODE", length = 100)
-        private String memberCode;
-
-        @Column(name = "NPPF_NUMBER", length = 100)
-        private String nppfNumber;
-
-        @Column(name = "AGENCY_CODE", length = 100)
-        private String agencyCode;
+        @Column(name = "REASON", length = 1000)
+        private String reason;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "SCHEME_TYPE_ID", foreignKey = @ForeignKey(name = "FK_LRD_SCHEME_TYPE"))
-        private SchemeType schemeType;
-
-        @Column(name = "EMPLOYMENT_TYPE", length = 50)
-        private String employmentType;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CURRENT_STATUS_ID", foreignKey = @ForeignKey(name = "FK_LRD_CURRENT_STATUS"))
+        @JoinColumn(name = "CURRENT_STATUS_ID")
         private StatusMaster currentStatus;
-
-        @Column(name = "LOAN_ACCOUNT_NUMBER", length = 100)
-        private String loanAccountNumber;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "LOAN_TYPE_ID", foreignKey = @ForeignKey(name = "FK_LRD_LOAN_TYPE"))
-        private LoanTypeMaster loanType;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "LOAN_STATUS_ID", foreignKey = @ForeignKey(name = "FK_LRD_LOAN_STATUS"))
-        private LoanStatusMaster loanStatus;
 
         @Column(name = "CREATED_BY", length = 100)
         private String createdBy;

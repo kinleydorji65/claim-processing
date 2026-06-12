@@ -62,7 +62,7 @@ public class BeneficiarySettlementDetailServiceImpl
 
         entity.setClaimApplication(claimApplication);
 
-        if (request.getCessationTypeId() != null) {
+        if (request.getCessationTypeId() != null || request.getCessationTypeId() > 0) {
             CessationTypeMaster cessationType = cessationTypeMasterRepository
                     .findById(request.getCessationTypeId())
                     .orElseThrow(() -> ClaimException.resourceNotFound(
@@ -100,7 +100,7 @@ public class BeneficiarySettlementDetailServiceImpl
 
         mapper.patchEntity(entity, request);
 
-        if (request.getCessationTypeId() != null) {
+        if (request.getCessationTypeId() != null || request.getCessationTypeId() > 0) {
             CessationTypeMaster cessationType = cessationTypeMasterRepository
                     .findById(request.getCessationTypeId())
                     .orElseThrow(() -> ClaimException.resourceNotFound(

@@ -58,10 +58,6 @@ public class GeneralClaimResponseBuilderMapper {
 
                 .isSpecialCase(entity.getIsSpecialCase())
                 .isActive(entity.getIsActive())
-
-                .parentClaimApplicationId(entity.getParentClaimApplication() != null ? entity.getParentClaimApplication().getId() : null)
-                .parentApplicationNumber(entity.getParentClaimApplication() != null ? entity.getParentClaimApplication().getApplicationNumber() : null)
-
                 .specialCaseAuthorityId(entity.getSpecialCaseAuthority() != null ? entity.getSpecialCaseAuthority().getId() : null)
                 .specialCaseAuthorityName(entity.getSpecialCaseAuthority() != null ? entity.getSpecialCaseAuthority().getName() : null)
 
@@ -108,4 +104,6 @@ public class GeneralClaimResponseBuilderMapper {
 
         return response;
     }
+
+    
 }

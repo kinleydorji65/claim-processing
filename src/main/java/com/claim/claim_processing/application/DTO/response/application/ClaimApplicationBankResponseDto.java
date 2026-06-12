@@ -37,7 +37,6 @@ public class ClaimApplicationBankResponseDto {
     // Flags
     // ---------------------------------
     private ActivityEnum isDefaultBank;
-    private ActivityEnum isActive;
 
     private String verifiedBy;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

@@ -1,14 +1,12 @@
 package com.claim.claim_processing.application.service.detail.impl;
 
 import com.claim.claim_processing.application.DTO.request.detail.NormalClaimRequestDto;
-import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 import com.claim.claim_processing.application.mapper.detail.NormalClaimMapper;
 import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
 import com.claim.claim_processing.application.repository.detail.NormalClaimDetailRepository;
 import com.claim.claim_processing.application.service.detail.NormalClaimService;
-import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
@@ -89,7 +87,7 @@ public class NormalClaimServiceImpl implements NormalClaimService {
             existing.setClaimApplication(claimApplication);
         }
 
-        if (request.getCessationTypeId() != null) {
+        if (request.getCessationTypeId() != null || request.getCessationTypeId() > 0) {
             CessationTypeMaster cessationType = getCessationType(request.getCessationTypeId());
             existing.setCessationType(cessationType);
             validateByCessationType(request, cessationType.getCode());
@@ -97,11 +95,11 @@ public class NormalClaimServiceImpl implements NormalClaimService {
             validateByCessationTypeForUpdate(existing);
         }
 
-        if (request.getPayeeTypeId() != null) {
+        if (request.getPayeeTypeId() != null || request.getPayeeTypeId() > 0) {
             existing.setPayeeType(getPayeeType(request.getPayeeTypeId()));
         }
 
-        if (request.getTerminationReasonTypeId() != null) {
+        if (request.getTerminationReasonTypeId() != null || request.getTerminationReasonTypeId() > 0) {
             existing.setTerminationReasonType(getTerminationReasonIfPresent(request.getTerminationReasonTypeId()));
         }
 
@@ -347,7 +345,7 @@ public class NormalClaimServiceImpl implements NormalClaimService {
 
     private TerminationReasonMaster getTerminationReasonIfPresent(Long id) {
 
-        if (id == null) {
+        if (id == null || id == 0) {
             return null;
         }
 

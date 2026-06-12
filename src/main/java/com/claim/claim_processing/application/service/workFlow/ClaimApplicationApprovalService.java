@@ -1,26 +1,21 @@
-// package com.claim.claim_processing.application.service.workFlow;
+package com.claim.claim_processing.application.service.workFlow;
 
-// import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationApprovalRequestDto;
-// import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
+import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationApprovalRequestDto;
+import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 
-// import java.util.List;
+public interface ClaimApplicationApprovalService {
 
-// public interface ClaimApplicationApprovalService {
+    ClaimApplicationApprovalResponseDto patch(
+            Long claimApplicationId,
+            ClaimApplicationApprovalRequestDto request
+    );
 
-//     ClaimApplicationApprovalResponseDto create(
-//             ClaimApplicationApprovalRequestDto request
-//     );
+    ClaimApplicationApprovalResponseDto approve(
+            Long claimApplicationId,
+            ClaimApplicationApprovalRequestDto request
+    );
 
-//     ClaimApplicationApprovalResponseDto update(
-//             Long id,
-//             ClaimApplicationApprovalRequestDto request
-//     );
-
-//     ClaimApplicationApprovalResponseDto getById(Long id);
-
-//     List<ClaimApplicationApprovalResponseDto> getByClaimApplicationId(
-//             Long claimApplicationId
-//     );
-
-//     List<ClaimApplicationApprovalResponseDto> getAll();
-// }
+    ClaimApplicationApprovalResponseDto getByClaimApplicationId(
+            Long claimApplicationId
+    );
+}

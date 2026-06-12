@@ -1,22 +1,18 @@
 package com.claim.claim_processing.application.service.detail;
 
-import com.claim.claim_processing.application.DTO.request.detail.LegalRecoveryRequestDto;
-import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
-import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
+import com.claim.claim_processing.application.DTO.request.detail.LegalRecoveryDetailRequest;
+import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.application.entity.detail.LegalRecoveryDetail;
 
 import java.util.List;
 
 public interface LegalRecoveryService {
 
-    ApiResponseDTO<LegalRecoveryResponseDto> create(LegalRecoveryRequestDto request);
+    LegalRecoveryDetail create(LegalRecoveryDetailRequest request, ClaimApplication claimApplication);
 
-    ApiResponseDTO<LegalRecoveryResponseDto> update(Long id, LegalRecoveryRequestDto request);
+    LegalRecoveryDetail update(LegalRecoveryDetailRequest request, ClaimApplication claimApplication);
 
-    ApiResponseDTO<LegalRecoveryResponseDto> getById(Long id);
+    LegalRecoveryDetail getById(Long id);
 
-    ApiResponseDTO<LegalRecoveryResponseDto> getByClaimApplicationId(Long claimApplicationId);
-
-    ApiResponseDTO<List<LegalRecoveryResponseDto>> getAll();
-
-    ApiResponseDTO<Void> delete(Long id);
+    LegalRecoveryDetail getByClaimApplicationId(Long claimApplicationId);
 }

@@ -14,10 +14,8 @@ public class ClaimApplicationApprovalRequestDto {
 
     private Long claimApplicationId;
 
-    private Integer approvalLevel;
-
     private Long approvalStatusId;
-    private Long approvalDecisionId;
+    private Long actionId;
 
     private BigDecimal approvedAmount;
     private BigDecimal approvedPfAmount;
@@ -27,14 +25,10 @@ public class ClaimApplicationApprovalRequestDto {
     private BigDecimal approvedDeductionAmount;
     private BigDecimal finalNetPayableAmount;
 
-    private ActivityEnum requiresFinanceAction;
     private ActivityEnum requiresManualReview;
 
-    private String approvalReason;
-    private String returnedReason;
-    private String rejectedReason;
-
     private String approverRemarks;
+
     private String approvedBy;
     private String approvedByRole;
 

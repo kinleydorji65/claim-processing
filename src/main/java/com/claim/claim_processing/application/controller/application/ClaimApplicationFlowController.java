@@ -41,8 +41,14 @@ public class ClaimApplicationFlowController {
 
     @GetMapping("/{applicationId}")
     public ResponseEntity<ApiResponseDTO<GeneralClaimResponse>> findByApplicationId(
-            @PathVariable Long applicationId
+            @PathVariable String applicationId
     ) {
         return ResponseEntity.ok(claimApplicationFlowService.findByApplicationId(applicationId));
+    }
+    @GetMapping("/nppf/{nppfNumber}")
+    public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> findByNppfNumber(
+            @PathVariable String nppfNumber
+    ) {
+        return ResponseEntity.ok(claimApplicationFlowService.findByNppfNumber(nppfNumber));
     }
 }

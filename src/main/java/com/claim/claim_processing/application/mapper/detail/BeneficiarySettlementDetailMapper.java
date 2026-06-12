@@ -1,7 +1,6 @@
 package com.claim.claim_processing.application.mapper.detail;
 
 import com.claim.claim_processing.application.DTO.request.detail.BeneficiarySettlementDetailRequestDto;
-import com.claim.claim_processing.application.DTO.response.detail.BeneficiarySettlementResponseDto;
 import com.claim.claim_processing.application.entity.detail.BeneficiarySettlementDetail;
 import org.mapstruct.*;
 

@@ -19,6 +19,8 @@ public class BeneficiarySettlementResponseDto {
     private Long claimApplicationId;
     private String applicationNumber;
 
+    private Long claimDetailId;
+
     // Claimants
     private List<BeneficiaryClaimantResponseDto> beneficiaryClaimantDetails;
 

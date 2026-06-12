@@ -16,10 +16,6 @@ import java.util.List;
 public class ClaimApplicationDeductionResponseDto {
 
     private Long id;
-
-    private Long deductionTypeId;
-    private String deductionTypeName;
-
     private BigDecimal outstandingAmount;
     private BigDecimal systemDeductedAmount;
     private BigDecimal verifiedDeductedAmount;

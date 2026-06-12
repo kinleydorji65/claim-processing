@@ -27,8 +27,7 @@ public class ClaimApplicationForfeitedComponent {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "CLAIM_APPLICATION_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_CAFC_CLAIM_APP")
+            nullable = false
     )
     private ClaimApplication claimApplication;
 

@@ -33,38 +33,33 @@ public class BeneficiaryClaimantDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "NOMINEE_ID",
-            foreignKey = @ForeignKey(name = "FK_BCD_NOMINEE")
+            name = "NOMINEE_ID"
     )
     private MemberNominee nominee;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "DEPENDENT_ID",
-            foreignKey = @ForeignKey(name = "FK_BCD_DEPENDENT")
+            name = "DEPENDENT_ID"
     )
     private MemberFamily dependent;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "CLAIMANT_TYPE_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_BCD_CLAIMANT_TYPE")
+            nullable = false
     )
     private ClaimantTypeMaster claimantType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "BENEFICIARY_SETTLEMENT_DETAIL_ID",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "FK_BCD_SETTLEMENT")
+            nullable = false
     )
     private BeneficiarySettlementDetail beneficiarySettlementDetail;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "RELATIONSHIP_TYPE_ID",
-            foreignKey = @ForeignKey(name = "FK_BCD_RELATIONSHIP_TYPE")
+            name = "RELATIONSHIP_TYPE_ID"
     )
     private RelationType relationshipType;
 
@@ -81,7 +76,7 @@ public class BeneficiaryClaimantDetail {
     private BigDecimal beneficiarySharePercentage;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PAYEE_TYPE_ID", foreignKey = @ForeignKey(name = "FK_BCD_PAYEE_TYPE"))
+    @JoinColumn(name = "PAYEE_TYPE_ID")
     private PayeeTypeMaster payeeType;
 
     @Column(name = "IS_MEMBER_FAMILY", length = 1)

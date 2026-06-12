@@ -1,7 +1,6 @@
 package com.claim.claim_processing.application.service.detail.impl;
 
 import com.claim.claim_processing.application.DTO.request.detail.PartialWithdrawalRequestDto;
-import com.claim.claim_processing.application.DTO.response.detail.PartialWithdrawalResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.entity.detail.PartialWithdrawalDetail;
 import com.claim.claim_processing.application.mapper.detail.PartialWithdrawalMapper;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -76,12 +74,12 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
             existing.setWithdrawalReason(reason);
         }
 
-        if (request.getBusinessTypeId() != null) {
+        if (request.getBusinessTypeId() != null || request.getBusinessTypeId() > 0) {
             existing.setBusinessType(
                     getBusinessTypeIfPresent(request.getBusinessTypeId()));
         }
 
-        if (request.getUnemploymentCauseId() != null) {
+        if (request.getUnemploymentCauseId() != null || request.getUnemploymentCauseId() > 0) {
             existing.setUnemploymentCauseMaster(
                     getUnemploymentCauseIfPresent(request.getUnemploymentCauseId()));
         }

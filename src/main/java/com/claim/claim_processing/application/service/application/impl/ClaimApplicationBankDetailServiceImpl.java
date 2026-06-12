@@ -62,11 +62,12 @@ public class ClaimApplicationBankDetailServiceImpl
                                                 + request.getBankTypeId()));
                     }
 
-                    return claimApplicationBankDetailMapper.toEntity(
-                            request,
-                            claimApplication,
-                            claimantType,
-                            bankType);
+                        ClaimApplicationBankDetail claimApplicationBankDetail = claimApplicationBankDetailMapper.toEntity(request);
+                        claimApplicationBankDetail.setClaimApplication(claimApplication);
+                        claimApplicationBankDetail.setClaimantType(claimantType);
+                        claimApplicationBankDetail.setBankType(bankType);
+                        return claimApplicationBankDetail;
+
                 })
                 .toList();
 

@@ -28,19 +28,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
     private final ClaimApplicationRepository claimApplicationRepository;
     private final ClaimApplicationMapper claimApplicationMapper;
 
     private final ClaimTypeMasterRepository claimTypeMasterRepository;
-    private final ClaimSourceRepository claimSourceMasterRepository;
     private final SubmissionChannelRepository submissionChannelMasterRepository;
     private final SchemeTypeRepository schemeMasterRepository;
     private final AgencyCategoryRepository agencyCategoryRepository;
@@ -49,7 +46,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     private final StatusMasterRepository statusMasterRepository;
     private final ActionMasterRepository actionMasterRepository;
     private final MasterCodeGenClient masterCodeGenClient;
-    
+
     @Value("${app.codegen.application.code-type}")
     private String applicationCodeType;
 
@@ -63,21 +60,17 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
         ClaimApplication entity = claimApplicationMapper.toEntity(request);
 
-
         resolveAndSetForeignKeys(entity, request);
         entity.setApplicationNumber(
-                generateApplicationNumber(entity.getClaimType())
-        );
+                masterCodeGenClient.generateCode(applicationCodeType, claimPrefix));
         entity.setApplicationDate(
                 request.getApplicationDate() != null
                         ? request.getApplicationDate()
-                        : LocalDate.now()
-        );
-
+                        : LocalDate.now());
 
         applyCreateDefaults(entity, request);
 
-        ClaimApplication saved = claimApplicationRepository.save(entity);
+        ClaimApplication saved = claimApplicationRepository.saveAndFlush(entity);
 
         return saved;
     }
@@ -86,7 +79,8 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     public ClaimApplication update(ClaimApplicationRequestDto request) {
 
         ClaimApplication existing = claimApplicationRepository.findById(request.getApplicationId())
-                .orElseThrow(() -> new RuntimeException("Claim application not found with id: " + request.getApplicationId()));
+                .orElseThrow(() -> new RuntimeException(
+                        "Claim application not found with id: " + request.getApplicationId()));
 
         claimApplicationMapper.updateEntityFromDto(request, existing);
 
@@ -103,8 +97,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
         ClaimApplication entity = claimApplicationRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
-                        "Claim application not found with id: " + id
-                ));
+                        "Claim application not found with id: " + id));
 
         return entity;
     }
@@ -112,15 +105,13 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     @Override
     @Transactional(readOnly = true)
     public ClaimApplication getByApplicationNumber(
-            String applicationNumber
-    ) {
+            String applicationNumber) {
 
         ClaimApplication entity = claimApplicationRepository
                 .findByApplicationNumber(applicationNumber)
                 .orElseThrow(() -> ClaimException.notFound(
                         "Claim application not found with application number: "
-                                + applicationNumber
-                ));
+                                + applicationNumber));
 
         return entity;
     }
@@ -141,16 +132,13 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     @Override
     @Transactional(readOnly = true)
     public List<ClaimApplication> getByMemberCode(
-            String memberCode
-    ) {
+            String memberCode) {
 
-        List<ClaimApplication> response =
-                claimApplicationRepository.findByMemberCode(memberCode);
+        List<ClaimApplication> response = claimApplicationRepository.findByMemberCode(memberCode);
 
         if (response.isEmpty()) {
             throw ClaimException.notFound(
-                    "No claim applications found for member code: " + memberCode
-            );
+                    "No claim applications found for member code: " + memberCode);
         }
 
         return response;
@@ -159,16 +147,13 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     @Override
     @Transactional(readOnly = true)
     public List<ClaimApplication> getByNppfNumber(
-            String nppfNumber
-    ) {
+            String nppfNumber) {
 
-        List<ClaimApplication> response =
-                claimApplicationRepository.findByNppfNumber(nppfNumber);
+        List<ClaimApplication> response = claimApplicationRepository.findByNppfNumber(nppfNumber);
 
         if (response.isEmpty()) {
             throw ClaimException.notFound(
-                    "No claim applications found for NPPF number: " + nppfNumber
-            );
+                    "No claim applications found for NPPF number: " + nppfNumber);
         }
 
         return response;
@@ -197,11 +182,11 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
         entity.setClaimType(getClaimType(request.getClaimTypeId()));
 
-        if (request.getSubmissionChannelId() != null) {
+        if (request.getSubmissionChannelId() != null && request.getSubmissionChannelId() > 0) {
             entity.setSubmissionChannel(getSubmissionChannel(request.getSubmissionChannelId()));
         }
 
-        if (request.getSchemeTypeId() != null) {
+        if (request.getSchemeTypeId() != null && request.getSchemeTypeId() > 0) {
             entity.setSchemeType(getSchemeType(request.getSchemeTypeId()));
         }
 
@@ -209,45 +194,36 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
             entity.setMemberCategory(getMemberCategory(request.getMemberCategoryId()));
         }
 
-        if (hasValidId(request.getParentClaimApplicationId())) {
-            entity.setParentClaimApplication(getClaimApplication(request.getParentClaimApplicationId()));
-        }
-
-        if (request.getSpecialCaseAuthorityId() != null) {
+        if (request.getSpecialCaseAuthorityId() != null && request.getSpecialCaseAuthorityId() > 0) {
             entity.setSpecialCaseAuthority(getSpecialCaseAuthority(request.getSpecialCaseAuthorityId()));
         }
 
-        if (request.getCurrentStageId() != null) {
+        if (request.getCurrentStageId() != null && request.getCurrentStageId() > 0) {
             entity.setCurrentStage(getStage(request.getCurrentStageId()));
         }
 
-        if (request.getStatusId() != null) {
+        if (request.getStatusId() != null && request.getStatusId() > 0) {
             entity.setStatus(getStatus(request.getStatusId()));
         }
 
-        if (request.getActionId() != null) {
+        if (request.getActionId() != null && request.getActionId() > 0) {
             entity.setAction(getAction(request.getActionId()));
         }
     }
 
-    private boolean hasValidId(Long id) {
-        return id != null && id > 0;
-    }
-
     private void resolveAndSetForeignKeysForUpdate(
             ClaimApplication entity,
-            ClaimApplicationRequestDto request
-    ) {
+            ClaimApplicationRequestDto request) {
 
-        if (request.getClaimTypeId() != null) {
+        if (request.getClaimTypeId() != null && request.getClaimTypeId() > 0) {
             entity.setClaimType(getClaimType(request.getClaimTypeId()));
         }
 
-        if (request.getSubmissionChannelId() != null) {
+        if (request.getSubmissionChannelId() != null && request.getSubmissionChannelId() > 0) {
             entity.setSubmissionChannel(getSubmissionChannel(request.getSubmissionChannelId()));
         }
 
-        if (request.getSchemeTypeId() != null) {
+        if (request.getSchemeTypeId() != null && request.getSchemeTypeId() > 0) {
             entity.setSchemeType(getSchemeType(request.getSchemeTypeId()));
         }
 
@@ -255,40 +231,26 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
             entity.setMemberCategory(getMemberCategory(request.getMemberCategoryId()));
         }
 
-        if (request.getParentClaimApplicationId() != null) {
-
-            if (entity.getId().equals(request.getParentClaimApplicationId())) {
-                throw ClaimException.badRequest(
-                        "Parent claim application cannot be same as current application"
-                );
-            }
-
-            entity.setParentClaimApplication(
-                    getClaimApplication(request.getParentClaimApplicationId())
-            );
-        }
-
-        if (request.getSpecialCaseAuthorityId() != null) {
+        if (request.getSpecialCaseAuthorityId() != null && request.getSpecialCaseAuthorityId() > 0) {
             entity.setSpecialCaseAuthority(getSpecialCaseAuthority(request.getSpecialCaseAuthorityId()));
         }
 
-        if (request.getCurrentStageId() != null) {
+        if (request.getCurrentStageId() != null && request.getCurrentStageId() > 0) {
             entity.setCurrentStage(getStage(request.getCurrentStageId()));
         }
 
-        if (request.getStatusId() != null) {
+        if (request.getStatusId() != null && request.getStatusId() > 0) {
             entity.setStatus(getStatus(request.getStatusId()));
         }
 
-        if (request.getActionId() != null) {
+        if (request.getActionId() != null && request.getActionId() > 0) {
             entity.setAction(getAction(request.getActionId()));
         }
     }
 
     private void applyCreateDefaults(
             ClaimApplication entity,
-            ClaimApplicationRequestDto request
-    ) {
+            ClaimApplicationRequestDto request) {
 
         entity.setIsSpecialCase(defaultFlag(request.getIsSpecialCase()));
         entity.setIsActive(defaultFlagY(request.getIsActive()));
@@ -301,8 +263,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
             if (request.getInitiatedBy() == null || request.getInitiatedBy().isBlank()) {
                 throw ClaimException.badRequest(
-                        "Initiated by is required for createdBy defaulting"
-                );
+                        "Initiated by is required for createdBy defaulting");
             }
 
             entity.setCreatedBy(request.getInitiatedBy());
@@ -317,97 +278,51 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
         return value != null ? value : ActivityEnum.Y;
     }
 
-    private String generateApplicationNumber(ClaimTypeMaster claimType) {
-
-        if (claimType == null || claimType.getCode() == null || claimType.getCode().isBlank()) {
-            throw ClaimException.badRequest("Claim type is required to generate application number");
-        }
-
-        String datePart = LocalDate.now()
-                .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-
-        String generatedApplicationCode = masterCodeGenClient.generateCode(applicationCodeType, claimPrefix);
-
-        String baseApplicationNumber = "CLM-" + datePart + "-" + generatedApplicationCode;
-
-        String applicationNumber = baseApplicationNumber;
-        int counter = 1;
-
-        while (claimApplicationRepository.existsByApplicationNumber(applicationNumber)) {
-            applicationNumber = baseApplicationNumber + "-" + String.format("%03d", counter);
-            counter++;
-        }
-
-        return applicationNumber;
-    }
-
-    private ClaimApplication getClaimApplication(Long id) {
-        return claimApplicationRepository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound(
-                        "Parent claim application not found with id: " + id
-                ));
-    }
-
     private ClaimTypeMaster getClaimType(Long id) {
         return claimTypeMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
-                        "Claim type not found with id: " + id
-                ));
-    }
-
-    private ClaimSourceMaster getClaimSource(Long id) {
-        return claimSourceMasterRepository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound(
-                        "Claim source not found with id: " + id
-                ));
+                        "Claim type not found with id: " + id));
     }
 
     private SubmissionChannelMaster getSubmissionChannel(Long id) {
         return submissionChannelMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
-                        "Submission channel not found with id: " + id
-                ));
+                        "Submission channel not found with id: " + id));
     }
 
     private SchemeType getSchemeType(Long id) {
         return schemeMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
-                        "Scheme type not found with id: " + id
-                ));
+                        "Scheme type not found with id: " + id));
     }
 
     private AgencyCategory getMemberCategory(String categoryId) {
         return agencyCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> ClaimException.notFound(
-                        "Member category not found with id: " + categoryId
-                ));
+                        "Member category not found with id: " + categoryId));
     }
 
     private SpecialCaseRefundAuthorityMaster getSpecialCaseAuthority(Long id) {
         return specialCaseRefundAuthorityMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
-                        "Special case authority not found with id: " + id
-                ));
+                        "Special case authority not found with id: " + id));
     }
 
     private StageMaster getStage(Long id) {
         return stageMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
-                        "Stage not found with id: " + id
-                ));
+                        "Stage not found with id: " + id));
     }
 
     private StatusMaster getStatus(Long id) {
         return statusMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
-                        "Status not found with id: " + id
-                ));
+                        "Status not found with id: " + id));
     }
 
     private ActionMaster getAction(Long id) {
         return actionMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
-                        "Action not found with id: " + id
-                ));
+                        "Action not found with id: " + id));
     }
 }

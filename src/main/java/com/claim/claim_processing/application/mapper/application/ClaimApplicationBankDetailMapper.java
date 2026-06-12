@@ -17,14 +17,10 @@ public interface ClaimApplicationBankDetailMapper {
     @Mapping(target = "claimantType", ignore = true)
     @Mapping(target = "bankType", ignore = true)
     @Mapping(target = "isDefaultBank", source = "isDefaultBank", qualifiedByName = "toActivityEnumDefaultN")
-    @Mapping(target = "isActive", source = "isActive", qualifiedByName = "toActivityEnumDefaultY")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     ClaimApplicationBankDetail toEntity(
-            ClaimApplicationBankDetailRequestDto request,
-            @Context ClaimApplication claimApplication,
-            @Context ClaimantTypeMaster claimantType,
-            @Context BankType bankType
+            ClaimApplicationBankDetailRequestDto request
     );
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -33,7 +29,6 @@ public interface ClaimApplicationBankDetailMapper {
     @Mapping(target = "claimantType", ignore = true)
     @Mapping(target = "bankType", ignore = true)
     @Mapping(target = "isDefaultBank", source = "isDefaultBank", qualifiedByName = "toActivityEnumDefaultN")
-    @Mapping(target = "isActive", source = "isActive", qualifiedByName = "toActivityEnumDefaultY")
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

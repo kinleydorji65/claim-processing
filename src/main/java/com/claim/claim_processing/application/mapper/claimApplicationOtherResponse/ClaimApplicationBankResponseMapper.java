@@ -62,8 +62,6 @@ public class ClaimApplicationBankResponseMapper {
                                 : null
                 )
 
-                .isActive(entity.getIsActive())
-
                 .createdBy(entity.getCreatedBy())
                 .createdAt(
                         entity.getCreatedAt() != null

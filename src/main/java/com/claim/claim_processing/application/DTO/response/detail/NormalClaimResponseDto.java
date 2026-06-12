@@ -20,6 +20,8 @@ public class NormalClaimResponseDto {
     private Long claimApplicationId;
     private String applicationNumber;
 
+    private Long claimDetailId;
+
     // Masters
     private Long cessationTypeId;
     private String cessationTypeName;

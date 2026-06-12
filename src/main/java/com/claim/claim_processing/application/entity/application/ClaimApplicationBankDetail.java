@@ -10,7 +10,7 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import com.claim.claim_processing.common.entities.others.BankType;
 
 @Entity
-@Table(name = "CLAIM_APPLICATION_BANK_DETAIL", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "CLAIM_APPLICATION_BANK_DETAIL", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,18 +24,18 @@ public class ClaimApplicationBankDetail {
         private Long id;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_CABD_CLAIM_APP"))
+        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false)
         private ClaimApplication claimApplication;
 
         @Column(name = "BENEFICIARY_IDENTIFIER", length = 100)
         private String beneficiaryIdentifier;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CLAIMANT_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CABD_CLAIMANT_TYPE"))
+        @JoinColumn(name = "CLAIMANT_TYPE_ID")
         private ClaimantTypeMaster claimantType;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "BANK_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CABD_BANK_TYPE"))
+        @JoinColumn(name = "BANK_TYPE_ID")
         private BankType bankType;
 
         @Column(name = "ACCOUNT_NUMBER", length = 100)
@@ -60,11 +60,6 @@ public class ClaimApplicationBankDetail {
 
         @Column(name = "VERIFIED_AT")
         private Timestamp verifiedAt;
-
-        @Enumerated(EnumType.STRING)
-        @Column(name = "IS_ACTIVE", length = 1)
-        @Builder.Default
-        private ActivityEnum isActive = ActivityEnum.Y;
 
         @Column(name = "CREATED_BY", length = 100)
         private String createdBy;

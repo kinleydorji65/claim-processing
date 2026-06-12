@@ -1,0 +1,97 @@
+package com.claim.claim_processing.application.entity.claimDetail;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.List;
+
+import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+
+@Entity
+@Table(name = "CLAIM_DEDUCTION_DETAIL", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ClaimDeductionDetail {
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "CLAIM_ID", nullable = false)
+        private ClaimDetail claimDetail;
+
+        @Column(name = "OUTSTANDING_AMOUNT", precision = 15, scale = 2)
+        private BigDecimal outstandingAmount;
+
+        @Column(name = "SYSTEM_DEDUCTED_AMOUNT", precision = 15, scale = 2)
+        private BigDecimal systemDeductedAmount;
+
+        @Column(name = "VERIFIED_DEDUCTED_AMOUNT", precision = 15, scale = 2)
+        private BigDecimal verifiedDeductedAmount;
+
+        @Column(name = "APPROVED_DEDUCTED_AMOUNT", precision = 15, scale = 2)
+        private BigDecimal approvedDeductedAmount;
+
+        @Column(name = "DEDUCTED_AMOUNT", precision = 15, scale = 2)
+        private BigDecimal deductedAmount;
+
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "DEDUCTION_REVIEW_STATUS_ID")
+        private ReviewStatusMaster deductionReviewStatus;
+
+        @Enumerated(EnumType.STRING)
+        @Column(name = "IS_AUTO_APPLIED", length = 1)
+        @Builder.Default
+        private ActivityEnum isAutoApplied = ActivityEnum.N;
+
+        @Enumerated(EnumType.STRING)
+        @Column(name = "IS_MANUAL_OVERRIDE", length = 1)
+        @Builder.Default
+        private ActivityEnum isManualOverride = ActivityEnum.N;
+
+        @Column(name = "OVERRIDE_REASON", length = 1000)
+        private String overrideReason;
+
+        @Column(name = "REMARKS", length = 1000)
+        private String remarks;
+
+        @Column(name = "CREATED_BY", length = 100)
+        private String createdBy;
+
+        @Column(name = "CREATED_AT", insertable = false, updatable = false)
+        private Timestamp createdAt;
+
+        @Column(name = "UPDATED_BY", length = 100)
+        private String updatedBy;
+
+        @Column(name = "UPDATED_AT", insertable = false, updatable = false)
+        private Timestamp updatedAt;
+
+        @Enumerated(EnumType.STRING)
+        @Column(name = "IS_ACTIVE", length = 1)
+        @Builder.Default
+        private ActivityEnum isActive = ActivityEnum.Y;
+
+        @OneToMany(mappedBy = "deductionDetail", cascade = CascadeType.ALL, orphanRemoval = true)
+        @Builder.Default
+        private List<ClaimDeductionItem> deductionItems = new java.util.ArrayList<>();
+
+        @PrePersist
+        public void prePersist() {
+                createdAt = new Timestamp(System.currentTimeMillis());
+                updatedAt = new Timestamp(System.currentTimeMillis());
+        }
+
+        @PreUpdate
+        public void preUpdate() {
+                updatedAt = new Timestamp(System.currentTimeMillis());
+        }
+
+}

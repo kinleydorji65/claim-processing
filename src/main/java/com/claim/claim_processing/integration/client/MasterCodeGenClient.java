@@ -166,20 +166,25 @@ public class MasterCodeGenClient {
             // timeout / connection refused / DNS
             throw ClaimException.internalError("Master service is unreachable while generating code", ex);
         } catch (HttpStatusCodeException ex) {
-            // master returned 4xx/5xx
-            // if master says 400, treat as bad request; otherwise internal
-            if (ex.getStatusCode().is4xxClientError()) {
-                throw ClaimException.badRequest(
-                        "Master service rejected request for code generation. Status: " + ex.getStatusCode()
-                );
-            }
-            throw ClaimException.internalError(
-                    "Master service error while generating code. Status: " + ex.getStatusCode(),
-                    ex
-            );
-        } catch (RestClientException ex) {
-            throw ClaimException.internalError("Unexpected error while calling master service for code generation", ex);
-        }
+    String body = ex.getResponseBodyAsString();
+
+    if (ex.getStatusCode().is4xxClientError()) {
+        throw ClaimException.badRequest(
+                "Master service rejected request for code generation. Status: "
+                        + ex.getStatusCode()
+                        + ", Body: "
+                        + body
+        );
+    }
+
+    throw ClaimException.internalError(
+            "Master service error while generating code. Status: "
+                    + ex.getStatusCode()
+                    + ", Body: "
+                    + body,
+            ex
+    );
+}
     }
 
     private HttpHeaders defaultHeaders() {

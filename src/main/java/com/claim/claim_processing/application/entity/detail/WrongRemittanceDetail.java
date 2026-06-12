@@ -35,9 +35,7 @@ public class WrongRemittanceDetail {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "CLAIM_APPLICATION_ID",
-            nullable = false,
-            unique = true,
-            foreignKey = @ForeignKey(name = "FK_WRD_CLAIM_APP")
+            nullable = false
     )
     private ClaimApplication claimApplication;
 
@@ -71,15 +69,13 @@ public class WrongRemittanceDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "CONTRIBUTION_TYPE_ID",
-            foreignKey = @ForeignKey(name = "FK_WRD_CONTRIBUTION_TYPE")
+            name = "CONTRIBUTION_TYPE_ID"
     )
     private ContributionTypeMaster contributionType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "AFFECTED_ACCOUNT_TYPE_ID",
-            foreignKey = @ForeignKey(name = "FK_WRD_AFFECTED_ACCOUNT_TYPE")
+            name = "AFFECTED_ACCOUNT_TYPE_ID"
     )
     private AccountTypeMaster affectedAccountType;
 
@@ -88,8 +84,7 @@ public class WrongRemittanceDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
-            name = "ERROR_TYPE_ID",
-            foreignKey = @ForeignKey(name = "FK_WRD_ERROR_TYPE")
+            name = "ERROR_TYPE_ID"
     )
     private WrongRemittanceErrorTypeMaster errorType;
 

@@ -27,7 +27,6 @@ public class ClaimApplicationDeductionDetailServiceImpl
     private final ClaimApplicationDeductionDetailRepository deductionDetailRepository;
 
     @Override
-    @Transactional
     public ClaimApplicationDeductionDetail saveCalculationDeductions(
             ClaimApplication claimApplication,
             ClaimCalculationResponseDTO calculationResponse,
@@ -150,7 +149,6 @@ public class ClaimApplicationDeductionDetailServiceImpl
     }
 
     @Override
-    @Transactional
     public ClaimApplicationDeductionDetail patchDeductionDetail(
             ClaimApplicationDeductionPatchRequestDto request) {
 

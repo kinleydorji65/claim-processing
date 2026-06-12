@@ -27,7 +27,7 @@ import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundA
 @Entity
 @Table(
         name = "CLAIM_APPLICATION",
-        schema = "PPFMS_CLAIMS_PROCESSING_SERVICE_SCHEMA",
+        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA",
         uniqueConstraints = {
                 @UniqueConstraint(name = "UK_CLAIM_APPLICATION_NUMBER", columnNames = "APPLICATION_NUMBER")
         }
@@ -101,10 +101,6 @@ public class ClaimApplication {
     private ActivityEnum isSpecialCase;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PARENT_CLAIM_APPLICATION_ID")
-    private ClaimApplication parentClaimApplication;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "SPECIAL_CASE_AUTHORITY_ID")
     private SpecialCaseRefundAuthorityMaster specialCaseAuthority;
 
@@ -155,11 +151,8 @@ public class ClaimApplication {
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BeneficiarySettlementDetail beneficiarySettlementDetail;
 
-    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private LegalRecoveryDetail legalRecoveryDetail;
-
-    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private WrongRemittanceDetail wrongRemittanceDetail;
+    // @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private LegalRecoveryDetail legalRecoveryDetail;
 
     // // ---------- One-to-Many Common Child Tables ----------
 
@@ -167,31 +160,23 @@ public class ClaimApplication {
     @Builder.Default
     private List<ClaimApplicationBankDetail> bankDetails = new ArrayList<>();
 
-    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ClaimApplicationDeductionDetail> deductionDetails = new ArrayList<>();
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ClaimApplicationDeductionDetail deductionDetail;
 
     // // ---------- Calculation ----------
 
-    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ClaimApplicationCalculationSummary> calculationSummaries = new ArrayList<>();
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ClaimApplicationCalculationSummary calculationSummary;
     
     // // ---------- Payment ----------
 
-    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ClaimApplicationPayment> payments = new ArrayList<>();
+    // @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    // @Builder.Default
+    // private List<ClaimApplicationPayment> payments = new ArrayList<>();
 
-    // ---------- Work Flow ----------
-
-    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ClaimApplicationVerification> verifications = new ArrayList<>();
-
-    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ClaimApplicationApproval> approvals = new ArrayList<>();
+    
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ClaimApplicationApproval approvalDetail;
 
     @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -201,6 +186,8 @@ public class ClaimApplication {
     @Builder.Default
     private List<ClaimApplicationWorkflow> workflows = new ArrayList<>();
 
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ClaimApplicationVerification verificationDetail;
 
     // ---------- Posting ----------
 

@@ -1,32 +1,20 @@
 package com.claim.claim_processing.application.service.detail.impl;
 
-import com.claim.claim_processing.application.DTO.request.detail.LegalRecoveryRequestDto;
-import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
+import com.claim.claim_processing.application.DTO.request.detail.LegalRecoveryDetailRequest;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.entity.detail.LegalRecoveryDetail;
 import com.claim.claim_processing.application.mapper.detail.LegalRecoveryMapper;
 import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
 import com.claim.claim_processing.application.repository.detail.LegalRecoveryDetailRepository;
 import com.claim.claim_processing.application.service.detail.LegalRecoveryService;
-import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
-import com.claim.claim_processing.common.entities.adjustmentMaster.LoanStatusMaster;
-import com.claim.claim_processing.common.entities.adjustmentMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
-import com.claim.claim_processing.common.entities.contribution.SchemeType;
-import com.claim.claim_processing.common.entities.legalMaster.RecoveryReasonMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
-import com.claim.claim_processing.common.repository.adjustmentMaster.LoanStatusRepository;
-import com.claim.claim_processing.common.repository.adjustmentMaster.LoanTypeRepository;
 import com.claim.claim_processing.common.repository.common.PayeeTypeRepository;
-import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
-import com.claim.claim_processing.common.repository.legalMaster.RecoveryReasonRepository;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -35,60 +23,50 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
 
     private final LegalRecoveryDetailRepository legalRecoveryRepository;
     private final ClaimApplicationRepository claimApplicationRepository;
-    private final RecoveryReasonRepository recoveryReasonRepository;
     private final PayeeTypeRepository payeeTypeRepository;
-    private final SchemeTypeRepository schemeMasterRepository;
     private final StatusMasterRepository statusMasterRepository;
-    private final LoanTypeRepository loanTypeRepository;
-    private final LoanStatusRepository loanStatusRepository;
     private final LegalRecoveryMapper legalRecoveryMapper;
 
     @Override
-    public ApiResponseDTO<LegalRecoveryResponseDto> create(LegalRecoveryRequestDto request) {
+    public LegalRecoveryDetail create(LegalRecoveryDetailRequest request, ClaimApplication claimApplication) {
 
         validateRequired(request);
 
-        if (legalRecoveryRepository.existsByClaimApplication_Id(request.getClaimApplicationId())) {
+        if (legalRecoveryRepository.existsByClaimApplication_Id(claimApplication.getId())) {
             throw ClaimException.conflict(
                     "Legal recovery detail already exists for claim application id: "
-                            + request.getClaimApplicationId()
+                            + claimApplication.getId()
             );
         }
 
         LegalRecoveryDetail entity = legalRecoveryMapper.toEntity(request);
 
-        entity.setClaimApplication(getClaimApplication(request.getClaimApplicationId()));
-        entity.setRecoveryReason(getRecoveryReasonIfPresent(request.getRecoveryReasonId()));
+        entity.setClaimApplication(claimApplication);
         entity.setPayeeType(getPayeeType(request.getPayeeTypeId()));
-        entity.setSchemeType(getSchemeTypeIfPresent(request.getSchemeTypeId()));
         entity.setCurrentStatus(getCurrentStatusIfPresent(request.getCurrentStatusId()));
-        entity.setLoanType(getLoanTypeIfPresent(request.getLoanTypeId()));
-        entity.setLoanStatus(getLoanStatusIfPresent(request.getLoanStatusId()));
 
-        LegalRecoveryDetail saved = legalRecoveryRepository.save(entity);
+        LegalRecoveryDetail saved = legalRecoveryRepository.saveAndFlush(entity);
 
-        return ApiResponseDTO.created(
-                legalRecoveryMapper.toResponseDto(saved)
-        );
+        return saved;
     }
 
     @Override
-    public ApiResponseDTO<LegalRecoveryResponseDto> update(Long id, LegalRecoveryRequestDto request) {
+    public LegalRecoveryDetail update(LegalRecoveryDetailRequest request, ClaimApplication claimApplication) {
 
-        LegalRecoveryDetail existing = legalRecoveryRepository.findById(id)
+        LegalRecoveryDetail existing = legalRecoveryRepository.findById(request.getId())
                 .orElseThrow(() -> ClaimException.resourceNotFound(
                         "Legal recovery detail",
-                        id.toString()
+                        request.getId().toString()
                 ));
 
         if (request.getClaimApplicationId() != null) {
             boolean duplicate = legalRecoveryRepository
-                    .existsByClaimApplication_IdAndIdNot(request.getClaimApplicationId(), id);
+                    .existsByClaimApplication_IdAndIdNot(claimApplication.getId(), request.getId());
 
             if (duplicate) {
                 throw ClaimException.conflict(
                         "Legal recovery detail already exists for claim application id: "
-                                + request.getClaimApplicationId()
+                                + claimApplication.getId()
                 );
             }
         }
@@ -99,41 +77,22 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
             existing.setClaimApplication(getClaimApplication(request.getClaimApplicationId()));
         }
 
-        if (request.getRecoveryReasonId() != null) {
-            existing.setRecoveryReason(getRecoveryReasonIfPresent(request.getRecoveryReasonId()));
-        }
-
         if (request.getPayeeTypeId() != null) {
             existing.setPayeeType(getPayeeType(request.getPayeeTypeId()));
-        }
-
-        if (request.getSchemeTypeId() != null) {
-            existing.setSchemeType(getSchemeTypeIfPresent(request.getSchemeTypeId()));
         }
 
         if (request.getCurrentStatusId() != null) {
             existing.setCurrentStatus(getCurrentStatusIfPresent(request.getCurrentStatusId()));
         }
 
-        if (request.getLoanTypeId() != null) {
-            existing.setLoanType(getLoanTypeIfPresent(request.getLoanTypeId()));
-        }
+        LegalRecoveryDetail updated = legalRecoveryRepository.saveAndFlush(existing);
 
-        if (request.getLoanStatusId() != null) {
-            existing.setLoanStatus(getLoanStatusIfPresent(request.getLoanStatusId()));
-        }
-
-        LegalRecoveryDetail updated = legalRecoveryRepository.save(existing);
-
-        return ApiResponseDTO.success(
-                "Legal recovery detail updated successfully",
-                legalRecoveryMapper.toResponseDto(updated)
-        );
+        return updated;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ApiResponseDTO<LegalRecoveryResponseDto> getById(Long id) {
+    public LegalRecoveryDetail getById(Long id) {
 
         LegalRecoveryDetail entity = legalRecoveryRepository.findById(id)
                 .orElseThrow(() -> ClaimException.resourceNotFound(
@@ -141,15 +100,12 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
                         id.toString()
                 ));
 
-        return ApiResponseDTO.success(
-                "Legal recovery detail fetched successfully",
-                legalRecoveryMapper.toResponseDto(entity)
-        );
+        return entity;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ApiResponseDTO<LegalRecoveryResponseDto> getByClaimApplicationId(Long claimApplicationId) {
+    public LegalRecoveryDetail getByClaimApplicationId(Long claimApplicationId) {
 
         LegalRecoveryDetail entity = legalRecoveryRepository.findByClaimApplication_Id(claimApplicationId)
                 .orElseThrow(() -> ClaimException.resourceNotFound(
@@ -157,49 +113,10 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
                         claimApplicationId.toString()
                 ));
 
-        return ApiResponseDTO.success(
-                "Legal recovery detail fetched successfully",
-                legalRecoveryMapper.toResponseDto(entity)
-        );
+        return entity;
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public ApiResponseDTO<List<LegalRecoveryResponseDto>> getAll() {
-
-        List<LegalRecoveryResponseDto> response = legalRecoveryRepository.findAll()
-                .stream()
-                .map(legalRecoveryMapper::toResponseDto)
-                .toList();
-
-        if (response.isEmpty()) {
-            throw ClaimException.notFound("No legal recovery details found");
-        }
-
-        return ApiResponseDTO.success(
-                "Legal recovery details fetched successfully",
-                response
-        );
-    }
-
-    @Override
-    public ApiResponseDTO<Void> delete(Long id) {
-
-        LegalRecoveryDetail existing = legalRecoveryRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Legal recovery detail",
-                        id.toString()
-                ));
-
-        legalRecoveryRepository.delete(existing);
-
-        return ApiResponseDTO.success(
-                "Legal recovery detail deleted successfully",
-                null
-        );
-    }
-
-    private void validateRequired(LegalRecoveryRequestDto request) {
+    private void validateRequired(LegalRecoveryDetailRequest request) {
 
         if (request.getClaimApplicationId() == null) {
             throw ClaimException.singleValidationError(
@@ -212,13 +129,6 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
             throw ClaimException.singleValidationError(
                     "payeeTypeId",
                     "Payee type is required"
-            );
-        }
-
-        if (request.getRecoveryRequestedAmount() == null) {
-            throw ClaimException.singleValidationError(
-                    "recoveryRequestedAmount",
-                    "Recovery requested amount is required"
             );
         }
     }
@@ -239,30 +149,6 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
                 ));
     }
 
-    private RecoveryReasonMaster getRecoveryReasonIfPresent(Long id) {
-        if (id == null) {
-            return null;
-        }
-
-        return recoveryReasonRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Recovery reason",
-                        id.toString()
-                ));
-    }
-
-    private SchemeType getSchemeTypeIfPresent(Long id) {
-        if (id == null) {
-            return null;
-        }
-
-        return schemeMasterRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Scheme type",
-                        id.toString()
-                ));
-    }
-
     private StatusMaster getCurrentStatusIfPresent(Long id) {
         if (id == null) {
             return null;
@@ -271,30 +157,6 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
         return statusMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.resourceNotFound(
                         "Current status",
-                        id.toString()
-                ));
-    }
-
-    private LoanTypeMaster getLoanTypeIfPresent(Long id) {
-        if (id == null) {
-            return null;
-        }
-
-        return loanTypeRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Loan type",
-                        id.toString()
-                ));
-    }
-
-    private LoanStatusMaster getLoanStatusIfPresent(Long id) {
-        if (id == null) {
-            return null;
-        }
-
-        return loanStatusRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Loan status",
                         id.toString()
                 ));
     }

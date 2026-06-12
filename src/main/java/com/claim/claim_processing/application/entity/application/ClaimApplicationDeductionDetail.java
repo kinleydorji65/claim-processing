@@ -25,12 +25,8 @@ public class ClaimApplicationDeductionDetail {
         private Long id;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_CADD_DED_CLAIM_APP"))
+        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false)
         private ClaimApplication claimApplication;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "DEDUCTION_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CADD_DED_TYPE"))
-        private DeductionTypeMaster deductionType;
 
         @Column(name = "OUTSTANDING_AMOUNT", precision = 15, scale = 2)
         private BigDecimal outstandingAmount;
@@ -48,7 +44,7 @@ public class ClaimApplicationDeductionDetail {
         private BigDecimal deductedAmount;
 
         @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "DEDUCTION_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CADD_DED_REVIEW_STATUS"))
+        @JoinColumn(name = "DEDUCTION_REVIEW_STATUS_ID")
         private ReviewStatusMaster deductionReviewStatus;
 
         @Enumerated(EnumType.STRING)

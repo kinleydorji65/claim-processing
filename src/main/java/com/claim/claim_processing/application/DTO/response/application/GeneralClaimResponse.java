@@ -6,8 +6,11 @@ import java.util.List;
 
 import com.claim.claim_processing.application.DTO.response.calculation.ClaimApplicationCalculationSummaryResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.BeneficiarySettlementResponseDto;
+import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.PartialWithdrawalResponseDto;
+import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
+import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationWorkflowResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -78,9 +81,12 @@ public class GeneralClaimResponse {
     private ClaimApplicationDeductionResponseDto deductionDetail;
     private ClaimApplicationCalculationSummaryResponseDto calculationSummary;
     private NormalClaimResponseDto normalClaimDetails;
+    private LegalRecoveryResponseDto legalRecoveryDetail;
     private PartialWithdrawalResponseDto partialWithdrawalDetails;
     private BeneficiarySettlementResponseDto beneficiarySettlementDetails;
     private List<ClaimApplicationForfeitedComponentResponseDto> forfeitedComponents;
+    private ClaimApplicationVerificationResponseDto verificationDetail;
+    private ClaimApplicationApprovalResponseDto approvalDetail;
 
     private String createdBy;
 

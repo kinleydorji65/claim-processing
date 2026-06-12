@@ -2,7 +2,6 @@ package com.claim.claim_processing.application.mapper.workFlow;
 
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationApproval;
-import com.claim.claim_processing.common.mapper.common.DecisionMapper;
 import com.claim.claim_processing.common.mapper.others.StatusMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ClaimApplicationApprovalMapper {
 
-    private final DecisionMapper decisionMapper;
     private final StatusMapper statusMapper;
 
     public ClaimApplicationApprovalResponseDto toResponse(
@@ -37,17 +35,9 @@ public class ClaimApplicationApprovalMapper {
                                 : null
                 )
 
-                .approvalLevel(entity.getApprovalLevel())
-
                 .approvalStatus(
                         entity.getApprovalStatus() != null
                                 ? statusMapper.toDto(entity.getApprovalStatus())
-                                : null
-                )
-
-                .approvalDecision(
-                        entity.getApprovalDecision() != null
-                                ? decisionMapper.toResponseDto(entity.getApprovalDecision())
                                 : null
                 )
 
@@ -59,12 +49,7 @@ public class ClaimApplicationApprovalMapper {
                 .approvedDeductionAmount(entity.getApprovedDeductionAmount())
                 .finalNetPayableAmount(entity.getFinalNetPayableAmount())
 
-                .requiresFinanceAction(entity.getRequiresFinanceAction())
                 .requiresManualReview(entity.getRequiresManualReview())
-
-                .approvalReason(entity.getApprovalReason())
-                .returnedReason(entity.getReturnedReason())
-                .rejectedReason(entity.getRejectedReason())
 
                 .approverRemarks(entity.getApproverRemarks())
                 .approvedBy(entity.getApprovedBy())
@@ -76,7 +61,11 @@ public class ClaimApplicationApprovalMapper {
                                 : null
                 )
 
-                .isActive(entity.getIsActive())
+                .isActive(
+                        entity.getIsActive() != null
+                                ? entity.getIsActive().name()
+                                : null
+                )
 
                 .createdBy(entity.getCreatedBy())
 

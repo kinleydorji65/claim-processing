@@ -19,6 +19,8 @@ public class PartialWithdrawalResponseDto {
     private Long claimApplicationId;
     private String applicationNumber;
 
+    private Long claimDetailId;
+
     private Long payeeTypeId;
     private String payeeTypeName;
 

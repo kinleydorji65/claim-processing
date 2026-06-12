@@ -24,8 +24,6 @@ public class ClaimApplicationRequestDto {
 
     private String memberCategoryId;
 
-    private Long parentClaimApplicationId;
-
     private Long specialCaseAuthorityId;
 
     private Long currentStageId;
@@ -64,7 +62,7 @@ public class ClaimApplicationRequestDto {
     // ---------------------------------
     // Claim Information
     // ---------------------------------
-    private String onBehalfOfMember; // Y / N
+    private ActivityEnum onBehalfOfMember; // Y / N
 
     private String initiatedBy;
 

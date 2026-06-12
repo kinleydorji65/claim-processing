@@ -84,14 +84,13 @@ private ClaimApplicationWorkflow buildWorkflow(
             .reason(request.getReason())
 
             .office(getOffice(request.getOfficeId()))
-
             .actionBy(request.getActionBy())
             .actionAt(new Timestamp(System.currentTimeMillis()))
             .build();
 }
 
 private StageMaster getStage(Long stageId, String label) {
-    if (stageId == null) {
+    if (stageId == null || stageId <= 0) {
         return null;
     }
 
@@ -102,7 +101,7 @@ private StageMaster getStage(Long stageId, String label) {
 }
 
 private StatusMaster getStatus(Long statusId, String label) {
-    if (statusId == null) {
+    if (statusId == null || statusId <= 0) {
         return null;
     }
 
@@ -113,7 +112,7 @@ private StatusMaster getStatus(Long statusId, String label) {
 }
 
 private ActionMaster getAction(Long actionId) {
-    if (actionId == null) {
+    if (actionId == null || actionId <= 0) {
         return null;
     }
 
@@ -124,7 +123,7 @@ private ActionMaster getAction(Long actionId) {
 }
 
 private NppfOfficeMaster getOffice(Long officeId) {
-    if (officeId == null) {
+    if (officeId == null || officeId <= 0) {
         return null;
     }
 
@@ -153,7 +152,7 @@ private void updateClaimApplicationCurrentState(
 
     claimApplication.setUpdatedBy(workflow.getActionBy());
 
-    claimApplicationRepository.save(claimApplication);
+    claimApplicationRepository.saveAndFlush(claimApplication);
 }
 
 @Override

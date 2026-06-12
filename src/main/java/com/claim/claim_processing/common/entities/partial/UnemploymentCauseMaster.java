@@ -29,13 +29,13 @@ public class UnemploymentCauseMaster {
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "CAUSE_CODE", nullable = false, length = 100)
+    @Column(name = "CODE", nullable = false, length = 100)
     private String code;
 
-    @Column(name = "CAUSE_NAME", nullable = false, length = 200)
+    @Column(name = "NAME", nullable = false, length = 200)
     private String name;
 
-    @Column(name = "CAUSE_DESCRIPTION", length = 500)
+    @Column(name = "DESCRIPTION", length = 500)
     private String description;
 
     @Enumerated(EnumType.STRING)

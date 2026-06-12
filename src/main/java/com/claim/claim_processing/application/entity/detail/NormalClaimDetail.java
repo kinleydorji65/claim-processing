@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
 import com.claim.claim_processing.common.entities.claim.CessationTypeMaster;
 import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
@@ -33,6 +34,10 @@ public class NormalClaimDetail {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false)
     private ClaimApplication claimApplication;
+
+    @OneToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "CLAIM_DETAIL_ID", nullable = false, unique = true)
+private ClaimDetail claimDetail;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CESSATION_TYPE_ID")

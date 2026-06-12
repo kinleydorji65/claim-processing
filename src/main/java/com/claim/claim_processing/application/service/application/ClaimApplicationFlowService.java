@@ -11,5 +11,6 @@ public interface ClaimApplicationFlowService {
     ApiResponseDTO<GeneralClaimResponse> create(GeneralClaimCreateRequest request);
     ApiResponseDTO<GeneralClaimResponse> patch(GeneralClaimPatchRequest request);
     ApiResponseDTO<List<GeneralClaimResponse>> getAll();
-    ApiResponseDTO<GeneralClaimResponse> findByApplicationId(Long applicationId);
+    ApiResponseDTO<GeneralClaimResponse> findByApplicationId(String applicationId);
+    ApiResponseDTO<List<GeneralClaimResponse>> findByNppfNumber(String nppfNumber);
 }
