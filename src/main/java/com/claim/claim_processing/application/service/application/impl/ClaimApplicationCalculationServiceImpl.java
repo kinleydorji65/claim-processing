@@ -14,11 +14,9 @@ import com.claim.claim_processing.application.entity.calculation.ClaimApplicatio
 import com.claim.claim_processing.application.repository.calculation.ClaimApplicationCalculationSummaryRepository;
 import com.claim.claim_processing.application.repository.calculation.ClaimApplicationRuleEvaluationRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationCalculationService;
-import com.claim.claim_processing.common.entities.common.StageMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
-import com.claim.claim_processing.common.repository.common.StageRepository;
 import com.claim.claim_processing.common.repository.contribution.ComponentMasterRepository;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
@@ -33,7 +31,6 @@ import lombok.RequiredArgsConstructor;
 public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationCalculationService {
         private final StatusMasterRepository statusRepository;
         private final ClaimApplicationCalculationSummaryRepository calculationSummaryRepository;
-        private final StageRepository stageMasterRepository;
         private final SubClaimMappingRepository subClaimMappingRepository;
         private final ClaimApplicationRuleEvaluationRepository claimApplicationRuleEvaluationRepository;
         private final ComponentMasterRepository componentMasterRepository;
@@ -42,8 +39,6 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
         public ClaimApplicationCalculationSummary create(ClaimApplication claimApplication,
                         ClaimCalculationResponseDTO calculationResponse, BigDecimal finalPayableAmount) {
 
-                StageMaster stage = stageMasterRepository.findById(1L)
-                                .orElseThrow(() -> new RuntimeException("Stage not found with id: " + 1L));
                 ClaimApplicationCalculationSummary claimCalculationSummary = ClaimApplicationCalculationSummary
                                 .builder()
                                 .finalPayableAmount(finalPayableAmount)
@@ -62,7 +57,6 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
                                 .createdBy(claimApplication.getCreatedBy())
                                 .build();
                 claimCalculationSummary.setClaimApplication(claimApplication);
-                claimCalculationSummary.setCalculationStage(stage);
                 calculationSummaryRepository.saveAndFlush(claimCalculationSummary);
                 storeClaimApplicationRuleEvaluation(claimCalculationSummary, calculationResponse);
                 return claimCalculationSummary;
@@ -143,14 +137,6 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
                                                                         + request.getCalculationStatusId()));
 
                         summary.setCalculationStatus(status);
-                }
-
-                if (request.getCalculationStageId() != null) {
-                        StageMaster stage = stageMasterRepository.findById(request.getCalculationStageId())
-                                        .orElseThrow(() -> new RuntimeException(
-                                                        "Stage not found with id: " + request.getCalculationStageId()));
-
-                        summary.setCalculationStage(stage);
                 }
 
                 if (request.getRecommendedBenefitType() != null) {

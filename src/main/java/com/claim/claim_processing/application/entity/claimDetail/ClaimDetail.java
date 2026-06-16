@@ -160,6 +160,9 @@ public class ClaimDetail {
     @OneToOne(mappedBy = "claimDetail", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private ClaimCalculationSummary calculationSummary = new ClaimCalculationSummary();
+
+    @OneToOne(mappedBy = "claimDetail", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ClaimLedgerDeductionTracker ledgerDeductionTracker;
     
     // // ---------- Payment ----------
 

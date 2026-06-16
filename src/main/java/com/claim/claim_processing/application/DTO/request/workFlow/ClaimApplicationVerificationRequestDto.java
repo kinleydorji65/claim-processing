@@ -27,8 +27,6 @@ public class ClaimApplicationVerificationRequestDto {
 
     private ActivityEnum requiresManualReview;
 
-    private String returnReason;
-
     private String rejectionReason;
 
     private String verifierRemarks;
@@ -37,7 +35,7 @@ public class ClaimApplicationVerificationRequestDto {
 
     private String verifiedBy;
 
-    private Long verifiedByRole;
+    private Long verifiedByRoleId;
 
     private String createdBy;
     private String updatedBy;

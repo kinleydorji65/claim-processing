@@ -5,7 +5,6 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.claim.claim_processing.common.DTO.response.common.ReviewStatusResponseDto;
 import com.claim.claim_processing.common.DTO.response.common.StageResponseDto;
 import com.claim.claim_processing.common.DTO.response.refundMaster.RefundScopeResponseDto;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -24,7 +23,6 @@ public class ClaimApplicationRuleEvaluationResponseDto {
 
     private RefundScopeResponseDto ruleType;
     private StageResponseDto evaluationStage;
-    private ReviewStatusResponseDto evaluationStatus;
 
     private Long evaluationTriggerTypeId;
 

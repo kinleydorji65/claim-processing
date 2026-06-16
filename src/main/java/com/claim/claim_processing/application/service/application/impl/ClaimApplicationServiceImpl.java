@@ -10,6 +10,7 @@ import com.claim.claim_processing.common.entities.common.*;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
+import com.claim.claim_processing.common.entities.others.UserRegistrateredAgencyMapping;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
 import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeMasterRepository;
@@ -46,6 +47,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     private final StatusMasterRepository statusMasterRepository;
     private final ActionMasterRepository actionMasterRepository;
     private final MasterCodeGenClient masterCodeGenClient;
+    private final UserRegistrateredAgencyMappingRepository userRegistrateredAgencyMappingRepository;
 
     @Value("${app.codegen.application.code-type}")
     private String applicationCodeType;
@@ -177,6 +179,74 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
             throw ClaimException.badRequest("Initiated by is required");
         }
     }
+
+    @Override
+    public ClaimApplication claimedBy(String applicationId, String claimedBy) {
+        if (applicationId == null) {
+            throw ClaimException.badRequest("Application id is required");
+        }
+
+        if (claimedBy == null) {
+            throw ClaimException.badRequest("Claimed by is required");
+        }
+
+        ClaimApplication existingClaimApplication = claimApplicationRepository.findByApplicationNumber(applicationId)
+                .orElseThrow(() -> ClaimException
+                        .notFound("Claim Application not found with application number: " + applicationId));
+        existingClaimApplication.setClaimedBy(claimedBy);
+        existingClaimApplication.setUpdatedBy(claimedBy);
+        existingClaimApplication.setStatus(getStatus(3L)); // Assuming you have a method to get the status by code
+        claimApplicationRepository.saveAndFlush(existingClaimApplication);
+
+        return existingClaimApplication;
+    }
+
+    @Override
+    public ClaimApplication unClaimedBy(String applicationId, String unclaimedBy) {
+        if (applicationId == null) {
+            throw ClaimException.badRequest("Application id is required");
+        }
+
+        if (unclaimedBy == null) {
+            throw ClaimException.badRequest("Unclaimed by is required");
+        }
+
+        ClaimApplication existingClaimApplication = claimApplicationRepository.findByApplicationNumber(applicationId)
+                .orElseThrow(() -> ClaimException
+                        .notFound("Claim Application not found with application number: " + applicationId));
+        existingClaimApplication.setUnClaimedBy(unclaimedBy);
+        existingClaimApplication.setUpdatedBy(unclaimedBy);
+        existingClaimApplication.setStatus(getStatus(4L)); // Assuming you have a method to get the status by code
+        claimApplicationRepository.saveAndFlush(existingClaimApplication);
+
+        return existingClaimApplication;
+    }
+
+    @Override
+    public List<ClaimApplication> getByUserCode(String userCode) {
+        List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository.findByUserCode(userCode);
+
+        if (userMappings.isEmpty()) {
+            throw ClaimException.notFound("No agency mapping found for user code: " + userCode);
+        }
+        List<ClaimApplication> claimApplication = userMappings.stream()
+                .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndStatus_StatusId(mapping.getAgencyCode(), 3L).stream())
+                .toList();
+
+        return claimApplication;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClaimApplication> getVerifiedApplication() {
+        List<ClaimApplication> response = claimApplicationRepository.findByStatus_StatusId(41L);
+
+        if (response.isEmpty()) {
+            throw ClaimException.notFound("No verified claim applications found");
+        }
+
+        return response;
+     }
 
     private void resolveAndSetForeignKeys(ClaimApplication entity, ClaimApplicationRequestDto request) {
 

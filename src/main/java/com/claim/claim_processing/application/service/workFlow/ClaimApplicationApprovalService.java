@@ -2,20 +2,20 @@ package com.claim.claim_processing.application.service.workFlow;
 
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationApprovalRequestDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 
 public interface ClaimApplicationApprovalService {
 
-    ClaimApplicationApprovalResponseDto patch(
-            Long claimApplicationId,
+    ApiResponseDTO<ClaimApplicationApprovalResponseDto> patch(
+            String applicationNumber,
             ClaimApplicationApprovalRequestDto request
     );
 
-    ClaimApplicationApprovalResponseDto approve(
-            Long claimApplicationId,
+    ApiResponseDTO<ClaimApplicationApprovalResponseDto> approve(
+            String applicationNumber,
             ClaimApplicationApprovalRequestDto request
     );
-
-    ClaimApplicationApprovalResponseDto getByClaimApplicationId(
-            Long claimApplicationId
+     ApiResponseDTO<ClaimApplicationApprovalResponseDto> getByApplicationNumber(
+            String applicationNumber
     );
 }

@@ -30,10 +30,6 @@ public class ClaimApplicationCalculationSummary {
     @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false)
     private ClaimApplication claimApplication;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CALCULATION_STAGE_ID")
-    private StageMaster calculationStage;
-
     @Column(name = "CALCULATION_EFFECTIVE_DATE")
     private LocalDate calculationEffectiveDate;
 

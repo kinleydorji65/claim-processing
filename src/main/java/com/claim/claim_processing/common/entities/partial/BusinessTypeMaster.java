@@ -9,7 +9,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "BUSINESS_TYPE_MASTER", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
+@Table(name = "BUSINESS_TYPE_MASTER", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor

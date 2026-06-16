@@ -66,6 +66,8 @@ public class GeneralClaimResponse {
     private String specialCaseAuthorityName;
 
     private String currencyCode;
+    private String claimedBy;
+    private String unClaimedBy;
 
     private Long currentStageId;
     private String currentStageName;

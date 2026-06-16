@@ -77,6 +77,7 @@ public class GeneralClaimDetailResponse {
     private PartialWithdrawalResponseDto partialWithdrawalDetails;
     private BeneficiarySettlementResponseDto beneficiarySettlementDetails;
     private List<ClaimForfeitedComponentResponseDto> forfeitedComponents;
+    private ClaimLedgerDeductionTrackerResponseDto ledgerDeductionTracker;
 
     private String createdBy;
 

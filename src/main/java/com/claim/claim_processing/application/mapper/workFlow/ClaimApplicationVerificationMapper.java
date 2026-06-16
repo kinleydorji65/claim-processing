@@ -2,17 +2,20 @@ package com.claim.claim_processing.application.mapper.workFlow;
 
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationVerification;
-import com.claim.claim_processing.common.mapper.common.ReviewStatusMapper;
-import com.claim.claim_processing.common.mapper.statusMaster.VerificationStatusMasterMapper;
+import com.claim.claim_processing.common.controller.common.RoleMaster;
+import com.claim.claim_processing.common.entities.others.StatusMaster;
+import com.claim.claim_processing.common.repository.others.RoleMasterRepository;
+import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
+import com.claim.claim_processing.exceptions.ClaimException;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class ClaimApplicationVerificationMapper {
-
-    private final ReviewStatusMapper reviewStatusMapper;
-    private final VerificationStatusMasterMapper verificationStatusMapper;
+    private final StatusMasterRepository statusMasterRepository;
+    private final RoleMasterRepository roleMasterRepository;
 
     public ClaimApplicationVerificationResponseDto toResponse(
             ClaimApplicationVerification entity
@@ -36,11 +39,12 @@ public class ClaimApplicationVerificationMapper {
                                 ? entity.getClaimApplication().getApplicationNumber()
                                 : null
                 )
+                .verificationStatusId(entity.getStatus().getStatusId())
 
-                .verificationStatus(
-                        verificationStatusMapper.toResponseDto(
-                                entity.getVerificationStatus()
-                        )
+                .verificationStatusName(
+                        getStatusMaster(
+                                entity.getStatus().getStatusId()
+                        ).getStatusName()
                 )
 
                 .requiresRecalculation(
@@ -49,52 +53,6 @@ public class ClaimApplicationVerificationMapper {
 
                 .requiresManualReview(
                         entity.getRequiresManualReview()
-                )
-
-                .memberReviewStatus(
-                        reviewStatusMapper.toResponseDto(
-                                entity.getMemberReviewStatus()
-                        )
-                )
-
-                .bankReviewStatus(
-                        reviewStatusMapper.toResponseDto(
-                                entity.getBankReviewStatus()
-                        )
-                )
-
-                .documentReviewStatus(
-                        reviewStatusMapper.toResponseDto(
-                                entity.getDocumentReviewStatus()
-                        )
-                )
-
-                .contributionReviewStatus(
-                        reviewStatusMapper.toResponseDto(
-                                entity.getContributionReviewStatus()
-                        )
-                )
-
-                .ruleReviewStatus(
-                        reviewStatusMapper.toResponseDto(
-                                entity.getRuleReviewStatus()
-                        )
-                )
-
-                .loanReviewStatus(
-                        reviewStatusMapper.toResponseDto(
-                                entity.getLoanReviewStatus()
-                        )
-                )
-
-                .deductionReviewStatus(
-                        reviewStatusMapper.toResponseDto(
-                                entity.getDeductionReviewStatus()
-                        )
-                )
-
-                .returnReason(
-                        entity.getReturnReason()
                 )
 
                 .rejectionReason(
@@ -109,8 +67,11 @@ public class ClaimApplicationVerificationMapper {
                         entity.getVerifiedBy()
                 )
 
-                .verifiedByRole(
-                        entity.getVerifiedByRole()
+                .verifiedByRoleId(
+                        entity.getVerifiedByRoleId()
+                )
+                .verifiedByRoleName(
+                        getRoleName(entity.getVerifiedByRoleId())
                 )
 
                 .verifiedAt(
@@ -146,5 +107,18 @@ public class ClaimApplicationVerificationMapper {
                 )
 
                 .build();
+    }
+
+    private StatusMaster getStatusMaster(Long statusId){
+        return statusMasterRepository.findById(statusId).orElseThrow(() -> ClaimException.notFound("StatusMaster not found for id: " + statusId));
+    }
+
+    private String getRoleName(Long roleId) {
+        if (roleId == null) {
+            return null;
+        }
+        return roleMasterRepository.findById(roleId)
+                .map(RoleMaster::getRoleName)
+                .orElseThrow(() -> ClaimException.notFound("RoleMaster not found for id: " + roleId));
     }
 }

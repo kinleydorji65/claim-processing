@@ -96,40 +96,6 @@ public class MasterSwaggerConfig implements SwaggerConfig {
     }
 
     @Bean
-    public GroupedOpenApi beneficiaryMasterApi() {
-        return GroupedOpenApi.builder()
-                .group("Beneficiary Master Management")
-                .pathsToMatch(
-                        "/api/claim/masters/claimant-types/**"
-                )
-                .displayName("Beneficiary Master APIs")
-                .build();
-    }
-
-    @Bean
-    public GroupedOpenApi calculationMasterApi() {
-        return GroupedOpenApi.builder()
-                .group("Calculation Master Management")
-                .pathsToMatch(
-                        "/api/claim/master/calculation-stage/**",
-                        "/api/claim/master/calculation-trigger-type/**"
-                )
-                .displayName("Calculation Master APIs")
-                .build();
-    }
-
-    @Bean
-    public GroupedOpenApi legalMasterApi() {
-        return GroupedOpenApi.builder()
-                .group("Legal Master Management")
-                .pathsToMatch(
-                        "/api/claim/masters/recovery-reasons/**"
-                )
-                .displayName("Legal Master APIs")
-                .build();
-    }
-
-    @Bean
     public GroupedOpenApi paymentMasterApi() {
         return GroupedOpenApi.builder()
                 .group("Payment Master Management")
@@ -187,17 +153,6 @@ public class MasterSwaggerConfig implements SwaggerConfig {
                         "/api/claim/masters/remittance-reasons/**"
                 )
                 .displayName("Wrong Remittance Master APIs")
-                .build();
-    }
-
-    @Bean
-    public GroupedOpenApi arrRuleMasterApi() {
-        return GroupedOpenApi.builder()
-                .group("ARR RULE Management")
-                .pathsToMatch(
-                        "/api/claim/credit-methods/**"
-                )
-                .displayName("ARR RULE Master APIs")
                 .build();
     }
     @Bean

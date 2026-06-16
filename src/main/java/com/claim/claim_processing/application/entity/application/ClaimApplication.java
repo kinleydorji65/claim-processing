@@ -93,6 +93,12 @@ public class ClaimApplication {
     @Column(name = "INITIATED_BY", length = 100)
     private String initiatedBy;
 
+    @Column(name = "CLAIMED_BY", length = 100)
+    private String claimedBy;
+
+    @Column(name = "UNCLAIMED_BY", length = 100)
+    private String unClaimedBy;
+
     @Column(name = "REMARKS", length = 1000)
     private String remarks;
 
@@ -151,8 +157,8 @@ public class ClaimApplication {
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BeneficiarySettlementDetail beneficiarySettlementDetail;
 
-    // @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private LegalRecoveryDetail legalRecoveryDetail;
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private LegalRecoveryDetail legalRecoveryDetail;
 
     // // ---------- One-to-Many Common Child Tables ----------
 
@@ -167,13 +173,6 @@ public class ClaimApplication {
 
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
     private ClaimApplicationCalculationSummary calculationSummary;
-    
-    // // ---------- Payment ----------
-
-    // @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    // @Builder.Default
-    // private List<ClaimApplicationPayment> payments = new ArrayList<>();
-
     
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
     private ClaimApplicationApproval approvalDetail;

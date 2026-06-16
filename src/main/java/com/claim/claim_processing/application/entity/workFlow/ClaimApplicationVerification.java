@@ -6,9 +6,8 @@ import lombok.*;
 import java.sql.Timestamp;
 
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
-import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.statusMaster.VerificationStatusMaster;
+import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 @Entity
 @Table(
@@ -40,7 +39,7 @@ public class ClaimApplicationVerification {
             name = "VERIFICATION_STATUS_ID",
             foreignKey = @ForeignKey(name = "FK_CAV_VER_STATUS")
     )
-    private VerificationStatusMaster verificationStatus;
+    private StatusMaster status;
 
     @Column(name = "REQUIRES_RECALCULATION", length = 1)
     @Enumerated(EnumType.STRING)
@@ -52,48 +51,20 @@ public class ClaimApplicationVerification {
     @Builder.Default
     private ActivityEnum requiresManualReview = ActivityEnum.N;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "MEMBER_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAV_MEMBER_REVIEW_STATUS"))
-    private ReviewStatusMaster memberReviewStatus;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "BANK_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAV_BANK_REVIEW_STATUS"))
-    private ReviewStatusMaster bankReviewStatus;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "DOCUMENT_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAV_DOC_REVIEW_STATUS"))
-    private ReviewStatusMaster documentReviewStatus;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CONTRIBUTION_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAV_CONTRIB_REVIEW_STATUS"))
-    private ReviewStatusMaster contributionReviewStatus;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RULE_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAV_RULE_REVIEW_STATUS"))
-    private ReviewStatusMaster ruleReviewStatus;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "LOAN_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAV_LOAN_REVIEW_STATUS"))
-    private ReviewStatusMaster loanReviewStatus;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "DEDUCTION_REVIEW_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CAV_DEDUCTION_REVIEW_STATUS"))
-    private ReviewStatusMaster deductionReviewStatus;
-
-    @Column(name = "RETURN_REASON", length = 1000)
-    private String returnReason;
-
     @Column(name = "REJECTION_REASON", length = 1000)
     private String rejectionReason;
 
     @Column(name = "VERIFIER_REMARKS", length = 2000)
     private String verifierRemarks;
 
+    @Column(name = "CLAIMED_BY", length = 100)
+    private String claimedBy;
+
     @Column(name = "VERIFIED_BY", length = 100)
     private String verifiedBy;
 
-    @Column(name = "VERIFIED_BY_ROLE", length = 100)
-    private Long verifiedByRole;
+    @Column(name = "VERIFIED_BY_ROLE_ID", length = 100)
+    private Long verifiedByRoleId;
 
     @Column(name = "VERIFIED_AT")
     private Timestamp verifiedAt;

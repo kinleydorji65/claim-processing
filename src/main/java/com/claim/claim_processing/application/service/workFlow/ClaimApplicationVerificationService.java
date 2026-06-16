@@ -1,21 +1,23 @@
 package com.claim.claim_processing.application.service.workFlow;
 
+import java.util.List;
+
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationVerificationRequestDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 
 public interface ClaimApplicationVerificationService {
 
-    ClaimApplicationVerificationResponseDto patch(
-            Long claimApplicationId,
-            ClaimApplicationVerificationRequestDto request
-    );
+        ApiResponseDTO<ClaimApplicationVerificationResponseDto> patch(
+                        String applicationNumber,
+                        ClaimApplicationVerificationRequestDto request);
 
-    ClaimApplicationVerificationResponseDto verify(
-            Long claimApplicationId,
-            ClaimApplicationVerificationRequestDto request
-    );
+        ApiResponseDTO<ClaimApplicationVerificationResponseDto> verify(
+                        String applicationNumber,
+                        ClaimApplicationVerificationRequestDto request);
 
-    ClaimApplicationVerificationResponseDto getByClaimApplicationId(
-            Long claimApplicationId
-    );
+        ApiResponseDTO<ClaimApplicationVerificationResponseDto> getByApplicationNumber(
+                        String applicationNumber);
+
+        ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> verifiedClaimApplicationClaimedBy(String applicationNumber, String claimedBy);
 }

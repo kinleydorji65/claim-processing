@@ -10,6 +10,10 @@ public interface ClaimApplicationService {
     ClaimApplication create(ClaimApplicationRequestDto request);
 
     ClaimApplication update(ClaimApplicationRequestDto request);
+    
+    ClaimApplication unClaimedBy(String applicationId, String unclaimedBy);
+
+    ClaimApplication claimedBy(String applicationId, String claimedBy);
 
     ClaimApplication getById(Long id);
 
@@ -18,6 +22,8 @@ public interface ClaimApplicationService {
     List<ClaimApplication> getAll();
 
     List<ClaimApplication> getByMemberCode(String memberCode);
+    List<ClaimApplication> getVerifiedApplication();
 
     List<ClaimApplication> getByNppfNumber(String nppfNumber);
+    List<ClaimApplication> getByUserCode(String userCode);
 }

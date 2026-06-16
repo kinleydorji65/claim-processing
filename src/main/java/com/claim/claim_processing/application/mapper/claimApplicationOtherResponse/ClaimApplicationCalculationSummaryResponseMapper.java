@@ -8,7 +8,6 @@ import com.claim.claim_processing.application.DTO.response.calculation.ClaimAppl
 import com.claim.claim_processing.application.DTO.response.calculation.ClaimApplicationRuleEvaluationListDto;
 import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationSummary;
 import com.claim.claim_processing.application.entity.calculation.ClaimApplicationRuleEvaluation;
-import com.claim.claim_processing.common.DTO.response.common.StageResponseDto;
 import com.claim.claim_processing.common.DTO.response.others.StatusMasterResponseDto;
 
 @Component
@@ -28,15 +27,6 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
                 .claimApplicationId(
                         entity.getClaimApplication() != null
                                 ? entity.getClaimApplication().getId()
-                                : null
-                )
-
-                .calculationStage(
-                        entity.getCalculationStage() != null
-                                ? StageResponseDto.builder()
-                                .id(entity.getCalculationStage().getId())
-                                .name(entity.getCalculationStage().getName())
-                                .build()
                                 : null
                 )
 

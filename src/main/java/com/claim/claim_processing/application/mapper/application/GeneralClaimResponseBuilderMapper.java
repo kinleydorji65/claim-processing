@@ -60,7 +60,8 @@ public class GeneralClaimResponseBuilderMapper {
                 .isActive(entity.getIsActive())
                 .specialCaseAuthorityId(entity.getSpecialCaseAuthority() != null ? entity.getSpecialCaseAuthority().getId() : null)
                 .specialCaseAuthorityName(entity.getSpecialCaseAuthority() != null ? entity.getSpecialCaseAuthority().getName() : null)
-
+                .claimedBy(entity.getClaimedBy())
+                .unClaimedBy(entity.getUnClaimedBy())
                 .currencyCode(entity.getCurrencyCode())
 
                 .currentStageId(entity.getCurrentStage() != null ? entity.getCurrentStage().getId() : null)

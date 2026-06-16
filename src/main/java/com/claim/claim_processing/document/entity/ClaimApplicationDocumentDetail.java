@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.statusMaster.VerificationStatusMaster;
+import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 @Entity
 @Table(name = "CLAIM_APPLICATION_DOCUMENT_DETAIL", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
@@ -68,7 +68,7 @@ public class ClaimApplicationDocumentDetail {
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "VERIFICATION_STATUS_ID", foreignKey = @ForeignKey(name = "FK_CADD_VER_STATUS"))
-        private VerificationStatusMaster verificationStatus;
+        private StatusMaster verificationStatus;
 
         @Column(name = "DOCUMENT_REMARKS", length = 1000)
         private String documentRemarks;

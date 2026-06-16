@@ -11,10 +11,10 @@ import com.claim.claim_processing.application.repository.application.ClaimApplic
 import com.claim.claim_processing.application.repository.workFlow.ClaimApplicationVerificationRepository;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationVerificationService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationWorkflowService;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.statusMaster.VerificationStatusMaster;
-import com.claim.claim_processing.common.repository.common.ReviewStatusRepository;
-import com.claim.claim_processing.common.repository.statusMaster.VerificationStatusMasterRepository;
+import com.claim.claim_processing.common.entities.others.StatusMaster;
+import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 
 import lombok.RequiredArgsConstructor;
@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Map;
 
 
@@ -34,22 +35,21 @@ public class ClaimApplicationVerificationServiceImpl
     private final ClaimApplicationVerificationRepository verificationRepository;
     private final ClaimApplicationRepository claimApplicationRepository;
 
-    private final VerificationStatusMasterRepository verificationStatusRepository;
-    private final ReviewStatusRepository reviewStatusRepository;
+    private final StatusMasterRepository statusRepository;
     private final ClaimApplicationWorkflowService workflowService;
 
     private final ClaimApplicationVerificationMapper verificationMapper;
 
     @Override
-    public ClaimApplicationVerificationResponseDto patch(
-            Long claimApplicationId,
+    public ApiResponseDTO<ClaimApplicationVerificationResponseDto> patch(
+            String applicationNumber,
             ClaimApplicationVerificationRequestDto request
     ) {
 
-        ClaimApplication claimApplication = getClaimApplication(claimApplicationId);
+        ClaimApplication claimApplication = getClaimApplication(applicationNumber);
 
         ClaimApplicationVerification verification =
-                verificationRepository.findByClaimApplication_Id(claimApplicationId)
+                verificationRepository.findByClaimApplication_ApplicationNumber(applicationNumber)
                         .orElseGet(() -> ClaimApplicationVerification.builder()
                                 .claimApplication(claimApplication)
                                 .isActive(ActivityEnum.Y)
@@ -64,21 +64,21 @@ public class ClaimApplicationVerificationServiceImpl
         ClaimApplicationVerification saved =
                 verificationRepository.save(verification);
 
-        return verificationMapper.toResponse(saved);
+        return ApiResponseDTO.success(verificationMapper.toResponse(saved));
     }
 
     @Override
-public ClaimApplicationVerificationResponseDto verify(
-        Long claimApplicationId,
+public ApiResponseDTO<ClaimApplicationVerificationResponseDto> verify(
+        String applicationNumber,
         ClaimApplicationVerificationRequestDto request
 ) {
 
-    ClaimApplication claimApplication = getClaimApplication(claimApplicationId);
+    ClaimApplication claimApplication = getClaimApplication(applicationNumber);
 
     ClaimApplicationVerification verification =
-            verificationRepository.findByClaimApplication_Id(claimApplicationId)
+            verificationRepository.findByClaimApplication_ApplicationNumber(applicationNumber)
                     .orElseThrow(() -> ClaimException.notFound(
-                            "Verification record not found for claim application id: " + claimApplicationId
+                            "Verification record not found for claim application number: " + applicationNumber
                     ));
 
     applyRequest(verification, request);
@@ -88,14 +88,13 @@ public ClaimApplicationVerificationResponseDto verify(
     }
 
     verification.setVerifiedBy(request.getVerifiedBy());
-    verification.setVerifiedByRole(request.getVerifiedByRole());
+    verification.setVerifiedByRoleId(request.getVerifiedByRoleId());
     verification.setVerifiedAt(new Timestamp(System.currentTimeMillis()));
     verification.setUpdatedBy(request.getVerifiedBy());
 
     ClaimApplicationVerification saved = verificationRepository.save(verification);
 
-    String reason = request.getReturnReason() != null ? request.getReturnReason() :
-            request.getRejectionReason() != null ? request.getRejectionReason() :
+    String reason = request.getRejectionReason() != null ? request.getRejectionReason() :
                     request.getVerifierRemarks();
     Map<String, Long> workflowStage = resolveFromStageAndToStageAndAction(claimApplication.getId(), request);
     ClaimApplicationWorkflowRequestDto workflowRequest =
@@ -111,22 +110,22 @@ public ClaimApplicationVerificationResponseDto verify(
 
     workflowService.create(claimApplication, workflowRequest);
 
-    return verificationMapper.toResponse(saved);
+    return ApiResponseDTO.success(verificationMapper.toResponse(saved));
 }
 
     @Override
     @Transactional(readOnly = true)
-    public ClaimApplicationVerificationResponseDto getByClaimApplicationId(
-            Long claimApplicationId
+    public ApiResponseDTO<ClaimApplicationVerificationResponseDto> getByApplicationNumber(
+            String applicationNumber
     ) {
 
         ClaimApplicationVerification verification =
-                verificationRepository.findByClaimApplication_Id(claimApplicationId)
+                verificationRepository.findByClaimApplication_ApplicationNumber(applicationNumber)
                         .orElse(null);
-        if (verification == null) {
-            return null;
-        }
-        return verificationMapper.toResponse(verification);
+                        if (verification == null) {
+                                return null;
+                        }
+        return ApiResponseDTO.success(verificationMapper.toResponse(verification));
     }
 
     private void applyRequest(
@@ -134,52 +133,10 @@ public ClaimApplicationVerificationResponseDto verify(
             ClaimApplicationVerificationRequestDto request
     ) {
 
-        if (request.getVerificationStatusId() != null) {
-            verification.setVerificationStatus(
-                    verificationStatusRepository.findById(request.getVerificationStatusId())
+        if (request.getVerificationStatusId() != null || request.getVerificationStatusId() < 0) {
+            verification.setStatus(
+                    statusRepository.findById(request.getVerificationStatusId())
                             .orElseThrow(() -> new RuntimeException("Verification status not found with id: " + request.getVerificationStatusId()))
-            );
-        }
-
-        if (request.getMemberReviewStatusId() != null) {
-            verification.setMemberReviewStatus(
-                    reviewStatusRepository.findById(request.getMemberReviewStatusId())
-                            .orElseThrow(() -> new RuntimeException("Member review status not found with id: " + request.getMemberReviewStatusId()))
-            );
-        }
-
-        if (request.getBankReviewStatusId() != null) {
-            verification.setBankReviewStatus(
-                    reviewStatusRepository.findById(request.getBankReviewStatusId())
-                            .orElseThrow(() -> new RuntimeException("Bank review status not found with id: " + request.getBankReviewStatusId()))
-            );
-        }
-
-        if (request.getDocumentReviewStatusId() != null) {
-            verification.setDocumentReviewStatus(
-                    reviewStatusRepository.findById(request.getDocumentReviewStatusId())
-                            .orElseThrow(() -> new RuntimeException("Document review status not found with id: " + request.getDocumentReviewStatusId()))
-            );
-        }
-
-        if (request.getContributionReviewStatusId() != null) {
-            verification.setContributionReviewStatus(
-                    reviewStatusRepository.findById(request.getContributionReviewStatusId())
-                            .orElseThrow(() -> new RuntimeException("Contribution review status not found with id: " + request.getContributionReviewStatusId()))
-            );
-        }
-
-        if (request.getRuleReviewStatusId() != null) {
-            verification.setRuleReviewStatus(
-                    reviewStatusRepository.findById(request.getRuleReviewStatusId())
-                            .orElseThrow(() -> new RuntimeException("Rule review status not found with id: " + request.getRuleReviewStatusId()))
-            );
-        }
-
-        if (request.getDeductionReviewStatusId() != null) {
-            verification.setDeductionReviewStatus(
-                    reviewStatusRepository.findById(request.getDeductionReviewStatusId())
-                            .orElseThrow(() -> new RuntimeException("Deduction review status not found with id: " + request.getDeductionReviewStatusId()))
             );
         }
 
@@ -194,8 +151,6 @@ public ClaimApplicationVerificationResponseDto verify(
                     request.getRequiresManualReview()
             );
         }
-
-        verification.setReturnReason(request.getReturnReason());
         verification.setRejectionReason(request.getRejectionReason());
         verification.setVerifierRemarks(request.getVerifierRemarks());
     }
@@ -229,6 +184,30 @@ public ClaimApplicationVerificationResponseDto verify(
     
 }
 
+@Override
+@Transactional(readOnly = true)
+public ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> verifiedClaimApplicationClaimedBy(String applicationNumber, String claimedBy) {
+        if (applicationNumber == null || applicationNumber.isBlank()) {
+                throw ClaimException.badRequest("Application number is required");
+        }
+        if (claimedBy == null || claimedBy.isBlank()) {
+                throw ClaimException.badRequest("Claimed by is required");
+        }
+
+        ClaimApplicationVerification verification = verificationRepository.findByClaimApplication_ApplicationNumber(applicationNumber)
+                .orElseThrow(() -> ClaimException.notFound("Verification record not found for claim application number: " + applicationNumber));
+        StatusMaster claimedStatus = statusRepository.findById(3L)
+                .orElseThrow(() -> new RuntimeException("Claimed status not found"));
+        verification.setStatus(claimedStatus);
+        verification.setClaimedBy(claimedBy);
+        verification.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+        verificationRepository.saveAndFlush(verification);
+        List<ClaimApplicationVerification> getVerifications = verificationRepository.findByClaimedByAndStatus_StatusId(claimedBy, 3L);
+        return ApiResponseDTO.success(getVerifications.stream()
+                .map(verificationMapper::toResponse)
+                .toList());
+}
+
 private boolean isVerifiedOrApproved(Long statusId) {
 
     String code = getReviewStatusCode(statusId);
@@ -238,15 +217,15 @@ private boolean isVerifiedOrApproved(Long statusId) {
 }
 
     private String getReviewStatusCode(Long id) {
-        VerificationStatusMaster verificationStatus = verificationStatusRepository.findById(id)
+        StatusMaster verificationStatus = statusRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Verification status not found with id: " + id));
-        return verificationStatus.getCode();
+        return verificationStatus.getStatusName();
     }
 
-    private ClaimApplication getClaimApplication(Long claimApplicationId) {
-        return claimApplicationRepository.findById(claimApplicationId)
+    private ClaimApplication getClaimApplication(String applicationNumber) {
+        return claimApplicationRepository.findByApplicationNumber(applicationNumber)
                 .orElseThrow(() -> new RuntimeException(
-                        "Claim application not found with id: " + claimApplicationId
+                        "Claim application not found with application number: " + applicationNumber
                 ));
     }
 }

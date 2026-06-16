@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface ClaimApplicationApprovalRepository extends JpaRepository<ClaimApplicationApproval, Long>  {
     Optional<ClaimApplicationApproval> findByClaimApplication_Id(Long claimApplicationId);
+    Optional<ClaimApplicationApproval> findByClaimApplication_ApplicationNumber(String applicationNumber);
 
     Optional<ClaimApplicationApproval> findTopByClaimApplication_IdOrderByApprovedAtDesc(
             Long claimApplicationId

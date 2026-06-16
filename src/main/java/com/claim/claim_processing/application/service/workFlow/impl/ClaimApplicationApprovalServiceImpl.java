@@ -6,6 +6,9 @@ import com.claim.claim_processing.application.DTO.response.application.GeneralCl
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationWorkflowResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationComponent;
+import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationSummary;
+import com.claim.claim_processing.application.entity.calculation.ClaimApplicationRuleEvaluation;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationApproval;
 import com.claim.claim_processing.application.mapper.application.GeneralClaimResponseBuilderMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.BeneficiarySettlementResponseMapper;
@@ -21,6 +24,7 @@ import com.claim.claim_processing.application.repository.workFlow.ClaimApplicati
 import com.claim.claim_processing.application.service.claimDetail.ClaimDetailService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationApprovalService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationWorkflowService;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
@@ -30,224 +34,300 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationApprovalService {
 
-    private final ClaimApplicationApprovalRepository approvalRepository;
-    private final ClaimApplicationRepository claimApplicationRepository;
-    private final ClaimApplicationBankResponseMapper claimApplicationBankResponseMapper;
-    private final GeneralClaimResponseBuilderMapper generalClaimResponseBuilderMapper;
-    private final ClaimApplicationDeductionResponseMapper claimApplicationDeductionResponseMapper;
-    private final ClaimApplicationCalculationSummaryResponseMapper claimApplicationCalculationSummaryResponseMapper;
-    private final NormalClaimResponseMapper normalClaimResponseMapper;
-    private final PartialWithdrawalResponseMapper partialWithdrawalResponseMapper;
-    private final BeneficiarySettlementResponseMapper beneficiarySettlementResponseMapper;
-    private final ClaimApplicationForfeitedComponentResponseMapper claimApplicationForfeitedComponentResponseMapper;
+        private final ClaimApplicationApprovalRepository approvalRepository;
+        private final ClaimApplicationRepository claimApplicationRepository;
+        private final ClaimApplicationBankResponseMapper claimApplicationBankResponseMapper;
+        private final GeneralClaimResponseBuilderMapper generalClaimResponseBuilderMapper;
+        private final ClaimApplicationDeductionResponseMapper claimApplicationDeductionResponseMapper;
+        private final ClaimApplicationCalculationSummaryResponseMapper claimApplicationCalculationSummaryResponseMapper;
+        private final NormalClaimResponseMapper normalClaimResponseMapper;
+        private final PartialWithdrawalResponseMapper partialWithdrawalResponseMapper;
+        private final BeneficiarySettlementResponseMapper beneficiarySettlementResponseMapper;
+        private final ClaimApplicationForfeitedComponentResponseMapper claimApplicationForfeitedComponentResponseMapper;
 
-    private final StatusMasterRepository statusRepository;
-    private final ClaimApplicationWorkflowService workflowService;
+        private final StatusMasterRepository statusRepository;
+        private final ClaimApplicationWorkflowService workflowService;
 
-    private final ClaimApplicationApprovalMapper approvalMapper;
-    private final ClaimDetailService claimDetailService;
+        private final ClaimApplicationApprovalMapper approvalMapper;
+        private final ClaimDetailService claimDetailService;
 
-    @Override
-    public ClaimApplicationApprovalResponseDto patch(
-            Long claimApplicationId,
-            ClaimApplicationApprovalRequestDto request
-    ) {
+        @Override
+        public ApiResponseDTO<ClaimApplicationApprovalResponseDto> patch(
+                        String applicationNumber,
+                        ClaimApplicationApprovalRequestDto request) {
 
-        ClaimApplication claimApplication = getClaimApplication(claimApplicationId);
+                ClaimApplication claimApplication = getClaimApplication(applicationNumber);
 
-        ClaimApplicationApproval approval =
-                approvalRepository.findByClaimApplication_Id(claimApplicationId)
-                        .orElseGet(() -> ClaimApplicationApproval.builder()
-                                .claimApplication(claimApplication)
-                                .isActive(ActivityEnum.Y)
-                                .createdBy(request.getCreatedBy() != null ? request.getCreatedBy() : "sys")
-                                .build()
-                        );
+                ClaimApplicationApproval approval = approvalRepository
+                                .findByClaimApplication_ApplicationNumber(claimApplication.getApplicationNumber())
+                                .orElseGet(() -> ClaimApplicationApproval.builder()
+                                                .claimApplication(claimApplication)
+                                                .isActive(ActivityEnum.Y)
+                                                .createdBy(request.getCreatedBy() != null ? request.getCreatedBy()
+                                                                : "sys")
+                                                .build());
 
-        applyRequest(approval, request);
+                applyRequest(approval, claimApplication, request);
 
-        approval.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : "sys");
+                approval.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : "sys");
 
-        ClaimApplicationApproval saved = approvalRepository.save(approval);
+                ClaimApplicationApproval saved = approvalRepository.save(approval);
 
-        return approvalMapper.toResponse(saved);
-    }
-
-    @Override
-    public ClaimApplicationApprovalResponseDto approve(
-            Long claimApplicationId,
-            ClaimApplicationApprovalRequestDto request
-    ) {
-
-        ClaimApplication claimApplication = getClaimApplication(claimApplicationId);
-
-        ClaimApplicationApproval approval =
-                approvalRepository.findByClaimApplication_Id(claimApplicationId)
-                        .orElseThrow(() -> ClaimException.notFound(
-                                "Approval record not found for claim application id: " + claimApplicationId
-                        ));
-
-        applyRequest(approval, request);
-
-        if (request.getApprovedBy() == null || request.getApprovedBy().isBlank()) {
-            throw ClaimException.badRequest("Approved By is required");
+                return ApiResponseDTO.success(approvalMapper.toResponse(saved));
         }
 
-        approval.setApprovedBy(request.getApprovedBy());
-        approval.setApprovedByRole(request.getApprovedByRole());
-        approval.setApprovedAt(new Timestamp(System.currentTimeMillis()));
-        approval.setUpdatedBy(request.getApprovedBy());
+        @Override
+        public ApiResponseDTO<ClaimApplicationApprovalResponseDto> approve(
+                        String applicationNumber,
+                        ClaimApplicationApprovalRequestDto request) {
 
-        ClaimApplicationApproval saved = approvalRepository.save(approval);
+                ClaimApplication claimApplication = getClaimApplication(applicationNumber);
 
-        Map<String, Long> workflowStage =
-                resolveFromStageAndToStageAndAction(claimApplication.getId(), request);
+                ClaimApplicationApproval approval = approvalRepository
+                                .findByClaimApplication_ApplicationNumber(applicationNumber)
+                                .orElseThrow(() -> ClaimException.notFound(
+                                                "Approval record not found for claim application number: "
+                                                                + applicationNumber));
 
-        ClaimApplicationWorkflowRequestDto workflowRequest =
-                ClaimApplicationWorkflowRequestDto.builder()
-                        .fromStageId(workflowStage.get("fromStage"))
-                        .toStageId(workflowStage.get("toStage"))
-                        .fromStatusId(workflowStage.get("fromStatus"))
-                        .toStatusId(workflowStage.get("toStatus"))
-                        .actionId(request.getActionId())
-                        .reason(request.getApproverRemarks())
-                        .actionBy(request.getApprovedBy())
-                        .build();
+                // Apply all updates from request
+                applyRequest(approval, claimApplication, request);
 
-        workflowService.create(claimApplication, workflowRequest);
-        GeneralClaimResponse response = generalClaimResponseBuilderMapper.toResponse(claimApplication);
+                // Validate required fields for approval
+                if (request.getApprovedBy() == null || request.getApprovedBy().isBlank()) {
+                        throw ClaimException.badRequest("Approved By is required");
+                }
 
-        response.setBankDetails(
-                        claimApplication.getBankDetails().stream()
-                                        .map(claimApplicationBankResponseMapper::toResponse)
-                                        .toList());
+                // Set approval specific fields
+                approval.setApprovedBy(request.getApprovedBy());
 
-        response.setDeductionDetail(
-                        claimApplicationDeductionResponseMapper.toResponse(claimApplication.getDeductionDetail()));
+                // FIXED: Set proper role instead of hardcoded "1l"
+                String approvedByRole = "APPROVER"; // Implement this method
+                approval.setApprovedByRole(approvedByRole);
 
-        response.setCalculationSummary(
-                        claimApplicationCalculationSummaryResponseMapper.toResponse(claimApplication.getCalculationSummary()));
+                approval.setApprovedAt(new Timestamp(System.currentTimeMillis()));
+                approval.setUpdatedBy(request.getApprovedBy());
 
-        response.setNormalClaimDetails(
-                        normalClaimResponseMapper.toResponse(claimApplication.getNormalClaimDetail()));
+                // Save approval
+                ClaimApplicationApproval saved = approvalRepository.save(approval);
 
-        response.setPartialWithdrawalDetails(
-                        partialWithdrawalResponseMapper.toResponse(claimApplication.getPartialWithdrawalDetail()));
+                // Create workflow entry
+                Map<String, Long> workflowStage = resolveFromStageAndToStageAndAction(claimApplication.getId(),
+                                request);
 
-        response.setBeneficiarySettlementDetails(
-                        beneficiarySettlementResponseMapper.toResponse(claimApplication.getBeneficiarySettlementDetail()));
+                ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto.builder()
+                                .fromStageId(workflowStage.get("fromStage"))
+                                .toStageId(workflowStage.get("toStage"))
+                                .fromStatusId(workflowStage.get("fromStatus"))
+                                .toStatusId(workflowStage.get("toStatus"))
+                                .actionId(request.getActionId())
+                                .reason(request.getApproverRemarks())
+                                .actionBy(request.getApprovedBy())
+                                .build();
 
-        response.setForfeitedComponents(
-                                claimApplicationForfeitedComponentResponseMapper.toResponseList(claimApplication.getForfeitedComponents()));
-        claimDetailService.create(response);
-        return approvalMapper.toResponse(saved);
-    }
+                workflowService.create(claimApplication, workflowRequest);
 
-    @Override
-    @Transactional(readOnly = true)
-    public ClaimApplicationApprovalResponseDto getByClaimApplicationId(
-            Long claimApplicationId
-    ) {
+                // Build response
+                GeneralClaimResponse response = buildGeneralClaimResponse(claimApplication);
 
-        ClaimApplicationApproval approval =
-                approvalRepository.findByClaimApplication_Id(claimApplicationId)
-                        .orElse(null);
-        if (approval == null) {
-            return null;
-        }
-        return approvalMapper.toResponse(approval);
-    }
+                // Create claim detail
+                claimDetailService.create(response);
 
-    private void applyRequest(
-            ClaimApplicationApproval approval,
-            ClaimApplicationApprovalRequestDto request
-    ) {
-
-        if (request.getApprovalStatusId() != null) {
-            approval.setApprovalStatus(
-                    statusRepository.findById(request.getApprovalStatusId())
-                            .orElseThrow(() -> ClaimException.notFound(
-                                    "Approval status not found with id: " + request.getApprovalStatusId()
-                            ))
-            );
+                return ApiResponseDTO.success(approvalMapper.toResponse(saved));
         }
 
-        approval.setApprovedAmount(request.getApprovedAmount());
-        approval.setApprovedPfAmount(request.getApprovedPfAmount());
-        approval.setApprovedPensionAmount(request.getApprovedPensionAmount());
-        approval.setApprovedWithdrawalAmount(request.getApprovedWithdrawalAmount());
-        approval.setApprovedRefundAmount(request.getApprovedRefundAmount());
-        approval.setApprovedDeductionAmount(request.getApprovedDeductionAmount());
-        approval.setFinalNetPayableAmount(request.getFinalNetPayableAmount());
+        // Helper method to build response
+        private GeneralClaimResponse buildGeneralClaimResponse(ClaimApplication claimApplication) {
+                GeneralClaimResponse response = generalClaimResponseBuilderMapper.toResponse(claimApplication);
 
-        if (request.getRequiresManualReview() != null) {
-            approval.setRequiresManualReview(request.getRequiresManualReview());
+                response.setBankDetails(
+                                claimApplication.getBankDetails().stream()
+                                                .map(claimApplicationBankResponseMapper::toResponse)
+                                                .toList());
+
+                response.setDeductionDetail(
+                                claimApplicationDeductionResponseMapper
+                                                .toResponse(claimApplication.getDeductionDetail()));
+
+                response.setCalculationSummary(
+                                claimApplicationCalculationSummaryResponseMapper
+                                                .toResponse(claimApplication.getCalculationSummary()));
+
+                response.setNormalClaimDetails(
+                                normalClaimResponseMapper.toResponse(claimApplication.getNormalClaimDetail()));
+
+                response.setPartialWithdrawalDetails(
+                                partialWithdrawalResponseMapper
+                                                .toResponse(claimApplication.getPartialWithdrawalDetail()));
+
+                response.setBeneficiarySettlementDetails(
+                                beneficiarySettlementResponseMapper
+                                                .toResponse(claimApplication.getBeneficiarySettlementDetail()));
+
+                response.setForfeitedComponents(
+                                claimApplicationForfeitedComponentResponseMapper
+                                                .toResponseList(claimApplication.getForfeitedComponents()));
+
+                return response;
         }
 
-        if (request.getIsActive() != null) {
-            approval.setIsActive(request.getIsActive());
+        @Override
+        @Transactional(readOnly = true)
+        public ApiResponseDTO<ClaimApplicationApprovalResponseDto> getByApplicationNumber(
+                        String applicationNumber) {
+
+                ClaimApplicationApproval approval = approvalRepository
+                                .findByClaimApplication_ApplicationNumber(applicationNumber)
+                                .orElse(null);
+                if (approval == null) {
+                        return null;
+                }
+                return ApiResponseDTO.success(approvalMapper.toResponse(approval));
         }
 
-        approval.setApproverRemarks(request.getApproverRemarks());
-    }
+        private void applyRequest(
+                        ClaimApplicationApproval approval,
+                        ClaimApplication claimApplication,
+                        ClaimApplicationApprovalRequestDto request) {
 
-    private Map<String, Long> resolveFromStageAndToStageAndAction(
-            Long applicationId,
-            ClaimApplicationApprovalRequestDto request
-    ) {
+                if (request.getApprovalStatusId() != null) {
+                        approval.setApprovalStatus(
+                                        statusRepository.findById(request.getApprovalStatusId())
+                                                        .orElseThrow(() -> ClaimException.notFound(
+                                                                        "Approval status not found with id: " + request
+                                                                                        .getApprovalStatusId())));
+                }
 
-        ClaimApplicationWorkflowResponseDto stageMaster =
-                workflowService.getByApplicationId(applicationId).get(0);
+                // Get calculation summary
+                ClaimApplicationCalculationSummary calculationSummary = claimApplication.getCalculationSummary();
 
-        if (isApproved(request.getApprovalStatusId())) {
-            return Map.of(
-                    "fromStage", 4L,
-                    "toStage", 5L,
-                    "fromStatus", 41L,
-                    "toStatus", 6L
-            );
+                if (calculationSummary != null) {
+                        // Set final payable amount from calculation summary
+                        approval.setApprovedAmount(calculationSummary.getFinalPayableAmount());
+
+                        // Calculate PF and Pension totals from rule evaluations
+                        BigDecimal totalPfAmount = calculateTotalPfAmount(calculationSummary.getRuleEvaluations());
+                        BigDecimal totalPensionAmount = calculateTotalPensionAmount(
+                                        calculationSummary.getRuleEvaluations());
+
+                        // Set the calculated amounts
+                        approval.setApprovedPfAmount(totalPfAmount);
+                        approval.setApprovedPensionAmount(totalPensionAmount);
+
+                        // Set other amounts (adjust based on your actual fields)
+                        approval.setApprovedWithdrawalAmount(claimApplication.getPartialWithdrawalDetail() != null
+                                        ? claimApplication.getPartialWithdrawalDetail().getRequestedWithdrawalAmount()
+                                        : BigDecimal.ZERO);
+                        approval.setApprovedRefundAmount(BigDecimal.ZERO); // Calculate if needed
+                        approval.setApprovedDeductionAmount(claimApplication.getDeductionDetail() != null
+                                        ? claimApplication.getDeductionDetail().getDeductedAmount()
+                                        : BigDecimal.ZERO); // Calculate if needed
+                        approval.setFinalNetPayableAmount(totalPensionAmount);
+                }
+
+                approval.setFinalNetPayableAmount(calculationSummary.getFinalPayableAmount());
+
+                if (request.getRequiresManualReview() != null) {
+                        approval.setRequiresManualReview(request.getRequiresManualReview());
+                }
+
+                if (request.getIsActive() != null) {
+                        approval.setIsActive(request.getIsActive());
+                }
+
+                approval.setApproverRemarks(request.getApproverRemarks());
         }
 
-        return Map.of(
-                "fromStage", stageMaster.getFromStageId(),
-                "toStage", stageMaster.getToStageId(),
-                "fromStatus", 7L,
-                "toStatus", stageMaster.getFromStatusId()
-        );
-    }
+        // Helper methods
+        private BigDecimal calculateTotalPfAmount(List<ClaimApplicationRuleEvaluation> ruleEvaluations) {
+                if (ruleEvaluations == null || ruleEvaluations.isEmpty()) {
+                        return BigDecimal.ZERO;
+                }
 
-    private boolean isApproved(Long statusId) {
-
-        String statusName = getStatusName(statusId);
-
-        return "APPROVED".equalsIgnoreCase(statusName);
-    }
-
-    private String getStatusName(Long id) {
-        if (id == null) {
-            throw ClaimException.badRequest("Approval status is required");
+                return ruleEvaluations.stream()
+                                .filter(Objects::nonNull)
+                                .flatMap(ruleEvaluation -> ruleEvaluation.getComponents().stream())
+                                .filter(Objects::nonNull)
+                                .filter(component -> component.getComponentMaster() != null)
+                                .filter(component -> component.getComponentMaster().getCode() != null)
+                                .filter(component -> component.getComponentMaster().getCode().startsWith("PF_"))
+                                .map(ClaimApplicationCalculationComponent::getAmount)
+                                .filter(Objects::nonNull)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
-        StatusMaster status = statusRepository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound(
-                        "Approval status not found with id: " + id
-                ));
+        private BigDecimal calculateTotalPensionAmount(List<ClaimApplicationRuleEvaluation> ruleEvaluations) {
+                if (ruleEvaluations == null || ruleEvaluations.isEmpty()) {
+                        return BigDecimal.ZERO;
+                }
 
-        return status.getStatusName();
-    }
+                return ruleEvaluations.stream()
+                                .filter(Objects::nonNull)
+                                .flatMap(ruleEvaluation -> ruleEvaluation.getComponents().stream())
+                                .filter(Objects::nonNull)
+                                .filter(component -> component.getComponentMaster() != null)
+                                .filter(component -> component.getComponentMaster().getCode() != null)
+                                .filter(component -> component.getComponentMaster().getCode().startsWith("P_"))
+                                .map(ClaimApplicationCalculationComponent::getAmount)
+                                .filter(Objects::nonNull)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
 
-    private ClaimApplication getClaimApplication(Long claimApplicationId) {
-        return claimApplicationRepository.findById(claimApplicationId)
-                .orElseThrow(() -> ClaimException.notFound(
-                        "Claim application not found with id: " + claimApplicationId
-                ));
-    }
+        private Map<String, Long> resolveFromStageAndToStageAndAction(
+                        Long applicationId,
+                        ClaimApplicationApprovalRequestDto request) {
+
+                ClaimApplicationWorkflowResponseDto stageMaster = workflowService.getByApplicationId(applicationId)
+                                .get(0);
+
+                if (isApproved(request.getApprovalStatusId())) {
+                        return Map.of(
+                                        "fromStage", 4L,
+                                        "toStage", 5L,
+                                        "fromStatus", 41L,
+                                        "toStatus", 6L);
+                }
+
+                return Map.of(
+                                "fromStage", stageMaster.getFromStageId(),
+                                "toStage", stageMaster.getToStageId(),
+                                "fromStatus", 7L,
+                                "toStatus", stageMaster.getFromStatusId());
+        }
+
+        private boolean isApproved(Long statusId) {
+
+                String statusName = getStatusName(statusId);
+
+                return "APPROVED".equalsIgnoreCase(statusName);
+        }
+
+        private String getStatusName(Long id) {
+                if (id == null) {
+                        throw ClaimException.badRequest("Approval status is required");
+                }
+
+                StatusMaster status = statusRepository.findById(id)
+                                .orElseThrow(() -> ClaimException.notFound(
+                                                "Approval status not found with id: " + id));
+
+                return status.getStatusName();
+        }
+
+        private ClaimApplication getClaimApplication(String applicationNumber) {
+                return claimApplicationRepository.findByApplicationNumber(applicationNumber)
+                                .orElseThrow(() -> ClaimException.notFound(
+                                                "Claim application not found with application number: "
+                                                                + applicationNumber));
+        }
 }

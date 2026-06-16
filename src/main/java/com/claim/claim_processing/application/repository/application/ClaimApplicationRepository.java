@@ -26,6 +26,8 @@ public interface ClaimApplicationRepository extends JpaRepository<ClaimApplicati
     List<ClaimApplication> findByCurrentStage_Id(Long currentStageId);
 
     List<ClaimApplication> findByIsActive(ActivityEnum isActive);
+    List<ClaimApplication> findByAgencyCode(String agencyCode);
+    List<ClaimApplication> findByAgencyCodeAndStatus_StatusId(String agencyCode, Long statusId);
 
     List<ClaimApplication> findByMemberCodeAndIsActive(
             String memberCode,

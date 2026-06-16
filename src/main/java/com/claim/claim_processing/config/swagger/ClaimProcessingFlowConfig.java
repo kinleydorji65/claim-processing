@@ -12,7 +12,7 @@ public class ClaimProcessingFlowConfig implements SwaggerConfig {
         return createGroupedApi(
                 "Claim Processing Flow Management",
                 "Claim Processing Flow APIs",
-                "/api/claim-processing-flow/claims/**",
+                "/api/claim-processing-flow/**",
                 "Claim Processing Flow"
         );
     }
