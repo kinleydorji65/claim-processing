@@ -108,6 +108,7 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
                 .totalContributionMonths(contributionSummary.getTotalContributionMonths())
                 .totalNonContributionMonths(contributionSummary.getTotalNonContributionMonths())
                 .components(components)
+                .totalAmount(contributionSummary.getTotalBalance())
                 .finalPayableAmount(finalPayableAmount)
                 .expressionCalculations(expressionCalculations)
                 .eligibilityNote("Partial withdrawal calculated using component expression and withdrawal percentage.")

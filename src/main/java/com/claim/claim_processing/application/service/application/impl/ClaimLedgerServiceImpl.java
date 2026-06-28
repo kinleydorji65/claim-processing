@@ -13,11 +13,13 @@ import com.claim.claim_processing.application.service.application.ClaimLedgerSer
 import com.claim.claim_processing.common.entities.claim.ClaimAccountingEvent;
 import com.claim.claim_processing.common.entities.claim.ClaimLedgerEntry;
 import com.claim.claim_processing.common.entities.common.CoaAccountMapping;
+import com.claim.claim_processing.common.entities.others.member.MemberDetail;
 import com.claim.claim_processing.common.repository.claim.ClaimAccountingEventRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimLedgerEntryRepository;
 import com.claim.claim_processing.common.repository.common.CoaAccountMappingRepository;
 import com.claim.claim_processing.common.repository.common.CoaMainAccountRepository;
 import com.claim.claim_processing.common.repository.common.CoaSubAccountRepository;
+import com.claim.claim_processing.common.repository.others.MemberDetailRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +45,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
     private final CoaAccountMappingRepository coaAccountMappingRepository;
     private final CoaMainAccountRepository coaMainAccountRepository;
     private final CoaSubAccountRepository coaSubAccountRepository;
+    private final MemberDetailRepository memberDetailRepository;
 
     private static final String EVENT_TYPE_CLAIM = "CLAIM";
     private static final String EVENT_TYPE_REFUND = "REFUND";
@@ -50,11 +53,17 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_POSTED = "POSTED";
     private static final String STATUS_REVERSED = "REVERSED";
+    private static final String EVENT_TYPE_PARTIAL_WITHDRAWAL = "PARTIAL_WITHDRAWAL";
 
     private static final Map<String, String> TRAN_CODE_MAP = Map.of(
             "01", "RPFC",
             "03", "RPFA",
-            "04", "RPFP"
+            "04", "RPFP");
+
+    private static final Map<String, String> PARTIAL_TRAN_CODE_MAP = Map.of(
+            "01", "PWPC", // Civil - Partial Withdrawal
+            "03", "PWPA", // Armed Forces - Partial Withdrawal
+            "04", "PWPP" // Private - Partial Withdrawal
     );
 
     @Override
@@ -79,10 +88,16 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
             throw new RuntimeException("Ledger entries already exist for claim: " + claimResponse.getId());
         }
 
+        boolean isPartialWithdrawal = isPartialWithdrawalClaim(claimResponse);
+        log.info("Is Partial Withdrawal: {}", isPartialWithdrawal);
+
         // 3. Determine TRAN_CODE based on Agency Category
         String agencyCategoryId = claimResponse.getMemberCategoryId();
-        String tranCode = TRAN_CODE_MAP.getOrDefault(agencyCategoryId, "RPFC");
-        log.info("Agency Category: {}, TRAN_CODE: {}", agencyCategoryId, tranCode);
+        String tranCode = isPartialWithdrawal
+                ? PARTIAL_TRAN_CODE_MAP.getOrDefault(agencyCategoryId, "PWP")
+                : TRAN_CODE_MAP.getOrDefault(agencyCategoryId, "RPFC");
+        log.info("Agency Category: {}, TRAN_CODE: {}, isPartialWithdrawal: {}",
+                agencyCategoryId, tranCode, isPartialWithdrawal);
 
         // 4. Build grouped component amounts (PF and Pension)
         Map<String, BigDecimal> groupedComponentAmounts = buildGroupedComponentAmounts(claimResponse);
@@ -114,9 +129,14 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                 : BigDecimal.ZERO;
         log.info("Final Payable (Net) Amount: {}", finalPayable);
 
-        // 11. Calculate Lapse amount = Total Eligible - Total Deductions - Net Payable - Total Forfeited
-        BigDecimal lapseAmount = totalEligible.subtract(totalDeductions).subtract(finalPayable).subtract(totalForfeited);
-        log.info("Lapse Amount: {}", lapseAmount);
+        // 11. Calculate Lapse amount = Total Eligible - Total Deductions - Net Payable
+        // - Total Forfeited
+        BigDecimal lapseAmount = BigDecimal.ZERO;
+        if (!isPartialWithdrawal) {
+            lapseAmount = totalEligible.subtract(totalDeductions).subtract(finalPayable)
+                    .subtract(totalForfeited);
+            log.info("Lapse Amount: {}", lapseAmount);
+        }
 
         // 12. Create and SAVE Accounting Event FIRST
         ClaimAccountingEvent event = createAccountingEvent(claimResponse, tranCode, createdBy);
@@ -124,21 +144,29 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         log.info("Accounting Event created with ID: {}", event.getId());
 
         // 13. Get COA Mappings for REFUND and DEDUCTION
-        List<CoaAccountMapping> refundMappings = coaAccountMappingRepository
+        String eventType = isPartialWithdrawal ? EVENT_TYPE_PARTIAL_WITHDRAWAL : EVENT_TYPE_REFUND;
+    List<CoaAccountMapping> refundMappings = coaAccountMappingRepository
+            .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
+                    eventType, agencyCategoryId);
+
+    if (refundMappings.isEmpty() && isPartialWithdrawal) {
+        log.warn("No PARTIAL_WITHDRAWAL mappings found, falling back to REFUND");
+        refundMappings = coaAccountMappingRepository
                 .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
                         EVENT_TYPE_REFUND, agencyCategoryId);
-        
+    }
+
         List<CoaAccountMapping> deductionMappings = coaAccountMappingRepository
                 .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
                         EVENT_TYPE_DEDUCTION, agencyCategoryId);
-        
-        log.info("REFUND Mappings found: {}, DEDUCTION Mappings found: {}", 
+
+        log.info("REFUND Mappings found: {}, DEDUCTION Mappings found: {}",
                 refundMappings.size(), deductionMappings.size());
 
         // Log mapping details for debugging
         for (CoaAccountMapping mapping : deductionMappings) {
-            log.info("DEDUCTION Mapping: component={}, mainAccount={}, subAccount={}, drcr={}", 
-                    mapping.getComponentCode(), mapping.getMainAccountCode(), 
+            log.info("DEDUCTION Mapping: component={}, mainAccount={}, subAccount={}, drcr={}",
+                    mapping.getComponentCode(), mapping.getMainAccountCode(),
                     mapping.getSubAccountCode(), mapping.getDrcr());
         }
 
@@ -155,8 +183,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                 continue;
             }
 
-            BigDecimal amount = groupedComponentAmounts.getOrDefault(componentCode, BigDecimal.ZERO);
-
+            BigDecimal amount = getAmountForComponent(groupedComponentAmounts, componentCode, isPartialWithdrawal);
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                 log.debug("Skipping zero amount for component: {}", componentCode);
                 continue;
@@ -183,25 +210,25 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
 
         // 14b. Process DEDUCTION mappings (CREDIT - LOAN, RENTAL, etc.)
         Map<String, BigDecimal> matchedDeductions = new HashMap<>();
-        
+
         for (CoaAccountMapping mapping : deductionMappings) {
             String componentCode = mapping.getComponentCode();
-            
+
             // Skip LAPSE - handled separately
             if ("LAPSE".equals(componentCode)) {
                 continue;
             }
-            
+
             // Try to find matching deduction amount by various methods
             BigDecimal amount = findMatchingAmount(componentCode, deductionAmounts);
-            
+
             if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
                 log.debug("No matching deduction for component: {}", componentCode);
                 continue;
             }
 
             matchedDeductions.put(componentCode, amount);
-            
+
             seqNo++;
             ClaimLedgerEntry entry = ClaimLedgerEntry.builder()
                     .accountingEventId(event.getId())
@@ -225,19 +252,19 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         for (Map.Entry<String, BigDecimal> entry : deductionAmounts.entrySet()) {
             String deductionCode = entry.getKey();
             BigDecimal amount = entry.getValue();
-            
+
             // Skip if already matched
-            if (matchedDeductions.containsKey(deductionCode) || 
-                matchedDeductions.containsValue(amount)) {
+            if (matchedDeductions.containsKey(deductionCode) ||
+                    matchedDeductions.containsValue(amount)) {
                 continue;
             }
-            
+
             // Find a default deduction mapping
             CoaAccountMapping defaultMapping = deductionMappings.stream()
                     .filter(m -> !"LAPSE".equals(m.getComponentCode()))
                     .findFirst()
                     .orElse(null);
-            
+
             if (defaultMapping != null) {
                 seqNo++;
                 ClaimLedgerEntry ledgerEntry = ClaimLedgerEntry.builder()
@@ -255,27 +282,28 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                         .build();
                 ledgerEntries.add(ledgerEntry);
                 log.info("CREDIT Entry (Default): SEQ={}, Component={}, Amount={}, Account={}/{}",
-                        seqNo, deductionCode, amount, 
+                        seqNo, deductionCode, amount,
                         defaultMapping.getMainAccountCode(), defaultMapping.getSubAccountCode());
             }
         }
 
         // 14d. Process FORFEITED components (CREDIT)
+        if (!isPartialWithdrawal) {
         for (Map.Entry<String, BigDecimal> entry : forfeitedAmounts.entrySet()) {
             String componentCode = entry.getKey();
             BigDecimal amount = entry.getValue();
-            
+
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
-            
+
             // Try to find mapping for forfeited component in deduction mappings
             CoaAccountMapping forfeitedMapping = findMappingByComponent(deductionMappings, componentCode);
             if (forfeitedMapping == null) {
                 // Try to find in refund mappings
                 forfeitedMapping = findMappingByComponent(refundMappings, componentCode);
             }
-            
+
             if (forfeitedMapping != null) {
                 seqNo++;
                 ClaimLedgerEntry ledgerEntry = ClaimLedgerEntry.builder()
@@ -293,13 +321,13 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                         .build();
                 ledgerEntries.add(ledgerEntry);
                 log.info("CREDIT Entry: SEQ={}, Component={}, Amount={}, Account={}/{}",
-                        seqNo, componentCode, amount, 
+                        seqNo, componentCode, amount,
                         forfeitedMapping.getMainAccountCode(), forfeitedMapping.getSubAccountCode());
             } else {
                 // If no mapping found, use LAPSE account as fallback
                 String lapseAccountCode = getLapseAccountCode(agencyCategoryId);
                 String lapseSubAccountCode = lapseAccountCode + "02";
-                
+
                 seqNo++;
                 ClaimLedgerEntry ledgerEntry = ClaimLedgerEntry.builder()
                         .accountingEventId(event.getId())
@@ -319,6 +347,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                         seqNo, componentCode, amount, lapseAccountCode, lapseSubAccountCode);
             }
         }
+    }
 
         // 14e. BANK Entry (CREDIT) - Net payment to member
         if (finalPayable.compareTo(BigDecimal.ZERO) > 0) {
@@ -346,8 +375,9 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
             }
         }
 
-        // 14f. LAPSE Entry (CREDIT) - Difference if positive (not already covered by forfeited)
-        if (lapseAmount.compareTo(BigDecimal.ZERO) > 0) {
+        // 14f. LAPSE Entry (CREDIT) - Difference if positive (not already covered by
+        // forfeited)
+        if (!isPartialWithdrawal && lapseAmount.compareTo(BigDecimal.ZERO) > 0) {
             CoaAccountMapping lapseMapping = findLapseMapping(deductionMappings, agencyCategoryId);
             if (lapseMapping != null) {
                 seqNo++;
@@ -371,7 +401,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                 // Fallback if no LAPSE mapping found in COA
                 String lapseAccountCode = getLapseAccountCode(agencyCategoryId);
                 String lapseSubAccountCode = lapseAccountCode + "02";
-                
+
                 seqNo++;
                 ClaimLedgerEntry entry = ClaimLedgerEntry.builder()
                         .accountingEventId(event.getId())
@@ -405,7 +435,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
 
         // 17. Validate balance
         if (totalDr.compareTo(totalCr) != 0) {
-            log.error("LEDGER NOT BALANCED! DR: {}, CR: {}, Difference: {}", 
+            log.error("LEDGER NOT BALANCED! DR: {}, CR: {}, Difference: {}",
                     totalDr, totalCr, totalDr.subtract(totalCr));
             throw new RuntimeException(
                     "Ledger entries do not balance! Total DR: " + totalDr +
@@ -437,14 +467,14 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         if (amount != null) {
             return amount;
         }
-        
+
         // Try case-insensitive match
         for (Map.Entry<String, BigDecimal> entry : deductionAmounts.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(componentCode)) {
                 return entry.getValue();
             }
         }
-        
+
         // Try partial match (component code contains deduction key or vice versa)
         for (Map.Entry<String, BigDecimal> entry : deductionAmounts.entrySet()) {
             String key = entry.getKey().toUpperCase();
@@ -454,7 +484,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                 return entry.getValue();
             }
         }
-        
+
         return null;
     }
 
@@ -465,6 +495,8 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         Map<String, BigDecimal> groupedMap = new HashMap<>();
         BigDecimal pfTotal = BigDecimal.ZERO;
         BigDecimal pensionTotal = BigDecimal.ZERO;
+
+        boolean isPartialWithdrawal = isPartialWithdrawalClaim(claimResponse);
 
         ClaimCalculationSummaryResponseDto summary = claimResponse.getCalculationSummary();
 
@@ -486,18 +518,32 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                     continue;
                 }
 
-                if (code.startsWith("PF_")) {
-                    pfTotal = pfTotal.add(amount);
-                    log.debug("PF Component: {} = {}", code, amount);
-                } else if (code.startsWith("P_") || code.startsWith("PC_")) {
-                    pensionTotal = pensionTotal.add(amount);
-                    log.debug("Pension Component: {} = {}", code, amount);
+                if (isPartialWithdrawal) {
+                    if (code.startsWith("PF_")) {
+                        pfTotal = pfTotal.add(amount);
+                        log.debug("Partial Withdrawal - PF Component: {} = {}", code, amount);
+                    } else {
+                        log.debug("Skipping non-PF component for partial withdrawal: {}", code);
+                    }
+                } else {
+                    if (code.startsWith("PF_")) {
+                        pfTotal = pfTotal.add(amount);
+                        log.debug("PF Component: {} = {}", code, amount);
+                    } else if (code.startsWith("P_") || code.startsWith("PC_")) {
+                        pensionTotal = pensionTotal.add(amount);
+                        log.debug("Pension Component: {} = {}", code, amount);
+                    }
                 }
+
             }
         }
 
         if (pfTotal.compareTo(BigDecimal.ZERO) > 0) {
-            groupedMap.put("PF_REFUND", pfTotal);
+            if (isPartialWithdrawal) {
+                groupedMap.put("PARTIAL_PF", pfTotal); // For partial withdrawal
+            } else {
+                groupedMap.put("PF_REFUND", pfTotal); // For normal claim
+            }
         }
         if (pensionTotal.compareTo(BigDecimal.ZERO) > 0) {
             groupedMap.put("PENSION_REFUND", pensionTotal);
@@ -514,19 +560,19 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         Map<String, BigDecimal> deductionMap = new HashMap<>();
 
         ClaimDeductionResponseDto deductionDetail = claimResponse.getDeductionDetail();
-        
+
         if (deductionDetail == null) {
             log.warn("No deduction detail found in claim response");
             return deductionMap;
         }
 
         List<ClaimDeductionItemResponseDto> deductionItems = deductionDetail.getDeductionItems();
-        
+
         if (deductionItems == null || deductionItems.isEmpty()) {
-            BigDecimal deductedAmount = deductionDetail.getDeductedAmount() != null 
-                    ? deductionDetail.getDeductedAmount() 
+            BigDecimal deductedAmount = deductionDetail.getDeductedAmount() != null
+                    ? deductionDetail.getDeductedAmount()
                     : BigDecimal.ZERO;
-            
+
             if (deductedAmount.compareTo(BigDecimal.ZERO) > 0) {
                 deductionMap.put("OTHER_DEDUCTION", deductedAmount);
                 log.debug("Using OTHER_DEDUCTION for amount: {}", deductedAmount);
@@ -535,8 +581,8 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         }
 
         for (ClaimDeductionItemResponseDto item : deductionItems) {
-            BigDecimal deductedAmount = item.getDeductedAmount() != null 
-                    ? item.getDeductedAmount() 
+            BigDecimal deductedAmount = item.getDeductedAmount() != null
+                    ? item.getDeductedAmount()
                     : BigDecimal.ZERO;
 
             if (deductedAmount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -544,11 +590,11 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
             }
 
             String componentCode = mapDeductionItemToComponentCode(item);
-            
+
             if (componentCode != null) {
                 BigDecimal existingAmount = deductionMap.getOrDefault(componentCode, BigDecimal.ZERO);
                 deductionMap.put(componentCode, existingAmount.add(deductedAmount));
-                log.debug("Deduction Item: {} -> Component: {}, Amount: {}", 
+                log.debug("Deduction Item: {} -> Component: {}, Amount: {}",
                         item.getReferenceName(), componentCode, deductedAmount);
             } else {
                 // Use reference name as component code
@@ -574,8 +620,12 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
     private Map<String, BigDecimal> buildForfeitedAmounts(GeneralClaimDetailResponse claimResponse) {
         Map<String, BigDecimal> forfeitedMap = new HashMap<>();
 
+        if (isPartialWithdrawalClaim(claimResponse)) {
+            log.info("Partial withdrawal claim - no forfeited components");
+            return forfeitedMap;
+        }
         List<ClaimForfeitedComponentResponseDto> forfeitedComponents = claimResponse.getForfeitedComponents();
-        
+
         if (forfeitedComponents == null || forfeitedComponents.isEmpty()) {
             log.debug("No forfeited components found");
             return forfeitedMap;
@@ -584,11 +634,11 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         for (ClaimForfeitedComponentResponseDto forfeited : forfeitedComponents) {
             String componentCode = forfeited.getComponentCode();
             BigDecimal amount = forfeited.getAmount() != null ? forfeited.getAmount() : BigDecimal.ZERO;
-            
+
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
-            
+
             String mappedCode = mapForfeitedComponentCode(componentCode);
             if (mappedCode != null) {
                 BigDecimal existingAmount = forfeitedMap.getOrDefault(mappedCode, BigDecimal.ZERO);
@@ -608,8 +658,9 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
      * Map forfeited component code to standard code
      */
     private String mapForfeitedComponentCode(String componentCode) {
-        if (componentCode == null) return null;
-        
+        if (componentCode == null)
+            return null;
+
         Map<String, String> forfeitedMapping = new HashMap<>();
         forfeitedMapping.put("PF_MC", "PF_FORFEITED");
         forfeitedMapping.put("PF_EC", "PF_FORFEITED");
@@ -619,7 +670,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         forfeitedMapping.put("P_EC", "PENSION_FORFEITED");
         forfeitedMapping.put("P_IMC", "PENSION_FORFEITED");
         forfeitedMapping.put("P_IEC", "PENSION_FORFEITED");
-        
+
         return forfeitedMapping.getOrDefault(componentCode, componentCode);
     }
 
@@ -629,24 +680,24 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
     private String mapDeductionItemToComponentCode(ClaimDeductionItemResponseDto item) {
         String deductionCategory = item.getDeductionCategory();
         String referenceName = item.getReferenceName() != null ? item.getReferenceName().toUpperCase() : "";
-        
+
         // Map by category
         String componentCode = mapDeductionCategoryToComponentCode(deductionCategory);
         if (componentCode != null) {
             return componentCode;
         }
-        
+
         // Map by reference name
         componentCode = mapDeductionReferenceNameToComponentCode(referenceName);
         if (componentCode != null) {
             return componentCode;
         }
-        
+
         // Return reference name if not empty
         if (referenceName != null && !referenceName.isEmpty()) {
             return referenceName.replace(" ", "_");
         }
-        
+
         return null;
     }
 
@@ -654,8 +705,9 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
      * Map deduction category to component code
      */
     private String mapDeductionCategoryToComponentCode(String category) {
-        if (category == null) return null;
-        
+        if (category == null)
+            return null;
+
         Map<String, String> categoryMapping = new HashMap<>();
         categoryMapping.put("LOAN", "LOAN");
         categoryMapping.put("PF_LOAN", "LOAN");
@@ -665,7 +717,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         categoryMapping.put("ADVANCE", "ADVANCE");
         categoryMapping.put("TAX", "TAX");
         categoryMapping.put("RECOVERY", "RECOVERY");
-        
+
         return categoryMapping.get(category.toUpperCase());
     }
 
@@ -673,8 +725,9 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
      * Map deduction reference name to component code
      */
     private String mapDeductionReferenceNameToComponentCode(String referenceName) {
-        if (referenceName == null) return null;
-        
+        if (referenceName == null)
+            return null;
+
         Map<String, String> referenceMapping = new HashMap<>();
         referenceMapping.put("LOAN", "LOAN");
         referenceMapping.put("PF LOAN", "LOAN");
@@ -684,7 +737,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         referenceMapping.put("ADVANCE", "ADVANCE");
         referenceMapping.put("TAX", "TAX");
         referenceMapping.put("RECOVERY", "RECOVERY");
-        
+
         return referenceMapping.get(referenceName);
     }
 
@@ -693,14 +746,14 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
      */
     private CoaAccountMapping findLapseMapping(List<CoaAccountMapping> deductionMappings, String agencyCategoryId) {
         CoaAccountMapping lapseMapping = findMappingByComponent(deductionMappings, "LAPSE");
-        
+
         if (lapseMapping == null) {
             List<CoaAccountMapping> refundMappings = coaAccountMappingRepository
                     .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
                             EVENT_TYPE_REFUND, agencyCategoryId);
             lapseMapping = findMappingByComponent(refundMappings, "LAPSE");
         }
-        
+
         return lapseMapping;
     }
 
@@ -759,15 +812,23 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         LocalDateTime now = LocalDateTime.now();
         String claimReference = "CLM-" + claimResponse.getId();
 
+        boolean isPartialWithdrawal = isPartialWithdrawalClaim(claimResponse);
+        String eventType = isPartialWithdrawal ? EVENT_TYPE_PARTIAL_WITHDRAWAL : EVENT_TYPE_CLAIM;
+        String narration = isPartialWithdrawal
+                ? "Partial Withdrawal: " + claimReference + " — " + claimResponse.getClaimTypeName()
+                : "Claim: " + claimReference + " — " + claimResponse.getClaimTypeName();
+        MemberDetail memberDetail = memberDetailRepository.findByNppfNumber(claimResponse.getNppfNumber())
+                .orElseThrow(() -> new RuntimeException(
+                        "Member details not found for NPPF number: " + claimResponse.getNppfNumber()));
         return ClaimAccountingEvent.builder()
-                .eventType(EVENT_TYPE_CLAIM)
+                .eventType(eventType)
                 .claimDetailId(claimResponse.getId())
                 .nppfNumber(claimResponse.getNppfNumber())
-                .identityNumber(null)
-                .memberName(claimResponse.getMemberCode())
+                .identityNumber(memberDetail.getIdentityNumber())
+                .memberName(buildMemberName(memberDetail))
                 .agencyCategoryId(claimResponse.getMemberCategoryId())
                 .agencyCode(claimResponse.getAgencyCode())
-                .agencyName(null)
+                .agencyName(claimResponse.getAgencyCode())
                 .claimTypeId(claimResponse.getClaimTypeId())
                 .claimTypeName(claimResponse.getClaimTypeName())
                 .claimApplicationNumber(claimReference)
@@ -778,10 +839,30 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                 .status(STATUS_PENDING)
                 .totalDr(BigDecimal.ZERO)
                 .totalCr(BigDecimal.ZERO)
-                .narration("Claim: " + claimReference + " — " + claimResponse.getClaimTypeName())
+                .narration(narration)
                 .createdBy(createdBy)
                 .createdAt(now)
                 .build();
+    }
+
+    private String buildMemberName(MemberDetail memberDetail) {
+        StringBuilder nameBuilder = new StringBuilder();
+        if (memberDetail.getFirstName() != null) {
+            nameBuilder.append(memberDetail.getFirstName());
+        }
+        if (memberDetail.getMiddleName() != null) {
+            if (nameBuilder.length() > 0) {
+                nameBuilder.append(" ");
+            }
+            nameBuilder.append(memberDetail.getMiddleName());
+        }
+        if (memberDetail.getLastName() != null) {
+            if (nameBuilder.length() > 0) {
+                nameBuilder.append(" ");
+            }
+            nameBuilder.append(memberDetail.getLastName());
+        }
+        return nameBuilder.toString();
     }
 
     /**
@@ -968,6 +1049,33 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         accountingEventRepository.save(event);
 
         log.info("Ledger entries reversed for claim: {}", claimId);
+    }
+
+    /**
+ * Get amount for component based on claim type
+ */
+private BigDecimal getAmountForComponent(Map<String, BigDecimal> groupedComponentAmounts, 
+        String componentCode, boolean isPartialWithdrawal) {
+    
+    if (isPartialWithdrawal) {
+        // For partial withdrawal, return the total PF amount
+        if (componentCode != null && componentCode.startsWith("PARTIAL_PF")) {
+            return groupedComponentAmounts.getOrDefault("PARTIAL_PF", BigDecimal.ZERO);
+        }
+        // For other components (like BANK, LAPSE), return 0
+        return BigDecimal.ZERO;
+    } else {
+        return groupedComponentAmounts.getOrDefault(componentCode, BigDecimal.ZERO);
+    }
+}
+
+    private boolean isPartialWithdrawalClaim(GeneralClaimDetailResponse claimResponse) {
+        // Check claim type - Partial Withdrawal = 2
+        Long claimTypeId = claimResponse.getClaimTypeId();
+        if (claimTypeId != null && claimTypeId == 2L) {
+            return true;
+        }
+        return false;
     }
 
     @Override

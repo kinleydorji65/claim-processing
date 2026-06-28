@@ -98,6 +98,7 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
                                             ? "Special case - Rule not applied"
                                             : "Rule applied successfully"
                             )
+                            
                             .evaluatedBy(claimCalculationSummary.getCreatedBy())
                             .subRule(subRule)
                             .evaluatedAt(new Timestamp(System.currentTimeMillis()))
