@@ -75,9 +75,6 @@ public class GeneralClaimResponse {
     private Long statusId;
     private String statusName;
 
-    private Long actionId;
-    private String actionName;
-
     private List<ClaimApplicationBankResponseDto> bankDetails;
     private List<ClaimApplicationWorkflowResponseDto> workflowDetails;
     private ClaimApplicationDeductionResponseDto deductionDetail;
@@ -89,6 +86,7 @@ public class GeneralClaimResponse {
     private List<ClaimApplicationForfeitedComponentResponseDto> forfeitedComponents;
     private ClaimApplicationVerificationResponseDto verificationDetail;
     private ClaimApplicationApprovalResponseDto approvalDetail;
+    private AccountingEventResponseDto accountingEventDetail;
 
     private String createdBy;
 

@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.BeneficiarySettlementResponseDto;
+import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.PartialWithdrawalResponseDto;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -53,9 +55,6 @@ public class GeneralClaimDetailResponse {
     private ActivityEnum isSpecialCase;
     private ActivityEnum isActive;
 
-    private Long parentClaimApplicationId;
-    private String parentApplicationNumber;
-
     private Long specialCaseAuthorityId;
     private String specialCaseAuthorityName;
 
@@ -75,9 +74,10 @@ public class GeneralClaimDetailResponse {
     private ClaimCalculationSummaryResponseDto calculationSummary;
     private NormalClaimResponseDto normalClaimDetails;
     private PartialWithdrawalResponseDto partialWithdrawalDetails;
+    private LegalRecoveryResponseDto legalRecoveryDetail;
     private BeneficiarySettlementResponseDto beneficiarySettlementDetails;
     private List<ClaimForfeitedComponentResponseDto> forfeitedComponents;
-    private ClaimLedgerDeductionTrackerResponseDto ledgerDeductionTracker;
+    private AccountingEventResponseDto accountingEventDetail;
 
     private String createdBy;
 

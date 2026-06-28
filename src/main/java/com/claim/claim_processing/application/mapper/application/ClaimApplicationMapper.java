@@ -24,7 +24,6 @@ public interface ClaimApplicationMapper {
     @Mapping(target = "specialCaseAuthority", ignore = true)
     @Mapping(target = "currentStage", ignore = true)
     @Mapping(target = "status", ignore = true)
-    @Mapping(target = "action", ignore = true)
 
     @Mapping(target = "normalClaimDetail", ignore = true)
     @Mapping(target = "partialWithdrawalDetail", ignore = true)
@@ -55,7 +54,6 @@ public interface ClaimApplicationMapper {
     @Mapping(target = "specialCaseAuthority", ignore = true)
     @Mapping(target = "currentStage", ignore = true)
     @Mapping(target = "status", ignore = true)
-    @Mapping(target = "action", ignore = true)
 
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)

@@ -14,6 +14,7 @@ public class ClaimApplicationCalculationPatchRequestDto {
     private BigDecimal finalPayableAmount;
 
     private BigDecimal actualAmountCalculated;
+    private BigDecimal totalAmount;
 
     private Long calculationStatusId;
 

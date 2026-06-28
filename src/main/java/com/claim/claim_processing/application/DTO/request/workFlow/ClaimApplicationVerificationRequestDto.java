@@ -11,18 +11,6 @@ import lombok.*;
 public class ClaimApplicationVerificationRequestDto {
     private Long verificationStatusId;
 
-    private Long memberReviewStatusId;
-
-    private Long bankReviewStatusId;
-
-    private Long documentReviewStatusId;
-
-    private Long contributionReviewStatusId;
-
-    private Long ruleReviewStatusId;
-
-    private Long deductionReviewStatusId;
-
     private ActivityEnum requiresRecalculation;
 
     private ActivityEnum requiresManualReview;
@@ -31,9 +19,8 @@ public class ClaimApplicationVerificationRequestDto {
 
     private String verifierRemarks;
 
-    private Long actionId;
-
     private String verifiedBy;
+    private String rejectedBy;
 
     private Long verifiedByRoleId;
 

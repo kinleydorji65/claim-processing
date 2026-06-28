@@ -23,10 +23,10 @@ public class ClaimApplicationVerificationResponseDto {
     private ActivityEnum requiresRecalculation;
     private ActivityEnum requiresManualReview;
 
-    private String returnReason;
     private String rejectionReason;
     private String verifierRemarks;
 
+    private String rejectedBy;
     private String verifiedBy;
     private Long verifiedByRoleId;
     private String verifiedByRoleName;

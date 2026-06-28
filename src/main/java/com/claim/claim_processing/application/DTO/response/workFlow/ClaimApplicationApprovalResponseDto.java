@@ -36,11 +36,11 @@ public class ClaimApplicationApprovalResponseDto {
     private String isActive;
 
     // ---------- Remarks ----------
-    private String approverRemarks;
+    private String remarks;
 
     // ---------- Approval Info ----------
     private String approvedBy;
-    private String approvedByRole;
+    private Long roleId;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime approvedAt;

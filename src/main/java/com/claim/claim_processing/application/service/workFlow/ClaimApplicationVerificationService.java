@@ -16,8 +16,18 @@ public interface ClaimApplicationVerificationService {
                         String applicationNumber,
                         ClaimApplicationVerificationRequestDto request);
 
-        ApiResponseDTO<ClaimApplicationVerificationResponseDto> getByApplicationNumber(
+        ApiResponseDTO<ClaimApplicationVerificationResponseDto> getByVerifiedApplicationNumber(
                         String applicationNumber);
+        ApiResponseDTO<ClaimApplicationVerificationResponseDto> getByApplicationNumber(String applicationNumber);
+
+        ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> getVerifiedApplication();
+        ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> getVerifiedClaim();
 
         ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> verifiedClaimApplicationClaimedBy(String applicationNumber, String claimedBy);
+        ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> getClaimApplicationWhichClaimedBy(String claimedBy);
+        ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> verifiedClaimApplicationUnClaimedBy(String applicationNumber, String unClaimedBy);
+        
+        ApiResponseDTO<ClaimApplicationVerificationResponseDto> rejectedClaimApplication(String applicationNumber, ClaimApplicationVerificationRequestDto request);
+        
+        ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> getVerifiedClaimButRejectedClaim();
 }

@@ -89,14 +89,13 @@ public interface AllClaimDetailMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "claimDetail", ignore = true)
-    @Mapping(target = "calculationStage", ignore = true)
-    @Mapping(target = "calculationStatus", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "ruleEvaluations", ignore = true)
     @Mapping(target = "calculationEffectiveDate", source = "calculationEffectiveDate")
     @Mapping(target = "finalPayableAmount", source = "finalPayableAmount")
     @Mapping(target = "actualAmountCalculated", source = "actualAmountCalculated")
+    @Mapping(target = "totalAmount", source = "totalAmount")
     @Mapping(target = "isPfEligible", source = "isPfEligible", defaultValue = "N")
     @Mapping(target = "isPensionEligible", source = "isPensionEligible", defaultValue = "N")
     @Mapping(target = "totalContributionMonth", source = "totalContributionMonth")
@@ -108,7 +107,6 @@ public interface AllClaimDetailMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "claimDetail", ignore = true)
-    @Mapping(target = "deductionReviewStatus", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deductionItems", ignore = true)

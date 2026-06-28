@@ -65,7 +65,7 @@ public class ClaimRuleEvaluation {
     @Column(name = "UPDATED_AT")
     private Timestamp updatedAt;
 
-    @OneToMany(mappedBy = "ruleEvaluation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "ruleEvaluation")
     @Builder.Default
     private List<ClaimCalculationComponent> components = new ArrayList<>();
 

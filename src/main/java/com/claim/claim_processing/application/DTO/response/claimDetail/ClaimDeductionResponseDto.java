@@ -21,9 +21,6 @@ public class ClaimDeductionResponseDto {
     private BigDecimal approvedDeductedAmount;
     private BigDecimal deductedAmount;
 
-    private Long deductionReviewStatusId;
-    private String deductionReviewStatusName;
-
     private ActivityEnum isAutoApplied;
     private ActivityEnum isManualOverride;
     private ActivityEnum isActive;

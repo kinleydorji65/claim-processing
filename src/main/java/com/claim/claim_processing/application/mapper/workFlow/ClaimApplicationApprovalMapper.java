@@ -51,9 +51,9 @@ public class ClaimApplicationApprovalMapper {
 
                 .requiresManualReview(entity.getRequiresManualReview())
 
-                .approverRemarks(entity.getApproverRemarks())
+                .remarks(entity.getRemarks())
                 .approvedBy(entity.getApprovedBy())
-                .approvedByRole(entity.getApprovedByRole())
+                .roleId(entity.getRoleId())
 
                 .approvedAt(
                         entity.getApprovedAt() != null

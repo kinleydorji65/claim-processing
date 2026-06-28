@@ -26,6 +26,7 @@ public class ClaimCalculationSummaryResponseDto {
 
     private BigDecimal finalPayableAmount;
     private BigDecimal actualAmountCalculated;
+    private BigDecimal totalAmount;
 
     private String isPfEligible;
     private String isPensionEligible;
@@ -33,10 +34,6 @@ public class ClaimCalculationSummaryResponseDto {
     private Integer totalContributionMonth;
 
     private String recommendedBenefitType;
-
-    private Long calculationStatusId;
-    private String calculationStatusName;
-
     private ActivityEnum isActive;
 
     private List<ClaimRuleEvaluationListDto> ruleEvaluations;

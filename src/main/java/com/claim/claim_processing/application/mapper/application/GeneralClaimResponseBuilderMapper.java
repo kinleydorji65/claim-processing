@@ -69,10 +69,6 @@ public class GeneralClaimResponseBuilderMapper {
 
                 .statusId(entity.getStatus() != null ? entity.getStatus().getStatusId() : null)
                 .statusName(entity.getStatus() != null ? entity.getStatus().getStatusName() : null)
-
-                .actionId(entity.getAction() != null ? entity.getAction().getId() : null)
-                .actionName(entity.getAction() != null ? entity.getAction().getName() : null)
-
                 .createdBy(entity.getCreatedBy())
                 .createdAt(entity.getCreatedAt() != null ? entity.getCreatedAt().toLocalDateTime() : null)
                 .updatedBy(entity.getUpdatedBy())

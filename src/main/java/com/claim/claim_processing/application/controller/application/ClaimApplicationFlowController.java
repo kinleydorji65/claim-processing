@@ -5,19 +5,23 @@ import com.claim.claim_processing.application.DTO.request.application.GeneralCla
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationApprovalRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationVerificationRequestDto;
 import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
+import com.claim.claim_processing.application.DTO.response.claimDetail.GeneralClaimDetailResponse;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
+import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationWorkflowResponseDto;
 import com.claim.claim_processing.application.service.application.ClaimApplicationFlowService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationApprovalService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationVerificationService;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/claim-processing-flow")
@@ -57,6 +61,11 @@ public class ClaimApplicationFlowController {
             @PathVariable String nppfNumber) {
         return ResponseEntity.ok(claimApplicationFlowService.findByNppfNumber(nppfNumber));
     }
+    @GetMapping("/claims/{applicationNumber}/workflow-history")
+    public ResponseEntity<ApiResponseDTO<List<ClaimApplicationWorkflowResponseDto>>> getWorkflowDetails(
+            @PathVariable String applicationNumber) {
+        return ResponseEntity.ok(claimApplicationFlowService.getWorkflowDetails(applicationNumber));
+    }
 
     @GetMapping("/claims/get-verified-applications")
     public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> getVerifiedApplication() {
@@ -72,8 +81,19 @@ public class ClaimApplicationFlowController {
                 claimApplicationApprovalService.patch(applicationNumber, request));
     }
 
-    @PostMapping("/claims/{applicationNumber}/approval/approve")
-    public ResponseEntity<ApiResponseDTO<ClaimApplicationApprovalResponseDto>> approveApproval(
+    // Approval Endpoints
+    @PatchMapping("/claims/{applicationNumber}/reject")
+    @Operation(summary = "Reject action by verified")
+    public ResponseEntity<ApiResponseDTO<GeneralClaimResponse>> rejectbyVerifier(
+            @PathVariable String applicationNumber,
+            @RequestBody ClaimApplicationVerificationRequestDto request) {
+        return ResponseEntity.ok(
+                claimApplicationFlowService.rejectedClaimApplication(applicationNumber, request));
+    }
+
+    @PatchMapping("/claims/{applicationNumber}/approval/approve")
+    @Operation(summary = "Approve action for approver")
+    public ResponseEntity<ApiResponseDTO<GeneralClaimDetailResponse>> approveApproval(
             @PathVariable String applicationNumber,
             @RequestBody ClaimApplicationApprovalRequestDto request) {
         return ResponseEntity.ok(
@@ -96,7 +116,8 @@ public class ClaimApplicationFlowController {
                 claimApplicationVerificationService.patch(applicationNumber, request));
     }
 
-    @PostMapping("/claims/{applicationNumber}/verification/verify")
+    @PatchMapping("/claims/{applicationNumber}/verification/verify")
+    @Operation(summary = "Verify action by verifier")
     public ResponseEntity<ApiResponseDTO<ClaimApplicationVerificationResponseDto>> verifyVerification(
             @PathVariable String applicationNumber,
             @RequestBody ClaimApplicationVerificationRequestDto request) {
@@ -104,11 +125,24 @@ public class ClaimApplicationFlowController {
                 claimApplicationVerificationService.verify(applicationNumber, request));
     }
 
+    @PatchMapping("/claims/{applicationNumber}/verification/reject")
+    @Operation(summary = "Reject a claim application by verifier")
+    public ResponseEntity<ApiResponseDTO<ClaimApplicationVerificationResponseDto>> rejectedClaimApplication(@PathVariable String applicationNumber, @RequestBody ClaimApplicationVerificationRequestDto request) {
+        return ResponseEntity.ok(
+                claimApplicationVerificationService.rejectedClaimApplication(applicationNumber, request));
+    }
+
     @GetMapping("/claims/{applicationNumber}/verification")
     public ResponseEntity<ApiResponseDTO<ClaimApplicationVerificationResponseDto>> getVerificationByApplicationNumber(
             @PathVariable String applicationNumber) {
         return ResponseEntity.ok(
                 claimApplicationVerificationService.getByApplicationNumber(applicationNumber));
+    }
+    @GetMapping("/claims/{agencyCode}/agencyCode/{claimTypeId}")
+    public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> getByAgencyCode(
+            @PathVariable String agencyCode, @PathVariable Long claimTypeId) {
+        return ResponseEntity.ok(
+                claimApplicationFlowService.getByAgencyCodeAndClaimTypeId(agencyCode, claimTypeId));
     }
 
     @PatchMapping("/claims/{applicationNumber}/claim")
@@ -127,18 +161,92 @@ public class ClaimApplicationFlowController {
                 claimApplicationFlowService.unClaimedBy(applicationNumber, unclaimedBy));
     }
 
-    @GetMapping("/claims/user/{userCode}")
+    @GetMapping("/claims/user/{userCode}/status/{statusId}")
     public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> getClaimsByUserCode(
-            @PathVariable String userCode) {
+            @PathVariable String userCode, @PathVariable Long statusId) {
         return ResponseEntity.ok(
-                claimApplicationFlowService.findByUserCode(userCode));
+                claimApplicationFlowService.findByUserCode(userCode, statusId));
     }
 
+    @GetMapping("/claims/get-all-verified-claim")
+    @Operation(summary = "Get all verified claim application for the approval")
+    public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> getVerifiedClaim() {
+        return ResponseEntity.ok(
+                claimApplicationFlowService.getVerifiedClaim());
+    }
+
+//     @GetMapping("/claims/verified-application")
+//     @Operation(summary = "Get all verified claim application")
+//     public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> getAllVerifiedApplication() {
+//         return ResponseEntity.ok(
+//                 claimApplicationFlowService.getVerifiedApplication());
+//     }
+
     @PatchMapping("/claims/verified-application-claimed-by")
+    @Operation(summary = "Claim by for the verifier")
     public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> verifiedClaimApplicationClaimedBy(
             @RequestParam String applicationNumber,
             @RequestParam String claimedBy) {
         return ResponseEntity.ok(
                 claimApplicationFlowService.verifiedClaimApplicationClaimedBy(applicationNumber, claimedBy));
     }
+
+    @PatchMapping("/claims/verified-application-unclaimed-by")
+    @Operation(summary = "Unclaim for the verifier")
+    public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> verifiedClaimApplicationUnClaimedBy(
+            @RequestParam String applicationNumber,
+            @RequestParam String unClaimedBy) {
+        return ResponseEntity.ok(
+                claimApplicationFlowService.verifiedClaimApplicationUnClaimedBy(applicationNumber, unClaimedBy));
+    }
+
+    @PatchMapping("/claims/{applicationNumber}/approval/claim")
+    @Operation(summary = "Claim by action for the approver")
+    public ResponseEntity<ApiResponseDTO<ClaimApplicationApprovalResponseDto>> verifiedClaimActionClaimedBy(
+            @PathVariable String applicationNumber,
+            @RequestParam String claimedBy) {
+        return ResponseEntity.ok(
+                claimApplicationApprovalService.verifiedClaimActionClaimedBy(applicationNumber, claimedBy));
+    }
+
+    @PatchMapping("/claims/{applicationNumber}/approval/unclaim")
+    @Operation(summary = "Unclaim action for the approver")
+    public ResponseEntity<ApiResponseDTO<ClaimApplicationApprovalResponseDto>> verifiedClaimActionUnClaimedBy(
+            @PathVariable String applicationNumber,
+            @RequestParam String unClaimedBy) {
+        return ResponseEntity.ok(
+                claimApplicationApprovalService.verifiedClaimActionUnClaimedBy(applicationNumber, unClaimedBy));
+    }
+
+    @PatchMapping("/claims/{applicationNumber}/approval/reject")
+    @Operation(summary = "Reject action for the approver")
+    public ResponseEntity<ApiResponseDTO<GeneralClaimResponse>> verifiedClaimActionRejectedByApprover(
+            @PathVariable String applicationNumber,
+            @RequestParam String rejectedBy,
+            @RequestParam String rejectedRemarks) {
+        return ResponseEntity.ok(
+                claimApplicationFlowService.verifiedClaimActionRejectedByApprover(applicationNumber, rejectedBy, rejectedRemarks));
+    }
+
+    @GetMapping("/claims/get-verified-claim-rejected-by-approver")
+    @Operation(summary = "Get all verified claim application which is rejected by approver")
+    public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> getVerifiedClaimButRejectedClaim() {
+        return ResponseEntity.ok(
+                claimApplicationFlowService.getVerifiedClaimButRejectedClaim());
+    }
+
+    @GetMapping("/claims/get-verified-claim-with-claimed-by/{claimedBy}")
+    @Operation(summary = "Get all verified claim application which is claimed by approver user")
+    public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> getVerifiedClaimAndClaimedBy(@PathVariable String claimedBy) {
+        return ResponseEntity.ok(
+                claimApplicationFlowService.getVerifiedClaimAndClaimedBy(claimedBy));
+    }
+
+    @GetMapping("/claims/get-claim-application-with-claimed-by/{claimedBy}")
+    @Operation(summary = "Get all claim application which is claimed by a verifier user")
+    public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> getVerifiedClaimWhichClaimedBy(@PathVariable String claimedBy) {
+        return ResponseEntity.ok(
+                claimApplicationFlowService.getClaimApplicationWhichClaimedBy(claimedBy));
+    }
+    
 }

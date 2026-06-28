@@ -1,7 +1,7 @@
 package com.claim.claim_processing.common.DTO.request.claim;
-
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
+
+import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -9,18 +9,30 @@ import lombok.*;
 @AllArgsConstructor
 public class ReserveAccountRequestDto {
 
+    // -------------------------------
+    // MEMBER INFORMATION
+    // -------------------------------
+    private String memberCode;
+    private String nppfNumber;
+    private String identityNumber;
 
-    private String reserveAccountCode;
+    // -------------------------------
+    // AGENCY INFORMATION
+    // -------------------------------
+    private String agencyCategoryId;
+    private String agencyCode;
 
-    private String reserveAccountName;
+    // -------------------------------
+    // RESERVE ACCOUNT DETAILS
+    // -------------------------------
+    private String reserveType;
+    private String accountCode;
+    private String subAccountCode;
 
-    private Long accountTypeId;
-
-    private Long schemeTypeId;
-
-    private ActivityEnum isActive;
-
-    private String createdBy;
-
-    private String updatedBy;
+    // -------------------------------
+    // AMOUNT DETAILS
+    // -------------------------------
+    private BigDecimal totalAmount;
+    private BigDecimal forfeitedAmount;
+    private String componentCodes;
 }

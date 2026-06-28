@@ -26,11 +26,11 @@ public class LegalRecoveryDetail {
         private Long id;
 
         @OneToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false, unique = true)
+        @JoinColumn(name = "CLAIM_APPLICATION_ID")
         private ClaimApplication claimApplication;
 
         @OneToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CLAIM_DETAIL_ID", nullable = false, unique = true)
+        @JoinColumn(name = "CLAIM_DETAIL_ID")
         private ClaimDetail claimDetail;
 
         @Column(name = "JUDGEMENT_NUMBER", length = 100)
@@ -46,10 +46,6 @@ public class LegalRecoveryDetail {
         @Column(name = "REASON", length = 1000)
         private String reason;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "CURRENT_STATUS_ID")
-        private StatusMaster currentStatus;
-
         @Column(name = "CREATED_BY", length = 100)
         private String createdBy;
 
@@ -61,6 +57,7 @@ public class LegalRecoveryDetail {
 
         @Column(name = "UPDATED_AT", insertable = false, updatable = false)
         private Timestamp updatedAt;
+        
 
         @PrePersist
         public void prePersist() {

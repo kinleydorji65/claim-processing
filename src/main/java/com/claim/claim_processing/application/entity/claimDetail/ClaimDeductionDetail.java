@@ -41,11 +41,7 @@ public class ClaimDeductionDetail {
 
         @Column(name = "DEDUCTED_AMOUNT", precision = 15, scale = 2)
         private BigDecimal deductedAmount;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "DEDUCTION_REVIEW_STATUS_ID")
-        private ReviewStatusMaster deductionReviewStatus;
-
+        
         @Enumerated(EnumType.STRING)
         @Column(name = "IS_AUTO_APPLIED", length = 1)
         @Builder.Default

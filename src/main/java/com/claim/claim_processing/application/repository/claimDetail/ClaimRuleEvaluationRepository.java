@@ -1,5 +1,7 @@
 package com.claim.claim_processing.application.repository.claimDetail;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -7,4 +9,5 @@ import com.claim.claim_processing.application.entity.claimDetail.ClaimRuleEvalua
 
 @Repository
 public interface ClaimRuleEvaluationRepository extends JpaRepository<ClaimRuleEvaluation, Long> {
+    List<ClaimRuleEvaluation> findByCalculationSummary_Id(Long calculationSummaryId);
 }

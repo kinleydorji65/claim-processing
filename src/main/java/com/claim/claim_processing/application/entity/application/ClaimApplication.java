@@ -14,7 +14,6 @@ import java.util.List;
 
 import com.claim.claim_processing.application.entity.calculation.*;
 import com.claim.claim_processing.application.entity.detail.*;
-import com.claim.claim_processing.application.entity.payment.ClaimApplicationPayment;
 import com.claim.claim_processing.application.entity.workFlow.*;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.common.*;
@@ -124,10 +123,6 @@ public class ClaimApplication {
     @JoinColumn(name = "STATUS_ID", referencedColumnName = "STATUS_ID")
     private StatusMaster status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ACTION_ID")
-    private ActionMaster action;
-
     @Column(name = "NUMBER_OF_YEAR_IN_SERVICE", length = 100)
     private BigDecimal numberOfYearInService;
 
@@ -159,6 +154,9 @@ public class ClaimApplication {
 
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private LegalRecoveryDetail legalRecoveryDetail;
+
+    @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ClaimSpecialCaseApplication claimSpecialCaseApplication;
 
     // // ---------- One-to-Many Common Child Tables ----------
 

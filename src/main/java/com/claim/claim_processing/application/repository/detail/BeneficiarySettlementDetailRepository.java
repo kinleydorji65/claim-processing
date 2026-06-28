@@ -15,4 +15,5 @@ public interface BeneficiarySettlementDetailRepository
     Optional<BeneficiarySettlementDetail> findByClaimApplication_Id(Long claimApplicationId);
 
     void deleteByClaimApplication_Id(Long claimApplicationId);
+    Optional<BeneficiarySettlementDetail> findByClaimDetail_Id(Long claimDetailId);
 }

@@ -4,14 +4,23 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.claim.claim_processing.application.DTO.response.calculation.ClaimApplicationCalculationComponentDto;
 import com.claim.claim_processing.application.DTO.response.calculation.ClaimApplicationCalculationSummaryResponseDto;
 import com.claim.claim_processing.application.DTO.response.calculation.ClaimApplicationRuleEvaluationListDto;
+import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationComponent;
 import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationSummary;
 import com.claim.claim_processing.application.entity.calculation.ClaimApplicationRuleEvaluation;
+import com.claim.claim_processing.application.repository.calculation.ClaimApplicationCalculationComponentRepository;
+import com.claim.claim_processing.application.repository.calculation.ClaimApplicationRuleEvaluationRepository;
 import com.claim.claim_processing.common.DTO.response.others.StatusMasterResponseDto;
 
+import lombok.AllArgsConstructor;
+
 @Component
+@AllArgsConstructor
 public class ClaimApplicationCalculationSummaryResponseMapper {
+    public final ClaimApplicationRuleEvaluationRepository claimApplicationRuleEvaluationRepository;   
+    public final ClaimApplicationCalculationComponentRepository claimApplicationCalculationComponentRepository;   
 
     public ClaimApplicationCalculationSummaryResponseDto toResponse(
             ClaimApplicationCalculationSummary entity
@@ -20,7 +29,8 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
         if (entity == null) {
             return null;
         }
-
+        List<ClaimApplicationRuleEvaluation> ruleEvaluations = claimApplicationRuleEvaluationRepository
+                .findByCalculationSummary_Id(entity.getId());
         return ClaimApplicationCalculationSummaryResponseDto.builder()
                 .id(entity.getId())
 
@@ -32,6 +42,7 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
 
                 .finalPayableAmount(entity.getFinalPayableAmount())
                 .actualAmountCalculated(entity.getActualAmountCalculated())
+                .totalAmount(entity.getTotalAmount())
 
                 .isPfEligible(entity.getIsPfEligible())
                 .isPensionEligible(entity.getIsPensionEligible())
@@ -49,9 +60,9 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
                 )
 
                 .ruleEvaluations(
-                        entity.getRuleEvaluations() == null
+                        ruleEvaluations == null
                                 ? List.of()
-                                : entity.getRuleEvaluations()
+                                : ruleEvaluations
                                 .stream()
                                 .map(this::mapRuleEvaluation)
                                 .toList()
@@ -77,7 +88,7 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
     private ClaimApplicationRuleEvaluationListDto mapRuleEvaluation(
             ClaimApplicationRuleEvaluation rule
     ) {
-
+        List<ClaimApplicationCalculationComponent> components = claimApplicationCalculationComponentRepository.findByRuleEvaluation_Id(rule.getId());
         return ClaimApplicationRuleEvaluationListDto.builder()
                 .id(rule.getId())
 
@@ -106,6 +117,56 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
 
                 .isActive(rule.getIsActive())
 
+                .components(
+                        components == null
+                                ? List.of()
+                                : components
+                                .stream()
+                                .map(this::mapCalculationComponent)
+                                .toList()
+                )
+
                 .build();
     }
+
+    private ClaimApplicationCalculationComponentDto mapCalculationComponent(
+        ClaimApplicationCalculationComponent entity) {
+
+    if (entity == null) return null;
+
+    return ClaimApplicationCalculationComponentDto.builder()
+            .id(entity.getId())
+            .ruleEvaluationId(
+                    entity.getRuleEvaluation() != null
+                            ? entity.getRuleEvaluation().getId()
+                            : null
+            )
+            .componentCode(
+                    entity.getComponentMaster() != null
+                            ? entity.getComponentMaster().getCode()
+                            : null
+            )
+            .componentName(
+                    entity.getComponentMaster() != null
+                            ? entity.getComponentMaster().getName()
+                            : null
+            )
+            .amount(entity.getAmount())
+            .isDeduction(entity.getIsDeduction())
+            .notes(entity.getNotes())
+            .isActive(entity.getIsActive())
+            .createdBy(entity.getCreatedBy())
+            .createdAt(
+                    entity.getCreatedAt() != null
+                            ? entity.getCreatedAt().toLocalDateTime()
+                            : null
+            )
+            .updatedBy(entity.getUpdatedBy())
+            .updatedAt(
+                    entity.getUpdatedAt() != null
+                            ? entity.getUpdatedAt().toLocalDateTime()
+                            : null
+            )
+            .build();
+}
 }

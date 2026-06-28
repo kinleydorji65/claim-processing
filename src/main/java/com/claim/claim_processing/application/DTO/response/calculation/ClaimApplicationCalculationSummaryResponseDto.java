@@ -30,6 +30,7 @@ public class ClaimApplicationCalculationSummaryResponseDto {
 
     private BigDecimal finalPayableAmount;
     private BigDecimal actualAmountCalculated;
+    private BigDecimal totalAmount;
 
     private String isPfEligible;
     private String isPensionEligible;

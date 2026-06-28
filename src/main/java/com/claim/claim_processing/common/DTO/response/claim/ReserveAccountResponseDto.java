@@ -1,9 +1,11 @@
 package com.claim.claim_processing.common.DTO.response.claim;
 
-import com.claim.claim_processing.common.DTO.response.contribution.SchemeTypeResponseDto;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -15,28 +17,46 @@ public class ReserveAccountResponseDto {
     private Long id;
 
     // -------------------------------
-    // BASIC INFO
+    // MEMBER INFORMATION
     // -------------------------------
-    private String reserveAccountCode;
-    private String reserveAccountName;
+    private String memberCode;
+    private String nppfNumber;
+    private String identityNumber;
 
     // -------------------------------
-    // FK MASTERS
+    // AGENCY INFORMATION
     // -------------------------------
-    private AccountTypeResponseDto accountType;
-    private SchemeTypeResponseDto schemeType;
+    private String agencyCategoryId;
+    private String agencyCode;
+
+    // -------------------------------
+    // RESERVE ACCOUNT DETAILS
+    // -------------------------------
+    private String reserveType;
+    private String accountCode;
+    private String subAccountCode;
+
+    // -------------------------------
+    // AMOUNT DETAILS
+    // -------------------------------
+    private BigDecimal totalAmount;
+    private BigDecimal forfeitedAmount;
+    private String componentCodes;
 
     // -------------------------------
     // STATUS
     // -------------------------------
-    private ActivityEnum isActive;
+    private String status;
+    private LocalDateTime releaseDate;
+    private String releasedBy;
+    private String releaseReference;
 
     // -------------------------------
     // AUDIT
     // -------------------------------
+    private String isActive;
     private String createdBy;
     private LocalDateTime createdAt;
-
     private String updatedBy;
     private LocalDateTime updatedAt;
 }

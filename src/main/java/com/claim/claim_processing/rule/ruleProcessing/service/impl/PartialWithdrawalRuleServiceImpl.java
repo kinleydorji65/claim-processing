@@ -90,10 +90,11 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
 
                 components.add(
                         ComponentBalanceDTO.builder()
+                                .subRuleCode(matchedRule.getSubClaimCode())
                                 .code(component.getCode())
                                 .name(component.getName())
                                 .type("PARTIAL_WITHDRAWAL")
-                                .amount(component.getAmount())
+                                .amount(partialAmount)
                                 .build());
 
                 finalPayableAmount = finalPayableAmount.add(partialAmount);

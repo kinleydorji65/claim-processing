@@ -14,11 +14,9 @@ public interface LegalRecoveryMapper {
 
     // ---------- Entity -> Response ----------
     @Mapping(target = "claimApplicationId", source = "claimApplication.id")
-    @Mapping(target = "claimDetailId", source = "claimDetail.id")
-    @Mapping(target = "payeeTypeId", source = "payeeType.id")
-    @Mapping(target = "payeeTypeName", source = "payeeType.name")
-    @Mapping(target = "currentStatusId", source = "currentStatus.statusId")
-    @Mapping(target = "currentStatusName", source = "currentStatus.statusName")
+    @Mapping(target = "claimDetailId", ignore = true) // Assuming claimDetailId is not directly available in the entity
+    @Mapping(target = "payeeTypeId", ignore = true) // Assuming payeeTypeId is not directly available in the entity
+    @Mapping(target = "payeeTypeName", ignore = true) // Assuming payeeTypeName is not directly available in the entity
     LegalRecoveryResponseDto toResponseDto(LegalRecoveryDetail entity);
 
 
@@ -27,7 +25,6 @@ public interface LegalRecoveryMapper {
     @Mapping(target = "claimApplication", ignore = true)
     @Mapping(target = "claimDetail", ignore = true)
     @Mapping(target = "payeeType", ignore = true)
-    @Mapping(target = "currentStatus", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
@@ -41,7 +38,6 @@ public interface LegalRecoveryMapper {
     @Mapping(target = "claimApplication", ignore = true)
     @Mapping(target = "claimDetail", ignore = true)
     @Mapping(target = "payeeType", ignore = true)
-    @Mapping(target = "currentStatus", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromDto(

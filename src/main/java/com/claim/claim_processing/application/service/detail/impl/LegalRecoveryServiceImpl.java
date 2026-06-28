@@ -8,9 +8,7 @@ import com.claim.claim_processing.application.repository.application.ClaimApplic
 import com.claim.claim_processing.application.repository.detail.LegalRecoveryDetailRepository;
 import com.claim.claim_processing.application.service.detail.LegalRecoveryService;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
-import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.repository.common.PayeeTypeRepository;
-import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +22,6 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
     private final LegalRecoveryDetailRepository legalRecoveryRepository;
     private final ClaimApplicationRepository claimApplicationRepository;
     private final PayeeTypeRepository payeeTypeRepository;
-    private final StatusMasterRepository statusMasterRepository;
     private final LegalRecoveryMapper legalRecoveryMapper;
 
     @Override
@@ -43,8 +40,6 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
 
         entity.setClaimApplication(claimApplication);
         entity.setPayeeType(getPayeeType(request.getPayeeTypeId()));
-        entity.setCurrentStatus(getCurrentStatusIfPresent(request.getCurrentStatusId()));
-
         LegalRecoveryDetail saved = legalRecoveryRepository.saveAndFlush(entity);
 
         return saved;
@@ -79,10 +74,6 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
 
         if (request.getPayeeTypeId() != null) {
             existing.setPayeeType(getPayeeType(request.getPayeeTypeId()));
-        }
-
-        if (request.getCurrentStatusId() != null) {
-            existing.setCurrentStatus(getCurrentStatusIfPresent(request.getCurrentStatusId()));
         }
 
         LegalRecoveryDetail updated = legalRecoveryRepository.saveAndFlush(existing);
@@ -145,18 +136,6 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
         return payeeTypeRepository.findById(id)
                 .orElseThrow(() -> ClaimException.resourceNotFound(
                         "Payee type",
-                        id.toString()
-                ));
-    }
-
-    private StatusMaster getCurrentStatusIfPresent(Long id) {
-        if (id == null) {
-            return null;
-        }
-
-        return statusMasterRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Current status",
                         id.toString()
                 ));
     }

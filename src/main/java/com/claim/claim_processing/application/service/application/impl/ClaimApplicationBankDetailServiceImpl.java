@@ -71,7 +71,7 @@ public class ClaimApplicationBankDetailServiceImpl
                 })
                 .toList();
 
-        return claimApplicationBankDetailRepository.saveAll(bankDetails);
+        return claimApplicationBankDetailRepository.saveAllAndFlush(bankDetails);
     }
 
     @Override
@@ -134,6 +134,6 @@ public List<ClaimApplicationBankDetail> patch(
         updatedDetails.add(entity);
     }
 
-    return claimApplicationBankDetailRepository.saveAll(updatedDetails);
+    return claimApplicationBankDetailRepository.saveAllAndFlush(updatedDetails);
 }
 }

@@ -1,7 +1,10 @@
 package com.claim.claim_processing.rule.claim.DTO.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -15,7 +18,6 @@ import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 public class ClaimCalculationResponseDTO {
     private String nppfNumber;
     private BigDecimal noOfYearInService;
-    private String subClaimCode;
     private boolean loanCheck;
     private boolean rentalCheck;
 
@@ -36,6 +38,7 @@ public class ClaimCalculationResponseDTO {
     private List<ComponentBalanceDTO> forfeitedComponents;
     private BigDecimal totalPfAmount;
     private BigDecimal totalPensionAmount;
+    private BigDecimal totalAmount;
 
     private BigDecimal totalPensionInterestAmount;
     private BigDecimal totalPfInterestAmount;
@@ -60,7 +63,10 @@ public class ClaimCalculationResponseDTO {
 
     @Data
     @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class ComponentBalanceDTO {
+        private String subRuleCode; // PF_MC, PF_IMC, etc.
         private String code; // PF_MC, PF_IMC, PF_EC, etc.
         private String name;
         private String type; // CONTRIBUTION or INTEREST

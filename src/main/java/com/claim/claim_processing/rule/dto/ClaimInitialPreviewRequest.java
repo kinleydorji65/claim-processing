@@ -16,6 +16,7 @@ public class ClaimInitialPreviewRequest {
     private Long claimTypeId;
     private Long cessationTypeId;
     private String nppfNumber;
+    private String identityNumber;
     private Long reasonTypeId;
 
     private LocalDate cessationDate;

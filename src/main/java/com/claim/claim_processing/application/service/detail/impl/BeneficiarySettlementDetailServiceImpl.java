@@ -24,15 +24,19 @@ import com.claim.claim_processing.common.repository.others.MemberNomineeReposito
 import com.claim.claim_processing.common.repository.others.RelationTypeRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class BeneficiarySettlementDetailServiceImpl
         implements BeneficiarySettlementDetailService {
 
@@ -62,7 +66,7 @@ public class BeneficiarySettlementDetailServiceImpl
 
         entity.setClaimApplication(claimApplication);
 
-        if (request.getCessationTypeId() != null || request.getCessationTypeId() > 0) {
+        if (request.getCessationTypeId() != null && request.getCessationTypeId() > 0) {
             CessationTypeMaster cessationType = cessationTypeMasterRepository
                     .findById(request.getCessationTypeId())
                     .orElseThrow(() -> ClaimException.resourceNotFound(
@@ -100,7 +104,7 @@ public class BeneficiarySettlementDetailServiceImpl
 
         mapper.patchEntity(entity, request);
 
-        if (request.getCessationTypeId() != null || request.getCessationTypeId() > 0) {
+        if (request.getCessationTypeId() != null && request.getCessationTypeId() > 0) {
             CessationTypeMaster cessationType = cessationTypeMasterRepository
                     .findById(request.getCessationTypeId())
                     .orElseThrow(() -> ClaimException.resourceNotFound(
@@ -179,42 +183,143 @@ public class BeneficiarySettlementDetailServiceImpl
     }
 
     //added the claimant detail
-    private List<BeneficiaryClaimantDetail> createClaimantDetails(BeneficiarySettlementDetail settlementDetail, List<BeneficiaryClaimantRequestDto> requests) {
-        List<BeneficiaryClaimantDetail> claimantDetails = requests.stream()
-                .map(request -> {
-                    BeneficiaryClaimantDetail detail = beneficiaryClaimantDetailMapper.toEntity(request);
-                    detail.setBeneficiarySettlementDetail(settlementDetail);
-                    detail.setDependent(getMemberFamily(request.getDependentId()));
-                    detail.setNominee(getMemberNominee(request.getNomineeId()));
-                    detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
-                    detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
-                    detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
-                    beneficiaryClaimantDetailRepository.saveAndFlush(detail);
-                    return detail;
-                })
-                .toList();
-        return claimantDetails;
+    private List<BeneficiaryClaimantDetail> createClaimantDetails(
+        BeneficiarySettlementDetail settlementDetail, 
+        List<BeneficiaryClaimantRequestDto> requests) {
+    
+    if (requests == null || requests.isEmpty()) {
+        return List.of();
     }
+    
+    List<BeneficiaryClaimantDetail> claimantDetails = new ArrayList<>();
+    
+    for (int i = 0; i < requests.size(); i++) {
+        BeneficiaryClaimantRequestDto request = requests.get(i);
+        
+        try {
+            // ✅ VALIDATE: Check if dependentId is null
+            if (request.getDependentId() == null) {
+                throw ClaimException.singleValidationError(
+                    String.format("beneficiaryClaimants[%d].dependentId", i),
+                    "Dependent ID is required for claimant detail"
+                );
+            }
+            
+            BeneficiaryClaimantDetail detail = beneficiaryClaimantDetailMapper.toEntity(request);
+            detail.setBeneficiarySettlementDetail(settlementDetail);
+            if (request.getDependentId() != null && request.getDependentId() > 0) {
+                detail.setDependent(getMemberFamily(request.getDependentId()));
+            }
+            
+            // ✅ Handle optional fields
+            if (request.getNomineeId() != null) {
+                detail.setNominee(getMemberNominee(request.getNomineeId()));
+            }
+            
+            if (request.getClaimantTypeId() != null) {
+                detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
+            }
+            
+            if (request.getPayeeTypeId() != null) {
+                detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
+            }
+            
+            if (request.getRelationshipTypeId() != null) {
+                detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
+            }
+            
+            beneficiaryClaimantDetailRepository.saveAndFlush(detail);
+            claimantDetails.add(detail);
+            
+        } catch (Exception e) {
+            log.error("Error creating claimant at index {}: {}", i, e.getMessage());
+            log.error("Request data: {}", request);
+            throw ClaimException.badRequest(
+                String.format("Error creating claimant at index %d: %s", i, e.getMessage())
+            );
+        }
+    }
+    
+    return claimantDetails;
+}
 
-    private List<BeneficiaryClaimantDetail> updateClaimantDetails(BeneficiarySettlementDetail settlementDetail, List<BeneficiaryClaimantRequestDto> requests) {
-        List<BeneficiaryClaimantDetail> claimantDetails = requests.stream()
-                .map(request -> {
-                    BeneficiaryClaimantDetail detail = beneficiaryClaimantDetailRepository.findById(request.getBeneficiaryClaimantDetailId())
-                            .orElseThrow(() -> ClaimException.resourceNotFound(
-                                    "Beneficiary claimant detail",
-                                    String.valueOf(request.getBeneficiaryClaimantDetailId())));
-                    detail.setBeneficiarySettlementDetail(settlementDetail);
-                    detail.setDependent(getMemberFamily(request.getDependentId()));
-                    detail.setNominee(getMemberNominee(request.getNomineeId()));
-                    detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
-                    detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
-                    detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
-                    beneficiaryClaimantDetailRepository.saveAndFlush(detail);
-                    return detail;
-                })
-                .toList();
-        return claimantDetails;
+    private List<BeneficiaryClaimantDetail> updateClaimantDetails(
+        BeneficiarySettlementDetail settlementDetail, 
+        List<BeneficiaryClaimantRequestDto> requests) {
+    
+    // ADD THIS: Log the entire request list
+    log.info("Updating {} claimant details", requests != null ? requests.size() : 0);
+    
+    if (requests == null || requests.isEmpty()) {
+        log.warn("No claimant details to update");
+        return List.of();
     }
+    
+    List<BeneficiaryClaimantDetail> claimantDetails = new ArrayList<>();
+    
+    for (int i = 0; i < requests.size(); i++) {
+        BeneficiaryClaimantRequestDto request = requests.get(i);
+        
+        // ADD THIS: Log each request with its index
+        log.debug("Processing claimant at index {}: {}", i, request);
+        log.debug("Claimant ID at index {}: {}", i, request.getBeneficiaryClaimantDetailId());
+        
+        try {
+            BeneficiaryClaimantDetail detail;
+            
+            if (request.getBeneficiaryClaimantDetailId() != null) {
+                log.info("Updating existing claimant with ID: {}", 
+                    request.getBeneficiaryClaimantDetailId());
+                    
+                detail = beneficiaryClaimantDetailRepository
+                    .findById(request.getBeneficiaryClaimantDetailId())
+                    .orElseThrow(() -> ClaimException.resourceNotFound(
+                            "Beneficiary claimant detail",
+                            String.valueOf(request.getBeneficiaryClaimantDetailId())));
+                
+                // Update existing fields
+                detail.setBeneficiarySettlementDetail(settlementDetail);
+                detail.setDependent(getMemberFamily(request.getDependentId()));
+                detail.setNominee(getMemberNominee(request.getNomineeId()));
+                detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
+                detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
+                detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
+                
+            } else {
+                // ADD THIS: Log that we're creating a new claimant
+                log.info("Creating new claimant at index {} (no ID provided)", i);
+                
+                // ADD THIS: Log what fields are present
+                log.debug("New claimant data - dependentId: {}, nomineeId: {}, claimantTypeId: {}", 
+                    request.getDependentId(), 
+                    request.getNomineeId(), 
+                    request.getClaimantTypeId());
+                
+                detail = beneficiaryClaimantDetailMapper.toEntity(request);
+                detail.setBeneficiarySettlementDetail(settlementDetail);
+                detail.setDependent(getMemberFamily(request.getDependentId()));
+                detail.setNominee(getMemberNominee(request.getNomineeId()));
+                detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
+                detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
+                detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
+            }
+            
+            claimantDetails.add(beneficiaryClaimantDetailRepository.saveAndFlush(detail));
+            
+        } catch (Exception e) {
+            // ADD THIS: Catch and log the specific error with context
+            log.error("Error processing claimant at index {}: {}", i, e.getMessage(), e);
+            log.error("Problematic request data: {}", request);
+            throw ClaimException.internalError(
+                String.format("Error processing claimant at index %d: %s", i, e.getMessage()),
+                e
+            );
+        }
+    }
+    
+    log.info("Successfully processed {} claimant details", claimantDetails.size());
+    return claimantDetails;
+}
 
     private MemberFamily getMemberFamily(Long memberFamilyId) {
         return memberFamilyRepository.findById(memberFamilyId)

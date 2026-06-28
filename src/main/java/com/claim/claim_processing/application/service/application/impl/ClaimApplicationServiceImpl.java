@@ -23,16 +23,20 @@ import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.client.MasterCodeGenClient;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
     private final ClaimApplicationRepository claimApplicationRepository;
@@ -57,7 +61,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
     @Override
     public ClaimApplication create(ClaimApplicationRequestDto request) {
-
+        try {
         validateCreateRequest(request);
 
         ClaimApplication entity = claimApplicationMapper.toEntity(request);
@@ -75,7 +79,38 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
         ClaimApplication saved = claimApplicationRepository.saveAndFlush(entity);
 
         return saved;
+        } catch (Exception e) {
+    // This will show you EXACTLY what's wrong
+    log.error("=== SAVE FAILED ===");
+    log.error("Exception Type: {}", e.getClass().getName());
+    log.error("Message: {}", e.getMessage());
+    
+    // Get the root cause (most important!)
+    Throwable rootCause = getRootCause(e);
+    log.error("Root Cause: {}", rootCause.getMessage());
+    
+    // If it's a constraint violation, get details
+    if (e instanceof DataIntegrityViolationException) {
+        DataIntegrityViolationException dive = (DataIntegrityViolationException) e;
+        log.error("SQL Error Code: {}", dive.getMostSpecificCause() instanceof SQLException ? 
+            ((SQLException) dive.getMostSpecificCause()).getErrorCode() : "N/A");
+        log.error("SQL State: {}", dive.getMostSpecificCause() instanceof SQLException ? 
+            ((SQLException) dive.getMostSpecificCause()).getSQLState() : "N/A");
     }
+    
+    // Print full stack trace
+    e.printStackTrace();
+    throw new RuntimeException("Failed to save claim: " + rootCause.getMessage(), e);
+}
+    }
+
+    private Throwable getRootCause(Throwable e) {
+    Throwable cause = e;
+    while (cause.getCause() != null && cause.getCause() != cause) {
+        cause = cause.getCause();
+    }
+    return cause;
+}
 
     @Override
     public ClaimApplication update(ClaimApplicationRequestDto request) {
@@ -214,7 +249,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
         ClaimApplication existingClaimApplication = claimApplicationRepository.findByApplicationNumber(applicationId)
                 .orElseThrow(() -> ClaimException
                         .notFound("Claim Application not found with application number: " + applicationId));
-        existingClaimApplication.setUnClaimedBy(unclaimedBy);
+        existingClaimApplication.setUnClaimedBy(null);
         existingClaimApplication.setUpdatedBy(unclaimedBy);
         existingClaimApplication.setStatus(getStatus(4L)); // Assuming you have a method to get the status by code
         claimApplicationRepository.saveAndFlush(existingClaimApplication);
@@ -223,14 +258,26 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     }
 
     @Override
-    public List<ClaimApplication> getByUserCode(String userCode) {
+    public List<ClaimApplication> getByAgencyCodeAndClaimTypeId(String agencyCode, Long claimTypeId) {
+        List<ClaimApplication> response = claimApplicationRepository.findByAgencyCodeAndClaimType_Id(agencyCode, claimTypeId);
+
+        if (response.isEmpty()) {
+            throw ClaimException.notFound(
+                    "No claim applications found for agency code: " + agencyCode + " and claim type ID: " + claimTypeId);
+        }
+
+        return response;
+    }
+
+    @Override
+    public List<ClaimApplication> getByUserCodeAndStatusId(String userCode, Long statusId) {
         List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository.findByUserCode(userCode);
 
         if (userMappings.isEmpty()) {
             throw ClaimException.notFound("No agency mapping found for user code: " + userCode);
         }
         List<ClaimApplication> claimApplication = userMappings.stream()
-                .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndStatus_StatusId(mapping.getAgencyCode(), 3L).stream())
+                .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndStatus_StatusId(mapping.getAgencyCode(), statusId).stream())
                 .toList();
 
         return claimApplication;
@@ -275,10 +322,6 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
         if (request.getStatusId() != null && request.getStatusId() > 0) {
             entity.setStatus(getStatus(request.getStatusId()));
         }
-
-        if (request.getActionId() != null && request.getActionId() > 0) {
-            entity.setAction(getAction(request.getActionId()));
-        }
     }
 
     private void resolveAndSetForeignKeysForUpdate(
@@ -311,10 +354,6 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
         if (request.getStatusId() != null && request.getStatusId() > 0) {
             entity.setStatus(getStatus(request.getStatusId()));
-        }
-
-        if (request.getActionId() != null && request.getActionId() > 0) {
-            entity.setAction(getAction(request.getActionId()));
         }
     }
 

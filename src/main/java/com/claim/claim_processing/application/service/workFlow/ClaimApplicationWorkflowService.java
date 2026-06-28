@@ -12,4 +12,6 @@ public interface ClaimApplicationWorkflowService {
             ClaimApplicationWorkflowRequestDto request
     );
     List<ClaimApplicationWorkflowResponseDto> getByApplicationId(Long applicationId);
+    List<ClaimApplicationWorkflowResponseDto> getByApplicationNumber(String applicationNumber);
+    List<String> getVerifiedApplication();
 }

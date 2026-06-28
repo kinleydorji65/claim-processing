@@ -87,7 +87,7 @@ public class NormalClaimServiceImpl implements NormalClaimService {
             existing.setClaimApplication(claimApplication);
         }
 
-        if (request.getCessationTypeId() != null || request.getCessationTypeId() > 0) {
+        if (request.getCessationTypeId() != null && request.getCessationTypeId() > 0) {
             CessationTypeMaster cessationType = getCessationType(request.getCessationTypeId());
             existing.setCessationType(cessationType);
             validateByCessationType(request, cessationType.getCode());
@@ -95,11 +95,11 @@ public class NormalClaimServiceImpl implements NormalClaimService {
             validateByCessationTypeForUpdate(existing);
         }
 
-        if (request.getPayeeTypeId() != null || request.getPayeeTypeId() > 0) {
+        if (request.getPayeeTypeId() != null && request.getPayeeTypeId() > 0) {
             existing.setPayeeType(getPayeeType(request.getPayeeTypeId()));
         }
 
-        if (request.getTerminationReasonTypeId() != null || request.getTerminationReasonTypeId() > 0) {
+        if (request.getTerminationReasonTypeId() != null && request.getTerminationReasonTypeId() > 0) {
             existing.setTerminationReasonType(getTerminationReasonIfPresent(request.getTerminationReasonTypeId()));
         }
 
@@ -317,14 +317,6 @@ public class NormalClaimServiceImpl implements NormalClaimService {
                 "SERVICE_RELIEF",
                 "CONTRACT"
         ).contains(code);
-    }
-
-    private ClaimApplication getClaimApplication(Long id) {
-        return claimApplicationRepository.findById(id)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Claim application",
-                        id.toString()
-                ));
     }
 
     private CessationTypeMaster getCessationType(Long id) {

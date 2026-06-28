@@ -39,6 +39,9 @@ public class ClaimApplicationCalculationSummary {
     @Column(name = "ACTUAL_AMOUNT_CALCULATED", precision = 15, scale = 2)
     private BigDecimal actualAmountCalculated;
 
+    @Column(name = "TOTAL_AMOUNT", precision = 15, scale = 2)
+    private BigDecimal totalAmount;
+
     @Column(name = "IS_PF_ELIGIBLE", length = 1)
     @Builder.Default
     private String isPfEligible = "N";

@@ -25,13 +25,9 @@ public class ClaimCalculationSummary {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLAIM_ID", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CLAIM_ID", nullable = true)
     private ClaimDetail claimDetail;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CALCULATION_STAGE_ID")
-    private StageMaster calculationStage;
 
     @Column(name = "CALCULATION_EFFECTIVE_DATE")
     private LocalDate calculationEffectiveDate;
@@ -41,6 +37,9 @@ public class ClaimCalculationSummary {
 
     @Column(name = "ACTUAL_AMOUNT_CALCULATED", precision = 15, scale = 2)
     private BigDecimal actualAmountCalculated;
+
+    @Column(name = "TOTAL_AMOUNT", precision = 15, scale = 2)
+    private BigDecimal totalAmount;
 
     @Column(name = "IS_PF_ELIGIBLE", length = 1)
     @Builder.Default
@@ -55,10 +54,6 @@ public class ClaimCalculationSummary {
 
     @Column(name = "RECOMMENDED_BENEFIT_TYPE", length = 2000)
     private String recommendedBenefitType;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CALCULATION_STATUS_ID", referencedColumnName = "STATUS_ID")
-    private StatusMaster calculationStatus;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "IS_ACTIVE", length = 1)

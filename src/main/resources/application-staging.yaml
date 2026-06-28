@@ -77,7 +77,10 @@ logging:
   file:
     name: logs/application.log
   level:
-    nppf.org.bt.claim-processing: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: DEBUG
+    org.springframework.orm.jpa: DEBUG
 
 management:
   endpoints:

@@ -142,8 +142,8 @@ public class ClaimDetail {
     @OneToOne(mappedBy = "claimDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BeneficiarySettlementDetail beneficiarySettlementDetail;
 
-    // @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    // private LegalRecoveryDetail legalRecoveryDetail;
+    @OneToOne(mappedBy = "claimDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private LegalRecoveryDetail legalRecoveryDetail;
 
     // // ---------- One-to-Many Common Child Tables ----------
 
@@ -151,19 +151,14 @@ public class ClaimDetail {
     @Builder.Default
     private List<ClaimBankDetail> bankDetails = new ArrayList<>();
 
-    @OneToOne(mappedBy = "claimDetail", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private ClaimDeductionDetail deductionDetail = new ClaimDeductionDetail();
+    @OneToOne(mappedBy = "claimDetail")
+    private ClaimDeductionDetail deductionDetail;
 
     // // ---------- Calculation ----------
 
-    @OneToOne(mappedBy = "claimDetail", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private ClaimCalculationSummary calculationSummary = new ClaimCalculationSummary();
+    @OneToOne(mappedBy = "claimDetail")
+    private ClaimCalculationSummary calculationSummary;
 
-    @OneToOne(mappedBy = "claimDetail", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ClaimLedgerDeductionTracker ledgerDeductionTracker;
-    
     // // ---------- Payment ----------
 
     // @OneToMany(mappedBy = "claimDetail", cascade = CascadeType.ALL, orphanRemoval = true)

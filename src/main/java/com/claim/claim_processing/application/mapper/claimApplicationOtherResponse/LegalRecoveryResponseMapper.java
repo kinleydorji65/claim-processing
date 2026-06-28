@@ -40,13 +40,6 @@ public class LegalRecoveryResponseMapper {
 
                 .reason(entity.getReason())
 
-                .currentStatusId(entity.getCurrentStatus() != null
-                        ? entity.getCurrentStatus().getStatusId()
-                        : null)
-                .currentStatusName(entity.getCurrentStatus() != null
-                        ? entity.getCurrentStatus().getStatusName()
-                        : null)
-
                 .createdBy(entity.getCreatedBy())
                 .createdAt(entity.getCreatedAt())
                 .updatedBy(entity.getUpdatedBy())

@@ -89,6 +89,45 @@ private ClaimApplicationWorkflow buildWorkflow(
             .build();
 }
 
+@Override
+@Transactional(readOnly = true)
+public List<ClaimApplicationWorkflowResponseDto> getByApplicationNumber(String applicationNumber) {
+
+    if (applicationNumber == null || applicationNumber.isEmpty()) {
+        throw new RuntimeException("Claim application number is required.");
+    }
+
+    ClaimApplication claimApplication = claimApplicationRepository
+            .findByApplicationNumber(applicationNumber)
+            .orElseThrow(() -> new RuntimeException(
+                    "Claim application not found with number: " + applicationNumber
+            ));
+
+    List<ClaimApplicationWorkflow> workflows =
+            workflowRepository.findByClaimApplication_IdOrderByActionAtDescCreatedAtDesc(
+                    claimApplication.getId()
+            );
+
+    return mapper.toResponseList(workflows);
+}
+
+@Override
+@Transactional(readOnly = true)
+public List<String> getVerifiedApplication() {
+    List<ClaimApplicationWorkflow> workflows;
+    workflows = workflowRepository.findWorkflowsByActionAndNotAction(2L, 3L);
+    
+    if (workflows.isEmpty()) {
+        workflows = workflowRepository.findWorkflowsByAction_Id(2L);
+        if (workflows.isEmpty()) {
+            return List.of();
+        }
+    }
+    return workflows.stream()
+            .map(workflow -> workflow.getClaimApplication().getApplicationNumber())
+            .toList();
+}
+
 private StageMaster getStage(Long stageId, String label) {
     if (stageId == null || stageId <= 0) {
         return null;
@@ -144,10 +183,6 @@ private void updateClaimApplicationCurrentState(
 
     if (workflow.getToStatus() != null) {
         claimApplication.setStatus(workflow.getToStatus());
-    }
-
-    if (workflow.getAction() != null) {
-        claimApplication.setAction(workflow.getAction());
     }
 
     claimApplication.setUpdatedBy(workflow.getActionBy());

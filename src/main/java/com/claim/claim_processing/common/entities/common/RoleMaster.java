@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.controller.common;
+package com.claim.claim_processing.common.entities.common;
 
 import java.time.LocalDateTime;
 
@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "role_master")
+@Table(name = "role_master", schema = "PPFMS_MASTER_SERVICE_SCHEMA")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

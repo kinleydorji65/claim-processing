@@ -6,34 +6,35 @@ import com.claim.claim_processing.common.DTO.response.claim.ReserveAccountRespon
 
 import java.util.List;
 
+import java.math.BigDecimal;
+
 public interface ReserveAccountService {
 
-    ApiResponseDTO<ReserveAccountResponseDto> create(
-            ReserveAccountRequestDto dto
-    );
+    // CRUD Operations
+    ApiResponseDTO<ReserveAccountResponseDto> create(ReserveAccountRequestDto dto);
 
+    ApiResponseDTO<ReserveAccountResponseDto> update(Long id, ReserveAccountRequestDto dto);
 
-    ApiResponseDTO<ReserveAccountResponseDto> update(
-            Long id,
-            ReserveAccountRequestDto dto
-    );
-
-    ApiResponseDTO<ReserveAccountResponseDto> getById(
-            Long id
-    );
+    ApiResponseDTO<ReserveAccountResponseDto> getById(Long id);
 
     ApiResponseDTO<List<ReserveAccountResponseDto>> getAll();
 
-    ApiResponseDTO<String> delete(
-            Long id
-    );
+    ApiResponseDTO<String> delete(Long id);
 
+    // Search Operations
+    ApiResponseDTO<List<ReserveAccountResponseDto>> getByNppfNumber(String nppfNumber);
 
-    ApiResponseDTO<List<ReserveAccountResponseDto>> getByAccountTypeId(
-            Long accountTypeId
-    );
+    ApiResponseDTO<List<ReserveAccountResponseDto>> getByIdentityNumber(String identityNumber);
 
-    ApiResponseDTO<List<ReserveAccountResponseDto>> getBySchemeTypeId(
-            Long schemeTypeId
+    ApiResponseDTO<List<ReserveAccountResponseDto>> getByStatus(String status);
+
+    ApiResponseDTO<List<ReserveAccountResponseDto>> getByAccountCode(String accountCode);
+
+    // Business Operations
+    ApiResponseDTO<ReserveAccountResponseDto> releaseAmount(
+            Long reserveAccountId,
+            BigDecimal amount,
+            String releasedBy,
+            String releaseReference
     );
 }

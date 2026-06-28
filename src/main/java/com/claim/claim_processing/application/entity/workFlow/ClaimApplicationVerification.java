@@ -60,6 +60,9 @@ public class ClaimApplicationVerification {
     @Column(name = "CLAIMED_BY", length = 100)
     private String claimedBy;
 
+    @Column(name = "REJECTED_BY", length = 100)
+    private String rejectedBy;
+
     @Column(name = "VERIFIED_BY", length = 100)
     private String verifiedBy;
 
@@ -67,7 +70,7 @@ public class ClaimApplicationVerification {
     private Long verifiedByRoleId;
 
     @Column(name = "VERIFIED_AT")
-    private Timestamp verifiedAt;
+    private Timestamp verifiedAt; 
 
     @Column(name = "IS_ACTIVE", length = 1)
     @Enumerated(EnumType.STRING)

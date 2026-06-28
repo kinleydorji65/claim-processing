@@ -5,14 +5,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationBankResponseDto;
-import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationDeductionItemResponseDto;
-import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationDeductionResponseDto;
-import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationForfeitedComponentResponseDto;
-import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
-import com.claim.claim_processing.application.DTO.response.calculation.ClaimApplicationCalculationComponentDto;
-import com.claim.claim_processing.application.DTO.response.calculation.ClaimApplicationCalculationSummaryResponseDto;
-import com.claim.claim_processing.application.DTO.response.calculation.ClaimApplicationRuleEvaluationListDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimBankResponseDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimCalculationComponentDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimCalculationSummaryResponseDto;
@@ -23,6 +15,7 @@ import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimRule
 import com.claim.claim_processing.application.DTO.response.claimDetail.GeneralClaimDetailResponse;
 import com.claim.claim_processing.application.DTO.response.detail.BeneficiaryClaimantResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.BeneficiarySettlementResponseDto;
+import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.PartialWithdrawalResponseDto;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimBankDetail;
@@ -35,13 +28,51 @@ import com.claim.claim_processing.application.entity.claimDetail.ClaimForfeitedC
 import com.claim.claim_processing.application.entity.claimDetail.ClaimRuleEvaluation;
 import com.claim.claim_processing.application.entity.detail.BeneficiaryClaimantDetail;
 import com.claim.claim_processing.application.entity.detail.BeneficiarySettlementDetail;
+import com.claim.claim_processing.application.entity.detail.LegalRecoveryDetail;
 import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 import com.claim.claim_processing.application.entity.detail.PartialWithdrawalDetail;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimBankDetailRepository;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimCalculationComponentRepository;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimCalculationSummaryRepository;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimDeductionDetailRepository;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimDeductionItemRepository;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimForfeitedComponentRepository;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimRuleEvaluationRepository;
+import com.claim.claim_processing.application.repository.detail.BeneficiaryClaimantDetailRepository;
+import com.claim.claim_processing.application.repository.detail.BeneficiarySettlementDetailRepository;
+import com.claim.claim_processing.application.repository.detail.LegalRecoveryDetailRepository;
+import com.claim.claim_processing.application.repository.detail.NormalClaimDetailRepository;
+import com.claim.claim_processing.application.repository.detail.PartialWithdrawalDetailRepository;
+
+import lombok.AllArgsConstructor;
 
 @Component
+@AllArgsConstructor
 public class GeneralClaimDetailMapper {
+    private final ClaimBankDetailRepository claimBankDetailRepository;
+    private final ClaimDeductionDetailRepository claimDeductionDetailRepository;
+    private final ClaimDeductionItemRepository claimDeductionItemRepository;
+    private final ClaimForfeitedComponentRepository claimForfeitedComponentRepository;
+    private final ClaimCalculationComponentRepository claimCalculationComponentRepository;
+    private final ClaimRuleEvaluationRepository claimRuleEvaluationRepository;
+    private final ClaimCalculationSummaryRepository claimCalculationSummaryRepository;
+    private final BeneficiarySettlementDetailRepository beneficiarySettlementDetailRepository;
+    private final BeneficiaryClaimantDetailRepository beneficiaryClaimantDetailRepository;
+    private final LegalRecoveryDetailRepository legalRecoveryDetailRepository;
+    private final NormalClaimDetailRepository normalClaimDetailRepository;
+    private final PartialWithdrawalDetailRepository partialWithdrawalDetailRepository;
     
     public GeneralClaimDetailResponse mapToResponse(ClaimDetail claimDetail) {
+
+        List<ClaimBankDetail> bankDetails = claimBankDetailRepository.findByClaimDetail_Id(claimDetail.getId());
+        ClaimDeductionDetail deductionDetail = claimDeductionDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+        List<ClaimForfeitedComponent> forfeitedComponents = claimForfeitedComponentRepository.findByClaimDetail_Id(claimDetail.getId());
+        ClaimCalculationSummary calculationSummary = claimCalculationSummaryRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+        NormalClaimDetail normalClaimDetail = normalClaimDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+        PartialWithdrawalDetail partialWithdrawalDetail = partialWithdrawalDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+        BeneficiarySettlementDetail beneficiarySettlementDetail = beneficiarySettlementDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+        LegalRecoveryDetail legalRecoveryDetail = legalRecoveryDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+
     return GeneralClaimDetailResponse.builder()
             .id(claimDetail.getId())
             .claimTypeId(claimDetail.getClaimType().getId())
@@ -65,28 +96,82 @@ public class GeneralClaimDetailMapper {
             .remarks(claimDetail.getRemarks())
             .isSpecialCase(claimDetail.getIsSpecialCase())
             .isActive(claimDetail.getIsActive())
-            .specialCaseAuthorityId(claimDetail.getSpecialCaseAuthority().getId())
-            .specialCaseAuthorityName(claimDetail.getSpecialCaseAuthority().getName())
+            .specialCaseAuthorityId(claimDetail.getSpecialCaseAuthority() != null  ? claimDetail.getSpecialCaseAuthority().getId() : null)
+            .specialCaseAuthorityName(claimDetail.getSpecialCaseAuthority() != null ? claimDetail.getSpecialCaseAuthority().getName() : null)
             .currencyCode(claimDetail.getCurrencyCode())
-            .currentStageId(claimDetail.getCurrentStage().getId())
-            .currentStageName(claimDetail.getCurrentStage().getName())
-            .statusId(claimDetail.getStatus().getStatusId())
-            .statusName(claimDetail.getStatus().getStatusName())
-            .actionId(claimDetail.getAction().getId())
-            .actionName(claimDetail.getAction().getName())
-            .bankDetails(mapBankDetails(claimDetail.getBankDetails()))
-            .deductionDetail(mapDeductionDetail(claimDetail.getDeductionDetail()))
-            .calculationSummary(mapCalculationSummary(claimDetail.getCalculationSummary()))
-            .forfeitedComponents(mapForfeitedComponents(claimDetail.getForfeitedComponents()))
-            .normalClaimDetails(mapNormalClaimDetails(claimDetail.getNormalClaimDetail()))
-            .beneficiarySettlementDetails(mapBeneficiarySettlementDetails(claimDetail.getBeneficiarySettlementDetail()))
-            .partialWithdrawalDetails(mapPartialWithdrawalDetails(claimDetail.getPartialWithdrawalDetail()))
+            .currentStageId(claimDetail.getCurrentStage() != null ? claimDetail.getCurrentStage().getId() : null)
+            .currentStageName(claimDetail.getCurrentStage() != null ? claimDetail.getCurrentStage().getName() : null)
+            .statusId(claimDetail.getStatus() != null ? claimDetail.getStatus().getStatusId() : null)
+            .statusName(claimDetail.getStatus() != null ? claimDetail.getStatus().getStatusName() : null)
+            .actionId(claimDetail.getAction() != null ? claimDetail.getAction().getId() : null)
+            .actionName(claimDetail.getAction() != null ? claimDetail.getAction().getName() : null)
+            .bankDetails(mapBankDetails(bankDetails))
+            .deductionDetail(mapDeductionDetail(deductionDetail))
+            .calculationSummary(mapCalculationSummary(calculationSummary))
+            .forfeitedComponents(mapForfeitedComponents(forfeitedComponents))
+            .normalClaimDetails(mapNormalClaimDetails(normalClaimDetail))
+            .beneficiarySettlementDetails(mapBeneficiarySettlementDetails(beneficiarySettlementDetail))
+            .partialWithdrawalDetails(mapPartialWithdrawalDetails(partialWithdrawalDetail))
+            .legalRecoveryDetail(mapLegalRecoveryDetails(legalRecoveryDetail))
             .createdBy(claimDetail.getCreatedBy())
             .createdAt(claimDetail.getCreatedAt() != null ? claimDetail.getCreatedAt().toLocalDateTime() : null)
             .updatedBy(claimDetail.getUpdatedBy())
             .updatedAt(claimDetail.getUpdatedAt() != null ? claimDetail.getUpdatedAt().toLocalDateTime() : null)
             .build(); 
 }
+
+private LegalRecoveryResponseDto mapLegalRecoveryDetails(LegalRecoveryDetail entity) {
+    if (entity == null) return null;
+
+    return LegalRecoveryResponseDto.builder()
+            .id(entity.getId())
+
+            // ClaimApplication
+            .claimApplicationId(
+                    entity.getClaimApplication() != null
+                            ? entity.getClaimApplication().getId()
+                            : null
+            )
+            .claimApplicationNumber(
+                    entity.getClaimApplication() != null
+                            ? entity.getClaimApplication().getApplicationNumber()
+                            : null
+            )
+
+            // ClaimDetail
+            .claimDetailId(
+                    entity.getClaimDetail() != null
+                            ? entity.getClaimDetail().getId()
+                            : null
+            )
+
+            // PayeeType
+            .payeeTypeId(
+                    entity.getPayeeType() != null
+                            ? entity.getPayeeType().getId()
+                            : null
+            )
+            .payeeTypeName(
+                    entity.getPayeeType() != null
+                            ? entity.getPayeeType().getName()
+                            : null
+            )
+
+            // Basic fields
+            .judgementNumber(entity.getJudgementNumber())
+            .judgementDate(entity.getJudgementDate())
+            .reason(entity.getReason())
+
+            // Audit fields
+            .createdBy(entity.getCreatedBy())
+            .createdAt(entity.getCreatedAt())
+            .updatedBy(entity.getUpdatedBy())
+            .updatedAt(entity.getUpdatedAt())
+
+            .build();
+}
+
+
 
 // Helper mapper methods for nested objects
 private List<ClaimBankResponseDto> mapBankDetails(List<ClaimBankDetail> bankDetails) {
@@ -105,10 +190,10 @@ private ClaimBankResponseDto mapBankDetail(ClaimBankDetail source) {
     return ClaimBankResponseDto.builder()
             .id(source.getId())
             .beneficiaryIdentifier(source.getBeneficiaryIdentifier())
-            .claimantTypeId(source.getClaimantType().getId())
-            .claimantTypeName(source.getClaimantType().getName())
-            .bankTypeId(source.getBankType().getBankTypeId())
-            .bankTypeName(source.getBankType().getBankTypeName())
+            .claimantTypeId(source.getClaimantType() != null ? source.getClaimantType().getId() : null)
+            .claimantTypeName(source.getClaimantType() != null ? source.getClaimantType().getName() : null)
+            .bankTypeId(source.getBankType() != null ? source.getBankType().getBankTypeId() : null)
+            .bankTypeName(source.getBankType() != null ? source.getBankType().getBankTypeName() : null)
             .accountNumber(source.getAccountNumber())
             .accountHolderName(source.getAccountHolderName())
             .ifscOrRoutingCode(source.getIfscOrRoutingCode())
@@ -132,6 +217,7 @@ private ClaimDeductionResponseDto mapDeductionDetail(ClaimDeductionDetail source
     if (source == null) {
         return null;
     }
+    List<ClaimDeductionItem> deductionItems = claimDeductionItemRepository.findByDeductionDetail_Id(source.getId());
     return ClaimDeductionResponseDto.builder()
             .id(source.getId())
             .outstandingAmount(source.getOutstandingAmount())
@@ -139,14 +225,12 @@ private ClaimDeductionResponseDto mapDeductionDetail(ClaimDeductionDetail source
             .verifiedDeductedAmount(source.getVerifiedDeductedAmount())
             .approvedDeductedAmount(source.getApprovedDeductedAmount())
             .deductedAmount(source.getDeductedAmount())
-            .deductionReviewStatusId(source.getDeductionReviewStatus() != null ? source.getDeductionReviewStatus().getId() : null)
-            .deductionReviewStatusName(source.getDeductionReviewStatus() != null ? source.getDeductionReviewStatus().getName() : null)
             .isAutoApplied(source.getIsAutoApplied())
             .isManualOverride(source.getIsManualOverride())
             .isActive(source.getIsActive())
             .overrideReason(source.getOverrideReason())
             .remarks(source.getRemarks())
-            .deductionItems(mapDeductionItems(source.getDeductionItems()))
+            .deductionItems(mapDeductionItems(deductionItems))
             .createdBy(source.getCreatedBy())
             .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
             .updatedBy(source.getUpdatedBy())
@@ -189,19 +273,19 @@ private ClaimCalculationSummaryResponseDto mapCalculationSummary(ClaimCalculatio
     if (source == null) {
         return null;
     }
+    List<ClaimRuleEvaluation> ruleEvaluations = claimRuleEvaluationRepository.findByCalculationSummary_Id(source.getId());
     return ClaimCalculationSummaryResponseDto.builder()
             .id(source.getId())
             .calculationEffectiveDate(source.getCalculationEffectiveDate())
             .finalPayableAmount(source.getFinalPayableAmount())
             .actualAmountCalculated(source.getActualAmountCalculated())
+            .totalAmount(source.getTotalAmount())
             .isPfEligible(source.getIsPfEligible())
             .isPensionEligible(source.getIsPensionEligible())
             .totalContributionMonth(source.getTotalContributionMonth())
             .recommendedBenefitType(source.getRecommendedBenefitType())
-            .calculationStatusId(source.getCalculationStatus().getStatusId())
-            .calculationStatusName(source.getCalculationStatus().getStatusName())
             .isActive(source.getIsActive())
-            .ruleEvaluations(mapRuleEvaluations(source.getRuleEvaluations()))
+            .ruleEvaluations(mapRuleEvaluations(ruleEvaluations))
             .createdBy(source.getCreatedBy())
             .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
             .updatedBy(source.getUpdatedBy())
@@ -222,6 +306,7 @@ private ClaimRuleEvaluationListDto mapRuleEvaluation(ClaimRuleEvaluation source)
     if (source == null) {
         return null;
     }
+    List<ClaimCalculationComponent> components = claimCalculationComponentRepository.findByRuleEvaluation_Id(source.getId());
     return ClaimRuleEvaluationListDto.builder()
             .id(source.getId())
             .calculationSummaryId(source.getCalculationSummary().getId())
@@ -235,7 +320,7 @@ private ClaimRuleEvaluationListDto mapRuleEvaluation(ClaimRuleEvaluation source)
             .evaluatedAt(source.getEvaluatedAt() != null ? source.getEvaluatedAt().toLocalDateTime() : null)
             .remarks(source.getRemarks())
             .isActive(source.getIsActive())
-            .components(mapCalculationComponents(source.getComponents()))
+            .components(mapCalculationComponents(components))
             .build();
 }
 
@@ -304,12 +389,12 @@ private NormalClaimResponseDto mapNormalClaimDetails(NormalClaimDetail source) {
     }
     return NormalClaimResponseDto.builder()
             .id(source.getId())
-            .cessationTypeId(source.getCessationType().getId())
-            .cessationTypeName(source.getCessationType().getName())
-            .payeeTypeId(source.getPayeeType().getId())
-            .payeeTypeName(source.getPayeeType().getName())
-            .terminationReasonTypeId(source.getTerminationReasonType().getId())
-            .terminationReasonTypeName(source.getTerminationReasonType().getName())
+            .cessationTypeId(source.getCessationType() != null ? source.getCessationType().getId() : null)
+            .cessationTypeName(source.getCessationType() != null ? source.getCessationType().getName() : null)
+            .payeeTypeId(source.getPayeeType() != null ? source.getPayeeType().getId() : null)
+            .payeeTypeName(source.getPayeeType() != null ? source.getPayeeType().getName() : null)
+            .terminationReasonTypeId(source.getTerminationReasonType() != null ? source.getTerminationReasonType().getId() : null)
+            .terminationReasonTypeName(source.getTerminationReasonType() != null ? source.getTerminationReasonType().getName() : null)
             .dateOfTermination(source.getDateOfTermination())
             .pfJoiningDate(source.getPfJoiningDate())
             .pensionJoiningDate(source.getPensionJoiningDate())
@@ -338,10 +423,10 @@ private PartialWithdrawalResponseDto mapPartialWithdrawalDetails(PartialWithdraw
     }
     return PartialWithdrawalResponseDto.builder()
             .id(source.getId())
-            .payeeTypeId(source.getPayeeType().getId())
-            .payeeTypeName(source.getPayeeType().getName())
-            .withdrawalReasonId(source.getWithdrawalReason().getId())
-            .withdrawalReasonName(source.getWithdrawalReason().getName())
+            .payeeTypeId(source.getPayeeType() != null ? source.getPayeeType().getId() : null)
+            .payeeTypeName(source.getPayeeType() != null ? source.getPayeeType().getName() : null)
+            .withdrawalReasonId(source.getWithdrawalReason() != null ? source.getWithdrawalReason().getId() : null)
+            .withdrawalReasonName(source.getWithdrawalReason() != null ? source.getWithdrawalReason().getName() : null)
             .requestedWithdrawalAmount(source.getRequestedWithdrawalAmount())
             .actualWithdrawalAmount(source.getActualWithdrawalAmount())
             .unemploymentStartDate(source.getUnemploymentStartDate())
@@ -370,9 +455,10 @@ private BeneficiarySettlementResponseDto mapBeneficiarySettlementDetails(Benefic
     if (source == null) {
         return null;
     }
+    List<BeneficiaryClaimantDetail> claimantDetails = beneficiaryClaimantDetailRepository.findByBeneficiarySettlementDetail_Id(source.getId());
     return BeneficiarySettlementResponseDto.builder()
             .id(source.getId())
-            .beneficiaryClaimantDetails(mapBeneficiaryClaimants(source.getClaimantDetails()))
+            .beneficiaryClaimantDetails(mapBeneficiaryClaimants(claimantDetails))
             .cessationTypeId(source.getCessationType().getId())
             .cessationTypeName(source.getCessationType().getName())
             .dateOfDeath(source.getDateOfDeath())

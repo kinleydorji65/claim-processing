@@ -2,38 +2,84 @@ package com.claim.claim_processing.common.mapper.claim;
 
 import com.claim.claim_processing.common.DTO.request.claim.ReserveAccountRequestDto;
 import com.claim.claim_processing.common.DTO.response.claim.ReserveAccountResponseDto;
-import com.claim.claim_processing.common.entities.claim.ReserveAccountMaster;
-import com.claim.claim_processing.common.mapper.contribution.SchemeTypeMapper;
+import com.claim.claim_processing.common.entities.claim.ReserveAccount;
+import org.mapstruct.*;
 
 import java.util.List;
 
-import org.mapstruct.*;
-
-@Mapper(componentModel = "spring", uses = {AccountTypeMapper.class, SchemeTypeMapper.class})
+@Mapper(componentModel = "spring")
 public interface ReserveAccountMapper {
 
-    // ENTITY → RESPONSE DTO
-    @Mapping(source = "accountType", target = "accountType")
-    @Mapping(source = "schemeType", target = "schemeType")
-    ReserveAccountResponseDto toResponseDto(ReserveAccountMaster entity);
+    /**
+     * Convert Entity to Response DTO
+     */
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "memberCode", source = "memberCode")
+    @Mapping(target = "nppfNumber", source = "nppfNumber")
+    @Mapping(target = "identityNumber", source = "identityNumber")
+    @Mapping(target = "agencyCategoryId", source = "agencyCategoryId")
+    @Mapping(target = "agencyCode", source = "agencyCode")
+    @Mapping(target = "reserveType", source = "reserveType")
+    @Mapping(target = "accountCode", source = "accountCode")
+    @Mapping(target = "subAccountCode", source = "subAccountCode")
+    @Mapping(target = "totalAmount", source = "totalAmount")
+    @Mapping(target = "forfeitedAmount", source = "forfeitedAmount")
+    @Mapping(target = "componentCodes", source = "componentCodes")
+    @Mapping(target = "status", source = "status")
+    @Mapping(target = "releaseDate", source = "releaseDate")
+    @Mapping(target = "releasedBy", source = "releasedBy")
+    @Mapping(target = "releaseReference", source = "releaseReference")
+    @Mapping(target = "isActive", source = "isActive")
+    @Mapping(target = "createdBy", source = "createdBy")
+    @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "updatedBy", source = "updatedBy")
+    @Mapping(target = "updatedAt", source = "updatedAt")
+    ReserveAccountResponseDto toResponseDto(ReserveAccount entity);
 
-    // REQUEST DTO → ENTITY (CREATE)
+    /**
+     * Convert Request DTO to Entity (CREATE)
+     */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "accountType", ignore = true)
-    @Mapping(target = "schemeType", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "releaseDate", ignore = true)
+    @Mapping(target = "releasedBy", ignore = true)
+    @Mapping(target = "releaseReference", ignore = true)
+    @Mapping(target = "isActive", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    ReserveAccountMaster toEntity(ReserveAccountRequestDto dto);
+    ReserveAccount toEntity(ReserveAccountRequestDto dto);
 
-    // UPDATE EXISTING ENTITY
+    /**
+     * Update existing entity from Request DTO (only updateable fields)
+     */
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "accountType", ignore = true)
-    @Mapping(target = "schemeType", ignore = true)
+    @Mapping(target = "memberCode", ignore = true)
+    @Mapping(target = "nppfNumber", ignore = true)
+    @Mapping(target = "identityNumber", ignore = true)
+    @Mapping(target = "agencyCategoryId", ignore = true)
+    @Mapping(target = "agencyCode", ignore = true)
+    @Mapping(target = "reserveType", ignore = true)
+    @Mapping(target = "accountCode", ignore = true)
+    @Mapping(target = "subAccountCode", ignore = true)
+    @Mapping(target = "totalAmount", ignore = true)
+    @Mapping(target = "forfeitedAmount", ignore = true)
+    @Mapping(target = "componentCodes", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "releaseDate", ignore = true)
+    @Mapping(target = "releasedBy", ignore = true)
+    @Mapping(target = "releaseReference", ignore = true)
+    @Mapping(target = "isActive", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    void updateEntityFromDto(ReserveAccountRequestDto dto, @MappingTarget ReserveAccountMaster entity);
+    @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateEntityFromDto(ReserveAccountRequestDto dto, @MappingTarget ReserveAccount entity);
 
-    List<ReserveAccountResponseDto> toResponseDtoList(
-            List<ReserveAccountMaster> entities
-    );
+    /**
+     * Convert List of Entities to List of Response DTOs
+     */
+    List<ReserveAccountResponseDto> toResponseDtoList(List<ReserveAccount> entities);
 }

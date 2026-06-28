@@ -26,7 +26,6 @@ public class LegalRecoveryDetailRequest {
     private LocalDate judgementDate;
     
     private String reason;
-    private Long currentStatusId;
     private String createdBy;
     private String updatedBy;
 }

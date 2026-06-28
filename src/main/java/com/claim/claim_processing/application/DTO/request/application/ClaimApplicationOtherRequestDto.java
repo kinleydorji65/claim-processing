@@ -14,6 +14,7 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 public class ClaimApplicationOtherRequestDto {
     private BigDecimal finalPayableAmount;
     private Long calculationStatusId;
+    private String identityNumber;
     @Builder.Default
     private ActivityEnum isActive = ActivityEnum.Y;
     

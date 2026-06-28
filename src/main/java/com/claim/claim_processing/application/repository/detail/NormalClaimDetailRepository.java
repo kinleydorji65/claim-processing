@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface NormalClaimDetailRepository extends JpaRepository<NormalClaimDetail, Long> {
     Optional<NormalClaimDetail> findByClaimApplication_Id(Long claimApplicationId);
+    Optional<NormalClaimDetail> findByClaimDetail_Id(Long claimDetailId);
 
     boolean existsByClaimApplication_Id(Long claimApplicationId);
 

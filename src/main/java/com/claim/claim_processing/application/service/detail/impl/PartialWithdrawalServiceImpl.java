@@ -64,22 +64,22 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
 
         partialWithdrawalMapper.updateEntityFromDto(request, existing);
 
-        if (request.getPayeeTypeId() != null) {
+        if (request.getPayeeTypeId() != null && request.getPayeeTypeId() > 0) {
             existing.setPayeeType(getPayeeType(request.getPayeeTypeId()));
         }
 
-        if (request.getWithdrawalReasonId() != null) {
+        if (request.getWithdrawalReasonId() != null && request.getWithdrawalReasonId() > 0) {
             PartialWithdrawalReasonMaster reason = getWithdrawalReason(request.getWithdrawalReasonId());
 
             existing.setWithdrawalReason(reason);
         }
 
-        if (request.getBusinessTypeId() != null || request.getBusinessTypeId() > 0) {
+        if (request.getBusinessTypeId() != null && request.getBusinessTypeId() > 0) {
             existing.setBusinessType(
                     getBusinessTypeIfPresent(request.getBusinessTypeId()));
         }
 
-        if (request.getUnemploymentCauseId() != null || request.getUnemploymentCauseId() > 0) {
+        if (request.getUnemploymentCauseId() != null && request.getUnemploymentCauseId() > 0) {
             existing.setUnemploymentCauseMaster(
                     getUnemploymentCauseIfPresent(request.getUnemploymentCauseId()));
         }

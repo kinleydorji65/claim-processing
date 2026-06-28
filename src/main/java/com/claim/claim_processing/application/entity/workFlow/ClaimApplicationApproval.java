@@ -68,14 +68,15 @@ public class ClaimApplicationApproval {
     @Builder.Default
     private ActivityEnum requiresManualReview = ActivityEnum.N;
 
-    @Column(name = "APPROVER_REMARKS", length = 2000)
-    private String approverRemarks;
+    @Column(name = "REMARKS", length = 2000)
+    private String remarks;
+
 
     @Column(name = "APPROVED_BY", length = 100)
     private String approvedBy;
 
-    @Column(name = "APPROVED_BY_ROLE", length = 100)
-    private String approvedByRole;
+    @Column(name = "ROLE_ID", length = 100)
+    private Long roleId;
 
     @Column(name = "APPROVED_AT")
     private Timestamp approvedAt;
@@ -87,6 +88,12 @@ public class ClaimApplicationApproval {
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
+
+    @Column(name = "CLAIMED_BY", length = 100)
+    private String claimedBy;
+
+    @Column(name = "REJECTED_BY", length = 100)
+    private String rejectedBy;
 
     @Column(name = "CREATED_AT")
     private Timestamp createdAt;

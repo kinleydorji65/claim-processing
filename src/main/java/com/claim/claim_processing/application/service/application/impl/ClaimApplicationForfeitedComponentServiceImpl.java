@@ -63,7 +63,7 @@ public class ClaimApplicationForfeitedComponentServiceImpl
                     .componentType(component.getType())
                     .amount(component.getAmount())
                     .reason("Forfeited from lapsed rule calculation")
-                    .subClaimCode(calculationResponse.getSubClaimCode())
+                    .subClaimCode(component.getSubRuleCode())
                     .createdBy(createdBy)
                     .isActive(ActivityEnum.Y)
                     .build();
@@ -75,49 +75,47 @@ public class ClaimApplicationForfeitedComponentServiceImpl
     }
 
     @Override
-@Transactional
-public List<ClaimApplicationForfeitedComponent> patchForfeitedComponent(
-        List<ClaimApplicationForfeitedComponentPatchRequestDto> requests
-) {
+    @Transactional
+    public List<ClaimApplicationForfeitedComponent> patchForfeitedComponent(
+            List<ClaimApplicationForfeitedComponentPatchRequestDto> requests) {
 
-    if (requests == null || requests.isEmpty()) {
-        return Collections.emptyList();
+        if (requests == null || requests.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ClaimApplicationForfeitedComponent> updatedComponents = new ArrayList<>();
+
+        for (ClaimApplicationForfeitedComponentPatchRequestDto request : requests) {
+
+            if (request == null || request.getForfeitedComponentId() == null) {
+                continue;
+            }
+
+            ClaimApplicationForfeitedComponent component = forfeitedComponentRepository
+                    .findById(request.getForfeitedComponentId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Forfeited component not found with id: "
+                                    + request.getForfeitedComponentId()));
+
+            if (request.getAmount() != null) {
+                component.setAmount(request.getAmount());
+            }
+
+            if (request.getReason() != null) {
+                component.setReason(request.getReason());
+            }
+
+            if (request.getIsActive() != null) {
+                component.setIsActive(request.getIsActive());
+            }
+
+            if (request.getUpdatedBy() != null) {
+                component.setUpdatedBy(request.getUpdatedBy());
+            }
+
+            updatedComponents.add(component);
+        }
+
+        return forfeitedComponentRepository.saveAll(updatedComponents);
     }
-
-    List<ClaimApplicationForfeitedComponent> updatedComponents = new ArrayList<>();
-
-    for (ClaimApplicationForfeitedComponentPatchRequestDto request : requests) {
-
-        if (request == null || request.getForfeitedComponentId() == null) {
-            continue;
-        }
-
-        ClaimApplicationForfeitedComponent component =
-                forfeitedComponentRepository.findById(request.getForfeitedComponentId())
-                        .orElseThrow(() -> new RuntimeException(
-                                "Forfeited component not found with id: "
-                                        + request.getForfeitedComponentId()
-                        ));
-
-        if (request.getAmount() != null) {
-            component.setAmount(request.getAmount());
-        }
-
-        if (request.getReason() != null) {
-            component.setReason(request.getReason());
-        }
-
-        if (request.getIsActive() != null) {
-            component.setIsActive(request.getIsActive());
-        }
-
-        if (request.getUpdatedBy() != null) {
-            component.setUpdatedBy(request.getUpdatedBy());
-        }
-
-        updatedComponents.add(component);
-    }
-
-    return forfeitedComponentRepository.saveAll(updatedComponents);
-}
 }

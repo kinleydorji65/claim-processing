@@ -17,6 +17,7 @@ public interface PartialWithdrawalDetailRepository
     boolean existsByClaimApplication_IdAndIdNot(Long claimApplicationId, Long id);
 
     Optional<PartialWithdrawalDetail> findByClaimApplication_Id(Long claimApplicationId);
+    Optional<PartialWithdrawalDetail> findByClaimDetail_Id(Long claimDetailId);
 
     List<PartialWithdrawalDetail> findByPayeeType_Id(Long payeeTypeId);
 

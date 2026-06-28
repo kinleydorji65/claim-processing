@@ -23,7 +23,8 @@ public interface ClaimApplicationService {
 
     List<ClaimApplication> getByMemberCode(String memberCode);
     List<ClaimApplication> getVerifiedApplication();
+    List<ClaimApplication> getByAgencyCodeAndClaimTypeId(String agencyCode, Long claimTypeId);
 
     List<ClaimApplication> getByNppfNumber(String nppfNumber);
-    List<ClaimApplication> getByUserCode(String userCode);
+    List<ClaimApplication> getByUserCodeAndStatusId(String userCode, Long statusId);
 }

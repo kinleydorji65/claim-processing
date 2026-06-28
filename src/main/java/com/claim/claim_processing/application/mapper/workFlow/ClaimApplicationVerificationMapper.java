@@ -2,7 +2,7 @@ package com.claim.claim_processing.application.mapper.workFlow;
 
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationVerification;
-import com.claim.claim_processing.common.controller.common.RoleMaster;
+import com.claim.claim_processing.common.entities.common.RoleMaster;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.repository.others.RoleMasterRepository;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
@@ -66,9 +66,12 @@ public class ClaimApplicationVerificationMapper {
                 .verifiedBy(
                         entity.getVerifiedBy()
                 )
-
+                .rejectedBy(entity.getRejectedBy())
+                
                 .verifiedByRoleId(
-                        entity.getVerifiedByRoleId()
+                        (entity.getVerifiedByRoleId() != null && entity.getVerifiedByRoleId() > 0)
+                                ? entity.getVerifiedByRoleId()
+                                : null
                 )
                 .verifiedByRoleName(
                         getRoleName(entity.getVerifiedByRoleId())
@@ -114,7 +117,7 @@ public class ClaimApplicationVerificationMapper {
     }
 
     private String getRoleName(Long roleId) {
-        if (roleId == null) {
+        if (roleId == null || roleId <= 0) {
             return null;
         }
         return roleMasterRepository.findById(roleId)

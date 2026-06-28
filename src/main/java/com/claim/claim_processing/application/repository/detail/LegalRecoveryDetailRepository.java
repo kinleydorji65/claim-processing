@@ -15,5 +15,6 @@ public interface LegalRecoveryDetailRepository
     boolean existsByClaimApplication_IdAndIdNot(Long claimApplicationId, Long id);
 
     Optional<LegalRecoveryDetail> findByClaimApplication_Id(Long claimApplicationId);
+    Optional<LegalRecoveryDetail> findByClaimDetail_Id(Long claimDetailId);
     List<LegalRecoveryDetail> findByPayeeType_Id(Long payeeTypeId);
 }

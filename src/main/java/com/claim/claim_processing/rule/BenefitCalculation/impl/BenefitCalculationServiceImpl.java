@@ -82,7 +82,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
         MemberContributionSummary contributionSummary = memberContributionService
                 .getContributionSummary(request.getNppfNumber());
-
+        BigDecimal totalAmount = contributionSummary.getTotalBalance();
         ApiResponseDTO<List<MatchedSubClaimRuleDto>> ruleResponse = ruleService.playWithRule(request);
 
         List<MatchedSubClaimRuleDto> matchedRules = ruleResponse == null || ruleResponse.getData() == null
@@ -180,7 +180,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                     contributionSummary, expressionCalculations);
 
             if (eligibilityResult != null && eligibilityResult.getEligibleComponents() != null) {
-                matchedRuleCodes.add(matchedRule.getRuleCode());
+                matchedRuleCodes.add(matchedRule.getSubClaimCode());
                 eligibleComponents.addAll(eligibilityResult.getEligibleComponents());
             }
         }
@@ -295,17 +295,12 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 totalPfAmount,
                 totalPensionAmount);
 
-        String ruleCode = matchedRuleCodes.stream()
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.joining(","));
         ClaimCalculationResponseDTO response = ClaimCalculationResponseDTO.builder()
                 .nppfNumber(contributionSummary != null ? contributionSummary.getNppfNumber() : null)
                 .contributionStartDate(
                         contributionSummary != null
                                 ? contributionSummary.getContributionStartDate()
                                 : null)
-                .subClaimCode(ruleCode)
                 .rentalAdjustmentResult(rentalAdjustmentResult)
                 .contributionEndDate(contributionSummary != null
                         ? contributionSummary.getContributionEndDate()
@@ -320,6 +315,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                                 : null)
                 .loanAdjustmentResult(loanAdjustmentResult)
                 .noOfYearInService(serviceYears)
+                .totalAmount(totalAmount)
                 .components(finalComponents)
                 .expressionCalculations(expressionCalculations)
                 .loanCheck(isLoanApply)
@@ -900,6 +896,7 @@ private String normalizeName(String value) {
 
                 results.add(
                         ComponentBalanceDTO.builder()
+                                .subRuleCode(matchedRule.getSubClaimCode())
                                 .code(componentCode)
                                 .name(componentCode)
                                 .type(calculationType)
