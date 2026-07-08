@@ -9,4 +9,5 @@ import com.claim.claim_processing.application.entity.application.ClaimApplicatio
 public interface ClaimApplicationBankDetailService {
     List<ClaimApplicationBankDetail> create(ClaimApplication claimApplication, List<ClaimApplicationBankDetailRequestDto> requestDto); 
     List<ClaimApplicationBankDetail> patch(ClaimApplication claimApplication, List<ClaimApplicationBankDetailRequestDto> requestDto); 
+    List<ClaimApplicationBankDetail> getByApplicationNumber(String applicationNumber);
 }

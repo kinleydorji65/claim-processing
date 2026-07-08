@@ -7,6 +7,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Data
 @Builder
 public class MemberContributionSummary {
@@ -28,6 +31,8 @@ public class MemberContributionSummary {
     private BigDecimal totalInterestAmount;
     private BigDecimal totalBalance;
 
+    @JsonProperty("components")
+    @JsonAlias({"componentGroups", "components"})
     private List<ComponentGroup> componentGroups;
 
     @Data

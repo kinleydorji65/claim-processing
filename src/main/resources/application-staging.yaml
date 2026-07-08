@@ -77,10 +77,11 @@ logging:
   file:
     name: logs/application.log
   level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: DEBUG
-    org.springframework.orm.jpa: DEBUG
+    nppf.org.bt.claim-processing: DEBUG
+    # org.hibernate.SQL: DEBUG
+    # org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # org.hibernate.engine.jdbc.spi.SqlExceptionHelper: DEBUG
+    # org.springframework.orm.jpa: DEBUG
 
 management:
   endpoints:
@@ -104,3 +105,7 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     display-request-duration: true
+
+file:
+  application-dir: /opt/ppfms/application-details/
+  approved-dir: /opt/ppfms/approved-details/

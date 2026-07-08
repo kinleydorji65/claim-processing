@@ -23,32 +23,33 @@ public interface ReserveAccountRepository extends JpaRepository<ReserveAccount, 
     /**
      * Find reserve accounts by NPPF number
      */
-    List<ReserveAccount> findByNppfNumber(String nppfNumber);
+    Optional<ReserveAccount> findByNppfNumber(String nppfNumber);
 
     /**
      * Find reserve accounts by identity number (CID/Passport/Work Permit)
      */
-    List<ReserveAccount> findByIdentityNumber(String identityNumber);
-
     /**
      * Find reserve account by identity number and account code
      */
-    Optional<ReserveAccount> findByIdentityNumberAndAccountCode(
-            String identityNumber, String accountCode
+    List<ReserveAccount> findByReserveTypeAndAgencyCode(
+            String reserveType, String agencyCode
+    );
+    Optional<ReserveAccount> findByIdentityNumber(
+            String identityNumber
     );
 
     /**
      * Check if reserve account exists by identity number and account code
      */
-    boolean existsByIdentityNumberAndAccountCode(
-            String identityNumber, String accountCode
+    boolean existsByIdentityNumber(
+            String identityNumber
     );
 
     /**
      * Check if reserve account exists by NPPF number and account code
      */
-    boolean existsByNppfNumberAndAccountCode(
-            String nppfNumber, String accountCode
+    boolean existsByNppfNumber(
+            String nppfNumber
     );
 
     // -------------------------------
@@ -80,23 +81,6 @@ public interface ReserveAccountRepository extends JpaRepository<ReserveAccount, 
      * Find reserve accounts by reserve type
      */
     List<ReserveAccount> findByReserveType(String reserveType);
-
-    /**
-     * Find reserve accounts by account code (COA code)
-     */
-    List<ReserveAccount> findByAccountCode(String accountCode);
-
-    /**
-     * Find reserve accounts by sub-account code
-     */
-    List<ReserveAccount> findBySubAccountCode(String subAccountCode);
-
-    /**
-     * Find reserve accounts by account code and status
-     */
-    List<ReserveAccount> findByAccountCodeAndStatus(
-            String accountCode, String status
-    );
 
     // -------------------------------
     // FIND BY AMOUNT
@@ -163,13 +147,6 @@ public interface ReserveAccountRepository extends JpaRepository<ReserveAccount, 
      */
     List<ReserveAccount> findByIdentityNumberAndStatus(
             String identityNumber, String status
-    );
-
-    /**
-     * Find reserve accounts by agency code and account code
-     */
-    List<ReserveAccount> findByAgencyCodeAndAccountCode(
-            String agencyCode, String accountCode
     );
 
     /**

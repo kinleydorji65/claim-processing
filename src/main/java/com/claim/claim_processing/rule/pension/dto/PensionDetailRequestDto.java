@@ -23,7 +23,6 @@ public class PensionDetailRequestDto {
     // Pension Classification
     private String pensionType;
     private String pensionCategory;
-    private String pensionSubCategory;
 
     // Pension Amounts
     private BigDecimal monthlyPensionAmount;

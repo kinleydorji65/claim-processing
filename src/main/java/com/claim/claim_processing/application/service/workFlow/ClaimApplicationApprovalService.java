@@ -23,12 +23,14 @@ public interface ClaimApplicationApprovalService {
         ApiResponseDTO<ClaimApplicationApprovalResponseDto> verifiedClaimActionClaimedBy(
                         String applicationNumber, String claimedBy);
 
-
         ApiResponseDTO<List<ClaimApplicationApprovalResponseDto>> getVerifiedClaimAndClaimedBy(String claimedBy);
-                        
+
         ApiResponseDTO<ClaimApplicationApprovalResponseDto> verifiedClaimActionUnClaimedBy(
                         String applicationNumber, String unClaimedBy);
 
         ApiResponseDTO<ClaimApplicationApprovalResponseDto> verifiedClaimActionRejectedByApprover(
                         String applicationNumber, String rejectedBy, String rejectedRemarks);
+
+        ApiResponseDTO<GeneralClaimDetailResponse> markAsSpecial(
+                        String applicationNumber, String updatedBy, String remarks);
 }

@@ -34,7 +34,7 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
         MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
 
         MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(request.getNppfNumber());
+                .getContributionSummary(request.getNppfNumber(), request.getIdentityNumber());
 
         memberDetail.getDateOfServiceJoiningDate();
 

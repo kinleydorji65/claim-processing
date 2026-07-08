@@ -26,7 +26,7 @@ public class GeneralClaimDetailResponse {
 
     private Long submissionChannelId;
     private String submissionChannelName;
-
+    private String identityNumber;
     private Long schemeTypeId;
     private String schemeTypeName;
 
@@ -75,7 +75,7 @@ public class GeneralClaimDetailResponse {
     private NormalClaimResponseDto normalClaimDetails;
     private PartialWithdrawalResponseDto partialWithdrawalDetails;
     private LegalRecoveryResponseDto legalRecoveryDetail;
-    private BeneficiarySettlementResponseDto beneficiarySettlementDetails;
+    private BeneficiarySettlementResponseDto beneficiarySettlementDetail;
     private List<ClaimForfeitedComponentResponseDto> forfeitedComponents;
     private AccountingEventResponseDto accountingEventDetail;
 

@@ -38,7 +38,7 @@ public class ClaimDetail {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLAIM_TYPE_ID", nullable = false)
+    @JoinColumn(name = "CLAIM_TYPE_ID", nullable = true)
     private ClaimTypeMaster claimType;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -67,6 +67,9 @@ public class ClaimDetail {
 
     @Column(name = "NPPF_NUMBER", length = 100)
     private String nppfNumber;
+
+    @Column(name = "IDENTITY_NUMBER", length = 100)
+    private String identityNumber;
 
     @Column(name = "AGENCY_CODE", length = 100)
     private String agencyCode;

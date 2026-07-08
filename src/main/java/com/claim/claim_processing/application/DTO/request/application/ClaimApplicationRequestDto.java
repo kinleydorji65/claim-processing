@@ -23,6 +23,7 @@ public class ClaimApplicationRequestDto {
     private Long schemeTypeId;
 
     private String memberCategoryId;
+    private String identityNumber;
 
     private Long specialCaseAuthorityId;
 

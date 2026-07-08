@@ -19,121 +19,128 @@ import com.claim.claim_processing.common.repository.beneficiary.ClaimantTypeRepo
 import com.claim.claim_processing.common.repository.others.BankTypeRepository;
 
 import lombok.RequiredArgsConstructor;
+
 @Service
 @RequiredArgsConstructor
 public class ClaimApplicationBankDetailServiceImpl
-        implements ClaimApplicationBankDetailService {
+                implements ClaimApplicationBankDetailService {
 
-    private final ClaimApplicationBankDetailRepository claimApplicationBankDetailRepository;
-    private final ClaimApplicationBankDetailMapper claimApplicationBankDetailMapper;
-    private final ClaimantTypeRepository claimantTypeRepository;
-    private final BankTypeRepository bankTypeRepository;
+        private final ClaimApplicationBankDetailRepository claimApplicationBankDetailRepository;
+        private final ClaimApplicationBankDetailMapper claimApplicationBankDetailMapper;
+        private final ClaimantTypeRepository claimantTypeRepository;
+        private final BankTypeRepository bankTypeRepository;
 
-    @Override
-    public List<ClaimApplicationBankDetail> create(
-            ClaimApplication claimApplication,
-            List<ClaimApplicationBankDetailRequestDto> requestDto) {
+        @Override
+        public List<ClaimApplicationBankDetail> create(
+                        ClaimApplication claimApplication,
+                        List<ClaimApplicationBankDetailRequestDto> requestDto) {
 
-        if (claimApplication == null || claimApplication.getId() == null) {
-            throw new RuntimeException("Claim application is required for bank detail.");
+                if (claimApplication == null || claimApplication.getId() == null) {
+                        throw new RuntimeException("Claim application is required for bank detail.");
+                }
+
+                if (requestDto == null || requestDto.isEmpty()) {
+                        return Collections.emptyList();
+                }
+
+                List<ClaimApplicationBankDetail> bankDetails = requestDto.stream()
+                                .filter(Objects::nonNull)
+                                .map(request -> {
+
+                                        ClaimantTypeMaster claimantType = null;
+                                        if (request.getClaimantTypeId() != null && request.getClaimantTypeId() > 0) {
+                                                claimantType = claimantTypeRepository
+                                                                .findById(request.getClaimantTypeId())
+                                                                .orElseThrow(() -> new RuntimeException(
+                                                                                "Claimant type not found with id: "
+                                                                                                + request.getClaimantTypeId()));
+                                        }
+
+                                        BankType bankType = null;
+                                        if (request.getBankTypeId() != null && request.getBankTypeId() > 0) {
+                                                bankType = bankTypeRepository.findById(request.getBankTypeId())
+                                                                .orElseThrow(() -> new RuntimeException(
+                                                                                "Bank type not found with id: "
+                                                                                                + request.getBankTypeId()));
+                                        }
+
+                                        ClaimApplicationBankDetail claimApplicationBankDetail = claimApplicationBankDetailMapper
+                                                        .toEntity(request);
+                                        claimApplicationBankDetail.setClaimApplication(claimApplication);
+                                        claimApplicationBankDetail.setClaimantType(claimantType);
+                                        claimApplicationBankDetail.setBankType(bankType);
+                                        return claimApplicationBankDetail;
+
+                                })
+                                .toList();
+
+                return claimApplicationBankDetailRepository.saveAllAndFlush(bankDetails);
         }
 
-        if (requestDto == null || requestDto.isEmpty()) {
-            return Collections.emptyList();
+        @Override
+        public List<ClaimApplicationBankDetail> patch(
+                        ClaimApplication claimApplication,
+                        List<ClaimApplicationBankDetailRequestDto> requestDto) {
+
+                if (claimApplication == null || claimApplication.getId() == null) {
+                        throw new RuntimeException("Claim application is required for bank detail.");
+                }
+
+                if (requestDto == null || requestDto.isEmpty()) {
+                        return Collections.emptyList();
+                }
+
+                List<ClaimApplicationBankDetail> updatedDetails = new ArrayList<>();
+
+                for (ClaimApplicationBankDetailRequestDto request : requestDto) {
+
+                        if (request == null || request.getId() == null) {
+                                continue;
+                        }
+
+                        ClaimApplicationBankDetail entity = claimApplicationBankDetailRepository
+                                        .findById(request.getId())
+                                        .orElseThrow(() -> new RuntimeException(
+                                                        "Bank detail not found with id: " + request.getId()));
+
+                        if (!Objects.equals(
+                                        entity.getClaimApplication().getId(),
+                                        claimApplication.getId())) {
+                                throw new RuntimeException(
+                                                "Bank detail does not belong to claim application id: "
+                                                                + claimApplication.getId());
+                        }
+
+                        ClaimantTypeMaster claimantType = null;
+                        if (request.getClaimantTypeId() != null && request.getClaimantTypeId() > 0) {
+                                claimantType = claimantTypeRepository.findById(request.getClaimantTypeId())
+                                                .orElseThrow(() -> new RuntimeException(
+                                                                "Claimant type not found with id: "
+                                                                                + request.getClaimantTypeId()));
+                        }
+
+                        BankType bankType = null;
+                        if (request.getBankTypeId() != null && request.getBankTypeId() > 0) {
+                                bankType = bankTypeRepository.findById(request.getBankTypeId())
+                                                .orElseThrow(() -> new RuntimeException(
+                                                                "Bank type not found with id: "
+                                                                                + request.getBankTypeId()));
+                        }
+
+                        claimApplicationBankDetailMapper.updateEntity(
+                                        entity,
+                                        request,
+                                        claimantType,
+                                        bankType);
+
+                        updatedDetails.add(entity);
+                }
+
+                return claimApplicationBankDetailRepository.saveAllAndFlush(updatedDetails);
         }
 
-        List<ClaimApplicationBankDetail> bankDetails = requestDto.stream()
-                .filter(Objects::nonNull)
-                .map(request -> {
-
-                    ClaimantTypeMaster claimantType = null;
-                    if (request.getClaimantTypeId() != null) {
-                        claimantType = claimantTypeRepository.findById(request.getClaimantTypeId())
-                                .orElseThrow(() -> new RuntimeException(
-                                        "Claimant type not found with id: "
-                                                + request.getClaimantTypeId()));
-                    }
-
-                    BankType bankType = null;
-                    if (request.getBankTypeId() != null) {
-                        bankType = bankTypeRepository.findById(request.getBankTypeId())
-                                .orElseThrow(() -> new RuntimeException(
-                                        "Bank type not found with id: "
-                                                + request.getBankTypeId()));
-                    }
-
-                        ClaimApplicationBankDetail claimApplicationBankDetail = claimApplicationBankDetailMapper.toEntity(request);
-                        claimApplicationBankDetail.setClaimApplication(claimApplication);
-                        claimApplicationBankDetail.setClaimantType(claimantType);
-                        claimApplicationBankDetail.setBankType(bankType);
-                        return claimApplicationBankDetail;
-
-                })
-                .toList();
-
-        return claimApplicationBankDetailRepository.saveAllAndFlush(bankDetails);
-    }
-
-    @Override
-public List<ClaimApplicationBankDetail> patch(
-        ClaimApplication claimApplication,
-        List<ClaimApplicationBankDetailRequestDto> requestDto) {
-
-    if (claimApplication == null || claimApplication.getId() == null) {
-        throw new RuntimeException("Claim application is required for bank detail.");
-    }
-
-    if (requestDto == null || requestDto.isEmpty()) {
-        return Collections.emptyList();
-    }
-
-    List<ClaimApplicationBankDetail> updatedDetails = new ArrayList<>();
-
-    for (ClaimApplicationBankDetailRequestDto request : requestDto) {
-
-        if (request == null || request.getId() == null) {
-            continue;
+        public List<ClaimApplicationBankDetail> getByApplicationNumber(String applicationNumber) {
+                return claimApplicationBankDetailRepository.findByClaimApplication_ApplicationNumber(applicationNumber);
         }
 
-        ClaimApplicationBankDetail entity =
-                claimApplicationBankDetailRepository
-                        .findById(request.getId())
-                        .orElseThrow(() -> new RuntimeException(
-                                "Bank detail not found with id: " + request.getId()));
-
-        if (!Objects.equals(
-                entity.getClaimApplication().getId(),
-                claimApplication.getId())) {
-            throw new RuntimeException(
-                    "Bank detail does not belong to claim application id: "
-                            + claimApplication.getId());
-        }
-
-        ClaimantTypeMaster claimantType = null;
-        if (request.getClaimantTypeId() != null) {
-            claimantType = claimantTypeRepository.findById(request.getClaimantTypeId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "Claimant type not found with id: "
-                                    + request.getClaimantTypeId()));
-        }
-
-        BankType bankType = null;
-        if (request.getBankTypeId() != null) {
-            bankType = bankTypeRepository.findById(request.getBankTypeId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "Bank type not found with id: "
-                                    + request.getBankTypeId()));
-        }
-
-        claimApplicationBankDetailMapper.updateEntity(
-                entity,
-                request,
-                claimantType,
-                bankType);
-
-        updatedDetails.add(entity);
-    }
-
-    return claimApplicationBankDetailRepository.saveAllAndFlush(updatedDetails);
-}
 }

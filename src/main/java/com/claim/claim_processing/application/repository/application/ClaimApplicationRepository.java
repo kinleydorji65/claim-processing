@@ -35,8 +35,21 @@ public interface ClaimApplicationRepository extends JpaRepository<ClaimApplicati
             ActivityEnum isActive
     );
 
+    List<ClaimApplication> findByAgencyCodeAndIsSpecialCase(
+            String agencyCode,
+            ActivityEnum isSpecialCase
+    );
+
+    List<ClaimApplication> findByIsSpecialCaseAndClaimedBy(
+            ActivityEnum isSpecialCase,
+            String claimedBy
+    );
+
     List<ClaimApplication> findByClaimType_IdAndIsActive(
             Long claimTypeId,
             ActivityEnum isActive
+    );
+    List<ClaimApplication> findByIsSpecialCase(
+            ActivityEnum isSpecialCase
     );
 }

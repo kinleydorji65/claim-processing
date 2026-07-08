@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -132,62 +131,61 @@ public class PensionServiceImpl implements PensionService {
 
     @Override
     @Transactional
-    public PensionDetailResponseDTO createOrUpdatePensionDetail(
-            String nppfNumber,
-            String memberIdentityNumber,
-            String agencyCode,
-            String pensionType,
-            BigDecimal monthlyPensionAmount,
-            BigDecimal totalPensionFund,
-            Integer totalContributionMonths,
-            Integer totalContributionYears,
-            LocalDateTime pensionStartDate,
-            String createdBy) {
+    public PensionDetailResponseDTO createOrUpdatePensionDetail(PensionDetailRequestDto requestDto) {
 
-        log.info("Creating/Updating pension detail for NPPF: {}", nppfNumber);
+        log.info("Creating/Updating pension detail for NPPF: {}", requestDto.getNppfNumber());
 
         try {
             // Check if pension detail already exists
-            PensionDetail existing = pensionDetailRepository.findByNppfNumber(nppfNumber).orElse(null);
+            PensionDetail existing = pensionDetailRepository.findByNppfNumber(requestDto.getNppfNumber()).orElse(null);
 
             PensionDetail pensionDetail;
 
             if (existing != null) {
                 // Update existing
                 pensionDetail = existing;
-                pensionDetail.setPensionType(pensionType);
-                pensionDetail.setMonthlyPensionAmount(monthlyPensionAmount);
-                pensionDetail.setTotalPensionFund(totalPensionFund);
-                pensionDetail.setTotalContributionMonths(totalContributionMonths);
-                pensionDetail.setTotalContributionYears(totalContributionYears);
-                if (pensionStartDate != null) {
-                    pensionDetail.setPensionStartDate(pensionStartDate.toLocalDate());
+                pensionDetail.setPensionType(requestDto.getPensionType());
+                pensionDetail.setMonthlyPensionAmount(requestDto.getMonthlyPensionAmount());
+                pensionDetail.setTotalPensionFund(requestDto.getTotalPensionFund());
+                pensionDetail.setTotalContributionMonths(requestDto.getTotalContributionMonths());
+                pensionDetail.setTotalContributionYears(requestDto.getTotalContributionYears());
+                pensionDetail.setBankTypeId(requestDto.getBankTypeId());
+                pensionDetail.setBankName(requestDto.getBankName());
+                pensionDetail.setBankAccountNumber(requestDto.getBankAccountNumber());
+                pensionDetail.setAccountHolderName(requestDto.getAccountHolderName());
+                pensionDetail.setIfscCode(requestDto.getIfscCode());
+                if (requestDto.getPensionStartDate() != null) {
+                    pensionDetail.setPensionStartDate(requestDto.getPensionStartDate());
                 }
-                pensionDetail.setUpdatedBy(createdBy);
                 pensionDetail.setUpdatedAt(LocalDateTime.now());
-                log.info("Updating existing pension detail for NPPF: {}", nppfNumber);
+                log.info("Updating existing pension detail for NPPF: {}", requestDto.getNppfNumber());
             } else {
                 // Create new
                 pensionDetail = PensionDetail.builder()
-                        .nppfNumber(nppfNumber)
-                        .memberIdentityNumber(memberIdentityNumber)
-                        .agencyCode(agencyCode)
+                        .nppfNumber(requestDto.getNppfNumber())
+                        .memberIdentityNumber(requestDto.getMemberIdentityNumber())
+                        .agencyCode(requestDto.getAgencyCode())
                         .currencyCode("BTN")
-                        .pensionType(pensionType)
+                        .pensionType(requestDto.getPensionType())
                         .pensionCategory("MONTHLY")
-                        .monthlyPensionAmount(monthlyPensionAmount)
-                        .totalPensionFund(totalPensionFund)
-                        .totalContributionMonths(totalContributionMonths)
-                        .totalContributionYears(totalContributionYears)
+                        .monthlyPensionAmount(requestDto.getMonthlyPensionAmount())
+                        .totalPensionFund(requestDto.getTotalPensionFund())
+                        .totalContributionMonths(requestDto.getTotalContributionMonths())
+                        .totalContributionYears(requestDto.getTotalContributionYears())
                         .pensionStatus("ACTIVE")
-                        .createdBy(createdBy)
+                        .bankTypeId(requestDto.getBankTypeId())
+                        .bankName(requestDto.getBankName())
+                        .bankAccountNumber(requestDto.getBankAccountNumber())
+                        .accountHolderName(requestDto.getAccountHolderName())
+                        .ifscCode(requestDto.getIfscCode())
+                        .createdBy(requestDto.getCreatedBy())
                         .createdAt(LocalDateTime.now())
                         .build();
 
-                if (pensionStartDate != null) {
-                    pensionDetail.setPensionStartDate(pensionStartDate.toLocalDate());
+                if (requestDto.getPensionStartDate() != null) {
+                    pensionDetail.setPensionStartDate(requestDto.getPensionStartDate());
                 }
-                log.info("Creating new pension detail for NPPF: {}", nppfNumber);
+                log.info("Creating new pension detail for NPPF: {}", requestDto.getNppfNumber());
             }
 
             PensionDetail saved = pensionDetailRepository.save(pensionDetail);
@@ -297,7 +295,6 @@ public class PensionServiceImpl implements PensionService {
                 .currencyCode(dto.getCurrencyCode() != null ? dto.getCurrencyCode() : "BTN")
                 .pensionType(dto.getPensionType())
                 .pensionCategory(dto.getPensionCategory())
-                .pensionSubCategory(dto.getPensionSubCategory())
                 .monthlyPensionAmount(dto.getMonthlyPensionAmount())
                 .totalPensionFund(dto.getTotalPensionFund())
                 .totalContributionMonths(dto.getTotalContributionMonths())
@@ -333,7 +330,6 @@ public class PensionServiceImpl implements PensionService {
         if (dto.getCurrencyCode() != null) entity.setCurrencyCode(dto.getCurrencyCode());
         if (dto.getPensionType() != null) entity.setPensionType(dto.getPensionType());
         if (dto.getPensionCategory() != null) entity.setPensionCategory(dto.getPensionCategory());
-        if (dto.getPensionSubCategory() != null) entity.setPensionSubCategory(dto.getPensionSubCategory());
         if (dto.getMonthlyPensionAmount() != null) entity.setMonthlyPensionAmount(dto.getMonthlyPensionAmount());
         if (dto.getTotalPensionFund() != null) entity.setTotalPensionFund(dto.getTotalPensionFund());
         if (dto.getTotalContributionMonths() != null) entity.setTotalContributionMonths(dto.getTotalContributionMonths());
@@ -361,7 +357,6 @@ public class PensionServiceImpl implements PensionService {
                 .currencyCode(entity.getCurrencyCode())
                 .pensionType(entity.getPensionType())
                 .pensionCategory(entity.getPensionCategory())
-                .pensionSubCategory(entity.getPensionSubCategory())
                 .monthlyPensionAmount(entity.getMonthlyPensionAmount())
                 .totalPensionFund(entity.getTotalPensionFund())
                 .totalContributionMonths(entity.getTotalContributionMonths())

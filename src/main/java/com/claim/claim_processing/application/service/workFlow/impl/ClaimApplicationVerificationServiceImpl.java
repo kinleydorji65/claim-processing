@@ -256,10 +256,10 @@ public class ClaimApplicationVerificationServiceImpl
         @Override
         @Transactional(readOnly = true)
         public ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> getClaimApplicationWhichClaimedBy(String claimedBy) {
-                List<ClaimApplicationVerification> verifications;
+                List<ClaimApplicationVerification> verifications = null;
                 verifications = verificationRepository
                                 .findByClaimedByAndStatus_StatusId(claimedBy, 3L);
-                if (verifications.isEmpty()) {
+                if (verifications == null || verifications.isEmpty()) {
                         return ApiResponseDTO.success("Claim application not found for claimed by: " + claimedBy, null);
                 }
                 return ApiResponseDTO.success(verifications.stream()

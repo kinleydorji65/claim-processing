@@ -167,6 +167,12 @@ public class ClaimApplicationFlowController {
         return ResponseEntity.ok(
                 claimApplicationFlowService.findByUserCode(userCode, statusId));
     }
+    @GetMapping("/claims/legal-recovery/user/{userCode}")
+    public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> getLegalRecoveryWithUserCode(
+            @PathVariable String userCode) {
+        return ResponseEntity.ok(
+                claimApplicationFlowService.getLegalRecoveryWithUserCode(userCode));
+    }
 
     @GetMapping("/claims/get-all-verified-claim")
     @Operation(summary = "Get all verified claim application for the approval")
@@ -226,6 +232,16 @@ public class ClaimApplicationFlowController {
             @RequestParam String rejectedRemarks) {
         return ResponseEntity.ok(
                 claimApplicationFlowService.verifiedClaimActionRejectedByApprover(applicationNumber, rejectedBy, rejectedRemarks));
+    }
+
+    @PatchMapping("/claims/{applicationNumber}/mark-as-special")
+    @Operation(summary = "Mark as special action for the approver")
+    public ResponseEntity<ApiResponseDTO<GeneralClaimDetailResponse>> markAsSpecial(
+            @PathVariable String applicationNumber,
+            @RequestParam String updatedBy,
+            @RequestParam String remarks) {
+        return ResponseEntity.ok(
+                claimApplicationApprovalService.markAsSpecial(applicationNumber, updatedBy, remarks));
     }
 
     @GetMapping("/claims/get-verified-claim-rejected-by-approver")

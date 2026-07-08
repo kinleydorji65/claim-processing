@@ -33,8 +33,6 @@ public class ReserveAccountResponseDto {
     // RESERVE ACCOUNT DETAILS
     // -------------------------------
     private String reserveType;
-    private String accountCode;
-    private String subAccountCode;
 
     // -------------------------------
     // AMOUNT DETAILS

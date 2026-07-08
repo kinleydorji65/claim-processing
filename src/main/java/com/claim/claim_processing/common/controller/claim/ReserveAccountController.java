@@ -115,33 +115,4 @@ public class ReserveAccountController {
         ApiResponseDTO<List<ReserveAccountResponseDto>> response = service.getByStatus(status);
         return ResponseEntity.ok(response);
     }
-
-    // -------------------------------
-    // GET BY ACCOUNT CODE
-    // -------------------------------
-    @GetMapping("/by-account-code/{accountCode}")
-    public ResponseEntity<ApiResponseDTO<List<ReserveAccountResponseDto>>> getByAccountCode(
-            @PathVariable String accountCode
-    ) {
-        log.info("Received request to fetch Reserve Accounts by Account Code: {}", accountCode);
-        ApiResponseDTO<List<ReserveAccountResponseDto>> response = service.getByAccountCode(accountCode);
-        return ResponseEntity.ok(response);
-    }
-
-    // -------------------------------
-    // RELEASE AMOUNT FROM RESERVE
-    // -------------------------------
-    @PatchMapping("/{id}/release")
-    public ResponseEntity<ApiResponseDTO<ReserveAccountResponseDto>> releaseAmount(
-            @PathVariable Long id,
-            @RequestParam BigDecimal amount,
-            @RequestParam String releasedBy,
-            @RequestParam String releaseReference
-    ) {
-        log.info("Received request to release {} from Reserve Account ID: {}", amount, id);
-        ApiResponseDTO<ReserveAccountResponseDto> response = service.releaseAmount(
-                id, amount, releasedBy, releaseReference
-        );
-        return ResponseEntity.ok(response);
-    }
 }

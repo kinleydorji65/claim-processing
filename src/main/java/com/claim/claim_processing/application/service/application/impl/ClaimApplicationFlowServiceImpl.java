@@ -605,7 +605,11 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 }
 
                 List<ClaimApplicationVerificationResponseDto> verificationResponses = claimApplicationVerificationService.getClaimApplicationWhichClaimedBy(claimedBy).getData();
-                
+                if(verificationResponses == null || verificationResponses.isEmpty()){
+                        return ApiResponseDTO.success(
+                                        "No verified claim applications found",
+                                        List.of());
+                }
                 List<GeneralClaimResponse> responses = verificationResponses.stream()
                                 .map(verificationResponse -> {
                                         ClaimApplication claimApplication = claimApplicationService.getById(verificationResponse.getClaimApplicationId());
@@ -714,5 +718,21 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 return ApiResponseDTO.success(
                                 "Claim application rejected successfully",
                                 response);
+        }
+
+        public ApiResponseDTO<List<GeneralClaimResponse>> getLegalRecoveryWithUserCode(String userCode) {
+                if (userCode == null || userCode.isBlank()) {
+                        throw ClaimException.badRequest("User code is required");
+                }
+
+                List<ClaimApplication> claimApplications = claimApplicationService.getLegalRecoveryWithUserCode(userCode);
+
+                List<GeneralClaimResponse> responses = claimApplications.stream()
+                                .map(this::buildGeneralClaimResponse)
+                                .toList();
+
+                return ApiResponseDTO.success(
+                                "Claim applications fetched successfully",
+                                responses);
         }
 }

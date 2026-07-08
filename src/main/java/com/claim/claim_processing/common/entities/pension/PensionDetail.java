@@ -45,9 +45,6 @@ public class PensionDetail {
     @Column(name = "PENSION_CATEGORY", length = 50)
     private String pensionCategory;
 
-    @Column(name = "PENSION_SUB_CATEGORY", length = 50)
-    private String pensionSubCategory;
-
     // Pension Amounts
     @Column(name = "MONTHLY_PENSION_AMOUNT", precision = 18, scale = 2)
     private BigDecimal monthlyPensionAmount;

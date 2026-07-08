@@ -27,14 +27,4 @@ public interface ReserveAccountService {
     ApiResponseDTO<List<ReserveAccountResponseDto>> getByIdentityNumber(String identityNumber);
 
     ApiResponseDTO<List<ReserveAccountResponseDto>> getByStatus(String status);
-
-    ApiResponseDTO<List<ReserveAccountResponseDto>> getByAccountCode(String accountCode);
-
-    // Business Operations
-    ApiResponseDTO<ReserveAccountResponseDto> releaseAmount(
-            Long reserveAccountId,
-            BigDecimal amount,
-            String releasedBy,
-            String releaseReference
-    );
 }

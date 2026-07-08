@@ -45,8 +45,11 @@ public class ClaimApplication {
     @Column(name = "APPLICATION_NUMBER", nullable = false, length = 100)
     private String applicationNumber;
 
+    @Column(name = "IDENTITY_NUMBER", length = 100)
+    private String identityNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLAIM_TYPE_ID", nullable = false)
+    @JoinColumn(name = "CLAIM_TYPE_ID", nullable = true)
     private ClaimTypeMaster claimType;
 
     @ManyToOne(fetch = FetchType.LAZY)

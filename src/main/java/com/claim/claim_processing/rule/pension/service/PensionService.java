@@ -1,7 +1,5 @@
 package com.claim.claim_processing.rule.pension.service;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import com.claim.claim_processing.rule.pension.dto.PensionDetailRequestDto;
@@ -13,17 +11,7 @@ public interface PensionService {
     PensionDetailResponseDTO getPensionDetailById(Long id);
     PensionDetailResponseDTO getPensionDetailByNppfNumber(String nppfNumber);
     List<PensionDetailResponseDTO> getAllPensionDetails();
-    PensionDetailResponseDTO createOrUpdatePensionDetail(
-            String nppfNumber,
-            String memberIdentityNumber,
-            String agencyCode,
-            String pensionType,
-            BigDecimal monthlyPensionAmount,
-            BigDecimal totalPensionFund,
-            Integer totalContributionMonths,
-            Integer totalContributionYears,
-            LocalDateTime pensionStartDate,
-            String createdBy);
+    PensionDetailResponseDTO createOrUpdatePensionDetail(PensionDetailRequestDto requestDto);
 
     PensionDetailResponseDTO updatePensionStatus(Long id, String status, String updatedBy);
     PensionDetailResponseDTO updatePensionBankDetails(

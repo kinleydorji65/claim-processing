@@ -33,184 +33,172 @@ public class ClaimApplicationWorkflowServiceImpl implements ClaimApplicationWork
     private final ClaimApplicationWorkflowMapper mapper;
 
     @Override
-@Transactional
-public List<ClaimApplicationWorkflowResponseDto> create(
-        ClaimApplication claimApplication,
-        ClaimApplicationWorkflowRequestDto request
-) {
+    @Transactional
+    public List<ClaimApplicationWorkflowResponseDto> create(
+            ClaimApplication claimApplication,
+            ClaimApplicationWorkflowRequestDto request) {
 
-    if (claimApplication == null || claimApplication.getId() == null) {
-        throw new RuntimeException("Claim application is required.");
-    }
-
-    if (request == null) {
-        throw new RuntimeException("Workflow request is required.");
-    }
-
-    request.setFromStageId("Y".equals(claimApplication.getOnBehalfOfMember()) ? 2L : 1L);
-    request.setToStageId((request.getFromStageId() == 1L || request.getFromStageId() == 2L) ? 3L : 4L);
-    request.setActionBy(claimApplication.getUpdatedBy());
-    ClaimApplicationWorkflow workflow =
-            buildWorkflow(claimApplication, request);
-
-    workflowRepository.save(workflow);
-
-    updateClaimApplicationCurrentState(claimApplication, workflow);
-
-    List<ClaimApplicationWorkflow> workflows =
-            workflowRepository
-                    .findByClaimApplication_IdOrderByActionAtDescCreatedAtDesc(
-                            claimApplication.getId()
-                    );
-
-    return mapper.toResponseList(workflows);
-}
-
-private ClaimApplicationWorkflow buildWorkflow(
-        ClaimApplication claimApplication,
-        ClaimApplicationWorkflowRequestDto request
-) {
-
-    return ClaimApplicationWorkflow.builder()
-            .claimApplication(claimApplication)
-            .fromStage(getStage(request.getFromStageId(), "From stage"))
-            .toStage(getStage(request.getToStageId(), "To stage"))
-
-            .fromStatus(getStatus(request.getFromStatusId(), "From status"))
-            .toStatus(getStatus(request.getToStatusId(), "To status"))
-
-            .action(getAction(request.getActionId()))
-
-            .reason(request.getReason())
-
-            .office(getOffice(request.getOfficeId()))
-            .actionBy(request.getActionBy())
-            .actionAt(new Timestamp(System.currentTimeMillis()))
-            .build();
-}
-
-@Override
-@Transactional(readOnly = true)
-public List<ClaimApplicationWorkflowResponseDto> getByApplicationNumber(String applicationNumber) {
-
-    if (applicationNumber == null || applicationNumber.isEmpty()) {
-        throw new RuntimeException("Claim application number is required.");
-    }
-
-    ClaimApplication claimApplication = claimApplicationRepository
-            .findByApplicationNumber(applicationNumber)
-            .orElseThrow(() -> new RuntimeException(
-                    "Claim application not found with number: " + applicationNumber
-            ));
-
-    List<ClaimApplicationWorkflow> workflows =
-            workflowRepository.findByClaimApplication_IdOrderByActionAtDescCreatedAtDesc(
-                    claimApplication.getId()
-            );
-
-    return mapper.toResponseList(workflows);
-}
-
-@Override
-@Transactional(readOnly = true)
-public List<String> getVerifiedApplication() {
-    List<ClaimApplicationWorkflow> workflows;
-    workflows = workflowRepository.findWorkflowsByActionAndNotAction(2L, 3L);
-    
-    if (workflows.isEmpty()) {
-        workflows = workflowRepository.findWorkflowsByAction_Id(2L);
-        if (workflows.isEmpty()) {
-            return List.of();
+        if (claimApplication == null || claimApplication.getId() == null) {
+            throw new RuntimeException("Claim application is required.");
         }
-    }
-    return workflows.stream()
-            .map(workflow -> workflow.getClaimApplication().getApplicationNumber())
-            .toList();
-}
 
-private StageMaster getStage(Long stageId, String label) {
-    if (stageId == null || stageId <= 0) {
-        return null;
-    }
+        if (request == null) {
+            throw new RuntimeException("Workflow request is required.");
+        }
 
-    return stageRepository.findById(stageId)
-            .orElseThrow(() -> new RuntimeException(
-                    label + " not found with id: " + stageId
-            ));
-}
+        request.setFromStageId("Y".equals(claimApplication.getOnBehalfOfMember()) ? 2L : 1L);
+        request.setToStageId((request.getFromStageId() == 1L || request.getFromStageId() == 2L) ? 3L : 4L);
+        request.setActionBy(claimApplication.getUpdatedBy());
+        ClaimApplicationWorkflow workflow = buildWorkflow(claimApplication, request);
 
-private StatusMaster getStatus(Long statusId, String label) {
-    if (statusId == null || statusId <= 0) {
-        return null;
-    }
+        workflowRepository.save(workflow);
 
-    return statusMasterRepository.findById(statusId)
-            .orElseThrow(() -> new RuntimeException(
-                    label + " not found with id: " + statusId
-            ));
-}
+        updateClaimApplicationCurrentState(claimApplication, workflow);
 
-private ActionMaster getAction(Long actionId) {
-    if (actionId == null || actionId <= 0) {
-        return null;
+        List<ClaimApplicationWorkflow> workflows = workflowRepository
+                .findByClaimApplication_IdOrderByActionAtDescCreatedAtDesc(
+                        claimApplication.getId());
+
+        return mapper.toResponseList(workflows);
     }
 
-    return actionMasterRepository.findById(actionId)
-            .orElseThrow(() -> new RuntimeException(
-                    "Action not found with id: " + actionId
-            ));
-}
+    private ClaimApplicationWorkflow buildWorkflow(
+            ClaimApplication claimApplication,
+            ClaimApplicationWorkflowRequestDto request) {
 
-private NppfOfficeMaster getOffice(Long officeId) {
-    if (officeId == null || officeId <= 0) {
-        return null;
+        return ClaimApplicationWorkflow.builder()
+                .claimApplication(claimApplication)
+                .fromStage(getStage(request.getFromStageId(), "From stage"))
+                .toStage(getStage(request.getToStageId(), "To stage"))
+
+                .fromStatus(getStatus(request.getFromStatusId(), "From status"))
+                .toStatus(getStatus(request.getToStatusId(), "To status"))
+
+                .action(getAction(request.getActionId()))
+
+                .reason(request.getReason())
+
+                .office(getOffice(request.getOfficeId()))
+                .actionBy(request.getActionBy())
+                .actionAt(new Timestamp(System.currentTimeMillis()))
+                .build();
     }
 
-    return nppfOfficeMasterRepository.findById(officeId)
-            .orElseThrow(() -> new RuntimeException(
-                    "Office not found with id: " + officeId
-            ));
-}
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClaimApplicationWorkflowResponseDto> getByApplicationNumber(String applicationNumber) {
 
-private void updateClaimApplicationCurrentState(
-        ClaimApplication claimApplication,
-        ClaimApplicationWorkflow workflow
-) {
+        if (applicationNumber == null || applicationNumber.isEmpty()) {
+            throw new RuntimeException("Claim application number is required.");
+        }
 
-    if (workflow.getToStage() != null) {
-        claimApplication.setCurrentStage(workflow.getToStage());
+        ClaimApplication claimApplication = claimApplicationRepository
+                .findByApplicationNumber(applicationNumber)
+                .orElse(null);
+        if (claimApplication == null) {
+            return null;
+        }
+
+        List<ClaimApplicationWorkflow> workflows = workflowRepository
+                .findByClaimApplication_IdOrderByActionAtDescCreatedAtDesc(
+                        claimApplication.getId());
+
+        return mapper.toResponseList(workflows);
     }
 
-    if (workflow.getToStatus() != null) {
-        claimApplication.setStatus(workflow.getToStatus());
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getVerifiedApplication() {
+        List<ClaimApplicationWorkflow> workflows;
+        workflows = workflowRepository.findWorkflowsByActionAndNotAction(2L, 3L);
+
+        if (workflows.isEmpty()) {
+            workflows = workflowRepository.findWorkflowsByAction_Id(2L);
+            if (workflows.isEmpty()) {
+                return List.of();
+            }
+        }
+        return workflows.stream()
+                .map(workflow -> workflow.getClaimApplication().getApplicationNumber())
+                .toList();
     }
 
-    claimApplication.setUpdatedBy(workflow.getActionBy());
+    private StageMaster getStage(Long stageId, String label) {
+        if (stageId == null || stageId <= 0) {
+            return null;
+        }
 
-    claimApplicationRepository.saveAndFlush(claimApplication);
-}
-
-@Override
-@Transactional(readOnly = true)
-public List<ClaimApplicationWorkflowResponseDto> getByApplicationId(Long applicationId) {
-
-    if (applicationId == null) {
-        throw new RuntimeException("Claim application id is required.");
+        return stageRepository.findById(stageId)
+                .orElseThrow(() -> new RuntimeException(
+                        label + " not found with id: " + stageId));
     }
 
-    boolean claimExists = claimApplicationRepository.existsById(applicationId);
+    private StatusMaster getStatus(Long statusId, String label) {
+        if (statusId == null || statusId <= 0) {
+            return null;
+        }
 
-    if (!claimExists) {
-        throw new RuntimeException(
-                "Claim application not found with id: " + applicationId
-        );
+        return statusMasterRepository.findById(statusId)
+                .orElseThrow(() -> new RuntimeException(
+                        label + " not found with id: " + statusId));
     }
 
-    List<ClaimApplicationWorkflow> workflows =
-            workflowRepository.findByClaimApplication_IdOrderByActionAtDescCreatedAtDesc(
-                    applicationId
-            );
+    private ActionMaster getAction(Long actionId) {
+        if (actionId == null || actionId <= 0) {
+            return null;
+        }
 
-    return mapper.toResponseList(workflows);
-}
+        return actionMasterRepository.findById(actionId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Action not found with id: " + actionId));
+    }
+
+    private NppfOfficeMaster getOffice(Long officeId) {
+        if (officeId == null || officeId <= 0) {
+            return null;
+        }
+
+        return nppfOfficeMasterRepository.findById(officeId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Office not found with id: " + officeId));
+    }
+
+    private void updateClaimApplicationCurrentState(
+            ClaimApplication claimApplication,
+            ClaimApplicationWorkflow workflow) {
+
+        if (workflow.getToStage() != null) {
+            claimApplication.setCurrentStage(workflow.getToStage());
+        }
+
+        if (workflow.getToStatus() != null) {
+            claimApplication.setStatus(workflow.getToStatus());
+        }
+
+        claimApplication.setUpdatedBy(workflow.getActionBy());
+
+        claimApplicationRepository.saveAndFlush(claimApplication);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClaimApplicationWorkflowResponseDto> getByApplicationId(Long applicationId) {
+
+        if (applicationId == null) {
+            throw new RuntimeException("Claim application id is required.");
+        }
+
+        boolean claimExists = claimApplicationRepository.existsById(applicationId);
+
+        if (!claimExists) {
+            throw new RuntimeException(
+                    "Claim application not found with id: " + applicationId);
+        }
+
+        List<ClaimApplicationWorkflow> workflows = workflowRepository
+                .findByClaimApplication_IdOrderByActionAtDescCreatedAtDesc(
+                        applicationId);
+
+        return mapper.toResponseList(workflows);
+    }
 }

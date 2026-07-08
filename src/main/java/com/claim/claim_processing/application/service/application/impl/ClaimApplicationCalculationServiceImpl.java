@@ -81,7 +81,7 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
         String subRuleCode = entry.getKey();
         List<ComponentBalanceDTO> components = entry.getValue();
 
-        SubClaimMapping subRule = subClaimMappingRepository.findBySubClaimCodeIgnoreCase(subRuleCode).orElseThrow(() -> ClaimException.notFound("SubClaimMapping not found with code: " + subRuleCode));
+        SubClaimMapping subRule = subClaimMappingRepository.findBySubClaimCodeIgnoreCase(subRuleCode).orElse(null);
 
             ClaimApplicationRuleEvaluation ruleEvaluation =
                     ClaimApplicationRuleEvaluation.builder()
@@ -100,7 +100,7 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
                             )
                             
                             .evaluatedBy(claimCalculationSummary.getCreatedBy())
-                            .subRule(subRule)
+                            .subRule(subRule != null ? subRule : null)
                             .evaluatedAt(new Timestamp(System.currentTimeMillis()))
                             .isActive(claimCalculationSummary.getIsActive())
                             .createdBy(claimCalculationSummary.getCreatedBy())

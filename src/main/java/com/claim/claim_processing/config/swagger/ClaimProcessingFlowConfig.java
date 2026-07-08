@@ -16,4 +16,37 @@ public class ClaimProcessingFlowConfig implements SwaggerConfig {
                 "Claim Processing Flow"
         );
     }
+
+    @Bean
+    public GroupedOpenApi specialCaseProcessingFlowApi() {
+        return createGroupedApi(
+                "Special Case Processing Flow Management",
+                "Special Case Processing Flow APIs",
+                "/api/claim-application/special-case/**",
+                "Special Case Processing Flow"
+        );
+    }
+
+    @Bean
+    public GroupedOpenApi unclaimProcessingApi() {
+
+        return createGroupedApi(
+                "Unclaim Processing Management",
+                "Unclaim Processing APIs",
+                "/api/un-claim-processing/unclaim/**",
+                "Unclaim Processing"
+        );
+    }
+
+    @Bean
+    public GroupedOpenApi documentProcessingApi() {
+
+        return createGroupedApi(
+                "Claim Document Processing Management",
+                "Claim Document Processing APIs",
+                "/api/claim-processing-flow/documents/**",
+                "Claim Document Processing"
+        );
+    }
 }
+

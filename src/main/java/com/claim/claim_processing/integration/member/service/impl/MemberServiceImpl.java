@@ -28,7 +28,7 @@ public class MemberServiceImpl implements MemberService {
         public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String nppfNumber) {
 
                 MemberContributionSummary contributionSummary = memberContributionService
-                                .getContributionSummary(nppfNumber);
+                                .getContributionSummary(nppfNumber, null);
 
                 MemberDetail memberDetail = memberDetailRepository
                                 .findByNppfNumber(nppfNumber)

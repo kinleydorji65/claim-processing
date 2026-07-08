@@ -63,7 +63,7 @@ public class RuleServiceImpl implements RuleService {
             validateRequest(request);
 
             MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
-            MemberContributionSummary contributionSummary = getContributionSummary(request.getNppfNumber());
+            MemberContributionSummary contributionSummary = getContributionSummary(request.getNppfNumber(), request.getIdentityNumber());
 
             System.out.println("========== MEMBER DATA ==========");
             System.out.println("NPPF Number: " + request.getNppfNumber());
@@ -669,9 +669,9 @@ public class RuleServiceImpl implements RuleService {
         return response.getData();
     }
 
-    private MemberContributionSummary getContributionSummary(String nppfNumber) {
+    private MemberContributionSummary getContributionSummary(String nppfNumber, String identityNumber) {
 
-        MemberContributionSummary summary = memberContributionService.getContributionSummary(nppfNumber);
+        MemberContributionSummary summary = memberContributionService.getContributionSummary(nppfNumber, identityNumber);
 
         if (summary == null) {
             throw ClaimException.notFound(

@@ -29,6 +29,7 @@ public interface ClaimApplicationFlowService {
     ApiResponseDTO<List<GeneralClaimResponse>> getVerifiedClaimButRejectedClaim();
     ApiResponseDTO<List<GeneralClaimResponse>> getVerifiedClaimAndClaimedBy(String claimedBy);
     ApiResponseDTO<List<GeneralClaimResponse>> getClaimApplicationWhichClaimedBy(String claimedBy);
+    ApiResponseDTO<List<GeneralClaimResponse>> getLegalRecoveryWithUserCode(String userCode);
     ApiResponseDTO<GeneralClaimResponse> rejectedClaimApplication(String applicationNumber,
              ClaimApplicationVerificationRequestDto request);
     ApiResponseDTO<List<GeneralClaimResponse>> getVerifiedClaim();

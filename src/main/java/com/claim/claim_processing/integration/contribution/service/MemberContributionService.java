@@ -4,6 +4,6 @@ import com.claim.claim_processing.integration.contribution.dto.MemberContributio
 
 public interface MemberContributionService {
 
-    MemberContributionSummary getContributionSummary(String nppfNumber);
+    MemberContributionSummary getContributionSummary(String nppfNumber, String cid);
 
 }

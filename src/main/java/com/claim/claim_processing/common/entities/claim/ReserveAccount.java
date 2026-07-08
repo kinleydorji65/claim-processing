@@ -40,12 +40,6 @@ public class ReserveAccount {
     @Column(name = "RESERVE_TYPE", nullable = false)
     private String reserveType;
 
-    @Column(name = "ACCOUNT_CODE", nullable = false)
-    private String accountCode;
-
-    @Column(name = "SUB_ACCOUNT_CODE")
-    private String subAccountCode;
-
     @Column(name = "TOTAL_AMOUNT")
     private BigDecimal totalAmount;
 

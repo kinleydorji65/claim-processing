@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,42 +20,34 @@ public class ClaimSpecialCaseApplicationResponseDto {
     // Reference to the claim
     private Long claimApplicationId;
 
-    // Member Information
-    private String memberCode;
-    private String nppfNumber;
-    private String identityNumber;
-
-    // Agency Information
-    private String agencyCategoryId;
-    private String agencyCode;
-
     // Special Case Information
     private String caseType;
-    private String caseReason;
+    private Long caseReasonId;
+    private String caseReasonName;
 
     // Amount Details
-    private BigDecimal requestedAmount;
-    private BigDecimal approvedAmount;
+    private String pensionType;
+    private LocalDate pensionStartDate;
+    private Integer totalContributionYears;
+    private BigDecimal totalPensionAmount;
 
     // For Pension Conversion
     private String currentBenefitType;
     private String requestedBenefitType;
 
     // For Forfeited Repayment
-    private String forfeitedComponentCodes;
+    private BigDecimal approvedAmount;
+    private BigDecimal totalForfeitedAmount;
+    private BigDecimal eligibleClaimAmount;
+    private LocalDateTime forfeitedDate;
+    private String componentCodes;
 
-    // Approval Information
-    private LocalDateTime requestDate;
-    private String requestedBy;
     private String approvedBy;
     private LocalDateTime approvedDate;
     private String approvalReference;
     private String rejectionReason;
 
-    // Processing Information
-    private String processedBy;
-    private LocalDateTime processedDate;
-
+    private Long pensionAccountId;
     // Reserve Account Reference
     private Long reserveAccountId;
 

@@ -110,7 +110,7 @@ public class GeneralClaimDetailMapper {
             .calculationSummary(mapCalculationSummary(calculationSummary))
             .forfeitedComponents(mapForfeitedComponents(forfeitedComponents))
             .normalClaimDetails(mapNormalClaimDetails(normalClaimDetail))
-            .beneficiarySettlementDetails(mapBeneficiarySettlementDetails(beneficiarySettlementDetail))
+            .beneficiarySettlementDetail(mapBeneficiarySettlementDetails(beneficiarySettlementDetail))
             .partialWithdrawalDetails(mapPartialWithdrawalDetails(partialWithdrawalDetail))
             .legalRecoveryDetail(mapLegalRecoveryDetails(legalRecoveryDetail))
             .createdBy(claimDetail.getCreatedBy())

@@ -4,7 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.CaseTypeEnum;
 
@@ -13,35 +16,49 @@ import com.claim.claim_processing.common.entities.common.activityEnum.CaseTypeEn
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClaimSpecialCaseApplicationRequestDto {
+    private Long id;
 
-    // Member Information
-    private String memberCode;
-    private String nppfNumber;
-    private String identityNumber;
+    private CaseTypeEnum caseType;
 
-    // Agency Information
-    private String agencyCategoryId;
-    private String agencyCode;
+    private Long caseReasonId;
 
-    // Special Case Information
-    @Builder.Default
-    private CaseTypeEnum caseType = CaseTypeEnum.CONVERSION_FROM_PENSION_TO_LUMSUM;
-    private String caseReason;
+    private String pensionType;
 
-    // Amount Details
-    private BigDecimal requestedAmount;
-    private BigDecimal approvedAmount;
+    private LocalDate pensionStartDate;
 
-    // For Pension Conversion
+    private Integer totalContributionYears;
+
+    private BigDecimal totalPensionAmount;
+
+    private Long pensionAccountId;
+
     private String currentBenefitType;
+
     private String requestedBenefitType;
 
-    // For Forfeited Repayment
-    private String forfeitedComponentCodes;
+    private BigDecimal totalForfeitedAmount;
 
-    // Request Information
-    private String requestedBy;
+    private BigDecimal eligibleClaimAmount;
 
-    // Reserve Account Reference
+    private LocalDateTime forfeitedDate;
+
+    private String componentCodes;
+
+    private BigDecimal requestedAmount;
+
+    private BigDecimal approvedAmount;
+
+    private String approvedBy;
+
+    private LocalDateTime approvedDate;
+
+    private String approvalReference;
+
+    private String rejectionReason;
+
     private Long reserveAccountId;
+
+    private String createdBy;
+
+    private String updatedBy;
 }

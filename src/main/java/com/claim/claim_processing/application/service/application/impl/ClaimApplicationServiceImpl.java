@@ -274,7 +274,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
         List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository.findByUserCode(userCode);
 
         if (userMappings.isEmpty()) {
-            throw ClaimException.notFound("No agency mapping found for user code: " + userCode);
+            return null;
         }
         List<ClaimApplication> claimApplication = userMappings.stream()
                 .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndStatus_StatusId(mapping.getAgencyCode(), statusId).stream())
@@ -296,8 +296,9 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
      }
 
     private void resolveAndSetForeignKeys(ClaimApplication entity, ClaimApplicationRequestDto request) {
-
-        entity.setClaimType(getClaimType(request.getClaimTypeId()));
+        if (request.getClaimTypeId() != null && request.getClaimTypeId() > 0) {
+            entity.setClaimType(getClaimType(request.getClaimTypeId()));
+        }
 
         if (request.getSubmissionChannelId() != null && request.getSubmissionChannelId() > 0) {
             entity.setSubmissionChannel(getSubmissionChannel(request.getSubmissionChannelId()));
@@ -429,9 +430,54 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
                         "Status not found with id: " + id));
     }
 
-    private ActionMaster getAction(Long id) {
-        return actionMasterRepository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound(
-                        "Action not found with id: " + id));
+    @Override
+    public List<ClaimApplication> getLegalRecoveryWithUserCode(String userCode){
+        List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository.findByUserCode(userCode);
+
+        if (userMappings.isEmpty()) {
+            return null;
+        }
+        List<ClaimApplication> claimApplication = userMappings.stream()
+                .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndClaimType_Id(mapping.getAgencyCode(), 5L).stream())
+                .toList();
+
+        return claimApplication;
+    }
+
+    @Override
+    public List<ClaimApplication> getByUserCodeAndSpecialClaim(String userCode) {
+        List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository.findByUserCode(userCode);
+        userMappings.forEach(mapping -> System.out.println("User Mapping: " + mapping.getUserCode() + ", Agency Code: " + mapping.getAgencyCode()));
+
+        if (userMappings.isEmpty()) {
+            return null;
+        }
+        List<ClaimApplication> claimApplication = userMappings.stream()
+                .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndIsSpecialCase(mapping.getAgencyCode(), ActivityEnum.Y).stream())
+                .toList();
+
+        return claimApplication;
+    }
+
+    @Override
+    public List<ClaimApplication> getAllSpecialCase() {
+        List<ClaimApplication> response = claimApplicationRepository.findByIsSpecialCase(ActivityEnum.Y);
+
+        if (response.isEmpty()) {
+            return null;
+        }
+
+        return response;
+    }
+
+    @Override
+    public List<ClaimApplication> getAllSpecialCaseWithClaimedBy(String claimedBy) {
+        List<ClaimApplication> response = claimApplicationRepository.findByIsSpecialCaseAndClaimedBy(ActivityEnum.Y, claimedBy);
+
+        if (response.isEmpty()) {
+            return null;
+        }
+
+        return response;
     }
 }

@@ -27,4 +27,8 @@ public interface ClaimApplicationService {
 
     List<ClaimApplication> getByNppfNumber(String nppfNumber);
     List<ClaimApplication> getByUserCodeAndStatusId(String userCode, Long statusId);
+    List<ClaimApplication> getByUserCodeAndSpecialClaim(String userCode);
+    List<ClaimApplication> getLegalRecoveryWithUserCode(String userCode);
+    List<ClaimApplication> getAllSpecialCase();
+    List<ClaimApplication> getAllSpecialCaseWithClaimedBy(String claimedBy);
 }
