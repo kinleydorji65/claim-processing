@@ -82,15 +82,32 @@ public class DocumentMasterServiceImpl implements DocumentMasterService {
 
         String normalized = fileUrl.replace("\\", "/").trim();
 
-        if (normalized.startsWith("/approved-claims/")) {
-            String relativePath = normalized.substring("/approved-claims/".length());
-            return resolveBaseDir(true).resolve(relativePath).normalize();
+        if (normalized.startsWith("/approved-details/")) {
+            String relativePath = normalized.substring("/approved-details/".length()); // ✅ CORRECT
+            Path basePath = Path.of(approvedDir);
+            Path resolvedPath = basePath.resolve(relativePath).normalize();
+            log.debug("Resolved approved file: {}", resolvedPath);
+
+            // Security check
+            if (!resolvedPath.startsWith(basePath)) {
+                throw new IllegalArgumentException("Access denied: Path traversal detected");
+            }
+            return resolvedPath;
         }
 
-        if (normalized.startsWith("/application-claims/")) {
-            String relativePath = normalized.substring("/application-claims/".length());
-            return resolveBaseDir(false).resolve(relativePath).normalize();
+        // Handle /application-details/ URLs
+    if (normalized.startsWith("/application-details/")) {
+        String relativePath = normalized.substring("/application-details/".length()); // ✅ CORRECT
+        Path basePath = Path.of(applicationDir);
+        Path resolvedPath = basePath.resolve(relativePath).normalize();
+        log.debug("Resolved application file: {}", resolvedPath);
+        
+        // Security check
+        if (!resolvedPath.startsWith(basePath)) {
+            throw new IllegalArgumentException("Access denied: Path traversal detected");
         }
+        return resolvedPath;
+    }
 
         throw new IllegalArgumentException("Unsupported file url: " + fileUrl);
     }
@@ -322,27 +339,31 @@ public class DocumentMasterServiceImpl implements DocumentMasterService {
             String fileType) {
     }
 
-
-    //create document
+    // create document
     private final DocumentUploadAsyncService documentUploadAsyncService;
 
     @Override
     public DocumentMasterResponseDto createDocument(DocumentMasterRequestDto request, List<MultipartFile> files) {
-
-        validate(request, files);
+        // validate(request, files);
 
         LocalDateTime now = LocalDateTime.now();
 
-        Path baseDir = resolveBaseDir(request.getIsApproved());
+        // Get the base directory from configuration
+        Path baseDir = Path.of(Boolean.TRUE.equals(request.getIsApproved()) ? approvedDir : applicationDir);
+        log.info("Base directory resolved: {}", baseDir.toAbsolutePath());
+
         String safeUserFolder = sanitizePathSegment(toUserFolderName(request.getUserType()));
         String safeCode = sanitizePathSegment(request.getReferenceId());
 
         Path codeDir = baseDir.resolve(safeUserFolder).resolve(safeCode).normalize();
+        log.info("Target directory: {}", codeDir.toAbsolutePath());
 
         List<Path> uploadedPaths = new ArrayList<>();
 
         try {
+            // Create directories on the server
             Files.createDirectories(codeDir);
+            log.info("Created directory: {}", codeDir.toAbsolutePath());
 
             List<CompletableFuture<DocumentUploadAsyncService.FileUploadResult>> futures = new ArrayList<>();
 
@@ -379,27 +400,18 @@ public class DocumentMasterServiceImpl implements DocumentMasterService {
             return documentMasterMapper.toDto(saved);
 
         } catch (Exception e) {
+            // Clean up on failure
             for (Path path : uploadedPaths) {
                 try {
                     Files.deleteIfExists(path);
+                    log.info("Cleaned up file: {}", path);
                 } catch (IOException ex) {
                     log.error("Failed to clean up uploaded file: {}", path, ex);
                 }
             }
-
+            log.error("Failed to upload files", e);
             throw new RuntimeException("Failed to upload file", e);
         }
-    }
-
-    private void validate(DocumentMasterRequestDto request, List<MultipartFile> files) {
-        if (request == null)
-            throw new IllegalArgumentException("Request is required");
-        if (files == null || files.isEmpty())
-            throw new IllegalArgumentException("At least one file is required");
-        if (isBlank(request.getUserType()))
-            throw new IllegalArgumentException("userType is required");
-        if (isBlank(request.getReferenceId()))
-            throw new IllegalArgumentException("code is required");
     }
 
     @Override
@@ -410,7 +422,7 @@ public class DocumentMasterServiceImpl implements DocumentMasterService {
             }
 
             List<DocumentMaster> documentMasters = documentMasterRepository.findByReferenceIdAndServiceCode(referenceId,
-                    "010");
+                    "105");
 
             if (documentMasters == null || documentMasters.isEmpty()) {
                 throw new RuntimeException("Document not found for referenceId: " + referenceId);
