@@ -63,7 +63,7 @@ protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberD
     responseDto.setMemberBanks(toMemberBankResponseList(memberDetail.getMemberBanks()));
     responseDto.setMemberNominees(toMemberNomineeResponseList(memberDetail.getMemberNominees()));
     responseDto.setMemberFamilies(toMemberFamilyResponseList(memberDetail.getMemberFamilies()));
-    responseDto.setSchemeTypeId(responseDto.getEmploymentTypeName().equals("Regular") ? 1L : 2L);
+    responseDto.setSchemeTypeId(responseDto.getEmploymentTypeName().equals("Regular") ? 1L : 3L);
     responseDto.setAgencyCode(memberDetail.getAgencyDetail() != null ? memberDetail.getAgencyDetail().getAgencyCode() : null);
 }
 

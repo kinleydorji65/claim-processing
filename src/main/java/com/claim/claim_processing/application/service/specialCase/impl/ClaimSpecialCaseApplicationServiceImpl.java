@@ -1,4 +1,4 @@
-package com.claim.claim_processing.application.service.application.impl;
+package com.claim.claim_processing.application.service.specialCase.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,7 +13,7 @@ import com.claim.claim_processing.application.entity.application.ClaimSpecialCas
 import com.claim.claim_processing.application.mapper.application.ClaimSpecialCaseApplicationMapper;
 import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
 import com.claim.claim_processing.application.repository.application.ClaimSpecialCaseApplicationRepository;
-import com.claim.claim_processing.application.service.application.ClaimSpecialCaseApplicationService;
+import com.claim.claim_processing.application.service.specialCase.ClaimSpecialCaseApplicationService;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.claim.ReserveAccount;
 import com.claim.claim_processing.common.entities.pension.PensionDetail;

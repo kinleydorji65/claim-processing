@@ -166,7 +166,7 @@ public class PensionServiceImpl implements PensionService {
                         .memberIdentityNumber(requestDto.getMemberIdentityNumber())
                         .agencyCode(requestDto.getAgencyCode())
                         .currencyCode("BTN")
-                        .pensionType(requestDto.getPensionType())
+                        .pensionType(requestDto.getPensionType() != null ?requestDto.getPensionType() : null)
                         .pensionCategory("MONTHLY")
                         .monthlyPensionAmount(requestDto.getMonthlyPensionAmount())
                         .totalPensionFund(requestDto.getTotalPensionFund())
@@ -187,9 +187,9 @@ public class PensionServiceImpl implements PensionService {
                 }
                 log.info("Creating new pension detail for NPPF: {}", requestDto.getNppfNumber());
             }
-
+            System.out.println("i am updating");
             PensionDetail saved = pensionDetailRepository.save(pensionDetail);
-            log.info("Pension detail saved with ID: {}", saved.getId());
+            System.out.println("Pension detail saved with ID: {}" + saved.getId());
 
             return mapToResponseDto(saved);
 

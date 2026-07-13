@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberDetailResponseDto;
+import com.claim.claim_processing.common.entities.others.MemberContributionJoiningDateHistory;
 import com.claim.claim_processing.common.entities.others.member.MemberDetail;
+import com.claim.claim_processing.common.repository.others.MemberContributionJoiningDateHistoryRepository;
 import com.claim.claim_processing.common.repository.others.MemberDetailRepository;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
@@ -23,22 +25,23 @@ public class MemberServiceImpl implements MemberService {
         private final MemberDetailRepository memberDetailRepository;
         private final MemberContributionService memberContributionService;
         private final MemberDetailMapper memberDetailMapper;
+        private final MemberContributionJoiningDateHistoryRepository joiningDateHistoryRepository;
 
         @Override
         public ApiResponseDTO<MemberDetailResponseDto> getMemberDetails(String nppfNumber) {
-
-                MemberContributionSummary contributionSummary = memberContributionService
-                                .getContributionSummary(nppfNumber, null);
 
                 MemberDetail memberDetail = memberDetailRepository
                                 .findByNppfNumber(nppfNumber)
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Member not found with NPPF number: " + nppfNumber));
-
                 MemberDetailResponseDto responseDto = memberDetailMapper.toMemberDetailResponseDto(memberDetail);
+                MemberContributionSummary contributionSummary = memberContributionService
+                                .getContributionSummary(responseDto, null);
 
-                responseDto.setPfJoiningDate(contributionSummary.getPfJoiningDate());
-                responseDto.setPensionJoiningDate(contributionSummary.getPensionJoiningDate());
+                
+                MemberContributionJoiningDateHistory joiningDateDetail = joiningDateHistoryRepository.findByMemberCode(memberDetail.getMemberCode()).orElse(null);
+                responseDto.setPfJoiningDate(joiningDateDetail.getCombinedPensionJoiningDate());
+                responseDto.setPensionJoiningDate(joiningDateDetail.getCombinedPensionJoiningDate());
 
                 // =========================
                 // TOTAL BALANCE CALCULATION

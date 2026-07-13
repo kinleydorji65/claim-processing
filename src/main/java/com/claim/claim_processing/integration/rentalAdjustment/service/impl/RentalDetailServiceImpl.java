@@ -16,24 +16,16 @@ public class RentalDetailServiceImpl implements RentalDetailService {
 
     @Override
     public ApiResponseDTO<List<RentalDetailResponseDto>> getRentalDetails(String identityId) {
-
-        BigDecimal percentage = new BigDecimal("0.10");
         List<RentalDetailResponseDto> response = List.of(
 
                 RentalDetailResponseDto.builder()
                         .rentalType("Residential")
-                        .status("Active")
-                        .rentalPercentage(percentage)
-                        .outstandingAmount(new BigDecimal(30000))
-                        .rentalAmount(new BigDecimal(5000.00))
+                        .outstandingAmount(new BigDecimal(30))
                         .build(),
 
                 RentalDetailResponseDto.builder()
                         .rentalType("Commercial")
-                        .status("Completed")
-                        .rentalPercentage(percentage)
-                        .outstandingAmount(new BigDecimal(50000))
-                        .rentalAmount(new BigDecimal(10000.00))
+                        .outstandingAmount(new BigDecimal(100))
                         .build()
         );
         return ApiResponseDTO.success(response);

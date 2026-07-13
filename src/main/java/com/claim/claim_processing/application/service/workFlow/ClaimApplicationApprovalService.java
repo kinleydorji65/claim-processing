@@ -2,6 +2,9 @@ package com.claim.claim_processing.application.service.workFlow;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationApprovalRequestDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.GeneralClaimDetailResponse;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
@@ -33,4 +36,5 @@ public interface ClaimApplicationApprovalService {
 
         ApiResponseDTO<GeneralClaimDetailResponse> markAsSpecial(
                         String applicationNumber, String updatedBy, String remarks);
+        ApiResponseDTO<Page<GeneralClaimDetailResponse>> getAllApprovedDetails(Pageable pageable);
 }

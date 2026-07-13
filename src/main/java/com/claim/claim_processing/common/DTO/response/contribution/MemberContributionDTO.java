@@ -13,6 +13,5 @@ public class MemberContributionDTO {
     private Long schemeId;
     private Integer totalContributionMonths;
     private Integer totalNonContributionMonths;
-    private LocalDate startDate;
     private LocalDate endDate;
 }

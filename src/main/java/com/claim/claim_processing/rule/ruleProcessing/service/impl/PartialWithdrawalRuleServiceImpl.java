@@ -34,7 +34,7 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
         MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
 
         MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(request.getNppfNumber(), request.getIdentityNumber());
+                .getContributionSummary(memberDetail, null);
 
         memberDetail.getDateOfServiceJoiningDate();
 
@@ -46,7 +46,8 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
                 : ruleResponse.getData();
 
         if (matchedRules.isEmpty()) {
-            return ApiResponseDTO.notFound("No partial withdrawal rule found OR Your minimum contribution is less than the required threshold for partial withdrawal.");
+            return ApiResponseDTO.notFound(
+                    "No partial withdrawal rule found OR Your minimum contribution is less than the required threshold for partial withdrawal.");
         }
 
         List<ComponentBalanceDTO> components = new ArrayList<>();
@@ -103,7 +104,7 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
 
         ClaimCalculationResponseDTO response = ClaimCalculationResponseDTO.builder()
                 .nppfNumber(contributionSummary.getNppfNumber())
-                .contributionStartDate(contributionSummary.getContributionStartDate())
+                .contributionStartDate(memberDetail.getPfJoiningDate())
                 .contributionEndDate(contributionSummary.getContributionEndDate())
                 .totalContributionMonths(contributionSummary.getTotalContributionMonths())
                 .totalNonContributionMonths(contributionSummary.getTotalNonContributionMonths())
@@ -229,15 +230,15 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
                 continue;
             }
 
-            String fullCode = component.getComponentCode().trim().toUpperCase();
+            String systemCode = component.getComponentCode().trim().toUpperCase();
+            System.out.println("component codes i am checking: " + systemCode);
 
-            String shortCode = fullCode.contains("_")
-                    ? fullCode.substring(fullCode.lastIndexOf("_") + 1)
-                    : fullCode;
+            // Determine if this is principal or interest
+            // If code ends with '_I' or starts with 'I', it's interest
+            boolean isInterest = systemCode.endsWith("_I") || systemCode.startsWith("I");
 
             BigDecimal amount;
-
-            if (shortCode.startsWith("I")) {
+            if (isInterest) {
                 amount = component.getInterestAmount() == null
                         ? BigDecimal.ZERO
                         : component.getInterestAmount();
@@ -247,11 +248,49 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
                         : component.getPrincipalAmount();
             }
 
-            map.put(fullCode, amount);
-            map.put(shortCode, amount);
+            // Build the full component code with PF_ prefix
+            String fullComponentCode = buildFullComponentCode(systemCode);
+
+            // Store with both the system code and the full component code
+            map.put(systemCode, amount);
+            map.put(fullComponentCode, amount);
+
+            System.out.println("Mapped: " + systemCode + " -> " + fullComponentCode + " = " + amount);
         }
 
         return map;
+    }
+
+    /**
+     * Build full component code with PF_ prefix
+     * Example: "IEC" -> "PF_IEC", "IMC" -> "PF_IMC", "MC" -> "PF_MC"
+     */
+    private String buildFullComponentCode(String systemCode) {
+        if (systemCode == null || systemCode.isBlank()) {
+            return systemCode;
+        }
+
+        String code = systemCode.trim().toUpperCase();
+
+        // If already starts with PF_, return as is
+        if (code.startsWith("PF_")) {
+            return code;
+        }
+
+        // Remove trailing _I if present (interest indicator)
+        if (code.endsWith("_I")) {
+            code = code.substring(0, code.length() - 2);
+        }
+
+        // Remove leading I if present (interest indicator)
+        if (code.startsWith("I") && code.length() > 1) {
+            // For codes like IEC -> EC, IMC -> MC
+            // But we want to keep the full code with PF_ prefix
+            return "PF_" + code;
+        }
+
+        // For codes like MC, EC, IMC, IEC
+        return "PF_" + code;
     }
 
     private MemberDetailResponseDto getMemberDetail(String nppfNumber) {

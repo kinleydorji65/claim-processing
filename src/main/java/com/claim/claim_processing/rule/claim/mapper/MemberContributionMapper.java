@@ -17,7 +17,6 @@ public interface MemberContributionMapper {
     MemberContributionDTO toDTO(MemberContributionSnapshot snapshot);
     
     // Map DTO to Summary
-    @Mapping(source = "startDate", target = "contributionStartDate")
     @Mapping(source = "endDate", target = "contributionEndDate")
     MemberContributionSummary toSummary(MemberContributionDTO dto);
     

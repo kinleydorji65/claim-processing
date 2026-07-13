@@ -18,23 +18,17 @@ public class LoanDetailServiceImpl implements LoanDetailService {
         return ApiResponseDTO.success(List.of(
                 LoanDetailResponseDto.builder()
                         .loanName("Housing Loan")
-                        .status("Active")
-                        .loanAmount(new BigDecimal("850000.00"))
-                        .outstandingAmount(new BigDecimal("420000.00"))
+                        .outstandingAmount(new BigDecimal("200.00"))
                         .build(),
 
                 LoanDetailResponseDto.builder()
                         .loanName("Vehicle Loan")
-                        .status("Active")
-                        .loanAmount(new BigDecimal("300000.00"))
-                        .outstandingAmount(new BigDecimal("82500.00"))
+                        .outstandingAmount(new BigDecimal("200.00"))
                         .build(),
 
                 LoanDetailResponseDto.builder()
                         .loanName("Education Loan")
-                        .status("Completed")
-                        .loanAmount(new BigDecimal("150000.00"))
-                        .outstandingAmount(new BigDecimal("0.00"))
+                        .outstandingAmount(new BigDecimal("150.00"))
                         .build()
         ));
     }

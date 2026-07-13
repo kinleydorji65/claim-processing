@@ -77,6 +77,7 @@ public class GeneralClaimDetailMapper {
             .id(claimDetail.getId())
             .claimTypeId(claimDetail.getClaimType().getId())
             .claimTypeName(claimDetail.getClaimType().getName())
+            .applicationNumber(claimDetail.getApplicationNumber())
             .submissionChannelId(claimDetail.getSubmissionChannel().getId())
             .submissionChannelName(claimDetail.getSubmissionChannel().getName())
             .schemeTypeId(claimDetail.getSchemeType().getId())

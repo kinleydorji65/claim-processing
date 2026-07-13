@@ -23,6 +23,7 @@ public class GeneralClaimDetailResponse {
 
     private Long claimTypeId;
     private String claimTypeName;
+    private String applicationNumber;
 
     private Long submissionChannelId;
     private String submissionChannelName;

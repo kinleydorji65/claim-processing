@@ -74,6 +74,9 @@ public class ClaimDetail {
     @Column(name = "AGENCY_CODE", length = 100)
     private String agencyCode;
 
+    @Column(name = "APPLICATION_NUMBER", length = 100)
+    private String applicationNumber;
+
     @Column(name = "OFFICE_ID")
     private Long officeId;
 

@@ -17,10 +17,15 @@ import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+// REMOVE: import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 
 
 @RestController
@@ -32,6 +37,13 @@ public class ClaimApplicationFlowController {
     private final ClaimApplicationApprovalService claimApplicationApprovalService;
     private final ClaimApplicationVerificationService claimApplicationVerificationService;
 
+    @GetMapping("/approved")
+    @Operation(summary = "Get all Approved Detail")
+    public ApiResponseDTO<Page<GeneralClaimDetailResponse>> getAllApprovedDetails(
+            @PageableDefault(size = 20) Pageable pageable) {
+        
+        return claimApplicationApprovalService.getAllApprovedDetails(pageable);
+    }
     // Claim endpoints
     @PostMapping("/claims")
     public ResponseEntity<ApiResponseDTO<GeneralClaimResponse>> create(

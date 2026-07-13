@@ -13,8 +13,5 @@ import lombok.*;
 @Builder
 public class RentalDetailResponseDto {
     private String rentalType;
-    private String status;
-    private BigDecimal rentalPercentage;
     private BigDecimal outstandingAmount;
-    private BigDecimal rentalAmount;
 }

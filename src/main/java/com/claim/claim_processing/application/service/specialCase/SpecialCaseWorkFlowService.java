@@ -1,6 +1,9 @@
-package com.claim.claim_processing.application.service.application;
+package com.claim.claim_processing.application.service.specialCase;
 
 import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.claim.claim_processing.application.DTO.request.GeneralSpecialCaseResponse;
 import com.claim.claim_processing.application.DTO.request.application.GeneralSpecialCaseApplicationRequest;
@@ -20,4 +23,5 @@ public interface SpecialCaseWorkFlowService {
     ApiResponseDTO<List<GeneralSpecialCaseApplicationResponseDTO>> getSpecialCaseUserCode(String userCode);
     ApiResponseDTO<List<GeneralSpecialCaseApplicationResponseDTO>> getAllSpecialCase();
     ApiResponseDTO<List<GeneralSpecialCaseApplicationResponseDTO>> getAllSpecialCaseWithClaimedBy(String claimedBy);
+    ApiResponseDTO<Page<GeneralSpecialCaseResponse>> getAllApprovedSpecialCases(Pageable pageable);
 }

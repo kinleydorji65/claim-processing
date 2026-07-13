@@ -12,9 +12,6 @@ import lombok.*;
 @Builder
 public class LoanDetailResponseDto {
 
-    private Long loanId;
     private String loanName;
-    private String status;
-    private BigDecimal loanAmount;
     private BigDecimal outstandingAmount;
 }

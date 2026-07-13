@@ -322,14 +322,18 @@ public class ClaimApplicationVerificationServiceImpl
                         throw ClaimException.badRequest("Unclaimed by is required");
                 }
                 ClaimApplication claimApplication = getClaimApplication(applicationNumber);
+                
                 ClaimApplicationVerification verification = verificationRepository
                                 .findByClaimApplication_ApplicationNumber(applicationNumber)
                                 .orElse(new ClaimApplicationVerification());
                 verification.setClaimApplication(claimApplication);
                 StatusMaster unClaimedStatus = statusRepository.findById(3L)
                                 .orElseThrow(() -> new RuntimeException("Unclaimed status not found"));
+                claimApplication.setStatus(unClaimedStatus);
+                claimApplication.setUnClaimedBy(null);
                 verification.setStatus(unClaimedStatus);
                 verification.setClaimedBy(null);
+                claimApplicationRepository.saveAndFlush(claimApplication);
                 verification.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
                 verificationRepository.saveAndFlush(verification);
                 List<ClaimApplicationWorkflowResponseDto> workflowResponse = workflowService.getByApplicationNumber(applicationNumber);

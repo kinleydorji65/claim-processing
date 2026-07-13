@@ -517,6 +517,7 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 }
 
                 ClaimApplication claimApplication = claimApplicationService.unClaimedBy(applicationId, unclaimedBy);
+                
                 List<ClaimApplicationWorkflowResponseDto> workflowResponse = claimApplicationWorkflowService.getByApplicationId(claimApplication.getId());
                 if(workflowResponse == null || workflowResponse.isEmpty()){
                         ClaimApplicationWorkflowResponseDto workFlow = workflowResponse.get(0);

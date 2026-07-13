@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "CLAIM_ACCOUNTING_EVENT", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
@@ -116,6 +118,10 @@ public class ClaimAccountingEvent {
 
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
+
+     @OneToMany(mappedBy = "accountingEvent", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<ClaimLedgerEntry> ledgerEntries = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

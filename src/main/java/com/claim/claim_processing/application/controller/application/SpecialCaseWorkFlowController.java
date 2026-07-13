@@ -7,7 +7,7 @@ import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicat
 import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
 import com.claim.claim_processing.application.DTO.response.application.GeneralSpecialCaseApplicationResponseDTO;
 import com.claim.claim_processing.application.service.application.ClaimApplicationFlowService;
-import com.claim.claim_processing.application.service.application.SpecialCaseWorkFlowService;
+import com.claim.claim_processing.application.service.specialCase.SpecialCaseWorkFlowService;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,6 +15,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +33,13 @@ public class SpecialCaseWorkFlowController {
 
         private final SpecialCaseWorkFlowService specialCaseWorkFlowService;
         private final ClaimApplicationFlowService claimApplicationFlowService;
+
+        @GetMapping("/approved")
+    @Operation(summary = "Get all special case Approved Detail")
+    public ApiResponseDTO<Page<GeneralSpecialCaseResponse>> getAllApprovedSpecialCases(Pageable pageable) {
+        
+        return specialCaseWorkFlowService.getAllApprovedSpecialCases(pageable);
+    }
 
         @PostMapping("/claims")
         public ResponseEntity<ApiResponseDTO<GeneralClaimResponse>> create(

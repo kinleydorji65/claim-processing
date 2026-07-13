@@ -251,6 +251,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
                         .notFound("Claim Application not found with application number: " + applicationId));
         existingClaimApplication.setUnClaimedBy(null);
         existingClaimApplication.setUpdatedBy(unclaimedBy);
+        existingClaimApplication.setClaimedBy(null);
         existingClaimApplication.setStatus(getStatus(4L)); // Assuming you have a method to get the status by code
         claimApplicationRepository.saveAndFlush(existingClaimApplication);
 

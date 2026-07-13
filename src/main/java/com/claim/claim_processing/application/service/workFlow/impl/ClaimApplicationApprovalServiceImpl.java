@@ -51,6 +51,8 @@ import com.claim.claim_processing.rule.pension.service.PensionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -167,9 +169,9 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                 // Build response
                 GeneralClaimResponse response = null;
                 GeneralClaimDetailResponse claimDetailResponse = null;
-                if (claimApplication.getIsSpecialCase() == null) {
+                if (claimApplication.getIsSpecialCase().toString().equals("N")) {
                         response = buildGeneralClaimResponse(claimApplication);
-
+                        System.out.println("here is claim build response: " + response.getAgencyCode());
                         // Create claim detail
                         claimDetailResponse = claimDetailService.create(response);
 
@@ -177,17 +179,23 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                                         claimDetailResponse,
                                         request.getApprovedBy());
                         claimDetailResponse.setAccountingEventDetail(accountingEventResponse);
-                        if (claimApplication.getIsSpecialCase() == null) {
+                        if (claimApplication.getIsSpecialCase().toString().equals("N")) {
                                 saveToReserveAccount(claimDetailResponse, request.getApprovedBy());
                                 saveToPensionDetail(claimDetailResponse, request.getApprovedBy());
                         }
                 }
 
-                documentMasterService.transferDocumentsForApproval(claimApplication.getApplicationNumber(), claimApplication.getApplicationNumber(),
-                                "APPROVER", request.getApprovedBy());
+                // documentMasterService.transferDocumentsForApproval(claimApplication.getApplicationNumber(),
+                //                 claimDetailResponse.getApplicationNumber(),
+                //                 "MEMBER", request.getApprovedBy());
 
                 return ApiResponseDTO.success(claimDetailResponse);
 
+        }
+
+        @Override
+        public ApiResponseDTO<Page<GeneralClaimDetailResponse>> getAllApprovedDetails(Pageable pageable) {
+                return claimDetailService.getAllApprovedDetails(pageable);
         }
 
         private void saveToReserveAccount(GeneralClaimDetailResponse claimDetailResponse, String createdBy) {
@@ -272,15 +280,28 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
 
         private void saveToPensionDetail(GeneralClaimDetailResponse claimDetailResponse, String createdBy) {
                 try {
+                        ClaimCalculationSummaryResponseDto summary = claimDetailResponse.getCalculationSummary();
+                        // if (summary.getIsPensionEligible().toString().equals("N")) {
+                        //         return;
+                        // }
+                        System.out.println("FUCK YOU");
                         // Get pension refund amount from accounting event
                         BigDecimal pensionRefund = BigDecimal.ZERO;
                         AccountingEventResponseDto accountingEvent = claimDetailResponse.getAccountingEventDetail();
                         if (accountingEvent != null) {
-                                for (LedgerEntryResponseDto entry : accountingEvent.getLedgerEntries()) {
-                                        if ("PENSION_REFUND".equals(entry.getComponentCode())) {
-                                                pensionRefund = entry.getAmount() != null ? entry.getAmount()
-                                                                : BigDecimal.ZERO;
-                                                break;
+                                List<LedgerEntryResponseDto> entries = accountingEvent.getLedgerEntries();
+                                if (entries != null && !entries.isEmpty()) {
+                                        for (LedgerEntryResponseDto entry : entries) {
+                                                String componentCode = entry.getComponentCode();
+                                                if (componentCode != null && componentCode.startsWith("P_")) {
+                                                        BigDecimal amount = entry.getAmount() != null
+                                                                        ? entry.getAmount()
+                                                                        : BigDecimal.ZERO;
+                                                        pensionRefund = pensionRefund.add(amount); // Sum all pension
+                                                                                                   // amounts
+                                                        System.out.println("Added pension component: " + componentCode
+                                                                        + " = " + amount);
+                                                }
                                         }
                                 }
                         }
@@ -292,26 +313,6 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
 
                         log.info("Saving Pension Detail - Pension Refund: {}", pensionRefund);
 
-                        // Get monthly pension amount from calculation components
-                        BigDecimal monthlyPension = BigDecimal.ZERO;
-                        ClaimCalculationSummaryResponseDto summary = claimDetailResponse.getCalculationSummary();
-                        if (summary != null && summary.getRuleEvaluations() != null) {
-                                for (ClaimRuleEvaluationListDto ruleEval : summary.getRuleEvaluations()) {
-                                        if (ruleEval.getComponents() != null) {
-                                                for (ClaimCalculationComponentDto component : ruleEval
-                                                                .getComponents()) {
-                                                        if ("P_MONTHLY".equals(component.getComponentCode()) ||
-                                                                        "MONTHLY_PENSION".equals(
-                                                                                        component.getComponentCode())) {
-                                                                monthlyPension = component.getAmount() != null
-                                                                                ? component.getAmount()
-                                                                                : BigDecimal.ZERO;
-                                                                break;
-                                                        }
-                                                }
-                                        }
-                                }
-                        }
 
                         // Get total contribution months from calculation summary
                         Integer totalMonths = 0;
@@ -320,7 +321,7 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                                 totalMonths = summary.getTotalContributionMonth();
                                 totalYears = totalMonths / 12;
                         }
-
+                        System.out.println("son son son");
                         // Get pension start date from normal claim details
                         LocalDateTime pensionStartDate = null;
                         if (claimDetailResponse.getNormalClaimDetails() != null) {
@@ -341,7 +342,7 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                                         .memberIdentityNumber(claimDetailResponse.getIdentityNumber())
                                         .agencyCode(claimDetailResponse.getAgencyCode())
                                         .currencyCode(claimDetailResponse.getCurrencyCode())
-                                        .pensionType("MONTHLY_PENSION")
+                                        .pensionType(null)
                                         .totalPensionFund(pensionRefund)
                                         .totalContributionMonths(totalMonths)
                                         .totalContributionYears(totalYears)
@@ -358,10 +359,8 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                         // Call pension service to create or update
                         PensionDetailResponseDTO pensionResponse = pensionService
                                         .createOrUpdatePensionDetail(requestForPesion);
-
-                        log.info("Pension detail saved successfully for NPPF: {}, ID: {}",
-                                        claimDetailResponse.getNppfNumber(),
-                                        pensionResponse != null ? pensionResponse.getPensionDetailId() : "null");
+                        System.out.println("Pension detail saved successfully for NPPF: " +
+                                        claimDetailResponse.getNppfNumber());
 
                 } catch (Exception e) {
                         log.error("Error saving pension detail: {}", e.getMessage(), e);

@@ -1,4 +1,4 @@
-package com.claim.claim_processing.application.service.application;
+package com.claim.claim_processing.application.service.specialCase;
 
 import com.claim.claim_processing.application.DTO.request.application.ClaimSpecialCaseApplicationRequestDto;
 import com.claim.claim_processing.application.DTO.response.application.ClaimSpecialCaseApplicationResponseDto;

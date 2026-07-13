@@ -1,13 +1,14 @@
-package com.claim.claim_processing.application.service.application.impl;
+package com.claim.claim_processing.application.service.specialCase.impl;
 
 import com.claim.claim_processing.application.DTO.request.GeneralSpecialCaseResponse;
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto;
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto.LedgerEntryResponseDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimSpecialCaseResponse;
-import com.claim.claim_processing.application.service.application.SpecialCaseLedgerService;
+import com.claim.claim_processing.application.service.specialCase.SpecialCaseLedgerService;
 import com.claim.claim_processing.common.entities.claim.ClaimAccountingEvent;
 import com.claim.claim_processing.common.entities.claim.ClaimLedgerEntry;
 import com.claim.claim_processing.common.entities.common.CoaAccountMapping;
+import com.claim.claim_processing.common.entities.common.CoaSubAccount;
 import com.claim.claim_processing.common.entities.others.member.MemberDetail;
 import com.claim.claim_processing.common.repository.claim.ClaimAccountingEventRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimLedgerEntryRepository;
@@ -45,6 +46,11 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_POSTED = "POSTED";
 
+    // Component codes for special case conversion
+    private static final String COMPONENT_PENSION_CONVERSION = "PENSION_CONVERSION";
+    private static final String COMPONENT_LAPSED_CONVERSION = "LAPSED_CONVERSION";
+    private static final String COMPONENT_BANK = "BANK";
+
     @Override
     @Transactional
     public AccountingEventResponseDto createSpecialCaseLedgerEntries(
@@ -72,34 +78,41 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
         }
 
         String agencyCategoryId = specialCaseResponse.getMemberCategoryId();
-        String tranCode = "RPFC"; // Default, can be mapped based on agency
+        String tranCode = "SPC"; // Special Case tran code
 
-        // 3. Build component amounts for special case
+        // 3. Build component amounts for special case conversion
         Map<String, BigDecimal> componentAmounts = buildSpecialCaseComponentAmounts(specialCaseResponse);
         log.info("Special Case Components: {}", componentAmounts);
+
+        if (componentAmounts.isEmpty()) {
+            throw new RuntimeException("No component amounts found for special case: " + 
+                    specialCaseResponse.getId());
+        }
 
         // 4. Calculate totals
         BigDecimal totalEligible = calculateTotalAmount(componentAmounts);
         log.info("Total Eligible Amount: {}", totalEligible);
 
         // 5. Get final payable amount
-        BigDecimal finalPayable = totalEligible; // In special case, all eligible goes to member
+        BigDecimal finalPayable = totalEligible;
         log.info("Final Payable Amount: {}", finalPayable);
 
         // 6. Get COA Mappings for SPECIAL_CASE
-        String eventType = EVENT_TYPE_SPECIAL_CASE;
         List<CoaAccountMapping> specialCaseMappings = coaAccountMappingRepository
                 .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
-                        eventType, agencyCategoryId);
+                        EVENT_TYPE_SPECIAL_CASE, agencyCategoryId);
 
         if (specialCaseMappings.isEmpty()) {
-            log.warn("No SPECIAL_CASE mappings found, falling back to REFUND");
-            specialCaseMappings = coaAccountMappingRepository
-                    .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
-                            "REFUND", agencyCategoryId);
+            log.error("No SPECIAL_CASE mappings found for agency category: {}", agencyCategoryId);
+            throw new RuntimeException("No COA mappings found for SPECIAL_CASE with agency category: " + agencyCategoryId);
         }
 
         log.info("SPECIAL_CASE Mappings found: {}", specialCaseMappings.size());
+        for (CoaAccountMapping mapping : specialCaseMappings) {
+            log.info("Mapping: Component={}, DRCR={}, Main={}, Sub={}", 
+                    mapping.getComponentCode(), mapping.getDrcr(), 
+                    mapping.getMainAccountCode(), mapping.getSubAccountCode());
+        }
 
         // 7. Create and SAVE Accounting Event
         ClaimAccountingEvent event = createSpecialCaseAccountingEvent(
@@ -111,32 +124,40 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
         List<ClaimLedgerEntry> ledgerEntries = new ArrayList<>();
         int seqNo = 0;
 
-        // 8a. Process DEBIT mappings (All refund components)
+        // 8a. Process DEBIT mappings (PENSION_CONVERSION and LAPSED_CONVERSION)
         for (CoaAccountMapping mapping : specialCaseMappings) {
             String componentCode = mapping.getComponentCode();
 
-            // Skip BANK - handled separately
-            if ("BANK".equals(componentCode)) {
+            // Skip BANK - handled separately as CREDIT
+            if (COMPONENT_BANK.equals(componentCode)) {
                 continue;
             }
 
             BigDecimal amount = componentAmounts.getOrDefault(componentCode, BigDecimal.ZERO);
+            
+            // If amount is zero, try to find using alternative component codes
+            if (amount.compareTo(BigDecimal.ZERO) == 0) {
+                amount = findAmountByAlternativeCode(componentCode, componentAmounts);
+            }
+
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                 log.debug("Skipping zero amount for component: {}", componentCode);
                 continue;
             }
 
+            CoaSubAccount subAccount = coaSubAccountRepository.findBySubAccountCode(mapping.getSubAccountCode())
+                .orElseThrow(() -> new RuntimeException("SubAccount not found: " + mapping.getSubAccountCode()));
             seqNo++;
             ClaimLedgerEntry entry = ClaimLedgerEntry.builder()
                     .accountingEventId(event.getId())
                     .seqNo(seqNo)
                     .mainAccountCode(mapping.getMainAccountCode())
                     .subAccountCode(mapping.getSubAccountCode())
-                    .drcr("D") // DEBIT for special case refund
+                    .drcr("D") // DEBIT for special case conversion
                     .amount(amount)
                     .entryRole(mapping.getEntryRole())
                     .componentCode(componentCode)
-                    .narration("Special Case: " + specialCaseReference + " — " + componentCode)
+                    .narration(subAccount.getSubAccountName())
                     .createdBy(createdBy)
                     .createdAt(LocalDateTime.now())
                     .build();
@@ -148,8 +169,10 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
 
         // 8b. BANK Entry (CREDIT) - Net payment to member
         if (finalPayable.compareTo(BigDecimal.ZERO) > 0) {
-            CoaAccountMapping bankMapping = findMappingByComponent(specialCaseMappings, "BANK");
+            CoaAccountMapping bankMapping = findMappingByComponent(specialCaseMappings, COMPONENT_BANK);
             if (bankMapping != null) {
+                CoaSubAccount subAccount = coaSubAccountRepository.findBySubAccountCode(bankMapping.getSubAccountCode())
+                .orElseThrow(() -> new RuntimeException("SubAccount not found: " + bankMapping.getSubAccountCode()));
                 seqNo++;
                 ClaimLedgerEntry entry = ClaimLedgerEntry.builder()
                         .accountingEventId(event.getId())
@@ -159,8 +182,8 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
                         .drcr("C")
                         .amount(finalPayable)
                         .entryRole("BANK")
-                        .componentCode("BANK")
-                        .narration("Special Case: " + specialCaseReference + " — Net Payment to Member")
+                        .componentCode(COMPONENT_BANK)
+                        .narration(subAccount.getSubAccountName())
                         .createdBy(createdBy)
                         .createdAt(LocalDateTime.now())
                         .build();
@@ -169,6 +192,11 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
             } else {
                 log.warn("BANK mapping not found for special case: {}", agencyCategoryId);
             }
+        }
+
+        if (ledgerEntries.isEmpty()) {
+            throw new RuntimeException("No ledger entries were created for special case: " + 
+                    specialCaseResponse.getId());
         }
 
         log.info("Total ledger entries to save: {}", ledgerEntries.size());
@@ -186,6 +214,14 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
         if (totalDr.compareTo(totalCr) != 0) {
             log.error("LEDGER NOT BALANCED! DR: {}, CR: {}, Difference: {}",
                     totalDr, totalCr, totalDr.subtract(totalCr));
+            
+            // Log all entries for debugging
+            log.debug("Ledger entries:");
+            for (ClaimLedgerEntry entry : savedEntries) {
+                log.debug("SEQ: {}, DRCR: {}, Component: {}, Amount: {}", 
+                        entry.getSeqNo(), entry.getDrcr(), entry.getComponentCode(), entry.getAmount());
+            }
+            
             throw new RuntimeException(
                     "Ledger entries do not balance! Total DR: " + totalDr +
                             ", Total CR: " + totalCr +
@@ -207,47 +243,145 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
     }
 
     /**
-     * Build component amounts for special case
+     * Build component amounts for special case conversion
+     * Special case has only TWO components: PENSION_CONVERSION and LAPSED_CONVERSION
      */
     private Map<String, BigDecimal> buildSpecialCaseComponentAmounts(
             GeneralSpecialCaseResponse specialCaseResponse) {
         
         Map<String, BigDecimal> componentMap = new HashMap<>();
         
+        log.info("Building component amounts for special case conversion");
+        
+        // Get the special case detail
         ClaimSpecialCaseResponse specialCaseDetail = specialCaseResponse.getSpecialCaseDetail();
-        if (specialCaseDetail == null) {
-            log.warn("No special case detail found");
-            return componentMap;
-        }
-
-        // 1. Forfeited Amount Refund
-        if (specialCaseDetail.getTotalForfeitedAmount() != null && 
-            specialCaseDetail.getTotalForfeitedAmount().compareTo(BigDecimal.ZERO) > 0) {
+        
+        // Initialize amounts
+        BigDecimal totalPensionAmount = BigDecimal.ZERO;
+        BigDecimal totalLapsedAmount = BigDecimal.ZERO;
+        
+        // Get Total Pension Amount from ClaimSpecialCaseResponse
+        if (specialCaseDetail != null) {
+            // Get total pension amount
+            if (specialCaseDetail.getTotalPensionAmount() != null) {
+                totalPensionAmount = specialCaseDetail.getTotalPensionAmount();
+                log.info("Total Pension Amount from specialCaseDetail: {}", totalPensionAmount);
+            }
             
-            componentMap.put("LAPSE_REFUND", specialCaseDetail.getTotalForfeitedAmount());
-            log.info("Lapse Refund Amount: {}", specialCaseDetail.getTotalForfeitedAmount());
+            // Get total forfeited/lapsed amount
+            if (specialCaseDetail.getTotalForfeitedAmount() != null) {
+                totalLapsedAmount = specialCaseDetail.getTotalForfeitedAmount();
+                log.info("Total Forfeited Amount from specialCaseDetail: {}", totalLapsedAmount);
+            }
         }
-
-        // 2. PF Components (if part of special case)
-        // These would come from the special case details or reserve accounts
-        if (specialCaseDetail.getEligibleClaimAmount() != null) {
-            // For simplicity, if there's an eligible claim amount, treat as PF refund
-            // In real scenario, you'd have more granular data
-            BigDecimal pfAmount = specialCaseDetail.getEligibleClaimAmount();
-            componentMap.put("PF_MC_REFUND", pfAmount);
-            log.info("PF Refund Amount: {}", pfAmount);
+        
+        // Also check if there's a separate pension amount field in the main response
+        if (specialCaseResponse.getSpecialCaseDetail().getTotalPensionAmount() != null && 
+            totalPensionAmount.compareTo(BigDecimal.ZERO) == 0) {
+            totalPensionAmount = specialCaseResponse.getSpecialCaseDetail().getTotalPensionAmount();
+            log.info("Using Total Pension Amount from main response: {}", totalPensionAmount);
         }
-
-        // 3. Pension as Lump Sum
-        if (specialCaseDetail.getTotalPensionAmount() != null && 
-            specialCaseDetail.getTotalPensionAmount().compareTo(BigDecimal.ZERO) > 0) {
-            
-            componentMap.put("PENSION_LUMP_SUM", specialCaseDetail.getTotalPensionAmount());
-            log.info("Pension Lump Sum Amount: {}", specialCaseDetail.getTotalPensionAmount());
+        
+        // Check for eligible claim amount in specialCaseDetail
+        if (specialCaseDetail != null && specialCaseDetail.getEligibleClaimAmount() != null) {
+            BigDecimal eligibleAmount = specialCaseDetail.getEligibleClaimAmount();
+            if (eligibleAmount.compareTo(BigDecimal.ZERO) > 0) {
+                // If eligible amount is set, use it as the total amount
+                log.info("Using Eligible Claim Amount: {}", eligibleAmount);
+                // Determine which component this belongs to based on case type
+                String caseType = specialCaseDetail.getCaseType();
+                if (caseType != null) {
+                    if (caseType.contains("PENSION") || caseType.contains("CONVERSION")) {
+                        totalPensionAmount = eligibleAmount;
+                    } else if (caseType.contains("LAPSE") || caseType.contains("FORFEIT")) {
+                        totalLapsedAmount = eligibleAmount;
+                    } else {
+                        // Default to pension if case type unknown
+                        totalPensionAmount = eligibleAmount;
+                    }
+                }
+            }
         }
-
-        log.info("Special Case Component Map: {}", componentMap);
+        
+        // Check requested amount in specialCaseDetail
+        if (specialCaseDetail != null && specialCaseDetail.getRequestedAmount() != null) {
+            BigDecimal requestedAmount = specialCaseDetail.getRequestedAmount();
+            if (requestedAmount.compareTo(BigDecimal.ZERO) > 0) {
+                log.info("Using Requested Amount: {}", requestedAmount);
+                // If no other amounts are set, use requested amount
+                if (totalPensionAmount.compareTo(BigDecimal.ZERO) == 0 && 
+                    totalLapsedAmount.compareTo(BigDecimal.ZERO) == 0) {
+                    // Default to pension component
+                    totalPensionAmount = requestedAmount;
+                }
+            }
+        }
+        
+        log.info("Final amounts - Pension: {}, Lapsed: {}", totalPensionAmount, totalLapsedAmount);
+        
+        // Add Pension Conversion amount
+        if (totalPensionAmount.compareTo(BigDecimal.ZERO) > 0) {
+            componentMap.put(COMPONENT_PENSION_CONVERSION, totalPensionAmount);
+            log.info("Added {}: {}", COMPONENT_PENSION_CONVERSION, totalPensionAmount);
+        }
+        
+        // Add Lapsed Conversion amount
+        if (totalLapsedAmount.compareTo(BigDecimal.ZERO) > 0) {
+            componentMap.put(COMPONENT_LAPSED_CONVERSION, totalLapsedAmount);
+            log.info("Added {}: {}", COMPONENT_LAPSED_CONVERSION, totalLapsedAmount);
+        }
+        
+        // If no amounts found, log warning with all available fields
+        if (componentMap.isEmpty()) {
+            log.warn("No component amounts found for special case conversion: {}", 
+                    specialCaseResponse.getId());
+            log.warn("Available fields:");
+            log.warn("  totalPensionAmount: {}", specialCaseResponse.getSpecialCaseDetail().getTotalPensionAmount());
+            if (specialCaseDetail != null) {
+                log.warn("  specialCaseDetail.totalPensionAmount: {}", 
+                        specialCaseDetail.getTotalPensionAmount());
+                log.warn("  specialCaseDetail.totalForfeitedAmount: {}", 
+                        specialCaseDetail.getTotalForfeitedAmount());
+                log.warn("  specialCaseDetail.eligibleClaimAmount: {}", 
+                        specialCaseDetail.getEligibleClaimAmount());
+                log.warn("  specialCaseDetail.requestedAmount: {}", 
+                        specialCaseDetail.getRequestedAmount());
+                log.warn("  specialCaseDetail.caseType: {}", 
+                        specialCaseDetail.getCaseType());
+            }
+        }
+        
+        log.info("Final Component Map: {}", componentMap);
         return componentMap;
+    }
+
+    /**
+     * Find amount by alternative component code
+     */
+    private BigDecimal findAmountByAlternativeCode(String componentCode, Map<String, BigDecimal> componentAmounts) {
+        // Map of alternative codes
+        Map<String, String> alternativeMap = new HashMap<>();
+        alternativeMap.put(COMPONENT_PENSION_CONVERSION, "PENSION_LUMP_SUM");
+        alternativeMap.put(COMPONENT_PENSION_CONVERSION, "PENSION_REFUND");
+        alternativeMap.put(COMPONENT_PENSION_CONVERSION, "PF_MC_REFUND");
+        alternativeMap.put(COMPONENT_LAPSED_CONVERSION, "LAPSE_REFUND");
+        alternativeMap.put(COMPONENT_LAPSED_CONVERSION, "FORFEITED_REFUND");
+        alternativeMap.put(COMPONENT_LAPSED_CONVERSION, "LAPSE");
+        
+        for (Map.Entry<String, String> entry : alternativeMap.entrySet()) {
+            if (componentCode.equals(entry.getKey()) && componentAmounts.containsKey(entry.getValue())) {
+                BigDecimal amount = componentAmounts.get(entry.getValue());
+                log.debug("Found amount {} for {} using alternative code {}", amount, componentCode, entry.getValue());
+                return amount;
+            }
+        }
+        
+        // Check if component code exists directly
+        if (componentAmounts.containsKey(componentCode)) {
+            return componentAmounts.get(componentCode);
+        }
+        
+        return BigDecimal.ZERO;
     }
 
     /**
@@ -286,7 +420,7 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
                 .status(STATUS_PENDING)
                 .totalDr(BigDecimal.ZERO)
                 .totalCr(BigDecimal.ZERO)
-                .narration("Special Case: " + specialCaseReference + " — " + 
+                .narration("Special Case Conversion: " + specialCaseReference + " — " + 
                           specialCaseResponse.getClaimTypeName())
                 .createdBy(createdBy)
                 .createdAt(now)
@@ -319,7 +453,9 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
     private BigDecimal calculateTotalAmount(Map<String, BigDecimal> amountMap) {
         BigDecimal total = BigDecimal.ZERO;
         for (BigDecimal amount : amountMap.values()) {
-            total = total.add(amount);
+            if (amount != null) {
+                total = total.add(amount);
+            }
         }
         return total;
     }
@@ -369,14 +505,22 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
 
         Map<String, String> mainAccountNames = new HashMap<>();
         for (String code : mainAccountCodes) {
-            coaMainAccountRepository.findByAccountCode(code)
-                    .ifPresent(acc -> mainAccountNames.put(code, acc.getAccountName()));
+            try {
+                coaMainAccountRepository.findByAccountCode(code)
+                        .ifPresent(acc -> mainAccountNames.put(code, acc.getAccountName()));
+            } catch (Exception e) {
+                log.debug("Error fetching main account name for code: {}", code);
+            }
         }
 
         Map<String, String> subAccountNames = new HashMap<>();
         for (String code : subAccountCodes) {
-            coaSubAccountRepository.findBySubAccountCode(code)
-                    .ifPresent(acc -> subAccountNames.put(code, acc.getSubAccountName()));
+            try {
+                coaSubAccountRepository.findBySubAccountCode(code)
+                        .ifPresent(acc -> subAccountNames.put(code, acc.getSubAccountName()));
+            } catch (Exception e) {
+                log.debug("Error fetching sub account name for code: {}", code);
+            }
         }
 
         List<LedgerEntryResponseDto> entryDtos = entries.stream()
