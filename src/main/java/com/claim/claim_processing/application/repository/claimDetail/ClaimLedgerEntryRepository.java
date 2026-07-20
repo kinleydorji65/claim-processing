@@ -1,8 +1,9 @@
-package com.claim.claim_processing.common.repository.claim;
+package com.claim.claim_processing.application.repository.claimDetail;
 
-import com.claim.claim_processing.common.entities.claim.ClaimLedgerEntry;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.claim.claim_processing.application.entity.claimDetail.ClaimLedgerEntry;
 
 import java.math.BigDecimal;
 import java.util.List;

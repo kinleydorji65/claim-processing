@@ -1,6 +1,5 @@
 package com.claim.claim_processing.application.entity.claimDetail;
 
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +14,8 @@ import com.claim.claim_processing.common.entities.claim.ReserveAccount;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "CLAIM_SPECIAL_CASE", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
@@ -102,6 +103,11 @@ public class ClaimSpecialCase {
     @JoinColumn(name = "RESERVE_ACCOUNT_ID")
     private ReserveAccount reserveAccount;
 
+    // ✅ Components Relationship
+    @OneToMany(mappedBy = "specialCase", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private List<ClaimSpecialCaseComponentDetail> componentDetails = new ArrayList<>();
+
     // Audit Information
     @Column(name = "IS_ACTIVE", length = 1)
     private String isActive;
@@ -140,9 +146,151 @@ public class ClaimSpecialCase {
         if (totalPensionAmount == null) {
             totalPensionAmount = BigDecimal.ZERO;
         }
+        if (componentDetails == null) {
+            componentDetails = new ArrayList<>();
+        }
     }
 
-    // Helper Methods
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    // =============================================
+    // COMPONENT MANAGEMENT HELPER METHODS
+    // =============================================
+
+    /**
+     * Add a component detail to the special case
+     */
+    public void addComponentDetail(ClaimSpecialCaseComponentDetail componentDetail) {
+        if (componentDetail == null) {
+            return;
+        }
+        if (componentDetails == null) {
+            componentDetails = new ArrayList<>();
+        }
+        componentDetails.add(componentDetail);
+        componentDetail.setSpecialCase(this);
+    }
+
+    /**
+     * Add multiple component details to the special case
+     */
+    public void addComponentDetails(List<ClaimSpecialCaseComponentDetail> componentDetails) {
+        if (componentDetails == null || componentDetails.isEmpty()) {
+            return;
+        }
+        for (ClaimSpecialCaseComponentDetail detail : componentDetails) {
+            addComponentDetail(detail);
+        }
+    }
+
+    /**
+     * Remove a component detail from the special case
+     */
+    public void removeComponentDetail(ClaimSpecialCaseComponentDetail componentDetail) {
+        if (componentDetail == null || componentDetails == null) {
+            return;
+        }
+        componentDetails.remove(componentDetail);
+        componentDetail.setSpecialCase(null);
+    }
+
+    /**
+     * Clear all component details
+     */
+    public void clearComponentDetails() {
+        if (componentDetails != null) {
+            componentDetails.clear();
+        }
+    }
+
+    /**
+     * Get active component details only
+     */
+    public List<ClaimSpecialCaseComponentDetail> getActiveComponentDetails() {
+        if (componentDetails == null) {
+            return new ArrayList<>();
+        }
+        return componentDetails.stream()
+                .filter(detail -> "Y".equalsIgnoreCase(detail.getIsActive()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Get components by type
+     */
+    public List<ClaimSpecialCaseComponentDetail> getComponentDetailsByType(String componentType) {
+        if (componentDetails == null || componentType == null) {
+            return new ArrayList<>();
+        }
+        return componentDetails.stream()
+                .filter(detail -> componentType.equalsIgnoreCase(detail.getComponentType()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Get eligible components
+     */
+    public List<ClaimSpecialCaseComponentDetail> getEligibleComponents() {
+        return getComponentDetailsByType("ELIGIBLE");
+    }
+
+    /**
+     * Get forfeited components
+     */
+    public List<ClaimSpecialCaseComponentDetail> getForfeitedComponents() {
+        return getComponentDetailsByType("FORFEITED");
+    }
+
+    /**
+     * Get deduction components
+     */
+    public List<ClaimSpecialCaseComponentDetail> getDeductionComponents() {
+        return getComponentDetailsByType("DEDUCTION");
+    }
+
+    /**
+     * Get interest components
+     */
+    public List<ClaimSpecialCaseComponentDetail> getInterestComponents() {
+        return getComponentDetailsByType("INTEREST");
+    }
+
+    /**
+     * Calculate total amount of all components
+     */
+    public BigDecimal calculateTotalComponentAmount() {
+        if (componentDetails == null || componentDetails.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return componentDetails.stream()
+                .filter(detail -> "Y".equalsIgnoreCase(detail.getIsActive()))
+                .map(ClaimSpecialCaseComponentDetail::getAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Calculate total amount by component type
+     */
+    public BigDecimal calculateTotalComponentAmountByType(String componentType) {
+        if (componentDetails == null || componentDetails.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return componentDetails.stream()
+                .filter(detail -> "Y".equalsIgnoreCase(detail.getIsActive()))
+                .filter(detail -> componentType.equalsIgnoreCase(detail.getComponentType()))
+                .map(ClaimSpecialCaseComponentDetail::getAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    // =============================================
+    // APPROVAL HELPER METHODS
+    // =============================================
+
     public void approve(String approvedBy, String reference) {
         this.approvedBy = approvedBy;
         this.approvedDate = LocalDateTime.now();

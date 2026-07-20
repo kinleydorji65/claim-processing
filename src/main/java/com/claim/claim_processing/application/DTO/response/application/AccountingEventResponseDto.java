@@ -32,10 +32,7 @@ public class AccountingEventResponseDto {
     private String agencyName;
 
     // Transaction Information
-    private String tranCode;
     private String status;
-    private BigDecimal totalDr;
-    private BigDecimal totalCr;
     private String narration;
 
     // Audit Information

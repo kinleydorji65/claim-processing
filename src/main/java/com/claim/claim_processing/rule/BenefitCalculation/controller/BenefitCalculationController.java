@@ -8,8 +8,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.common.activityEnum.CaseTypeEnum;
 import com.claim.claim_processing.rule.BenefitCalculation.BenefitCalculationService;
+import com.claim.claim_processing.rule.BenefitCalculation.VerifierBenefitCalculationService;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
 import com.claim.claim_processing.rule.claim.DTO.response.SpecialCasePreviewResponse;
+import com.claim.claim_processing.rule.claim.DTO.response.VerifierClaimCalculationResponseDTO;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
 
 import lombok.RequiredArgsConstructor;
@@ -23,10 +25,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequiredArgsConstructor
 public class BenefitCalculationController {
     private final BenefitCalculationService benefitCalculationService;
+    private final VerifierBenefitCalculationService verifierBenefitCalculationService;
 
     @PostMapping
     public ResponseEntity<ApiResponseDTO<ClaimCalculationResponseDTO>> calculateBenefit(@RequestBody ClaimInitialPreviewRequest request) {
         ApiResponseDTO<ClaimCalculationResponseDTO> response = benefitCalculationService.calculateBenefit(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verifier-preview")
+    public ResponseEntity<ApiResponseDTO<VerifierClaimCalculationResponseDTO>> verifierCalculateBenefit(@RequestBody ClaimInitialPreviewRequest request) {
+        ApiResponseDTO<VerifierClaimCalculationResponseDTO> response = verifierBenefitCalculationService.calculateBenefit(request);
         return ResponseEntity.ok(response);
     }
     @GetMapping

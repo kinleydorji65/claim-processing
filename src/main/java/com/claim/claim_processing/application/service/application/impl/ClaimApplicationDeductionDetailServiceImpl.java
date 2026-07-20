@@ -1,23 +1,18 @@
 package com.claim.claim_processing.application.service.application.impl;
 
-import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationDeductionPatchRequestDto;
+import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationDeductionRequestDto;
+import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationDeductionRequestDto.DeductionItemDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.entity.application.ClaimApplicationDeductionDetail;
 import com.claim.claim_processing.application.entity.application.ClaimApplicationDeductionItem;
 import com.claim.claim_processing.application.repository.application.ClaimApplicationDeductionDetailRepository;
+import com.claim.claim_processing.application.repository.application.ClaimApplicationDeductionItemRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationDeductionDetailService;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
-import com.claim.claim_processing.rule.claim.DTO.response.LoanAdjustmentDetailDto;
-import com.claim.claim_processing.rule.claim.DTO.response.RentalAdjustmentDetailDto;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -25,134 +20,127 @@ public class ClaimApplicationDeductionDetailServiceImpl
         implements ClaimApplicationDeductionDetailService {
 
     private final ClaimApplicationDeductionDetailRepository deductionDetailRepository;
+    private final ClaimApplicationDeductionItemRepository claimApplicationDeductionItemRepository;
 
     @Override
     public ClaimApplicationDeductionDetail saveCalculationDeductions(
             ClaimApplication claimApplication,
-            ClaimCalculationResponseDTO calculationResponse,
-            String createdBy) {
+            ClaimApplicationDeductionRequestDto request) {
 
         if (claimApplication == null) {
             throw new RuntimeException("Claim application is required.");
         }
 
-        if (calculationResponse == null) {
+        if (request == null) {
             throw new RuntimeException("Calculation response is required.");
         }
-
-        BigDecimal totalDeductedAmount = calculateTotalDeductedAmount(calculationResponse);
-
-        if (totalDeductedAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            return null;
-        }
-
-        ClaimApplicationDeductionDetail deductionDetail = ClaimApplicationDeductionDetail.builder()
-                .claimApplication(claimApplication)
-                .outstandingAmount(totalDeductedAmount)
-                .systemDeductedAmount(totalDeductedAmount)
-                .deductedAmount(totalDeductedAmount)
-                .isAutoApplied(ActivityEnum.Y)
-                .isManualOverride(ActivityEnum.N)
-                .remarks("Generated from benefit calculation.")
-                .createdBy(createdBy)
-                .isActive(ActivityEnum.Y)
-                .build();
-
-        addLoanDeductionItems(deductionDetail, calculationResponse, createdBy);
-        addRentalDeductionItems(deductionDetail, calculationResponse, createdBy);
-
-        return deductionDetailRepository.save(deductionDetail);
-    }
-
-    private void addLoanDeductionItems(
-            ClaimApplicationDeductionDetail deductionDetail,
-            ClaimCalculationResponseDTO calculationResponse,
-            String createdBy) {
-
-        if (calculationResponse.getLoanAdjustmentResult() == null ||
-                calculationResponse.getLoanAdjustmentResult().getDeductions() == null) {
-            return;
-        }
-
-        for (LoanAdjustmentDetailDto loan : calculationResponse.getLoanAdjustmentResult().getDeductions()) {
-
-            ClaimApplicationDeductionItem item = ClaimApplicationDeductionItem.builder()
-                    .deductionDetail(deductionDetail)
-                    .deductionCategory("LOAN")
-                    .referenceNumber(
-                            loan.getLoanTypeId() != null
-                                    ? String.valueOf(loan.getLoanTypeId())
-                                    : null)
-                    .referenceName(loan.getLoanTypeName())
-                    .outstandingAmount(defaultAmount(loan.getOutstandingAmount()))
-                    .deductedAmount(defaultAmount(loan.getAdjustedAmount()))
-                    .remainingAmount(defaultAmount(loan.getRemainingOutstandingAmount()))
-                    .remarks(loan.getStatus())
-                    .createdBy(createdBy)
-                    .isActive(ActivityEnum.Y)
+        ClaimApplicationDeductionDetail deductionDetail = deductionDetailRepository
+                .findById(request.getDeductionDetailId()).orElse(null);
+        if (deductionDetail == null) {
+            deductionDetail = ClaimApplicationDeductionDetail.builder()
+                    .outstandingAmount(request.getOutstandingAmount()) // ✅ No semicolon
+                    .verifiedDeductedAmount(request.getVerifiedDeductedAmount()) // ✅ No semicolon
+                    .approvedDeductedAmount(request.getApprovedDeductedAmount()) // ✅ No semicolon
+                    .deductedAmount(request.getDeductedAmount()) // ✅ No semicolon
+                    .remarks(request.getRemarks()) // ✅ No semicolon
+                    .claimApplication(claimApplication)
+                    .createdBy(request.getCreatedBy()) // ✅ No semicolon
                     .build();
-
-            deductionDetail.getDeductionItems().add(item);
+        } else {
+            deductionDetail.setOutstandingAmount(request.getOutstandingAmount());
+            deductionDetail.setVerifiedDeductedAmount(request.getVerifiedDeductedAmount());
+            deductionDetail.setApprovedDeductedAmount(request.getApprovedDeductedAmount());
+            deductionDetail.setDeductedAmount(request.getDeductedAmount());
+            deductionDetail.setRemarks(request.getRemarks());
+            deductionDetail.setCreatedBy(request.getCreatedBy());
+            deductionDetail.setClaimApplication(claimApplication);
         }
+        deductionDetailRepository.saveAndFlush(deductionDetail);
+        addDeductionItems(deductionDetail, request.getDeductionItems());
+
+        return deductionDetail;
     }
 
-    private void addRentalDeductionItems(
-            ClaimApplicationDeductionDetail deductionDetail,
-            ClaimCalculationResponseDTO calculationResponse,
-            String createdBy) {
+    private void addDeductionItems(ClaimApplicationDeductionDetail deductionDetail,
+        List<DeductionItemDto> items) {
 
-        if (calculationResponse.getRentalAdjustmentResult() == null ||
-                calculationResponse.getRentalAdjustmentResult().getDeductions() == null) {
-            return;
+    if (items == null || items.isEmpty()) {
+        // Clear all existing items if no items provided
+        if (deductionDetail.getDeductionItems() != null) {
+            deductionDetail.getDeductionItems().clear();
         }
-
-        for (RentalAdjustmentDetailDto rental : calculationResponse.getRentalAdjustmentResult().getDeductions()) {
-
-            ClaimApplicationDeductionItem item = ClaimApplicationDeductionItem.builder()
-                    .deductionDetail(deductionDetail)
-                    .deductionCategory("RENTAL")
-                    .referenceNumber(
-                            rental.getRentalId() != null
-                                    ? String.valueOf(rental.getRentalId())
-                                    : null)
-                    .referenceName(rental.getRentalName())
-                    .outstandingAmount(defaultAmount(rental.getOutstandingAmount()))
-                    .deductedAmount(defaultAmount(rental.getAdjustedAmount()))
-                    .createdBy(createdBy)
-                    .isActive(ActivityEnum.Y)
-                    .build();
-
-            deductionDetail.getDeductionItems().add(item);
-        }
+        return;
     }
 
-    private BigDecimal calculateTotalDeductedAmount(
-            ClaimCalculationResponseDTO calculationResponse) {
-
-        BigDecimal total = BigDecimal.ZERO;
-
-        if (calculationResponse.getLoanAdjustmentResult() != null &&
-                calculationResponse.getLoanAdjustmentResult().getTotalAdjustedAmount() != null) {
-            total = total.add(calculationResponse.getLoanAdjustmentResult().getTotalAdjustedAmount());
-        }
-
-        if (calculationResponse.getRentalAdjustmentResult() != null &&
-                calculationResponse.getRentalAdjustmentResult().getTotalAdjustedAmount() != null) {
-            total = total.add(calculationResponse.getRentalAdjustmentResult().getTotalAdjustedAmount());
-        }
-
-        return total;
+    // IMPORTANT: Clear existing items to handle removals
+    // This ensures items removed from the request are deleted from the database
+    if (deductionDetail.getDeductionItems() != null) {
+        deductionDetail.getDeductionItems().clear();
+    } else {
+        deductionDetail.setDeductionItems(new ArrayList<>());
     }
 
-    private BigDecimal defaultAmount(BigDecimal amount) {
-        return amount != null ? amount : BigDecimal.ZERO;
+    // Add all items from the request
+    for (DeductionItemDto item : items) {
+        ClaimApplicationDeductionItem entity;
+        
+        // Check if this is an existing item (has ID) or new (ID is 0 or null)
+        if (item.getDeductionItemId() != null && item.getDeductionItemId() > 0) {
+            // Try to find existing item
+            entity = claimApplicationDeductionItemRepository
+                    .findById(item.getDeductionItemId())
+                    .orElse(null);
+            
+            if (entity != null) {
+                // Update existing entity
+                entity.setDeductionCategory(item.getDeductionCategory());
+                entity.setOutstandingAmount(item.getOutstandingAmount());
+                entity.setDeductedAmount(item.getDeductedAmount());
+                entity.setRemainingAmount(item.getRemainingAmount());
+                entity.setRemarks(item.getRemarks());
+                entity.setUpdatedBy(item.getUpdatedBy());
+                // Ensure it's associated with the current deduction detail
+                entity.setDeductionDetail(deductionDetail);
+            } else {
+                // ID provided but not found - create new
+                entity = createDeductionItem(deductionDetail, item);
+            }
+        } else {
+            // New item (ID is null or 0)
+            entity = createDeductionItem(deductionDetail, item);
+        }
+        
+        // Add to the collection
+        deductionDetail.getDeductionItems().add(entity);
+        // Save individually to ensure it's persisted
+        claimApplicationDeductionItemRepository.saveAndFlush(entity);
     }
+    
+    // Save the deduction detail with all items
+    deductionDetailRepository.saveAndFlush(deductionDetail);
+}
+
+private ClaimApplicationDeductionItem createDeductionItem(
+        ClaimApplicationDeductionDetail deductionDetail, 
+        DeductionItemDto item) {
+    
+    return ClaimApplicationDeductionItem.builder()
+            .deductionDetail(deductionDetail)
+            .deductionCategory(item.getDeductionCategory())
+            .outstandingAmount(item.getOutstandingAmount())
+            .deductedAmount(item.getDeductedAmount())
+            .remainingAmount(item.getRemainingAmount())
+            .remarks(item.getRemarks())
+            .createdBy(item.getCreatedBy() != null ? item.getCreatedBy() : deductionDetail.getCreatedBy())
+            .build();
+}
 
     @Override
     public ClaimApplicationDeductionDetail patchDeductionDetail(
-            ClaimApplicationDeductionPatchRequestDto request) {
+            ClaimApplicationDeductionRequestDto request) {
 
-        ClaimApplicationDeductionDetail deductionDetail = deductionDetailRepository.findById(request.getDeductionDetailId())
+        ClaimApplicationDeductionDetail deductionDetail = deductionDetailRepository
+                .findById(request.getDeductionDetailId())
                 .orElseThrow(() -> new RuntimeException(
                         "Deduction detail not found with id: " + request.getDeductionDetailId()));
 
@@ -168,14 +156,6 @@ public class ClaimApplicationDeductionDetailServiceImpl
             deductionDetail.setDeductedAmount(request.getDeductedAmount());
         }
 
-        if (request.getIsManualOverride() != null) {
-            deductionDetail.setIsManualOverride(request.getIsManualOverride());
-        }
-
-        if (request.getOverrideReason() != null) {
-            deductionDetail.setOverrideReason(request.getOverrideReason());
-        }
-
         if (request.getRemarks() != null) {
             deductionDetail.setRemarks(request.getRemarks());
         }
@@ -188,17 +168,15 @@ public class ClaimApplicationDeductionDetailServiceImpl
             patchDeductionItems(deductionDetail, request.getDeductionItems(), request.getUpdatedBy());
         }
 
-        recalculateDeductionTotal(deductionDetail);
-
         return deductionDetailRepository.save(deductionDetail);
     }
 
     private void patchDeductionItems(
             ClaimApplicationDeductionDetail deductionDetail,
-            List<ClaimApplicationDeductionPatchRequestDto.DeductionItemPatchDto> itemRequests,
+            List<ClaimApplicationDeductionRequestDto.DeductionItemDto> itemRequests,
             String updatedBy) {
 
-        for (ClaimApplicationDeductionPatchRequestDto.DeductionItemPatchDto itemRequest : itemRequests) {
+        for (ClaimApplicationDeductionRequestDto.DeductionItemDto itemRequest : itemRequests) {
 
             if (itemRequest.getDeductionItemId() == null) {
                 continue;
@@ -227,18 +205,5 @@ public class ClaimApplicationDeductionDetailServiceImpl
                 item.setUpdatedBy(updatedBy);
             }
         }
-    }
-
-    private void recalculateDeductionTotal(
-            ClaimApplicationDeductionDetail deductionDetail) {
-
-        BigDecimal totalDeducted = deductionDetail.getDeductionItems()
-                .stream()
-                .filter(item -> item.getIsActive() == ActivityEnum.Y)
-                .map(ClaimApplicationDeductionItem::getDeductedAmount)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        deductionDetail.setDeductedAmount(totalDeducted);
     }
 }

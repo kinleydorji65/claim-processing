@@ -23,10 +23,6 @@ public class ClaimRuleEvaluationListDto {
 
     private ActivityEnum isRuleApplied;
 
-    private String resultMessage;
-
-    private String evaluatedBy;
-
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime evaluatedAt;
 

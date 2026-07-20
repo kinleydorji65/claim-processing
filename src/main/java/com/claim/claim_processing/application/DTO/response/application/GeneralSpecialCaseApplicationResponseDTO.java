@@ -1,5 +1,6 @@
 package com.claim.claim_processing.application.DTO.response.application;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,15 +41,26 @@ public class GeneralSpecialCaseApplicationResponseDTO {
     private String nppfNumber;
     private String agencyCode;
     private Long officeId;
+    private String email;
+    private String contactNo;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate applicationDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pfJoiningDate;
+    private LocalDate pfStartDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pensionJoiningDate;
+    private LocalDate pfEndDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate pensionEndDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate pensionStartDate;
+
+    private ActivityEnum isLoanApplied;
+    private ActivityEnum isRentalApplied;
 
     private String onBehalfOfMember;
     private String initiatedBy;
@@ -85,4 +97,6 @@ public class GeneralSpecialCaseApplicationResponseDTO {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
+
+
 }

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.CaseTypeEnum;
 
@@ -61,4 +62,18 @@ public class ClaimSpecialCaseApplicationRequestDto {
     private String createdBy;
 
     private String updatedBy;
+
+    private List<SpecialCaseComponentBalanceDTO> componentBalances;
+
+    @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public static class SpecialCaseComponentBalanceDTO {
+    private String code;          // PF_MC, PF_IMC, PF_EC, etc.
+    private String name;          // Component display name
+    private String type;          // CONTRIBUTION, INTEREST, FORFEITED, DEDUCTION
+    private BigDecimal amount;    // Component amount
+    private BigDecimal percentalAmount; // Percentage amount (for partial calculations)
+}
 }

@@ -46,8 +46,6 @@ public class ClaimApplicationForfeitedComponentResponseMapper {
                 .ruleCode(entity.getRuleCode())
                 .subClaimCode(entity.getSubClaimCode())
 
-                .isActive(entity.getIsActive())
-
                 .createdBy(entity.getCreatedBy())
 
                 .createdAt(

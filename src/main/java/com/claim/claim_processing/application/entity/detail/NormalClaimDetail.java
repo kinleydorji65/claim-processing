@@ -14,10 +14,7 @@ import com.claim.claim_processing.common.entities.claim.TerminationReasonMaster;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
 
 @Entity
-@Table(
-        name = "NORMAL_CLAIM_DETAIL",
-        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA"
-)
+@Table(name = "NORMAL_CLAIM_DETAIL", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
 @Data
 @Builder
 @NoArgsConstructor
@@ -36,25 +33,16 @@ public class NormalClaimDetail {
     private ClaimApplication claimApplication;
 
     @OneToOne(fetch = FetchType.LAZY)
-@JoinColumn(name = "CLAIM_DETAIL_ID", nullable = false, unique = true)
-private ClaimDetail claimDetail;
+    @JoinColumn(name = "CLAIM_DETAIL_ID", nullable = false, unique = true)
+    private ClaimDetail claimDetail;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CESSATION_TYPE_ID")
     private CessationTypeMaster cessationType;
 
-    @Column(name = "DATE_OF_TERMINATION")
-    private LocalDate dateOfTermination;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PAYEE_TYPE_ID", nullable = false)
     private PayeeTypeMaster payeeType;
-
-    @Column(name = "PF_JOINING_DATE")
-    private LocalDate pfJoiningDate;
-
-    @Column(name = "PENSION_JOINING_DATE")
-    private LocalDate pensionJoiningDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TERMINATION_REASON_TYPE_ID")
@@ -69,23 +57,14 @@ private ClaimDetail claimDetail;
     @Column(name = "RELIEVING_ORDER_NUMBER", length = 100)
     private String relievingOrderNumber;
 
-    @Column(name = "RELIEVING_ORDER_DATE")
-    private LocalDate relievingOrderDate;
-
     @Column(name = "CESSATION_EFFECTIVE_DATE")
     private LocalDate cessationEffectiveDate;
-
-    @Column(name = "EXIT_DATE")
-    private LocalDate exitDate;
 
     @Column(name = "DATE_OF_SERVICE_JOINING")
     private LocalDate dateOfServiceJoining;
 
     @Column(name = "FINAL_BASIC_SALARY")
     private BigDecimal finalBasicSalary;
-
-    @Column(name = "NON_CONTRIBUTION_MONTHS")
-    private Integer nonContributionMonths;
 
     @Column(name = "REMARKS", length = 1000)
     private String remarks;

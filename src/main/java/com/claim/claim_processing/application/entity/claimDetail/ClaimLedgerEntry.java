@@ -1,4 +1,4 @@
-package com.claim.claim_processing.common.entities.claim;
+package com.claim.claim_processing.application.entity.claimDetail;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

@@ -3,6 +3,7 @@ package com.claim.claim_processing.integration.contribution.dto;
 import lombok.Builder;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonAlias;
@@ -26,6 +27,12 @@ public class MemberContributionSummary {
     @JsonProperty("components")
     @JsonAlias({ "componentGroups", "components" })
     private List<ComponentGroup> componentGroups;
+
+    // ========== NEW: As-Of-Date Fields (MISSING) ==========
+    private LocalDate asOfDate;                    // ← MISSING
+    private String latestSnapshotYear;             // ← MISSING
+    private String currentAccountingYear;          // ← MISSING
+    private BigDecimal openingBalanceFromSnapshot; // ← MISSING
 
     // ========== NEW: Excess Service Fields ==========
     private BigDecimal excessServiceAmount;
@@ -98,5 +105,39 @@ public class MemberContributionSummary {
             total = total.add(excessServiceAmount);
         }
         return total;
+    }
+
+    // ========== Additional Helper Methods ==========
+    
+    /**
+     * Check if this calculation is based on current date or a specific date
+     */
+    public boolean isAsOfCurrentDate() {
+        return asOfDate != null && asOfDate.equals(LocalDate.now());
+    }
+    
+    /**
+     * Get the current year contribution total (principal + interest)
+     */
+    public BigDecimal getCurrentYearTotal() {
+        if (openingBalanceFromSnapshot == null || totalBalance == null) {
+            return BigDecimal.ZERO;
+        }
+        return totalBalance.subtract(openingBalanceFromSnapshot);
+    }
+    
+    /**
+     * Get the percentage of excess service
+     */
+    public BigDecimal getExcessPercentage() {
+        if (totalBalance == null || totalBalance.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        if (!hasExcessService()) {
+            return BigDecimal.ZERO;
+        }
+        return excessServiceAmount
+            .divide(totalBalance, 4, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.valueOf(100));
     }
 }

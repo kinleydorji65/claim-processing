@@ -37,6 +37,7 @@ import com.claim.claim_processing.application.DTO.response.detail.BeneficiarySet
 import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.PartialWithdrawalResponseDto;
+import com.claim.claim_processing.application.entity.claimDetail.ClaimAccountingEvent;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimBankDetail;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimCalculationComponent;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimCalculationSummary;
@@ -44,6 +45,7 @@ import com.claim.claim_processing.application.entity.claimDetail.ClaimDeductionD
 import com.claim.claim_processing.application.entity.claimDetail.ClaimDeductionItem;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimForfeitedComponent;
+import com.claim.claim_processing.application.entity.claimDetail.ClaimLedgerEntry;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimRuleEvaluation;
 import com.claim.claim_processing.application.entity.detail.BeneficiaryClaimantDetail;
 import com.claim.claim_processing.application.entity.detail.BeneficiarySettlementDetail;
@@ -52,6 +54,7 @@ import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 import com.claim.claim_processing.application.entity.detail.PartialWithdrawalDetail;
 import com.claim.claim_processing.application.mapper.claimDetail.AllClaimDetailMapper;
 import com.claim.claim_processing.application.mapper.claimDetail.GeneralClaimDetailMapper;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimAccountingEventRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimBankDetailRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimCalculationComponentRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimCalculationSummaryRepository;
@@ -68,8 +71,6 @@ import com.claim.claim_processing.application.service.claimDetail.ClaimDetailSer
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.StageResponseDto;
 import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
-import com.claim.claim_processing.common.entities.claim.ClaimAccountingEvent;
-import com.claim.claim_processing.common.entities.claim.ClaimLedgerEntry;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.common.CoaMainAccount;
 import com.claim.claim_processing.common.entities.common.CoaSubAccount;
@@ -83,7 +84,6 @@ import com.claim.claim_processing.common.entities.others.agency.agencyRelated.Ag
 import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
 import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategoryRepository;
 import com.claim.claim_processing.common.repository.beneficiary.ClaimantTypeRepository;
-import com.claim.claim_processing.common.repository.claim.ClaimAccountingEventRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeMasterRepository;
 import com.claim.claim_processing.common.repository.common.StageRepository;
 import com.claim.claim_processing.common.repository.common.SubmissionChannelRepository;
@@ -119,7 +119,6 @@ public class ClaimDetailServiceImpl implements ClaimDetailService {
     private final AgencyCategoryRepository agencyCategoryRepository;
     private final SpecialCaseAuthorityRepository specialCaseAuthorityRepository;
     private final StatusMasterRepository statusMasterRepository;
-    private final StageRepository stageRepository;
     private final SchemeTypeRepository schemeTypeRepository;
     private final SubClaimMappingRepository subClaimMappingRepository;
     private final ComponentMasterRepository componentMasterRepository;
@@ -184,23 +183,6 @@ public class ClaimDetailServiceImpl implements ClaimDetailService {
                     .orElseThrow(() -> new RuntimeException(
                             "Agency Category not found with ID: " + requestResponse.getMemberCategoryId()));
             claimDetail.setMemberCategory(agencyCategory);
-        }
-
-        // Set Special Case Authority (handle null)
-        if (requestResponse.getSpecialCaseAuthorityId() != null) {
-            SpecialCaseRefundAuthorityMaster specialCaseRefundAuthorityMaster = specialCaseAuthorityRepository
-                    .findById(requestResponse.getSpecialCaseAuthorityId())
-                    .orElseThrow(() -> new RuntimeException("Special Case Refund Authority not found with ID: "
-                            + requestResponse.getSpecialCaseAuthorityId()));
-            claimDetail.setSpecialCaseAuthority(specialCaseRefundAuthorityMaster);
-        }
-
-        // Set Stage
-        if (requestResponse.getCurrentStageId() != null) {
-            StageMaster stageMaster = stageRepository.findById(requestResponse.getCurrentStageId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "Stage not found with ID: " + requestResponse.getCurrentStageId()));
-            claimDetail.setCurrentStage(stageMaster);
         }
 
         // Set Scheme Type
@@ -450,12 +432,7 @@ private NormalClaimResponseDto mapNormalClaimDetail(ClaimDetail claimDetail) {
                     normalClaimDetail.getTerminationReasonType().getId() : null)
             .terminationReasonTypeName(normalClaimDetail.getTerminationReasonType() != null ? 
                     normalClaimDetail.getTerminationReasonType().getName() : null)
-            .dateOfTermination(normalClaimDetail.getDateOfTermination())
-            .pfJoiningDate(normalClaimDetail.getPfJoiningDate())
-            .pensionJoiningDate(normalClaimDetail.getPensionJoiningDate())
-            .relievingOrderDate(normalClaimDetail.getRelievingOrderDate())
             .cessationEffectiveDate(normalClaimDetail.getCessationEffectiveDate())
-            .exitDate(normalClaimDetail.getExitDate())
             .dateOfServiceJoining(normalClaimDetail.getDateOfServiceJoining())
             .terminatedBy(normalClaimDetail.getTerminatedBy())
             .terminationRemarks(normalClaimDetail.getTerminationRemarks())
@@ -463,7 +440,6 @@ private NormalClaimResponseDto mapNormalClaimDetail(ClaimDetail claimDetail) {
             .relievingReferenceNumber(normalClaimDetail.getRelievingReferenceNumber())
             .lastPayMonth(normalClaimDetail.getLastPayMonth())
             .finalBasicSalary(normalClaimDetail.getFinalBasicSalary())
-            .nonContributionMonths(normalClaimDetail.getNonContributionMonths())
             .remarks(normalClaimDetail.getRemarks())
             .createdBy(normalClaimDetail.getCreatedBy())
             .createdAt(normalClaimDetail.getCreatedAt() != null ? 
@@ -499,7 +475,6 @@ private PartialWithdrawalResponseDto mapPartialWithdrawalDetail(ClaimDetail clai
                     partialWithdrawalDetail.getWithdrawalReason().getId() : null)
             .withdrawalReasonName(partialWithdrawalDetail.getWithdrawalReason() != null ? 
                     partialWithdrawalDetail.getWithdrawalReason().getName() : null)
-            .requestedWithdrawalAmount(partialWithdrawalDetail.getRequestedWithdrawalAmount())
             .actualWithdrawalAmount(partialWithdrawalDetail.getActualWithdrawalAmount())
             .unemploymentStartDate(partialWithdrawalDetail.getUnemploymentStartDate())
             .disabilityDate(partialWithdrawalDetail.getDisabilityDate())
@@ -571,13 +546,11 @@ private ClaimCalculationSummaryResponseDto mapCalculationSummary(ClaimDetail cla
             .id(calculationSummary.getId())
             .calculationEffectiveDate(calculationSummary.getCalculationEffectiveDate())
             .finalPayableAmount(calculationSummary.getFinalPayableAmount())
-            .actualAmountCalculated(calculationSummary.getActualAmountCalculated())
             .totalAmount(calculationSummary.getTotalAmount())
             .isPfEligible(calculationSummary.getIsPfEligible())
             .isPensionEligible(calculationSummary.getIsPensionEligible())
             .totalContributionMonth(calculationSummary.getTotalContributionMonth())
             .recommendedBenefitType(calculationSummary.getRecommendedBenefitType())
-            .isActive(calculationSummary.getIsActive())
             .ruleEvaluations(mapRuleEvaluations(calculationSummary.getRuleEvaluations()))
             .createdBy(calculationSummary.getCreatedBy())
             .createdAt(calculationSummary.getCreatedAt() != null ? calculationSummary.getCreatedAt().toLocalDateTime() : null)
@@ -602,12 +575,8 @@ private List<ClaimRuleEvaluationListDto> mapRuleEvaluations(List<ClaimRuleEvalua
                         .subClaimType(rule.getSubRule().getSubClaimType())
                         .subClaimDesc(rule.getSubRule().getSubClaimDesc())
                         .ruleCode(rule.getSubRule().getRuleType().getCode())
-                        .isRuleApplied(rule.getIsRuleApplied())
-                        .resultMessage(rule.getResultMessage())
-                        .evaluatedBy(rule.getEvaluatedBy())
                         .evaluatedAt(rule.getEvaluatedAt().toLocalDateTime())
                         .remarks(rule.getRemarks())
-                        .isActive(rule.getIsActive())
                         .components(mapCalculationComponents(rule.getComponents()))
                         .build();
             })
@@ -630,9 +599,6 @@ private List<ClaimCalculationComponentDto> mapCalculationComponents(List<ClaimCa
                         .componentCode(component.getComponentMaster().getCode())
                         .componentName(component.getComponentMaster().getName())
                         .amount(component.getAmount())
-                        .isDeduction(component.getIsDeduction())
-                        .notes(component.getNotes())
-                        .isActive(component.getIsActive())
                         .createdBy(component.getCreatedBy())
                         .createdAt(component.getCreatedAt() != null ? component.getCreatedAt().toLocalDateTime() : null)
                         .updatedBy(component.getUpdatedBy())
@@ -643,14 +609,14 @@ private List<ClaimCalculationComponentDto> mapCalculationComponents(List<ClaimCa
 }
 
 private AccountingEventResponseDto mapAccountingEvent(ClaimDetail claimDetail) {
-    ClaimAccountingEvent accountingEvent = claimAccountingEventRepository.findByClaimDetailId(claimDetail.getId()).orElse(null);
+    ClaimAccountingEvent accountingEvent = claimAccountingEventRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
 if (accountingEvent == null) {
         return null;
     }
     return AccountingEventResponseDto.builder()
             .id(accountingEvent.getId())
             .eventType(accountingEvent.getEventType())
-            .claimDetailId(accountingEvent.getClaimDetailId())
+            .claimDetailId(claimDetail.getId())
             .claimApplicationNumber(accountingEvent.getClaimApplicationNumber())
             .nppfNumber(accountingEvent.getNppfNumber())
             .identityNumber(accountingEvent.getIdentityNumber())
@@ -658,10 +624,7 @@ if (accountingEvent == null) {
             .agencyCategoryId(accountingEvent.getAgencyCategoryId())
             .agencyCode(accountingEvent.getAgencyCode())
             .agencyName(accountingEvent.getAgencyName())
-            .tranCode(accountingEvent.getTranCode())
             .status(accountingEvent.getStatus())
-            .totalDr(accountingEvent.getTotalDr())
-            .totalCr(accountingEvent.getTotalCr())
             .narration(accountingEvent.getNarration())
             .postedBy(accountingEvent.getPostedBy())
             .postedAt(accountingEvent.getPostedAt())
@@ -719,8 +682,6 @@ private List<ClaimForfeitedComponentResponseDto> mapForfeitedComponents(ClaimDet
                         .amount(component.getAmount())
                         .ruleCode(component.getRuleCode())
                         .subClaimCode(component.getSubClaimCode())
-                        .reason(component.getReason())
-                        .isActive(component.getIsActive())
                         .createdBy(component.getCreatedBy())
                         .createdAt(component.getCreatedAt() != null ? component.getCreatedAt().toLocalDateTime() : null)
                         .updatedBy(component.getUpdatedBy())
@@ -770,14 +731,9 @@ private ClaimDeductionResponseDto mapDeductionDetail(ClaimDetail claimDetail) {
     return ClaimDeductionResponseDto.builder()
             .id(deductionDetail.getId())
             .outstandingAmount(deductionDetail.getOutstandingAmount())
-            .systemDeductedAmount(deductionDetail.getSystemDeductedAmount())
             .verifiedDeductedAmount(deductionDetail.getVerifiedDeductedAmount())
             .approvedDeductedAmount(deductionDetail.getApprovedDeductedAmount())
             .deductedAmount(deductionDetail.getDeductedAmount())
-            .isAutoApplied(deductionDetail.getIsAutoApplied())
-            .isManualOverride(deductionDetail.getIsManualOverride())
-            .isActive(deductionDetail.getIsActive())
-            .overrideReason(deductionDetail.getOverrideReason())
             .remarks(deductionDetail.getRemarks())
             .deductionItems(mapDeductionItems(deductionDetail.getDeductionItems()))
             .createdBy(deductionDetail.getCreatedBy())
@@ -797,14 +753,10 @@ private List<ClaimDeductionItemResponseDto> mapDeductionItems(List<ClaimDeductio
                 return ClaimDeductionItemResponseDto.builder()
                         .id(item.getId())
                         .deductionCategory(item.getDeductionCategory())
-                        .referenceNumber(item.getReferenceNumber())
-                        .referenceName(item.getReferenceName())
                         .outstandingAmount(item.getOutstandingAmount())
                         .deductedAmount(item.getDeductedAmount())
                         .remainingAmount(item.getRemainingAmount())
-                        .priorityOrder(item.getPriorityOrder())
                         .remarks(item.getRemarks())
-                        .isActive(item.getIsActive())
                         .createdBy(item.getCreatedBy())
                         .createdAt(item.getCreatedAt() != null ? item.getCreatedAt().toLocalDateTime() : null)
                         .updatedBy(item.getUpdatedBy())

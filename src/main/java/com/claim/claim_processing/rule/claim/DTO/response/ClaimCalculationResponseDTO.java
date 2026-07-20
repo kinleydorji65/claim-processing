@@ -9,8 +9,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.claim.claim_processing.integration.loanAdjustment.dto.LoanAdjustmentResultDto;
-import com.claim.claim_processing.integration.loanAdjustment.dto.RentalAdjustmentResultDto;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 
 @Data
@@ -28,8 +26,8 @@ public class ClaimCalculationResponseDTO {
     private Integer totalContributionMonths;
     private Integer totalNonContributionMonths;
     private String eligibilityNote;
-    private LoanAdjustmentResultDto loanAdjustmentResult;
-    private RentalAdjustmentResultDto rentalAdjustmentResult;
+    private String loanNote;
+    private String rentalNote;
 
     private String vestingNote;
 
@@ -57,6 +55,7 @@ public class ClaimCalculationResponseDTO {
         private String expression; // MC+IMC
         private List<String> resolvedCodes; // PF_MC, PF_IMC
         private BigDecimal expressionAmount; // 5200
+        private BigDecimal precentalWithDrawalAmount;
         private BigDecimal withdrawalPercentage;
         private String type; // ELIGIBLE / FORFEITED
     }
@@ -71,6 +70,7 @@ public class ClaimCalculationResponseDTO {
         private String name;
         private String type; // CONTRIBUTION or INTEREST
         private BigDecimal amount;
+        private BigDecimal percentalAmount;
     }
 
     @Data
@@ -78,8 +78,6 @@ public class ClaimCalculationResponseDTO {
     public static class DeductionAdjustmentResultDto {
 
         private String deductionCategory;
-
-        private Long referenceId;
 
         private String referenceName;
 

@@ -1,6 +1,5 @@
 package com.claim.claim_processing.application.entity.claimDetail;
 
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,19 +32,6 @@ public class ClaimCalculationComponent {
         @Column(name = "AMOUNT", precision = 15, scale = 2)
         private BigDecimal amount;
 
-        @Enumerated(EnumType.STRING)
-        @Column(name = "IS_DEDUCTION", length = 1)
-        @Builder.Default
-        private ActivityEnum isDeduction = ActivityEnum.N;
-
-        @Column(name = "NOTES", length = 1000)
-        private String notes;
-
-        @Enumerated(EnumType.STRING)
-        @Column(name = "IS_ACTIVE", length = 1)
-        @Builder.Default
-        private ActivityEnum isActive = ActivityEnum.Y;
-
         @Column(name = "CREATED_BY", length = 100)
         private String createdBy;
 
@@ -57,4 +43,16 @@ public class ClaimCalculationComponent {
 
         @Column(name = "UPDATED_AT", insertable = false, updatable = false)
         private Timestamp updatedAt;
+
+        @PrePersist
+        public void prePersist() {
+                Timestamp now = new Timestamp(System.currentTimeMillis());
+                createdAt = now;
+                updatedAt = now;
+        }
+
+        @PreUpdate
+        public void preUpdate() {
+                updatedAt = new Timestamp(System.currentTimeMillis());
+        }
 }

@@ -3,8 +3,6 @@ package com.claim.claim_processing.application.entity.claimDetail;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,7 +29,7 @@ public class ClaimForfeitedComponent {
     )
     private ClaimDetail claimDetail;
 
-    @Column(name = "COMPONENT_CODE", length = 50, nullable = false)
+     @Column(name = "COMPONENT_CODE", length = 50, nullable = false)
     private String componentCode;
 
     @Column(name = "COMPONENT_NAME", length = 100)
@@ -51,11 +49,6 @@ public class ClaimForfeitedComponent {
 
     @Column(name = "SUB_CLAIM_CODE", length = 100)
     private String subClaimCode;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "IS_ACTIVE", length = 1)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;

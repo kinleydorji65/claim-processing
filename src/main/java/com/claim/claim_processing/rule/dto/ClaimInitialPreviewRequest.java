@@ -17,6 +17,7 @@ public class ClaimInitialPreviewRequest {
     private Long cessationTypeId;
     private String nppfNumber;
     private String identityNumber;
+    private String isVerifier;
     private Long reasonTypeId;
 
     private LocalDate cessationDate;

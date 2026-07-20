@@ -54,6 +54,8 @@ protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberD
     }
     
     responseDto.setDateOfServiceJoiningDate(memberDetail.getWorkInfo().getServiceJoiningDate());
+    responseDto.setContactNo(memberDetail.getContactNo() != null && memberDetail.getContactNo() > 0 ? memberDetail.getContactNo().toString() : null);
+    responseDto.setEmail(memberDetail.getEmail());
     responseDto.setMemberCategory(getAgencyCategoryName(memberDetail.getAgencyCategoryId()));
     responseDto.setMemberCategoryId(memberDetail.getAgencyCategoryId());
     responseDto.setIdentityTypeName(identityTypeName);

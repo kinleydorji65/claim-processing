@@ -1,13 +1,11 @@
-package com.claim.claim_processing.common.entities.claim;
+package com.claim.claim_processing.application.entity.claimDetail;
 
-import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,9 +25,6 @@ public class ClaimAccountingEvent {
 
     @Column(name = "EVENT_TYPE", nullable = false)
     private String eventType;
-
-    @Column(name = "CLAIM_DETAIL_ID", nullable = false)
-    private Long claimDetailId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLAIM_DETAIL_ID", insertable = false, updatable = false)
@@ -59,9 +54,6 @@ public class ClaimAccountingEvent {
     @Column(name = "CLAIM_TYPE_ID")
     private Long claimTypeId;
 
-    @Column(name = "CLAIM_TYPE_NAME")
-    private String claimTypeName;
-
     @Column(name = "CLAIM_APPLICATION_NUMBER")
     private String claimApplicationNumber;
 
@@ -75,21 +67,8 @@ public class ClaimAccountingEvent {
     @Column(name = "ACCOUNTING_YEAR")
     private String accountingYear;
 
-    // Transaction Information
-    @Column(name = "TRAN_CODE")
-    private String tranCode;
-
     @Column(name = "STATUS")
     private String status;
-
-    @Column(name = "TOTAL_DR", nullable = false)
-    private BigDecimal totalDr;
-
-    @Column(name = "TOTAL_CR", nullable = false)
-    private BigDecimal totalCr;
-
-    @Column(name = "REVERSAL_OF_EVENT_ID")
-    private Long reversalOfEventId;
 
     @Column(name = "NARRATION")
     private String narration;
@@ -100,12 +79,6 @@ public class ClaimAccountingEvent {
 
     @Column(name = "POSTED_AT")
     private LocalDateTime postedAt;
-
-    @Column(name = "REVERSED_BY")
-    private String reversedBy;
-
-    @Column(name = "REVERSED_AT")
-    private LocalDateTime reversedAt;
 
     @Column(name = "CREATED_BY")
     private String createdBy;
@@ -130,12 +103,6 @@ public class ClaimAccountingEvent {
         }
         if (status == null) {
             status = "PENDING";
-        }
-        if (totalDr == null) {
-            totalDr = BigDecimal.ZERO;
-        }
-        if (totalCr == null) {
-            totalCr = BigDecimal.ZERO;
         }
     }
 

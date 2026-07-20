@@ -60,11 +60,17 @@ public class ClaimApplication {
     @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "SCHEME_TYPE_ID")
     private SchemeType schemeType;
 
-    @Column(name = "PF_JOINING_DATE")
-    private LocalDate pfJoiningDate;
+    @Column(name = "PF_START_DATE")
+    private LocalDate pfStartDate;
 
-    @Column(name = "PENSION_JOINING_DATE")
-    private LocalDate pensionJoiningDate;
+    @Column(name = "PF_END_DATE")
+    private LocalDate pfEndDate;
+
+    @Column(name = "PENSION_START_DATE")
+    private LocalDate pensionStartDate;
+
+    @Column(name = "PENSION_END_DATE")
+    private LocalDate pensionEndDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "MEMBER_CATEGORY_ID", referencedColumnName = "CATEGORY_ID")
@@ -75,6 +81,12 @@ public class ClaimApplication {
 
     @Column(name = "MEMBER_CODE", length = 100)
     private String memberCode;
+
+    @Column(name = "CONTACT_NO", length = 100)
+    private String contactNo;
+
+    @Column(name = "EMAIL", length = 100)
+    private String email;
 
     @Column(name = "NPPF_NUMBER", length = 100)
     private String nppfNumber;
@@ -108,9 +120,13 @@ public class ClaimApplication {
     @Column(name = "IS_SPECIAL_CASE", length = 1)
     private ActivityEnum isSpecialCase;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SPECIAL_CASE_AUTHORITY_ID")
-    private SpecialCaseRefundAuthorityMaster specialCaseAuthority;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_RENTAL_APPLIED", length = 1)
+    private ActivityEnum isRentalApplied;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_LOAN_APPLIED", length = 1)
+    private ActivityEnum isLoanApplied;
 
     @Column(name = "CURRENCY_CODE", length = 10)
     private String currencyCode;
@@ -188,12 +204,6 @@ public class ClaimApplication {
 
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private ClaimApplicationVerification verificationDetail;
-
-    // ---------- Posting ----------
-
-    // @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
-    // @Builder.Default
-    // private List<ClaimApplicationPosting> postings = new ArrayList<>();
 
     
     @PrePersist

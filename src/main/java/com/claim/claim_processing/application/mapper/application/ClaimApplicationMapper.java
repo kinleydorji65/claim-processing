@@ -21,21 +21,13 @@ public interface ClaimApplicationMapper {
     @Mapping(target = "submissionChannel", ignore = true)
     @Mapping(target = "schemeType", ignore = true)
     @Mapping(target = "memberCategory", ignore = true)
-    @Mapping(target = "specialCaseAuthority", ignore = true)
     @Mapping(target = "currentStage", ignore = true)
     @Mapping(target = "status", ignore = true)
 
     @Mapping(target = "normalClaimDetail", ignore = true)
     @Mapping(target = "partialWithdrawalDetail", ignore = true)
     @Mapping(target = "beneficiarySettlementDetail", ignore = true)
-    // @Mapping(target = "legalRecoveryDetail", ignore = true)
-
-    @Mapping(target = "bankDetails", ignore = true)
-    @Mapping(target = "deductionDetail", ignore = true)
-    @Mapping(target = "calculationSummary", ignore = true)
-    @Mapping(target = "verificationDetail", ignore = true)
-    @Mapping(target = "approvalDetail", ignore = true)
-    @Mapping(target = "workflows", ignore = true)
+    @Mapping(target = "legalRecoveryDetail", ignore = true)
 
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -51,7 +43,6 @@ public interface ClaimApplicationMapper {
     @Mapping(target = "submissionChannel", ignore = true)
     @Mapping(target = "schemeType", ignore = true)
     @Mapping(target = "memberCategory", ignore = true)
-    @Mapping(target = "specialCaseAuthority", ignore = true)
     @Mapping(target = "currentStage", ignore = true)
     @Mapping(target = "status", ignore = true)
 

@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.claim.claim_processing.rule.claim.DTO.response.SpecialCasePreviewResponse.NormalClaimDto;
 
 @Data
 @Builder
@@ -29,6 +32,8 @@ public class SpecialCasePreviewResponse {
         private PensionToLumpSumConversion pensionToLumpSum;
         // For CLAIM_FORFEITED_COMPONENT
         private ForfeitedComponentClaim forfeitedComponentClaim;
+        
+        private NormalClaimDto normalClaimDto;
     }
     
     @Data
@@ -60,5 +65,26 @@ public class SpecialCasePreviewResponse {
         private Long reserveAccountId;
         private LocalDateTime forfeitedDate;
         private String componentCodes;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NormalClaimDto {
+        private Integer totalContributionMonths;
+        private Integer totalNonContributionMonths;
+        private BigDecimal totalPensionAmount;
+        private BigDecimal totalPfAmount;
+        private List<ComponentDto> Components;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ComponentDto {
+        private String component;
+        private String componentAmount;
     }
 }

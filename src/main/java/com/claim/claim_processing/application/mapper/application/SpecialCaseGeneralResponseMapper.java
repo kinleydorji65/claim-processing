@@ -35,8 +35,15 @@ public class SpecialCaseGeneralResponseMapper {
                 .officeId(entity.getOfficeId() != null ? entity.getOfficeId() : null)
 
                 .applicationDate(entity.getApplicationDate())
-                .pfJoiningDate(entity.getPfJoiningDate())
-                .pensionJoiningDate(entity.getPensionJoiningDate())
+                .email(entity.getEmail())
+                .contactNo(entity.getContactNo())
+                .pfStartDate(entity.getPfStartDate())
+                .pfEndDate(entity.getPfEndDate())
+                .pensionStartDate(entity.getPensionStartDate())
+                .pensionEndDate(entity.getPensionEndDate())
+                
+                .isLoanApplied(entity.getIsLoanApplied())
+                .isRentalApplied(entity.getIsRentalApplied())
 
                 .onBehalfOfMember(entity.getOnBehalfOfMember())
                 .initiatedBy(entity.getInitiatedBy())
@@ -44,8 +51,6 @@ public class SpecialCaseGeneralResponseMapper {
 
                 .isSpecialCase(entity.getIsSpecialCase())
                 .isActive(entity.getIsActive())
-                .specialCaseAuthorityId(entity.getSpecialCaseAuthority() != null ? entity.getSpecialCaseAuthority().getId() : null)
-                .specialCaseAuthorityName(entity.getSpecialCaseAuthority() != null ? entity.getSpecialCaseAuthority().getName() : null)
                 .claimedBy(entity.getClaimedBy())
                 .unClaimedBy(entity.getUnClaimedBy())
                 .currencyCode(entity.getCurrencyCode())

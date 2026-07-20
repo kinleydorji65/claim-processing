@@ -3,6 +3,7 @@ package com.claim.claim_processing.application.DTO.response.claimDetail;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.*;
 
@@ -68,4 +69,19 @@ public class ClaimSpecialCaseResponse {
     private LocalDateTime createdAt;
     private String updatedBy;
     private LocalDateTime updatedAt;
+
+    private List<SpecialCaseComponentBalanceResponseDTO> components;
+
+     @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SpecialCaseComponentBalanceResponseDTO {
+        private Long id;
+        private String code; // PF_MC, PF_IMC, PF_EC, etc.
+        private String name; // Component display name
+        private String type; // CONTRIBUTION, INTEREST, FORFEITED, DEDUCTION
+        private BigDecimal amount; // Component amount
+        private BigDecimal percentalAmount; // Percentage amount (for partial calculations)
+    }
 }

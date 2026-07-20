@@ -47,6 +47,7 @@ public class ClaimApplicationRequestDto {
     private String agencyCode;
 
     private Long officeId;
+    
 
     // ---------------------------------
     // Dates
@@ -55,10 +56,22 @@ public class ClaimApplicationRequestDto {
     private LocalDate applicationDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pfJoiningDate;
+    private LocalDate pfStartDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pensionJoiningDate;
+    private LocalDate pfEndDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate pensionEndDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate pensionStartDate;
+
+    private ActivityEnum isLoanApplied;
+    private ActivityEnum isRentalApplied;
+
+    private String email;
+    private String contactNo;
 
     // ---------------------------------
     // Claim Information

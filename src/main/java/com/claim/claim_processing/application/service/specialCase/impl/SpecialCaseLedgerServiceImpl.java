@@ -4,14 +4,15 @@ import com.claim.claim_processing.application.DTO.request.GeneralSpecialCaseResp
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto;
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto.LedgerEntryResponseDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimSpecialCaseResponse;
+import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimSpecialCaseResponse.SpecialCaseComponentBalanceResponseDTO;
+import com.claim.claim_processing.application.entity.claimDetail.ClaimAccountingEvent;
+import com.claim.claim_processing.application.entity.claimDetail.ClaimLedgerEntry;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimAccountingEventRepository;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimLedgerEntryRepository;
 import com.claim.claim_processing.application.service.specialCase.SpecialCaseLedgerService;
-import com.claim.claim_processing.common.entities.claim.ClaimAccountingEvent;
-import com.claim.claim_processing.common.entities.claim.ClaimLedgerEntry;
 import com.claim.claim_processing.common.entities.common.CoaAccountMapping;
 import com.claim.claim_processing.common.entities.common.CoaSubAccount;
 import com.claim.claim_processing.common.entities.others.member.MemberDetail;
-import com.claim.claim_processing.common.repository.claim.ClaimAccountingEventRepository;
-import com.claim.claim_processing.common.repository.claim.ClaimLedgerEntryRepository;
 import com.claim.claim_processing.common.repository.common.CoaAccountMappingRepository;
 import com.claim.claim_processing.common.repository.common.CoaMainAccountRepository;
 import com.claim.claim_processing.common.repository.common.CoaSubAccountRepository;
@@ -51,6 +52,11 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
     private static final String COMPONENT_LAPSED_CONVERSION = "LAPSED_CONVERSION";
     private static final String COMPONENT_BANK = "BANK";
 
+    // Case Types
+    private static final String CASE_TYPE_PENSION_TO_LUMPSUM = "CONVERSION_FROM_PENSION_TO_LUMSUM";
+    private static final String CASE_TYPE_CLAIM_FORFEITED = "CLAIM_FORFEITED_COMPONENT";
+    private static final String CASE_TYPE_SPECIAL_NORMAL_CLAIM = "SPECIAL_NORMAL_CLAIM";
+
     @Override
     @Transactional
     public AccountingEventResponseDto createSpecialCaseLedgerEntries(
@@ -78,11 +84,13 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
         }
 
         String agencyCategoryId = specialCaseResponse.getMemberCategoryId();
-        String tranCode = "SPC"; // Special Case tran code
+        String caseType = specialCaseResponse.getSpecialCaseDetail() != null 
+                ? specialCaseResponse.getSpecialCaseDetail().getCaseType() 
+                : null;
 
-        // 3. Build component amounts for special case conversion
-        Map<String, BigDecimal> componentAmounts = buildSpecialCaseComponentAmounts(specialCaseResponse);
-        log.info("Special Case Components: {}", componentAmounts);
+        // 3. Build component amounts based on case type
+        Map<String, BigDecimal> componentAmounts = buildComponentAmountsByCaseType(specialCaseResponse);
+        log.info("Special Case Components for case type '{}': {}", caseType, componentAmounts);
 
         if (componentAmounts.isEmpty()) {
             throw new RuntimeException("No component amounts found for special case: " + 
@@ -93,8 +101,8 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
         BigDecimal totalEligible = calculateTotalAmount(componentAmounts);
         log.info("Total Eligible Amount: {}", totalEligible);
 
-        // 5. Get final payable amount
-        BigDecimal finalPayable = totalEligible;
+        // 5. Get final payable amount based on case type
+        BigDecimal finalPayable = getFinalPayableByCaseType(specialCaseResponse);
         log.info("Final Payable Amount: {}", finalPayable);
 
         // 6. Get COA Mappings for SPECIAL_CASE
@@ -116,7 +124,7 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
 
         // 7. Create and SAVE Accounting Event
         ClaimAccountingEvent event = createSpecialCaseAccountingEvent(
-                specialCaseResponse, tranCode, createdBy);
+                specialCaseResponse, createdBy);
         event = accountingEventRepository.save(event);
         log.info("Accounting Event created with ID: {}", event.getId());
 
@@ -124,7 +132,7 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
         List<ClaimLedgerEntry> ledgerEntries = new ArrayList<>();
         int seqNo = 0;
 
-        // 8a. Process DEBIT mappings (PENSION_CONVERSION and LAPSED_CONVERSION)
+        // 8a. Process DEBIT mappings for each component
         for (CoaAccountMapping mapping : specialCaseMappings) {
             String componentCode = mapping.getComponentCode();
 
@@ -135,11 +143,6 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
 
             BigDecimal amount = componentAmounts.getOrDefault(componentCode, BigDecimal.ZERO);
             
-            // If amount is zero, try to find using alternative component codes
-            if (amount.compareTo(BigDecimal.ZERO) == 0) {
-                amount = findAmountByAlternativeCode(componentCode, componentAmounts);
-            }
-
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                 log.debug("Skipping zero amount for component: {}", componentCode);
                 continue;
@@ -153,7 +156,7 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
                     .seqNo(seqNo)
                     .mainAccountCode(mapping.getMainAccountCode())
                     .subAccountCode(mapping.getSubAccountCode())
-                    .drcr("D") // DEBIT for special case conversion
+                    .drcr(mapping.getDrcr()) // DEBIT for special case conversion
                     .amount(amount)
                     .entryRole(mapping.getEntryRole())
                     .componentCode(componentCode)
@@ -179,7 +182,7 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
                         .seqNo(seqNo)
                         .mainAccountCode(bankMapping.getMainAccountCode())
                         .subAccountCode(bankMapping.getSubAccountCode())
-                        .drcr("C")
+                        .drcr(bankMapping.getDrcr())
                         .amount(finalPayable)
                         .entryRole("BANK")
                         .componentCode(COMPONENT_BANK)
@@ -215,7 +218,6 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
             log.error("LEDGER NOT BALANCED! DR: {}, CR: {}, Difference: {}",
                     totalDr, totalCr, totalDr.subtract(totalCr));
             
-            // Log all entries for debugging
             log.debug("Ledger entries:");
             for (ClaimLedgerEntry entry : savedEntries) {
                 log.debug("SEQ: {}, DRCR: {}, Component: {}, Amount: {}", 
@@ -228,9 +230,6 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
                             ", Difference: " + totalDr.subtract(totalCr));
         }
 
-        // 12. Update event with totals and status
-        event.setTotalDr(totalDr);
-        event.setTotalCr(totalCr);
         event.setStatus(STATUS_POSTED);
         event.setPostedBy(createdBy);
         event.setPostedAt(LocalDateTime.now());
@@ -242,210 +241,280 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
         return buildResponse(updatedEvent, savedEntries);
     }
 
+    // =============================================
+    // BUILD COMPONENT AMOUNTS BY CASE TYPE
+    // =============================================
+    
     /**
-     * Build component amounts for special case conversion
-     * Special case has only TWO components: PENSION_CONVERSION and LAPSED_CONVERSION
+     * Build component amounts based on case type
      */
-    private Map<String, BigDecimal> buildSpecialCaseComponentAmounts(
-            GeneralSpecialCaseResponse specialCaseResponse) {
-        
-        Map<String, BigDecimal> componentMap = new HashMap<>();
-        
-        log.info("Building component amounts for special case conversion");
-        
-        // Get the special case detail
-        ClaimSpecialCaseResponse specialCaseDetail = specialCaseResponse.getSpecialCaseDetail();
-        
-        // Initialize amounts
-        BigDecimal totalPensionAmount = BigDecimal.ZERO;
-        BigDecimal totalLapsedAmount = BigDecimal.ZERO;
-        
-        // Get Total Pension Amount from ClaimSpecialCaseResponse
-        if (specialCaseDetail != null) {
-            // Get total pension amount
-            if (specialCaseDetail.getTotalPensionAmount() != null) {
-                totalPensionAmount = specialCaseDetail.getTotalPensionAmount();
-                log.info("Total Pension Amount from specialCaseDetail: {}", totalPensionAmount);
-            }
-            
-            // Get total forfeited/lapsed amount
-            if (specialCaseDetail.getTotalForfeitedAmount() != null) {
-                totalLapsedAmount = specialCaseDetail.getTotalForfeitedAmount();
-                log.info("Total Forfeited Amount from specialCaseDetail: {}", totalLapsedAmount);
-            }
-        }
-        
-        // Also check if there's a separate pension amount field in the main response
-        if (specialCaseResponse.getSpecialCaseDetail().getTotalPensionAmount() != null && 
-            totalPensionAmount.compareTo(BigDecimal.ZERO) == 0) {
-            totalPensionAmount = specialCaseResponse.getSpecialCaseDetail().getTotalPensionAmount();
-            log.info("Using Total Pension Amount from main response: {}", totalPensionAmount);
-        }
-        
-        // Check for eligible claim amount in specialCaseDetail
-        if (specialCaseDetail != null && specialCaseDetail.getEligibleClaimAmount() != null) {
-            BigDecimal eligibleAmount = specialCaseDetail.getEligibleClaimAmount();
-            if (eligibleAmount.compareTo(BigDecimal.ZERO) > 0) {
-                // If eligible amount is set, use it as the total amount
-                log.info("Using Eligible Claim Amount: {}", eligibleAmount);
-                // Determine which component this belongs to based on case type
-                String caseType = specialCaseDetail.getCaseType();
-                if (caseType != null) {
-                    if (caseType.contains("PENSION") || caseType.contains("CONVERSION")) {
-                        totalPensionAmount = eligibleAmount;
-                    } else if (caseType.contains("LAPSE") || caseType.contains("FORFEIT")) {
-                        totalLapsedAmount = eligibleAmount;
-                    } else {
-                        // Default to pension if case type unknown
-                        totalPensionAmount = eligibleAmount;
-                    }
-                }
-            }
-        }
-        
-        // Check requested amount in specialCaseDetail
-        if (specialCaseDetail != null && specialCaseDetail.getRequestedAmount() != null) {
-            BigDecimal requestedAmount = specialCaseDetail.getRequestedAmount();
-            if (requestedAmount.compareTo(BigDecimal.ZERO) > 0) {
-                log.info("Using Requested Amount: {}", requestedAmount);
-                // If no other amounts are set, use requested amount
-                if (totalPensionAmount.compareTo(BigDecimal.ZERO) == 0 && 
-                    totalLapsedAmount.compareTo(BigDecimal.ZERO) == 0) {
-                    // Default to pension component
-                    totalPensionAmount = requestedAmount;
-                }
-            }
-        }
-        
-        log.info("Final amounts - Pension: {}, Lapsed: {}", totalPensionAmount, totalLapsedAmount);
-        
-        // Add Pension Conversion amount
-        if (totalPensionAmount.compareTo(BigDecimal.ZERO) > 0) {
-            componentMap.put(COMPONENT_PENSION_CONVERSION, totalPensionAmount);
-            log.info("Added {}: {}", COMPONENT_PENSION_CONVERSION, totalPensionAmount);
-        }
-        
-        // Add Lapsed Conversion amount
-        if (totalLapsedAmount.compareTo(BigDecimal.ZERO) > 0) {
-            componentMap.put(COMPONENT_LAPSED_CONVERSION, totalLapsedAmount);
-            log.info("Added {}: {}", COMPONENT_LAPSED_CONVERSION, totalLapsedAmount);
-        }
-        
-        // If no amounts found, log warning with all available fields
-        if (componentMap.isEmpty()) {
-            log.warn("No component amounts found for special case conversion: {}", 
-                    specialCaseResponse.getId());
-            log.warn("Available fields:");
-            log.warn("  totalPensionAmount: {}", specialCaseResponse.getSpecialCaseDetail().getTotalPensionAmount());
-            if (specialCaseDetail != null) {
-                log.warn("  specialCaseDetail.totalPensionAmount: {}", 
-                        specialCaseDetail.getTotalPensionAmount());
-                log.warn("  specialCaseDetail.totalForfeitedAmount: {}", 
-                        specialCaseDetail.getTotalForfeitedAmount());
-                log.warn("  specialCaseDetail.eligibleClaimAmount: {}", 
-                        specialCaseDetail.getEligibleClaimAmount());
-                log.warn("  specialCaseDetail.requestedAmount: {}", 
-                        specialCaseDetail.getRequestedAmount());
-                log.warn("  specialCaseDetail.caseType: {}", 
-                        specialCaseDetail.getCaseType());
-            }
-        }
-        
-        log.info("Final Component Map: {}", componentMap);
+    /**
+ * Build component amounts based on case type
+ */
+private Map<String, BigDecimal> buildComponentAmountsByCaseType(
+        GeneralSpecialCaseResponse specialCaseResponse) {
+    
+    ClaimSpecialCaseResponse specialCaseDetail = specialCaseResponse.getSpecialCaseDetail();
+    Map<String, BigDecimal> componentMap = new HashMap<>();
+    
+    if (specialCaseDetail == null) {
+        log.warn("Special case detail is null");
         return componentMap;
     }
 
+    String caseType = specialCaseDetail.getCaseType();
+    log.info("Building component amounts for case type: {}", caseType);
+
+    // =============================================
+    // CASE 1: PENSION TO LUMP SUM CONVERSION
+    // =============================================
+    if (CASE_TYPE_PENSION_TO_LUMPSUM.equals(caseType)) {
+        log.info("Processing PENSION TO LUMP SUM CONVERSION");
+        
+        BigDecimal totalPensionAmount = specialCaseDetail.getTotalPensionAmount() != null 
+                ? specialCaseDetail.getTotalPensionAmount() : BigDecimal.ZERO;
+        BigDecimal eligibleAmount = specialCaseDetail.getEligibleClaimAmount() != null 
+                ? specialCaseDetail.getEligibleClaimAmount() : BigDecimal.ZERO;
+        
+        // Use eligible amount if available, otherwise use total pension amount
+        BigDecimal amount = eligibleAmount.compareTo(BigDecimal.ZERO) > 0 
+                ? eligibleAmount : totalPensionAmount;
+        
+        if (amount.compareTo(BigDecimal.ZERO) > 0) {
+            componentMap.put(COMPONENT_PENSION_CONVERSION, amount);
+            log.info("Added PENSION_CONVERSION: {}", amount);
+        }
+        
+        return componentMap;
+    }
+
+    // =============================================
+    // CASE 2: CLAIM FORFEITED COMPONENT
+    // =============================================
+    if (CASE_TYPE_CLAIM_FORFEITED.equals(caseType)) {
+        log.info("Processing CLAIM FORFEITED COMPONENT");
+        
+        BigDecimal totalForfeitedAmount = specialCaseDetail.getTotalForfeitedAmount() != null 
+                ? specialCaseDetail.getTotalForfeitedAmount() : BigDecimal.ZERO;
+        BigDecimal eligibleAmount = specialCaseDetail.getEligibleClaimAmount() != null 
+                ? specialCaseDetail.getEligibleClaimAmount() : BigDecimal.ZERO;
+        
+        // Use eligible amount if available (80% of forfeited), otherwise use total forfeited
+        BigDecimal amount = eligibleAmount.compareTo(BigDecimal.ZERO) > 0 
+                ? eligibleAmount : totalForfeitedAmount;
+        
+        if (amount.compareTo(BigDecimal.ZERO) > 0) {
+            componentMap.put(COMPONENT_LAPSED_CONVERSION, amount);
+            log.info("Added LAPSED_CONVERSION: {}", amount);
+        }
+        
+        return componentMap;
+    }
+
+    // =============================================
+    // CASE 3: SPECIAL NORMAL CLAIM (WITH COMPONENTS)
+    // =============================================
+    if (CASE_TYPE_SPECIAL_NORMAL_CLAIM.equals(caseType)) {
+        log.info("Processing SPECIAL NORMAL CLAIM with components");
+        
+        // Get components from specialCaseDetail
+        List<SpecialCaseComponentBalanceResponseDTO> components = specialCaseDetail.getComponents();
+        
+        if (components != null && !components.isEmpty()) {
+            log.info("Found {} components in special case detail", components.size());
+            
+            // ✅ Map each component individually using mapSpecialCaseComponentToLedgerCode
+            for (SpecialCaseComponentBalanceResponseDTO component : components) {
+                if (component != null && component.getAmount() != null 
+                    && component.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+                    
+                    // Map component code to ledger component code
+                    String ledgerCode = mapSpecialCaseComponentToLedgerCode(
+                            component.getCode(), 
+                            component.getType()
+                    );
+                    
+                    if (ledgerCode != null) {
+                        componentMap.merge(ledgerCode, component.getAmount(), BigDecimal::add);
+                        log.info("Mapped component: {} (type: {}) -> {} = {}", 
+                                component.getCode(), 
+                                component.getType(), 
+                                ledgerCode, 
+                                component.getAmount());
+                    } else {
+                        log.warn("No mapping found for component: {}, type: {}", 
+                                component.getCode(), component.getType());
+                        // Default to PENSION_CONVERSION
+                        componentMap.merge(COMPONENT_PENSION_CONVERSION, component.getAmount(), BigDecimal::add);
+                        log.info("Defaulted component: {} -> {} = {}", 
+                                component.getCode(), COMPONENT_PENSION_CONVERSION, component.getAmount());
+                    }
+                }
+            }
+            
+            // If no components were mapped, fallback to total
+            if (componentMap.isEmpty()) {
+                BigDecimal totalAmount = components.stream()
+                        .filter(Objects::nonNull)
+                        .map(SpecialCaseComponentBalanceResponseDTO::getAmount)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+                if (totalAmount.compareTo(BigDecimal.ZERO) > 0) {
+                    componentMap.put(COMPONENT_PENSION_CONVERSION, totalAmount);
+                    log.info("Added total components as PENSION_CONVERSION: {}", totalAmount);
+                }
+            }
+            
+        } else {
+            log.warn("No components found for SPECIAL_NORMAL_CLAIM, using fallback");
+            
+            // Fallback: Use eligible claim amount or requested amount
+            BigDecimal eligibleAmount = specialCaseDetail.getEligibleClaimAmount() != null 
+                    ? specialCaseDetail.getEligibleClaimAmount() : BigDecimal.ZERO;
+            BigDecimal requestedAmount = specialCaseDetail.getRequestedAmount() != null 
+                    ? specialCaseDetail.getRequestedAmount() : BigDecimal.ZERO;
+            
+            BigDecimal amount = eligibleAmount.compareTo(BigDecimal.ZERO) > 0 
+                    ? eligibleAmount : requestedAmount;
+            
+            if (amount.compareTo(BigDecimal.ZERO) > 0) {
+                componentMap.put(COMPONENT_PENSION_CONVERSION, amount);
+                log.info("Added fallback PENSION_CONVERSION: {}", amount);
+            }
+        }
+        
+        return componentMap;
+    }
+
+    // =============================================
+    // DEFAULT / UNKNOWN CASE TYPE
+    // =============================================
+    log.warn("Unknown case type: {}, using default logic", caseType);
+    
+    // Try to get any available amount
+    BigDecimal eligibleAmount = specialCaseDetail.getEligibleClaimAmount() != null 
+            ? specialCaseDetail.getEligibleClaimAmount() : BigDecimal.ZERO;
+    BigDecimal pensionAmount = specialCaseDetail.getTotalPensionAmount() != null 
+            ? specialCaseDetail.getTotalPensionAmount() : BigDecimal.ZERO;
+    BigDecimal forfeitedAmount = specialCaseDetail.getTotalForfeitedAmount() != null 
+            ? specialCaseDetail.getTotalForfeitedAmount() : BigDecimal.ZERO;
+    
+    BigDecimal amount = eligibleAmount.compareTo(BigDecimal.ZERO) > 0 
+            ? eligibleAmount 
+            : (pensionAmount.compareTo(BigDecimal.ZERO) > 0 ? pensionAmount : forfeitedAmount);
+    
+    if (amount.compareTo(BigDecimal.ZERO) > 0) {
+        componentMap.put(COMPONENT_PENSION_CONVERSION, amount);
+        log.info("Added default PENSION_CONVERSION: {}", amount);
+    }
+    
+    return componentMap;
+}
+
     /**
-     * Find amount by alternative component code
+     * Get final payable amount based on case type
      */
-    private BigDecimal findAmountByAlternativeCode(String componentCode, Map<String, BigDecimal> componentAmounts) {
-        // Map of alternative codes
-        Map<String, String> alternativeMap = new HashMap<>();
-        alternativeMap.put(COMPONENT_PENSION_CONVERSION, "PENSION_LUMP_SUM");
-        alternativeMap.put(COMPONENT_PENSION_CONVERSION, "PENSION_REFUND");
-        alternativeMap.put(COMPONENT_PENSION_CONVERSION, "PF_MC_REFUND");
-        alternativeMap.put(COMPONENT_LAPSED_CONVERSION, "LAPSE_REFUND");
-        alternativeMap.put(COMPONENT_LAPSED_CONVERSION, "FORFEITED_REFUND");
-        alternativeMap.put(COMPONENT_LAPSED_CONVERSION, "LAPSE");
-        
-        for (Map.Entry<String, String> entry : alternativeMap.entrySet()) {
-            if (componentCode.equals(entry.getKey()) && componentAmounts.containsKey(entry.getValue())) {
-                BigDecimal amount = componentAmounts.get(entry.getValue());
-                log.debug("Found amount {} for {} using alternative code {}", amount, componentCode, entry.getValue());
-                return amount;
+    private BigDecimal getFinalPayableByCaseType(GeneralSpecialCaseResponse specialCaseResponse) {
+        ClaimSpecialCaseResponse specialCaseDetail = specialCaseResponse.getSpecialCaseDetail();
+        if (specialCaseDetail == null) {
+            return BigDecimal.ZERO;
+        }
+
+        String caseType = specialCaseDetail.getCaseType();
+        log.info("Getting final payable for case type: {}", caseType);
+
+        // For PENSION_TO_LUMPSUM: use eligibleClaimAmount or totalPensionAmount
+        if (CASE_TYPE_PENSION_TO_LUMPSUM.equals(caseType)) {
+            BigDecimal eligibleAmount = specialCaseDetail.getEligibleClaimAmount() != null 
+                    ? specialCaseDetail.getEligibleClaimAmount() : BigDecimal.ZERO;
+            BigDecimal pensionAmount = specialCaseDetail.getTotalPensionAmount() != null 
+                    ? specialCaseDetail.getTotalPensionAmount() : BigDecimal.ZERO;
+            return eligibleAmount.compareTo(BigDecimal.ZERO) > 0 ? eligibleAmount : pensionAmount;
+        }
+
+        // For CLAIM_FORFEITED: use eligibleClaimAmount or totalForfeitedAmount
+        if (CASE_TYPE_CLAIM_FORFEITED.equals(caseType)) {
+            BigDecimal eligibleAmount = specialCaseDetail.getEligibleClaimAmount() != null 
+                    ? specialCaseDetail.getEligibleClaimAmount() : BigDecimal.ZERO;
+            BigDecimal forfeitedAmount = specialCaseDetail.getTotalForfeitedAmount() != null 
+                    ? specialCaseDetail.getTotalForfeitedAmount() : BigDecimal.ZERO;
+            return eligibleAmount.compareTo(BigDecimal.ZERO) > 0 ? eligibleAmount : forfeitedAmount;
+        }
+
+        // For SPECIAL_NORMAL_CLAIM: sum of all components
+        if (CASE_TYPE_SPECIAL_NORMAL_CLAIM.equals(caseType)) {
+            List<SpecialCaseComponentBalanceResponseDTO> components = specialCaseDetail.getComponents();
+            if (components != null && !components.isEmpty()) {
+                BigDecimal total = components.stream()
+                        .filter(Objects::nonNull)
+                        .map(SpecialCaseComponentBalanceResponseDTO::getAmount)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                if (total.compareTo(BigDecimal.ZERO) > 0) {
+                    return total;
+                }
             }
+            
+            // Fallback
+            BigDecimal eligibleAmount = specialCaseDetail.getEligibleClaimAmount() != null 
+                    ? specialCaseDetail.getEligibleClaimAmount() : BigDecimal.ZERO;
+            BigDecimal requestedAmount = specialCaseDetail.getRequestedAmount() != null 
+                    ? specialCaseDetail.getRequestedAmount() : BigDecimal.ZERO;
+            return eligibleAmount.compareTo(BigDecimal.ZERO) > 0 ? eligibleAmount : requestedAmount;
         }
-        
-        // Check if component code exists directly
-        if (componentAmounts.containsKey(componentCode)) {
-            return componentAmounts.get(componentCode);
-        }
-        
-        return BigDecimal.ZERO;
+
+        // Default: use eligibleClaimAmount
+        return specialCaseDetail.getEligibleClaimAmount() != null 
+                ? specialCaseDetail.getEligibleClaimAmount() : BigDecimal.ZERO;
     }
 
     /**
-     * Create Accounting Event for Special Case
+     * Map special case component code to ledger component code
      */
-    private ClaimAccountingEvent createSpecialCaseAccountingEvent(
-            GeneralSpecialCaseResponse specialCaseResponse, 
-            String tranCode,
-            String createdBy) {
+    private String mapSpecialCaseComponentToLedgerCode(String componentCode, String componentType) {
+        if (componentCode == null) {
+            return null;
+        }
         
-        LocalDateTime now = LocalDateTime.now();
-        String specialCaseReference = "SPC-" + specialCaseResponse.getId();
-
-        MemberDetail memberDetail = memberDetailRepository.findByNppfNumber(
-                specialCaseResponse.getNppfNumber())
-                .orElseThrow(() -> new RuntimeException(
-                        "Member details not found for NPPF number: " + 
-                        specialCaseResponse.getNppfNumber()));
-
-        return ClaimAccountingEvent.builder()
-                .eventType(EVENT_TYPE_SPECIAL_CASE)
-                .claimDetailId(specialCaseResponse.getId())
-                .nppfNumber(specialCaseResponse.getNppfNumber())
-                .identityNumber(memberDetail.getIdentityNumber())
-                .memberName(buildMemberName(memberDetail))
-                .agencyCategoryId(specialCaseResponse.getMemberCategoryId())
-                .agencyCode(specialCaseResponse.getAgencyCode())
-                .agencyName(specialCaseResponse.getAgencyCode())
-                .claimTypeId(specialCaseResponse.getClaimTypeId())
-                .claimTypeName(specialCaseResponse.getClaimTypeName())
-                .claimApplicationNumber(specialCaseReference)
-                .monthName(now.getMonth().name())
-                .year(String.valueOf(now.getYear()))
-                .accountingYear(String.valueOf(now.getYear()))
-                .tranCode(tranCode)
-                .status(STATUS_PENDING)
-                .totalDr(BigDecimal.ZERO)
-                .totalCr(BigDecimal.ZERO)
-                .narration("Special Case Conversion: " + specialCaseReference + " — " + 
-                          specialCaseResponse.getClaimTypeName())
-                .createdBy(createdBy)
-                .createdAt(now)
-                .build();
+        String code = componentCode.toUpperCase().trim();
+        String type = componentType != null ? componentType.toUpperCase().trim() : "";
+        
+        // PF components
+        if (code.startsWith("PF_")) {
+            if (code.contains("MC") || code.contains("EC") || code.contains("GC") || code.contains("VC")) {
+                return COMPONENT_PENSION_CONVERSION;
+            }
+        }
+        
+        // Pension components
+        if (code.startsWith("P_") || code.startsWith("PC_")) {
+            if (code.contains("MC") || code.contains("EC")) {
+                return COMPONENT_PENSION_CONVERSION;
+            }
+        }
+        
+        // Interest components
+        if (code.contains("IMC") || code.contains("IEC") || code.contains("IC")) {
+            return COMPONENT_PENSION_CONVERSION;
+        }
+        
+        // Lapsed/Forfeited components
+        if (type.contains("FORFEITED") || type.contains("LAPSED")) {
+            return COMPONENT_LAPSED_CONVERSION;
+        }
+        
+        if (code.contains("LAPSE") || code.contains("FORFEIT")) {
+            return COMPONENT_LAPSED_CONVERSION;
+        }
+        
+        // Default to pension conversion
+        return COMPONENT_PENSION_CONVERSION;
     }
 
-    private String buildMemberName(MemberDetail memberDetail) {
-        StringBuilder nameBuilder = new StringBuilder();
-        if (memberDetail.getFirstName() != null) {
-            nameBuilder.append(memberDetail.getFirstName());
-        }
-        if (memberDetail.getMiddleName() != null) {
-            if (nameBuilder.length() > 0) {
-                nameBuilder.append(" ");
-            }
-            nameBuilder.append(memberDetail.getMiddleName());
-        }
-        if (memberDetail.getLastName() != null) {
-            if (nameBuilder.length() > 0) {
-                nameBuilder.append(" ");
-            }
-            nameBuilder.append(memberDetail.getLastName());
-        }
-        return nameBuilder.toString();
-    }
+    // =============================================
+    // HELPER METHODS
+    // =============================================
 
     /**
      * Calculate total amount from a map
@@ -484,6 +553,67 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
                 .filter(m -> componentCode.equals(m.getComponentCode()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Create Accounting Event for Special Case
+     */
+    private ClaimAccountingEvent createSpecialCaseAccountingEvent(
+            GeneralSpecialCaseResponse specialCaseResponse, 
+            String createdBy) {
+        
+        LocalDateTime now = LocalDateTime.now();
+        String specialCaseReference = "SPC-" + specialCaseResponse.getId();
+
+        MemberDetail memberDetail = memberDetailRepository.findByNppfNumber(
+                specialCaseResponse.getNppfNumber())
+                .orElseThrow(() -> new RuntimeException(
+                        "Member details not found for NPPF number: " + 
+                        specialCaseResponse.getNppfNumber()));
+
+        String caseType = specialCaseResponse.getSpecialCaseDetail() != null 
+                ? specialCaseResponse.getSpecialCaseDetail().getCaseType() 
+                : "UNKNOWN";
+
+        return ClaimAccountingEvent.builder()
+                .eventType(EVENT_TYPE_SPECIAL_CASE)
+                .nppfNumber(specialCaseResponse.getNppfNumber())
+                .identityNumber(memberDetail.getIdentityNumber())
+                .memberName(buildMemberName(memberDetail))
+                .agencyCategoryId(specialCaseResponse.getMemberCategoryId())
+                .agencyCode(specialCaseResponse.getAgencyCode())
+                .agencyName(specialCaseResponse.getAgencyCode())
+                .claimTypeId(specialCaseResponse.getClaimTypeId())
+                .claimApplicationNumber(specialCaseReference)
+                .monthName(now.getMonth().name())
+                .year(String.valueOf(now.getYear()))
+                .accountingYear(String.valueOf(now.getYear()))
+                .status(STATUS_PENDING)
+                .narration("Special Case (" + caseType + "): " + specialCaseReference + " — " + 
+                          specialCaseResponse.getClaimTypeName())
+                .createdBy(createdBy)
+                .createdAt(now)
+                .build();
+    }
+
+    private String buildMemberName(MemberDetail memberDetail) {
+        StringBuilder nameBuilder = new StringBuilder();
+        if (memberDetail.getFirstName() != null) {
+            nameBuilder.append(memberDetail.getFirstName());
+        }
+        if (memberDetail.getMiddleName() != null) {
+            if (nameBuilder.length() > 0) {
+                nameBuilder.append(" ");
+            }
+            nameBuilder.append(memberDetail.getMiddleName());
+        }
+        if (memberDetail.getLastName() != null) {
+            if (nameBuilder.length() > 0) {
+                nameBuilder.append(" ");
+            }
+            nameBuilder.append(memberDetail.getLastName());
+        }
+        return nameBuilder.toString();
     }
 
     /**
@@ -544,7 +674,6 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
         return AccountingEventResponseDto.builder()
                 .id(event.getId())
                 .eventType(event.getEventType())
-                .claimDetailId(event.getClaimDetailId())
                 .claimApplicationNumber(event.getClaimApplicationNumber())
                 .nppfNumber(event.getNppfNumber())
                 .identityNumber(event.getIdentityNumber())
@@ -552,10 +681,7 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
                 .agencyCategoryId(event.getAgencyCategoryId())
                 .agencyCode(event.getAgencyCode())
                 .agencyName(event.getAgencyName())
-                .tranCode(event.getTranCode())
                 .status(event.getStatus())
-                .totalDr(event.getTotalDr())
-                .totalCr(event.getTotalCr())
                 .narration(event.getNarration())
                 .postedBy(event.getPostedBy())
                 .postedAt(event.getPostedAt())
@@ -569,7 +695,7 @@ public class SpecialCaseLedgerServiceImpl implements SpecialCaseLedgerService {
 
     @Override
     public AccountingEventResponseDto getAccountingEventBySpecialCaseId(Long specialCaseId) {
-        ClaimAccountingEvent event = accountingEventRepository.findByClaimDetailId(specialCaseId)
+        ClaimAccountingEvent event = accountingEventRepository.findByClaimDetail_Id(specialCaseId)
                 .orElseThrow(() -> new RuntimeException(
                         "Accounting event not found for special case: " + specialCaseId));
 

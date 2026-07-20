@@ -147,13 +147,6 @@ public class NormalClaimServiceImpl implements NormalClaimService {
 
         if ("TERMINATION".equals(code)) {
 
-            if (request.getDateOfTermination() == null) {
-                throw ClaimException.singleValidationError(
-                        "dateOfTermination",
-                        "Date of termination is required"
-                );
-            }
-
             if (request.getCessationEffectiveDate() == null) {
                 throw ClaimException.singleValidationError(
                         "cessationEffectiveDate",
@@ -184,13 +177,6 @@ public class NormalClaimServiceImpl implements NormalClaimService {
                 throw ClaimException.singleValidationError(
                         "relievingOrderNumber",
                         "Relieving order number is required"
-                );
-            }
-
-            if (request.getRelievingOrderDate() == null) {
-                throw ClaimException.singleValidationError(
-                        "relievingOrderDate",
-                        "Relieving order date is required"
                 );
             }
 
@@ -246,10 +232,6 @@ public class NormalClaimServiceImpl implements NormalClaimService {
 
         if ("TERMINATION".equals(code)) {
 
-            if (existing.getDateOfTermination() == null) {
-                throw ClaimException.singleValidationError("dateOfTermination", "Date of termination is required");
-            }
-
             if (existing.getCessationEffectiveDate() == null) {
                 throw ClaimException.singleValidationError("cessationEffectiveDate", "Cessation effective date is required");
             }
@@ -269,10 +251,6 @@ public class NormalClaimServiceImpl implements NormalClaimService {
 
             if (existing.getRelievingOrderNumber() == null || existing.getRelievingOrderNumber().isBlank()) {
                 throw ClaimException.singleValidationError("relievingOrderNumber", "Relieving order number is required");
-            }
-
-            if (existing.getRelievingOrderDate() == null) {
-                throw ClaimException.singleValidationError("relievingOrderDate", "Relieving order date is required");
             }
 
             if (existing.getCessationEffectiveDate() == null) {

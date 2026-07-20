@@ -6,19 +6,18 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationForfeitedComponentPatchRequestDto;
+import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationForfeitedComponentRequestDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.entity.application.ClaimApplicationForfeitedComponent;
 import com.claim.claim_processing.application.repository.application.ClaimApplicationForfeitedComponentRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationForfeitedComponentService;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
-
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ClaimApplicationForfeitedComponentServiceImpl
         implements ClaimApplicationForfeitedComponentService {
 
@@ -28,56 +27,81 @@ public class ClaimApplicationForfeitedComponentServiceImpl
     @Transactional
     public List<ClaimApplicationForfeitedComponent> saveForfeitedComponents(
             ClaimApplication claimApplication,
-            ClaimCalculationResponseDTO calculationResponse,
-            String createdBy) {
+            List<ClaimApplicationForfeitedComponentRequestDto> forfeitedComponents) {
 
-        if (claimApplication == null || calculationResponse == null) {
-            return null;
+        if (claimApplication == null) {
+            log.error("Claim application is null");
+            return Collections.emptyList();
         }
 
-        if (calculationResponse.getForfeitedComponents() == null
-                || calculationResponse.getForfeitedComponents().isEmpty()) {
-            return null;
+        if (forfeitedComponents == null || forfeitedComponents.isEmpty()) {
+            log.info("No forfeited components to save for claim: {}", 
+                    claimApplication.getApplicationNumber());
+            return Collections.emptyList();
         }
+
+        log.info("Saving {} forfeited components for claim: {}", 
+                forfeitedComponents.size(), claimApplication.getApplicationNumber());
+
         List<ClaimApplicationForfeitedComponent> savedComponents = new ArrayList<>();
-        for (ClaimCalculationResponseDTO.ComponentBalanceDTO component : calculationResponse.getForfeitedComponents()) {
 
-            if (component == null || component.getCode() == null) {
+        for (ClaimApplicationForfeitedComponentRequestDto component : forfeitedComponents) {
+            
+            if (component == null || component.getComponentCode() == null) {
+                log.warn("Skipping null component or component with null code");
                 continue;
             }
-
-            boolean exists = forfeitedComponentRepository
-                    .existsByClaimApplication_IdAndComponentCodeAndIsActive(
-                            claimApplication.getId(),
-                            component.getCode(),
-                            ActivityEnum.Y);
-
-            if (exists) {
-                continue;
+            // ✅ FIX: Properly handle findById with orElse
+            ClaimApplicationForfeitedComponent entity = null;
+            
+            if (component.getForfeitedComponentId() != null && component.getForfeitedComponentId() > 0) {
+                entity = forfeitedComponentRepository
+                        .findById(component.getForfeitedComponentId())
+                        .orElse(null);
             }
 
-            ClaimApplicationForfeitedComponent entity = ClaimApplicationForfeitedComponent.builder()
-                    .claimApplication(claimApplication)
-                    .componentCode(component.getCode())
-                    .componentName(component.getName())
-                    .componentType(component.getType())
-                    .amount(component.getAmount())
-                    .reason("Forfeited from lapsed rule calculation")
-                    .subClaimCode(component.getSubRuleCode())
-                    .createdBy(createdBy)
-                    .isActive(ActivityEnum.Y)
-                    .build();
+            if (entity == null) {
+                // Create new entity
+                entity = ClaimApplicationForfeitedComponent.builder()
+                        .claimApplication(claimApplication)
+                        .componentCode(component.getComponentCode())
+                        .componentName(component.getComponentName())
+                        .componentType(component.getComponentType())
+                        .amount(component.getAmount())
+                        .reason(component.getReason() != null ? 
+                                component.getReason() : "Forfeited from lapsed rule calculation")
+                        .subClaimCode(component.getSubClaimCode())
+                        .createdBy(component.getCreatedBy())
+                        .build();
+            } else {
+                // Update existing entity
+                entity.setClaimApplication(claimApplication);
+                entity.setComponentCode(component.getComponentCode());
+                entity.setComponentName(component.getComponentName());
+                entity.setComponentType(component.getComponentType());
+                entity.setAmount(component.getAmount());
+                if (component.getReason() != null) {
+                    entity.setReason(component.getReason());
+                }
+                entity.setSubClaimCode(component.getSubClaimCode());
+                entity.setUpdatedBy(component.getUpdatedBy());
+            }
 
-            forfeitedComponentRepository.save(entity);
-            savedComponents.add(entity);
+            ClaimApplicationForfeitedComponent saved = forfeitedComponentRepository.saveAndFlush(entity);
+            savedComponents.add(saved);
+            log.info("Saved forfeited component: {} with amount: {}", 
+                    component.getComponentCode(), component.getAmount());
         }
+
+        log.info("Successfully saved {} forfeited components for claim: {}", 
+                savedComponents.size(), claimApplication.getApplicationNumber());
         return savedComponents;
     }
 
     @Override
     @Transactional
     public List<ClaimApplicationForfeitedComponent> patchForfeitedComponent(
-            List<ClaimApplicationForfeitedComponentPatchRequestDto> requests) {
+            List<ClaimApplicationForfeitedComponentRequestDto> requests) {
 
         if (requests == null || requests.isEmpty()) {
             return Collections.emptyList();
@@ -85,7 +109,7 @@ public class ClaimApplicationForfeitedComponentServiceImpl
 
         List<ClaimApplicationForfeitedComponent> updatedComponents = new ArrayList<>();
 
-        for (ClaimApplicationForfeitedComponentPatchRequestDto request : requests) {
+        for (ClaimApplicationForfeitedComponentRequestDto request : requests) {
 
             if (request == null || request.getForfeitedComponentId() == null) {
                 continue;
@@ -103,10 +127,6 @@ public class ClaimApplicationForfeitedComponentServiceImpl
 
             if (request.getReason() != null) {
                 component.setReason(request.getReason());
-            }
-
-            if (request.getIsActive() != null) {
-                component.setIsActive(request.getIsActive());
             }
 
             if (request.getUpdatedBy() != null) {

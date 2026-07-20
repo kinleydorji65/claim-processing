@@ -19,7 +19,6 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
-import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
 
 @Entity
 @Table(
@@ -37,6 +36,12 @@ public class ClaimDetail {
     @Column(name = "ID")
     private Long id;
 
+    @Column(name = "APPLICATION_NUMBER", nullable = false, length = 100)
+    private String applicationNumber;
+
+    @Column(name = "IDENTITY_NUMBER", length = 100)
+    private String identityNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CLAIM_TYPE_ID", nullable = true)
     private ClaimTypeMaster claimType;
@@ -49,11 +54,17 @@ public class ClaimDetail {
     @JoinColumn(name = "SCHEME_TYPE_ID", referencedColumnName = "SCHEME_TYPE_ID")
     private SchemeType schemeType;
 
-    @Column(name = "PF_JOINING_DATE")
-    private LocalDate pfJoiningDate;
+    @Column(name = "PF_START_DATE")
+    private LocalDate pfStartDate;
 
-    @Column(name = "PENSION_JOINING_DATE")
-    private LocalDate pensionJoiningDate;
+    @Column(name = "PF_END_DATE")
+    private LocalDate pfEndDate;
+
+    @Column(name = "PENSION_START_DATE")
+    private LocalDate pensionStartDate;
+
+    @Column(name = "PENSION_END_DATE")
+    private LocalDate pensionEndDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "MEMBER_CATEGORY_ID", referencedColumnName = "CATEGORY_ID")
@@ -65,17 +76,17 @@ public class ClaimDetail {
     @Column(name = "MEMBER_CODE", length = 100)
     private String memberCode;
 
+    @Column(name = "CONTACT_NO", length = 100)
+    private String contactNo;
+
+    @Column(name = "EMAIL", length = 100)
+    private String email;
+
     @Column(name = "NPPF_NUMBER", length = 100)
     private String nppfNumber;
 
-    @Column(name = "IDENTITY_NUMBER", length = 100)
-    private String identityNumber;
-
     @Column(name = "AGENCY_CODE", length = 100)
     private String agencyCode;
-
-    @Column(name = "APPLICATION_NUMBER", length = 100)
-    private String applicationNumber;
 
     @Column(name = "OFFICE_ID")
     private Long officeId;
@@ -90,6 +101,12 @@ public class ClaimDetail {
     @Column(name = "INITIATED_BY", length = 100)
     private String initiatedBy;
 
+    @Column(name = "CLAIMED_BY", length = 100)
+    private String claimedBy;
+
+    @Column(name = "UNCLAIMED_BY", length = 100)
+    private String unClaimedBy;
+
     @Column(name = "REMARKS", length = 1000)
     private String remarks;
 
@@ -97,9 +114,13 @@ public class ClaimDetail {
     @Column(name = "IS_SPECIAL_CASE", length = 1)
     private ActivityEnum isSpecialCase;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SPECIAL_CASE_AUTHORITY_ID")
-    private SpecialCaseRefundAuthorityMaster specialCaseAuthority;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_RENTAL_APPLIED", length = 1)
+    private ActivityEnum isRentalApplied;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "IS_LOAN_APPLIED", length = 1)
+    private ActivityEnum isLoanApplied;
 
     @Column(name = "CURRENCY_CODE", length = 10)
     private String currencyCode;
@@ -114,10 +135,6 @@ public class ClaimDetail {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "STATUS_ID", referencedColumnName = "STATUS_ID")
     private StatusMaster status;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ACTION_ID")
-    private ActionMaster action;
 
     @Column(name = "NUMBER_OF_YEAR_IN_SERVICE", length = 100)
     private BigDecimal numberOfYearInService;

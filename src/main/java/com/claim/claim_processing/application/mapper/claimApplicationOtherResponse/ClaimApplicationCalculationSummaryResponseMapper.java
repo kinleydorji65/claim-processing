@@ -12,8 +12,6 @@ import com.claim.claim_processing.application.entity.calculation.ClaimApplicatio
 import com.claim.claim_processing.application.entity.calculation.ClaimApplicationRuleEvaluation;
 import com.claim.claim_processing.application.repository.calculation.ClaimApplicationCalculationComponentRepository;
 import com.claim.claim_processing.application.repository.calculation.ClaimApplicationRuleEvaluationRepository;
-import com.claim.claim_processing.common.DTO.response.others.StatusMasterResponseDto;
-
 import lombok.AllArgsConstructor;
 
 @Component
@@ -41,7 +39,6 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
                 )
 
                 .finalPayableAmount(entity.getFinalPayableAmount())
-                .actualAmountCalculated(entity.getActualAmountCalculated())
                 .totalAmount(entity.getTotalAmount())
 
                 .isPfEligible(entity.getIsPfEligible())
@@ -49,15 +46,6 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
 
                 .totalContributionMonth(entity.getTotalContributionMonth())
                 .recommendedBenefitType(entity.getRecommendedBenefitType())
-
-                .calculationStatus(
-                        entity.getCalculationStatus() != null
-                                ? StatusMasterResponseDto.builder()
-                                .statusId(entity.getCalculationStatus().getStatusId())
-                                .statusName(entity.getCalculationStatus().getStatusName())
-                                .build()
-                                : null
-                )
 
                 .ruleEvaluations(
                         ruleEvaluations == null
@@ -105,7 +93,6 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
                 )
 
                 .isRuleApplied(rule.getIsRuleApplied())
-                .resultMessage(rule.getResultMessage())
 
                 .evaluatedBy(rule.getEvaluatedBy())
 
@@ -114,8 +101,6 @@ public class ClaimApplicationCalculationSummaryResponseMapper {
                                 ? rule.getEvaluatedAt().toLocalDateTime()
                                 : null
                 )
-
-                .isActive(rule.getIsActive())
 
                 .components(
                         components == null

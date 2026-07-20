@@ -40,30 +40,12 @@ public class ClaimApplicationApprovalMapper {
                                 ? statusMapper.toDto(entity.getApprovalStatus())
                                 : null
                 )
-
-                .approvedAmount(entity.getApprovedAmount())
-                .approvedPfAmount(entity.getApprovedPfAmount())
-                .approvedPensionAmount(entity.getApprovedPensionAmount())
-                .approvedWithdrawalAmount(entity.getApprovedWithdrawalAmount())
-                .approvedRefundAmount(entity.getApprovedRefundAmount())
-                .approvedDeductionAmount(entity.getApprovedDeductionAmount())
-                .finalNetPayableAmount(entity.getFinalNetPayableAmount())
-
-                .requiresManualReview(entity.getRequiresManualReview())
-
                 .remarks(entity.getRemarks())
                 .approvedBy(entity.getApprovedBy())
-                .roleId(entity.getRoleId())
 
                 .approvedAt(
                         entity.getApprovedAt() != null
                                 ? entity.getApprovedAt().toLocalDateTime()
-                                : null
-                )
-
-                .isActive(
-                        entity.getIsActive() != null
-                                ? entity.getIsActive().name()
                                 : null
                 )
 

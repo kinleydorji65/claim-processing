@@ -36,8 +36,6 @@ public class PartialWithdrawalResponseMapper {
                 .withdrawalReasonName(entity.getWithdrawalReason() != null
                         ? entity.getWithdrawalReason().getName()
                         : null)
-
-                .requestedWithdrawalAmount(entity.getRequestedWithdrawalAmount())
                 .actualWithdrawalAmount(entity.getActualWithdrawalAmount())
 
                 .unemploymentStartDate(entity.getUnemploymentStartDate())

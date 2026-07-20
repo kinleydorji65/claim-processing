@@ -40,8 +40,8 @@ public class MemberServiceImpl implements MemberService {
 
                 
                 MemberContributionJoiningDateHistory joiningDateDetail = joiningDateHistoryRepository.findByMemberCode(memberDetail.getMemberCode()).orElse(null);
-                responseDto.setPfJoiningDate(joiningDateDetail.getCombinedPensionJoiningDate());
-                responseDto.setPensionJoiningDate(joiningDateDetail.getCombinedPensionJoiningDate());
+                responseDto.setPfJoiningDate(joiningDateDetail != null ? joiningDateDetail.getCombinedPensionJoiningDate() : null);
+                responseDto.setPensionJoiningDate(joiningDateDetail != null ? joiningDateDetail.getCombinedPensionJoiningDate() : null);
 
                 // =========================
                 // TOTAL BALANCE CALCULATION

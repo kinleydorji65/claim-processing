@@ -1,7 +1,6 @@
 package com.claim.claim_processing.application.entity.workFlow;
 
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,32 +41,6 @@ public class ClaimApplicationApproval {
     )
     private StatusMaster approvalStatus;
 
-    @Column(name = "APPROVED_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal approvedAmount;
-
-    @Column(name = "APPROVED_PF_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal approvedPfAmount;
-
-    @Column(name = "APPROVED_PENSION_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal approvedPensionAmount;
-
-    @Column(name = "APPROVED_WITHDRAWAL_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal approvedWithdrawalAmount;
-
-    @Column(name = "APPROVED_REFUND_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal approvedRefundAmount;
-
-    @Column(name = "APPROVED_DEDUCTION_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal approvedDeductionAmount;
-
-    @Column(name = "FINAL_NET_PAYABLE_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal finalNetPayableAmount;
-
-    @Column(name = "REQUIRES_MANUAL_REVIEW", length = 1)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ActivityEnum requiresManualReview = ActivityEnum.N;
-
     @Column(name = "REMARKS", length = 2000)
     private String remarks;
 
@@ -75,16 +48,8 @@ public class ClaimApplicationApproval {
     @Column(name = "APPROVED_BY", length = 100)
     private String approvedBy;
 
-    @Column(name = "ROLE_ID", length = 100)
-    private Long roleId;
-
     @Column(name = "APPROVED_AT")
     private Timestamp approvedAt;
-
-    @Column(name = "IS_ACTIVE", length = 1)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
@@ -114,14 +79,6 @@ public class ClaimApplicationApproval {
 
         if (updatedAt == null) {
             updatedAt = now;
-        }
-
-        if (requiresManualReview == null) {
-            requiresManualReview = ActivityEnum.N;
-        }
-
-        if (isActive == null) {
-            isActive = ActivityEnum.Y;
         }
     }
 

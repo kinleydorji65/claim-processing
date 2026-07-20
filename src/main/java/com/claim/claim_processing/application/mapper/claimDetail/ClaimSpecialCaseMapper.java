@@ -30,10 +30,8 @@ public interface ClaimSpecialCaseMapper {
     @Mapping(target = "submissionChannel", ignore = true)
     @Mapping(target = "schemeType", ignore = true)
     @Mapping(target = "memberCategory", ignore = true)
-    @Mapping(target = "specialCaseAuthority", ignore = true)
     @Mapping(target = "currentStage", ignore = true)
     @Mapping(target = "status", ignore = true)
-    @Mapping(target = "action", ignore = true)
 
     @Mapping(target = "normalClaimDetail", ignore = true)
     @Mapping(target = "partialWithdrawalDetail", ignore = true)
@@ -56,14 +54,6 @@ public interface ClaimSpecialCaseMapper {
     @Mapping(target = "bankType", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "beneficiaryIdentifier", source = "beneficiaryIdentifier")
-    @Mapping(target = "accountNumber", source = "accountNumber")
-    @Mapping(target = "accountHolderName", source = "accountHolderName")
-    @Mapping(target = "ifscOrRoutingCode", source = "ifscOrRoutingCode")
-    @Mapping(target = "isDefaultBank", source = "isDefaultBank")
-    @Mapping(target = "verifiedBy", source = "verifiedBy")
-    @Mapping(target = "verifiedAt", ignore = true) // Assuming verification timestamp is set in the entity/service layer
-    @Mapping(target = "createdBy", source = "createdBy")
-    @Mapping(target = "updatedBy", source = "updatedBy")
+    @Mapping(target = "verifiedAt", ignore = true) 
     ClaimBankDetail toBankDetailEntity(ClaimApplicationBankResponseDto dto);
 }

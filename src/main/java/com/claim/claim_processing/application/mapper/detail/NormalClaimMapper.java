@@ -13,15 +13,16 @@ public interface NormalClaimMapper {
 
     // ---------- Request -> Entity ----------
     @Mapping(target = "id", ignore = true)
-
     @Mapping(target = "claimApplication", ignore = true)
+    @Mapping(target = "claimDetail", ignore = true)  // ← ADD THIS - set separately
     @Mapping(target = "cessationType", ignore = true)
     @Mapping(target = "payeeType", ignore = true)
     @Mapping(target = "terminationReasonType", ignore = true)
-
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    // Map all other fields automatically
     NormalClaimDetail toEntity(NormalClaimRequestDto dto);
+
 
 
     // ---------- Update Entity ----------

@@ -19,8 +19,6 @@ import lombok.*;
 public class ClaimCalculationSummaryResponseDto {
     private Long id;
 
-    private StageResponseDto calculationStage;
-
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate calculationEffectiveDate;
 
@@ -34,7 +32,6 @@ public class ClaimCalculationSummaryResponseDto {
     private Integer totalContributionMonth;
 
     private String recommendedBenefitType;
-    private ActivityEnum isActive;
 
     private List<ClaimRuleEvaluationListDto> ruleEvaluations;
 

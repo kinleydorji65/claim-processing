@@ -20,21 +20,13 @@ public class ClaimApplicationVerificationResponseDto {
     private Long verificationStatusId;
     private String verificationStatusName;
 
-    private ActivityEnum requiresRecalculation;
-    private ActivityEnum requiresManualReview;
-
-    private String rejectionReason;
-    private String verifierRemarks;
+    private String remarks;
 
     private String rejectedBy;
     private String verifiedBy;
-    private Long verifiedByRoleId;
-    private String verifiedByRoleName;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime verifiedAt;
-
-    private String isActive;
 
     private String createdBy;
 

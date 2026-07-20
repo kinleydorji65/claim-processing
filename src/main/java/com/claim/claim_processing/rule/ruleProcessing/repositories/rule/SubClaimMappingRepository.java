@@ -25,6 +25,10 @@ public interface SubClaimMappingRepository extends JpaRepository<SubClaimMapping
     List<SubClaimMapping> findByRuleType_CodeIgnoreCase(
             String ruleCode
     );
+    List<SubClaimMapping> findByRuleType_CodeIgnoreCaseAndIsActive(
+            String ruleCode,
+            String status
+    );
 
     Optional<SubClaimMapping> findFirstByRuleType_CodeIgnoreCase(
             String ruleCode

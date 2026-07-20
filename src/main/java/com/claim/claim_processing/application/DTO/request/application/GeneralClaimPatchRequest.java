@@ -15,9 +15,9 @@ import lombok.*;
 public class GeneralClaimPatchRequest {
     private ClaimApplicationRequestDto claimApplication;
     private List<ClaimApplicationBankDetailRequestDto> claimApplicationBankDetail;
-    private ClaimApplicationCalculationPatchRequestDto claimApplicationCalculation;
-    private ClaimApplicationDeductionPatchRequestDto claimApplicationDeduction;
-    private List<ClaimApplicationForfeitedComponentPatchRequestDto> claimApplicationForfeitedComponent;
+    private ClaimApplicationCalculationSummaryRequest claimApplicationCalculation;
+    private ClaimApplicationDeductionRequestDto claimApplicationDeduction;
+    private List<ClaimApplicationForfeitedComponentRequestDto> claimApplicationForfeitedComponent;
     private ClaimApplicationRuleEvaluationRequestDto claimApplicationRuleEvaluation;
     private NormalClaimRequestDto normalClaim;
     private PartialWithdrawalRequestDto partialWithdrawal;

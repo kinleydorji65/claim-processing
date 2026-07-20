@@ -7,15 +7,13 @@ import com.claim.claim_processing.common.repository.others.AccountingInterestMas
 import com.claim.claim_processing.common.repository.others.CutoffServiceMasterRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
+import com.claim.claim_processing.integration.contribution.entity.ArrConfiguration;
 import com.claim.claim_processing.integration.contribution.entity.ContributionBifurcationDetail;
 import com.claim.claim_processing.integration.contribution.entity.MemberBalanceSnapshot;
-import com.claim.claim_processing.integration.contribution.entity.MemberInterestRecord;
+import com.claim.claim_processing.integration.contribution.repository.ArrConfigurationRepository;
 import com.claim.claim_processing.integration.contribution.repository.ContributionBifurcationDetailRepository;
 import com.claim.claim_processing.integration.contribution.repository.MemberBalanceSnapshotRepository;
-import com.claim.claim_processing.integration.contribution.repository.MemberInterestRecordRepository;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
-import com.claim.claim_processing.integration.member.service.MemberService;
-import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,205 +32,524 @@ import java.util.stream.Collectors;
 public class MemberContributionServiceImpl implements MemberContributionService {
 
     private final MemberBalanceSnapshotRepository snapshotRepo;
-    private final MemberInterestRecordRepository mirRepo;
     private final ContributionBifurcationDetailRepository contributionDetailRepo;
     private final AccountingInterestMasterRepository interestMasterRepository;
     private final CutoffServiceMasterRepository cutoffServiceMasterRepository;
+    private final ArrConfigurationRepository arrRepo;
 
-    // Only these are constant (always the same)
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final RoundingMode RM = RoundingMode.HALF_UP;
-    
-    // TODO: This should come from database (AccountingYearConfig)
     private static final int TRANSITION_YEAR = 2022;
+
+    // Set of forfeited component codes
+    private static final Set<String> FORFEITED_COMPONENTS = new HashSet<>(Arrays.asList(
+            "PF_EC", "PF_IEC", "PF_GC", "PF_IGC"
+    ));
 
     @Override
     public MemberContributionSummary getContributionSummary(
-        MemberDetailResponseDto memberDetail,
-        LocalDate relieveDate) {
-    
-        log.info("=== START getContributionSummary ===");
+            MemberDetailResponseDto memberDetail,
+            LocalDate relieveDate) {
+
+        LocalDate asOfDate = LocalDate.now();
+        log.info("Calculating contributions as of current date: {}", asOfDate);
+        return getContributionSummary(memberDetail, relieveDate, asOfDate);
+    }
+
+    public MemberContributionSummary getContributionSummary(
+            MemberDetailResponseDto memberDetail,
+            LocalDate relieveDate,
+            LocalDate asOfDate) {
+
+        log.info("=== START getContributionSummary (asOfDate: {}) ===", asOfDate);
         log.info("nppfNumber: {}, cid: {}", memberDetail.getNppfNumber(), memberDetail.getIdentityNumber());
-        
+
         try {
-            // ========== 1. GET PF BALANCE FROM SNAPSHOTS ==========
-            List<MemberBalanceSnapshot> snapshots = getSnapshots(memberDetail.getIdentityNumber(), memberDetail.getNppfNumber());
+            String cid = memberDetail.getIdentityNumber();
+            String nppfNumber = memberDetail.getNppfNumber();
+
+            // ================================================================
+            // STEP 1: READ FROM CONTRIBUTION_BIFURCATION_DETAIL ONLY
+            // ================================================================
+            List<ContributionBifurcationDetail> allContributions = contributionDetailRepo
+                    .findByCidAndNppfNumberOrderByCreatedAtAsc(cid, nppfNumber);
             
-            if (snapshots.isEmpty()) {
-                throw ClaimException.notFound("No snapshots found for member: " + memberDetail.getNppfNumber());
+            if (allContributions.isEmpty()) {
+                log.error("No contributions found for member: {}", nppfNumber);
+                throw ClaimException.notFound("No contributions found for member: " + nppfNumber);
             }
 
-            // Aggregate PF totals from snapshots (already calculated by system)
-            PFTotals pfTotals = aggregatePFTotals(snapshots);
-            
-            // Get interest records for component breakdown
-            List<MemberInterestRecord> interestRecords = getInterestRecords(memberDetail.getIdentityNumber(), memberDetail.getNppfNumber());
-            
-            // Build component groups
-            List<MemberContributionSummary.ComponentGroup> componentGroups = 
-                    buildComponentGroups(snapshots, interestRecords);
-            
-            // Calculate contribution months
-            int contributionMonths = calculateContributionMonths(snapshots);
+            log.info("Found {} contribution records", allContributions.size());
 
-            // ========== 2. BUILD SUMMARY WITH PF BALANCE ==========
-            MemberContributionSummary.MemberContributionSummaryBuilder builder = 
-                MemberContributionSummary.builder()
-                    .nppfNumber(memberDetail.getIdentityNumber())
-                    .schemeTypeId(getSchemeTypeId(snapshots))
-                    .totalContributionMonths(contributionMonths)
-                    .totalContributionYears(contributionMonths / 12)
-                    .totalNonContributionMonths(0)
-                    .contributionEndDate(pfTotals.getLatestDate())
-                    .totalPrincipalAmount(pfTotals.getTotalPrincipal())
-                    .totalInterestAmount(pfTotals.getTotalInterest())
-                    .totalBalance(pfTotals.getTotalBalance())
-                    .componentGroups(componentGroups);
+            // ================================================================
+            // STEP 2: GET LAST CONTRIBUTION DATE
+            // ================================================================
+            LocalDate lastContributionDate = getLastContributionDate(allContributions);
+            log.info("Last Contribution Date: {}", lastContributionDate);
 
-            // ========== 3. CALCULATE EXCESS SERVICE (PENSION ONLY) ==========
+            // ================================================================
+            // STEP 3: AGGREGATE ALL PRINCIPAL AMOUNTS
+            // ================================================================
+            BigDecimal totalPfEc = BigDecimal.ZERO;
+            BigDecimal totalPfMc = BigDecimal.ZERO;
+            BigDecimal totalPensionEc = BigDecimal.ZERO;
+            BigDecimal totalGc = BigDecimal.ZERO;
+            BigDecimal totalVc = BigDecimal.ZERO;
+
+            BigDecimal totalPrincipal = BigDecimal.ZERO;
+
+            log.info("========== DETAILED CONTRIBUTIONS ==========");
+            for (ContributionBifurcationDetail contrib : allContributions) {
+                String status = contrib.getPostingStatus();
+                if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
+                    log.debug("Skipping non-POSTED contribution: {}", status);
+                    continue;
+                }
+
+                BigDecimal pfEc = contrib.getPfEc() != null ? contrib.getPfEc() : BigDecimal.ZERO;
+                BigDecimal pfMc = contrib.getPfMc() != null ? contrib.getPfMc() : BigDecimal.ZERO;
+                BigDecimal pensionEc = contrib.getPensionEc() != null ? contrib.getPensionEc() : BigDecimal.ZERO;
+                BigDecimal gc = contrib.getGc() != null ? contrib.getGc() : BigDecimal.ZERO;
+                BigDecimal vc = contrib.getVc() != null ? contrib.getVc() : BigDecimal.ZERO;
+
+                log.debug("Contribution: PF_EC={}, PF_MC={}, PENSION_EC={}, GC={}, VC={}", 
+                        pfEc, pfMc, pensionEc, gc, vc);
+
+                totalPfEc = totalPfEc.add(pfEc);
+                totalPfMc = totalPfMc.add(pfMc);
+                totalPensionEc = totalPensionEc.add(pensionEc);
+                totalGc = totalGc.add(gc);
+                totalVc = totalVc.add(vc);
+
+                totalPrincipal = totalPrincipal.add(pfEc).add(pfMc).add(pensionEc).add(gc).add(vc);
+            }
+
+            log.info("========== AGGREGATED PRINCIPAL TOTALS ==========");
+            log.info("PF_EC: {}", totalPfEc);
+            log.info("PF_MC: {}", totalPfMc);
+            log.info("PENSION_EC: {}", totalPensionEc);
+            log.info("GC: {}", totalGc);
+            log.info("VC: {}", totalVc);
+            log.info("Total Principal: {}", totalPrincipal);
+
+            // ================================================================
+            // STEP 4: CALCULATE INTEREST FOR EACH COMPONENT USING asOfDate
+            // ================================================================
+            String currentAccountingYear = getAccountingYearForDate(asOfDate);
+
+            AccountingInterestMaster interestMaster = getInterestRateDetail(currentAccountingYear);
+            BigDecimal rate = BigDecimal.ZERO;
+
+            if (interestMaster != null) {
+                rate = interestMaster.getInterestRate();
+                log.info("Interest Rate for {}: {}%", currentAccountingYear, rate);
+            } else {
+                List<AccountingInterestMaster> allRates = interestMasterRepository.findAll();
+                if (!allRates.isEmpty()) {
+                    allRates.sort((a, b) -> b.getId().compareTo(a.getId()));
+                    rate = allRates.get(0).getInterestRate();
+                    log.info("Using latest available rate: {}%", rate);
+                } else {
+                    rate = BigDecimal.valueOf(6.5);
+                    log.info("No interest rate found, using default: {}%", rate);
+                }
+            }
+
+            int yearBasis = getYearBasisForYear(currentAccountingYear);
+            if (yearBasis == 0) {
+                yearBasis = 365;
+            }
+
+            log.info("Final Interest Rate: {}%, Year Basis: {}", rate, yearBasis);
+
+            // Calculate interest for each component
+            BigDecimal interestPfEc = calculateInterestForComponent(allContributions, "PF_EC", rate, yearBasis, asOfDate);
+            BigDecimal interestPfMc = calculateInterestForComponent(allContributions, "PF_MC", rate, yearBasis, asOfDate);
+            BigDecimal interestPension = calculateInterestForComponent(allContributions, "PENSION_EC", rate, yearBasis, asOfDate);
+            BigDecimal interestGc = calculateInterestForComponent(allContributions, "GC", rate, yearBasis, asOfDate);
+            BigDecimal interestVc = calculateInterestForComponent(allContributions, "VC", rate, yearBasis, asOfDate);
+
+            BigDecimal totalInterest = interestPfEc.add(interestPfMc).add(interestPension).add(interestGc).add(interestVc);
+
+            log.info("========== CALCULATED INTEREST ==========");
+            log.info("PF_EC Interest: {}", interestPfEc);
+            log.info("PF_MC Interest: {}", interestPfMc);
+            log.info("PENSION Interest: {}", interestPension);
+            log.info("GC Interest: {}", interestGc);
+            log.info("VC Interest: {}", interestVc);
+            log.info("Total Interest: {}", totalInterest);
+
+            // ================================================================
+            // STEP 5: BUILD COMPONENT GROUPS - SEPARATE PRINCIPAL AND INTEREST
+            // ================================================================
+            List<MemberContributionSummary.ComponentGroup> componentGroups = new ArrayList<>();
+
+            log.info("========== BUILDING COMPONENT GROUPS ==========");
+
+            // PF_EC - Principal
+            if (totalPfEc.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("PF_EC", "Employee PF Contribution",
+                        totalPfEc, BigDecimal.ZERO));
+                log.info("✅ PF_EC: Principal={}", totalPfEc);
+            }
+
+            // PF_IEC - Interest on PF_EC
+            if (interestPfEc.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("PF_IEC", "Interest on Employee PF",
+                        BigDecimal.ZERO, interestPfEc));
+                log.info("✅ PF_IEC: Interest={}", interestPfEc);
+            }
+
+            // PF_MC - Principal
+            if (totalPfMc.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("PF_MC", "Employer PF Contribution",
+                        totalPfMc, BigDecimal.ZERO));
+                log.info("✅ PF_MC: Principal={}", totalPfMc);
+            }
+
+            // PF_IMC - Interest on PF_MC
+            if (interestPfMc.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("PF_IMC", "Interest on Employer PF",
+                        BigDecimal.ZERO, interestPfMc));
+                log.info("✅ PF_IMC: Interest={}", interestPfMc);
+            }
+
+            // P_EC - Principal (Pension)
+            if (totalPensionEc.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("P_EC", "Pension Contribution",
+                        totalPensionEc, BigDecimal.ZERO));
+                log.info("✅ P_EC: Principal={}", totalPensionEc);
+            }
+
+            // P_IEC - Interest on Pension
+            if (interestPension.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("P_IEC", "Interest on Pension",
+                        BigDecimal.ZERO, interestPension));
+                log.info("✅ P_IEC: Interest={}", interestPension);
+            }
+
+            // GC - Principal
+            if (totalGc.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("GC", "Government Contribution",
+                        totalGc, BigDecimal.ZERO));
+                log.info("✅ GC: Principal={}", totalGc);
+            }
+
+            // IGC - Interest on GC
+            if (interestGc.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("IGC", "Interest on Government",
+                        BigDecimal.ZERO, interestGc));
+                log.info("✅ IGC: Interest={}", interestGc);
+            }
+
+            // VC - Principal
+            if (totalVc.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("VC", "Voluntary Contribution",
+                        totalVc, BigDecimal.ZERO));
+                log.info("✅ VC: Principal={}", totalVc);
+            }
+
+            // IVC - Interest on VC
+            if (interestVc.compareTo(BigDecimal.ZERO) > 0) {
+                componentGroups.add(createComponentGroup("IVC", "Interest on Voluntary",
+                        BigDecimal.ZERO, interestVc));
+                log.info("✅ IVC: Interest={}", interestVc);
+            }
+
+            // ================================================================
+            // STEP 6: CALCULATE TOTALS
+            // ================================================================
+            
+            // Calculate total from ALL component groups (this is the grand total)
+            BigDecimal totalBalance = componentGroups.stream()
+                    .map(MemberContributionSummary.ComponentGroup::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // Split components into eligible and forfeited for display purposes
+            List<MemberContributionSummary.ComponentGroup> eligibleGroups = new ArrayList<>();
+            List<MemberContributionSummary.ComponentGroup> forfeitedGroups = new ArrayList<>();
+
+            for (MemberContributionSummary.ComponentGroup group : componentGroups) {
+                if (isForfeitedComponent(group.getComponentCode())) {
+                    forfeitedGroups.add(group);
+                } else {
+                    eligibleGroups.add(group);
+                }
+            }
+
+            // Calculate eligible total and forfeited total
+            BigDecimal eligibleTotal = eligibleGroups.stream()
+                    .map(MemberContributionSummary.ComponentGroup::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal forfeitedTotal = forfeitedGroups.stream()
+                    .map(MemberContributionSummary.ComponentGroup::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            log.info("========== FINAL SUMMARY ==========");
+            log.info("Total Principal: {}", totalPrincipal);
+            log.info("Total Interest: {}", totalInterest);
+            log.info("Eligible Total: {}", eligibleTotal);
+            log.info("Forfeited Total: {}", forfeitedTotal);
+            log.info("Grand Total (Eligible + Forfeited): {}", totalBalance);
+            log.info("Components: {}", componentGroups.size());
+
+            // ================================================================
+            // STEP 7: BUILD SUMMARY
+            // ================================================================
+            MemberContributionSummary.MemberContributionSummaryBuilder builder = MemberContributionSummary.builder()
+                    .nppfNumber(nppfNumber)
+                    .schemeTypeId(getSchemeTypeId(memberDetail))
+                    .totalContributionMonths(calculateContributionMonths(allContributions, asOfDate))
+                    .totalContributionYears(calculateContributionMonths(allContributions, asOfDate) / 12)
+                    .totalNonContributionMonths(
+                            calculateNonContributionMonths(memberDetail, relieveDate, allContributions))
+                    .contributionEndDate(lastContributionDate)
+                    .totalPrincipalAmount(totalPrincipal)
+                    .totalInterestAmount(totalInterest)
+                    .totalBalance(totalBalance)  // This is the GRAND TOTAL (eligible + forfeited)
+                    .componentGroups(componentGroups)  // All components with their principal/interest
+                    .asOfDate(asOfDate)
+                    .currentAccountingYear(currentAccountingYear)
+                    .openingBalanceFromSnapshot(totalBalance);
+
+            // ================================================================
+            // STEP 8: EXCESS SERVICE
+            // ================================================================
             if (relieveDate != null && isPensionEligible(memberDetail)) {
-                try {
-                    LocalDate startDate = getStartDate(memberDetail);
-                    
-                    if (startDate == null) {
-                        log.warn("Start date is null for member: {}", memberDetail.getNppfNumber());
-                        builder.excessStatus("ERROR")
-                               .excessMessage("Start date not available for member");
-                    } else {
-                        // Get cutoff config
-                        CutoffServiceMaster config = getActiveCutoffConfig();
-                        if (config != null) {
-                            int cutoffYears = config.getNumberOfYears();
-                            
-                            // Get all contributions for EOL calculation
-                            List<ContributionBifurcationDetail> allContributions = 
-                                contributionDetailRepo.findByCidAndNppfNumberOrderByCreatedAtAsc(
-                                    memberDetail.getIdentityNumber(), 
-                                    memberDetail.getNppfNumber());
-                            
-                            // Calculate EOL months
-                            int totalEOLMonths = calculateEOLMonthsFromHistory(allContributions, startDate, relieveDate);
-                            
-                            // Calculate cutoff date
-                            int totalMonths = (cutoffYears * 12) + totalEOLMonths;
-                            LocalDate cutoffServiceDate = startDate.plusMonths(totalMonths);
-                            
-                            // CHECK: Has member completed cutoff years?
-                            if (relieveDate.isAfter(cutoffServiceDate)) {
-                                // YES - Calculate excess service
-                                ExcessCalculationResult excessResult = calculateExcessService(
-                                    memberDetail.getIdentityNumber(),
-                                    memberDetail.getNppfNumber(),
-                                    relieveDate,
-                                    cutoffServiceDate,
-                                    cutoffYears,
-                                    totalEOLMonths
-                                );
-                                
-                                if (excessResult != null && excessResult.isEligible()) {
-                                    builder.excessServiceAmount(excessResult.getTotalExcessAmount())
-                                           .cutoffServiceDate(excessResult.getCutoffServiceDate())
-                                           .cutoffYears(excessResult.getCutoffYears())
-                                           .excessStartDate(excessResult.getExcessStartDate())
-                                           .excessEndDate(excessResult.getExcessEndDate())
-                                           .totalEOLMonths(excessResult.getTotalEOLMonths())
-                                           .eolMonthsInExcess(excessResult.getEolMonthsInExcess())
-                                           .totalContributionsInExcess(excessResult.getTotalExcessContributions())
-                                           .totalInterestInExcess(excessResult.getTotalExcessInterest())
-                                           .excessStatus("CALCULATED")
-                                           .excessMessage("Excess service calculated successfully");
-                                    
-                                    // Set year details
-                                    if (excessResult.getYearDetails() != null) {
-                                        builder.excessYearDetails(excessResult.getYearDetails());
-                                    }
-                                    
-                                    // Set monthly details
-                                    if (excessResult.getMonthlyDetails() != null) {
-                                        builder.excessMonthlyDetails(excessResult.getMonthlyDetails());
-                                    }
-                                    
-                                    log.info("Excess service calculated: {}", excessResult.getTotalExcessAmount());
-                                }
-                            } else {
-                                // NO - Member has not completed cutoff years
-                                log.info("Member has NOT completed {} years of service. Cutoff date: {}, Relieve date: {}", 
-                                    cutoffYears, cutoffServiceDate, relieveDate);
-                                builder.excessStatus("NOT_ELIGIBLE")
-                                       .excessMessage("Member has not completed " + cutoffYears + " years of service");
-                            }
-                        } else {
-                            log.warn("No active cutoff config found");
-                            builder.excessStatus("ERROR")
-                                   .excessMessage("Cutoff configuration not found");
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("Error calculating excess service: {}", e.getMessage(), e);
-                    builder.excessStatus("ERROR")
-                           .excessMessage("Error calculating excess: " + e.getMessage());
+                ExcessCalculationResult excessResult = calculateExcessServiceHybrid(
+                        cid, nppfNumber, relieveDate, asOfDate);
+
+                if (excessResult != null && excessResult.isEligible()) {
+                    builder.excessServiceAmount(excessResult.getTotalExcessAmount())
+                            .cutoffServiceDate(excessResult.getCutoffServiceDate())
+                            .cutoffYears(excessResult.getCutoffYears())
+                            .excessStartDate(excessResult.getExcessStartDate())
+                            .excessEndDate(excessResult.getExcessEndDate())
+                            .totalEOLMonths(excessResult.getTotalEOLMonths())
+                            .eolMonthsInExcess(excessResult.getEolMonthsInExcess())
+                            .totalContributionsInExcess(excessResult.getTotalExcessContributions())
+                            .totalInterestInExcess(excessResult.getTotalExcessInterest())
+                            .excessStatus("CALCULATED")
+                            .excessMessage("Excess service calculated successfully as of " + asOfDate);
                 }
             }
 
             MemberContributionSummary summary = builder.build();
-            
-            log.info("=== END getContributionSummary ===");
-            log.info("PF Balance: {}, Excess Amount: {}, Total Payable: {}", 
-                pfTotals.getTotalBalance(), 
-                summary.hasExcessService() ? summary.getExcessServiceAmount() : BigDecimal.ZERO,
-                pfTotals.getTotalBalance().add(summary.hasExcessService() ? summary.getExcessServiceAmount() : BigDecimal.ZERO));
+
+            log.info("=== FINAL RESPONSE ===");
+            for (MemberContributionSummary.ComponentGroup g : summary.getComponentGroups()) {
+                log.info("  {}: Principal={}, Interest={}, Total={}, IsForfeited={}",
+                        g.getComponentCode(),
+                        g.getPrincipalAmount(),
+                        g.getInterestAmount(),
+                        g.getTotalAmount(),
+                        isForfeitedComponent(g.getComponentCode()));
+            }
+
             return summary;
 
         } catch (Exception e) {
-            log.error("Error fetching contribution summary: {}", e.getMessage(), e);
+            log.error("Error: {}", e.getMessage(), e);
             throw ClaimException.internalError("Failed to fetch contribution summary: " + e.getMessage());
         }
     }
 
-    // ========== EXCESS SERVICE CALCULATION (PENSION ONLY) ==========
+    /**
+     * Check if a component is forfeited
+     */
+    private boolean isForfeitedComponent(String componentCode) {
+        if (componentCode == null) return false;
+        return FORFEITED_COMPONENTS.contains(componentCode.toUpperCase());
+    }
 
-    private ExcessCalculationResult calculateExcessService(
+    /**
+     * Get the last contribution date from the list of contributions
+     */
+    private LocalDate getLastContributionDate(List<ContributionBifurcationDetail> allContributions) {
+        if (allContributions == null || allContributions.isEmpty()) {
+            return LocalDate.now();
+        }
+
+        LocalDate lastDate = null;
+        for (ContributionBifurcationDetail contrib : allContributions) {
+            String status = contrib.getPostingStatus();
+            if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
+                continue;
+            }
+
+            LocalDate contribDate = contrib.getCreatedAt().toLocalDate();
+            if (lastDate == null || contribDate.isAfter(lastDate)) {
+                lastDate = contribDate;
+            }
+        }
+
+        return lastDate != null ? lastDate : LocalDate.now();
+    }
+
+    /**
+     * Calculate days held based on accounting year rules
+     */
+    private long calculateDaysHeld(LocalDate contributionDate, LocalDate asOfDate) {
+        if (contributionDate == null || asOfDate == null) {
+            return 0;
+        }
+
+        int year = asOfDate.getYear();
+        LocalDate accountingYearStart;
+
+        if (year < TRANSITION_YEAR) {
+            accountingYearStart = LocalDate.of(year, 7, 1);
+        } else if (year == TRANSITION_YEAR) {
+            accountingYearStart = LocalDate.of(year, 7, 1);
+        } else {
+            accountingYearStart = LocalDate.of(year, 1, 1);
+        }
+
+        long daysHeld = ChronoUnit.DAYS.between(accountingYearStart, asOfDate);
+
+        if (contributionDate.getYear() == asOfDate.getYear()) {
+            LocalDate yearStart = LocalDate.of(asOfDate.getYear(), 1, 1);
+            daysHeld = ChronoUnit.DAYS.between(yearStart, asOfDate);
+            log.debug("Same year: Using Jan 1 to asOfDate = {} days", daysHeld);
+        }
+
+        if (daysHeld < 0) {
+            daysHeld = 0;
+        }
+
+        return daysHeld;
+    }
+
+    /**
+     * Calculate interest for a specific component
+     * Formula: Interest = Principal × (Rate/100) × (DaysHeld/YearBasis)
+     */
+    private BigDecimal calculateInterestForComponent(
+            List<ContributionBifurcationDetail> contributions,
+            String componentCode,
+            BigDecimal rate,
+            int yearBasis,
+            LocalDate asOfDate) {
+
+        BigDecimal totalInterest = BigDecimal.ZERO;
+
+        log.debug("========== CALCULATING INTEREST FOR {} ==========", componentCode);
+        log.debug("Rate: {}%, Year Basis: {}, AsOfDate: {}", rate, yearBasis, asOfDate);
+
+        for (ContributionBifurcationDetail contrib : contributions) {
+            String status = contrib.getPostingStatus();
+            if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
+                continue;
+            }
+
+            BigDecimal principal = getComponentPrincipal(contrib, componentCode);
+            LocalDate contributionDate = contrib.getCreatedAt().toLocalDate();
+
+            if (principal.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            LocalDate yearStart = LocalDate.of(asOfDate.getYear(), 1, 1);
+            long daysHeld = ChronoUnit.DAYS.between(yearStart, asOfDate);
+
+            if (daysHeld <= 0) {
+                continue;
+            }
+
+            BigDecimal factor = BigDecimal.valueOf(daysHeld)
+                    .divide(BigDecimal.valueOf(yearBasis), 8, RM);
+
+            BigDecimal interest = principal
+                    .multiply(rate)
+                    .divide(HUNDRED, 10, RM)
+                    .multiply(factor)
+                    .setScale(2, RM);
+
+            totalInterest = totalInterest.add(interest);
+
+            log.debug("  ✅ {}: Principal={}, Days={}, Factor={}, Interest={}",
+                    componentCode, principal, daysHeld, factor, interest);
+        }
+
+        log.debug("Total Interest for {}: {}", componentCode, totalInterest);
+        return totalInterest;
+    }
+
+    private BigDecimal getComponentPrincipal(ContributionBifurcationDetail contrib, String componentCode) {
+        switch (componentCode) {
+            case "PF_EC":
+                return contrib.getPfEc() != null ? contrib.getPfEc() : BigDecimal.ZERO;
+            case "PF_MC":
+                return contrib.getPfMc() != null ? contrib.getPfMc() : BigDecimal.ZERO;
+            case "PENSION_EC":
+                return contrib.getPensionEc() != null ? contrib.getPensionEc() : BigDecimal.ZERO;
+            case "GC":
+                return contrib.getGc() != null ? contrib.getGc() : BigDecimal.ZERO;
+            case "VC":
+                return contrib.getVc() != null ? contrib.getVc() : BigDecimal.ZERO;
+            default:
+                return BigDecimal.ZERO;
+        }
+    }
+
+    // ================================================================
+    // EXCESS SERVICE
+    // ================================================================
+
+    private ExcessCalculationResult calculateExcessServiceHybrid(
             String cid,
             String nppfNumber,
             LocalDate relieveDate,
-            LocalDate cutoffServiceDate,
-            int cutoffYears,
-            int totalEOLMonths) {
+            LocalDate asOfDate) {
 
-        log.info("=== START Excess Service Calculation ===");
-        log.info("CID: {}, NPPF: {}, Relieve Date: {}", cid, nppfNumber, relieveDate);
-        
-        List<ContributionBifurcationDetail> allContributions = 
-            contributionDetailRepo.findByCidAndNppfNumberOrderByCreatedAtAsc(cid, nppfNumber);
+        log.info("=== Calculating Excess Service ===");
+
+        List<ContributionBifurcationDetail> allContributions = contributionDetailRepo
+                .findByCidAndNppfNumberOrderByCreatedAtAsc(cid, nppfNumber);
 
         if (allContributions.isEmpty()) {
-            log.warn("No contributions found for member");
             return buildEmptyExcessResult();
         }
 
-        LocalDate excessStart = cutoffServiceDate.plusMonths(1);
-        LocalDate excessEnd = relieveDate;
+        CutoffServiceMaster config = getActiveCutoffConfig();
+        if (config == null) {
+            return buildEmptyExcessResult();
+        }
 
-        log.info("Excess period: {} to {}", excessStart, excessEnd);
+        int cutoffYears = config.getNumberOfYears();
+        LocalDate startDate = allContributions.get(0).getCreatedAt().toLocalDate();
+        if (startDate == null) {
+            return buildEmptyExcessResult();
+        }
+
+        LocalDate effectiveEndDate = relieveDate.isBefore(asOfDate) ? relieveDate : asOfDate;
+        int totalEOLMonths = calculateEOLMonthsFromHistory(allContributions, startDate, effectiveEndDate);
+
+        int totalMonths = (cutoffYears * 12) + totalEOLMonths;
+        LocalDate cutoffServiceDate = startDate.plusMonths(totalMonths);
+
+        if (!effectiveEndDate.isAfter(cutoffServiceDate)) {
+            log.info("Member not eligible for excess as of {}", asOfDate);
+            return ExcessCalculationResult.builder()
+                    .isEligible(false)
+                    .totalExcessAmount(BigDecimal.ZERO)
+                    .build();
+        }
+
+        LocalDate excessStart = cutoffServiceDate.plusMonths(1);
+        LocalDate excessEnd = effectiveEndDate;
 
         List<ContributionBifurcationDetail> excessContributions = allContributions.stream()
-            .filter(c -> {
-                LocalDate date = c.getCreatedAt().toLocalDate();
-                return !date.isBefore(excessStart) && !date.isAfter(excessEnd);
-            })
-            .sorted(Comparator.comparing(ContributionBifurcationDetail::getCreatedAt))
-            .collect(Collectors.toList());
+                .filter(c -> {
+                    LocalDate date = c.getCreatedAt().toLocalDate();
+                    return !date.isBefore(excessStart) && !date.isAfter(excessEnd);
+                })
+                .sorted(Comparator.comparing(ContributionBifurcationDetail::getCreatedAt))
+                .collect(Collectors.toList());
 
-        log.info("Found {} contributions in excess period", excessContributions.size());
-
-        return calculateExcessBalance(
-            excessContributions,
-            excessStart,
-            excessEnd,
-            cutoffServiceDate,
-            cutoffYears,
-            totalEOLMonths
-        );
+        return calculateExcessBalance(excessContributions, excessStart, excessEnd,
+                cutoffServiceDate, cutoffYears, totalEOLMonths);
     }
 
     private ExcessCalculationResult calculateExcessBalance(
@@ -243,259 +560,68 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             int cutoffYears,
             int totalEOLMonths) {
 
-        Map<String, List<ContributionBifurcationDetail>> byYear = excessContributions.stream()
-            .collect(Collectors.groupingBy(c -> getAccountingYearForDate(c.getCreatedAt().toLocalDate())));
-
-        BigDecimal openingBalance = BigDecimal.ZERO;
         BigDecimal totalExcessContributions = BigDecimal.ZERO;
         BigDecimal totalExcessInterest = BigDecimal.ZERO;
-        int totalEOLMonthsInExcess = 0;
-        
-        List<MemberContributionSummary.ExcessYearDetail> yearDetails = new ArrayList<>();
-        List<MemberContributionSummary.ExcessMonthlyDetail> allMonthlyDetails = new ArrayList<>();
+        int eolMonthsInExcess = 0;
 
-        List<String> accountingYears = getAccountingYearsInPeriod(excessStart, excessEnd);
-        log.info("Accounting years in excess period: {}", accountingYears);
+        String accountingYear = getAccountingYearForDate(excessStart);
+        AccountingInterestMaster interestMaster = getInterestRateDetail(accountingYear);
+        int yearBasis = getYearBasisForYear(accountingYear);
+        BigDecimal rate = interestMaster != null ? interestMaster.getInterestRate() : BigDecimal.ZERO;
 
-        for (String year : accountingYears) {
-            log.info("--- Processing year: {} ---", year);
+        for (ContributionBifurcationDetail contrib : excessContributions) {
+            BigDecimal principal = getTotalContributionAmount(contrib);
+            totalExcessContributions = totalExcessContributions.add(principal);
 
-            List<ContributionBifurcationDetail> yearContribs = byYear.getOrDefault(year, new ArrayList<>());
-            
-            AccountingInterestMaster interestMaster = getInterestRateDetail(year);
-            if (interestMaster == null) {
-                log.warn("Interest rate not found for year: {}, skipping", year);
-                continue;
-            }
-
-            BigDecimal arrRate = interestMaster.getInterestRate();
-            LocalDate yearEndDate = interestMaster.getInterestDate();
-            int yearBasis = getYearBasisForYear(year);
-
-            log.info("Rate: {}%, Year End Date: {}, Year Basis: {}, Records: {}", 
-                arrRate.multiply(HUNDRED), yearEndDate, yearBasis, yearContribs.size());
-
-            String yearType = getYearType(year);
-            List<YearMonth> monthsInYear = getMonthsInYear(year);
-            List<YearMonth> filteredMonths = monthsInYear.stream()
-                .filter(ym -> {
-                    LocalDate monthStart = ym.atDay(1);
-                    LocalDate monthEnd = ym.atEndOfMonth();
-                    return !monthEnd.isBefore(excessStart) && !monthStart.isAfter(excessEnd);
-                })
-                .collect(Collectors.toList());
-
-            yearContribs.sort(Comparator.comparing(ContributionBifurcationDetail::getCreatedAt));
-
-            BigDecimal yearlyContributions = BigDecimal.ZERO;
-            BigDecimal yearlyInterest = BigDecimal.ZERO;
-            int eolMonthsInYear = 0;
-            List<MemberContributionSummary.ExcessMonthlyDetail> monthlyDetails = new ArrayList<>();
-
-            Map<String, ContributionBifurcationDetail> monthMap = yearContribs.stream()
-                .collect(Collectors.toMap(
-                    c -> getMonthYearKey(c.getCreatedAt().toLocalDate()),
-                    c -> c,
-                    (existing, replacement) -> existing
-                ));
-
-            for (YearMonth yearMonth : filteredMonths) {
-                LocalDate monthStart = yearMonth.atDay(1);
-                String monthKey = getMonthYearKey(monthStart);
-
-                ContributionBifurcationDetail detail = monthMap.get(monthKey);
-
-                BigDecimal mpc = BigDecimal.ZERO;
-                BigDecimal epc = BigDecimal.ZERO;
-                BigDecimal totalPension = BigDecimal.ZERO;
-                BigDecimal interest = BigDecimal.ZERO;
-                int daysHeld = 0;
-                boolean isEOL = false;
-
-                if (detail != null) {
-                    mpc = detail.getPensionMc() != null ? detail.getPensionMc() : BigDecimal.ZERO;
-                    epc = detail.getPensionEc() != null ? detail.getPensionEc() : BigDecimal.ZERO;
-                    totalPension = mpc.add(epc);
-
-                    LocalDate depositDate = detail.getCreatedAt().toLocalDate();
-                    daysHeld = (int) ChronoUnit.DAYS.between(depositDate, yearEndDate);
-                    if (daysHeld < 0) daysHeld = 0;
-
+            if (rate.compareTo(BigDecimal.ZERO) > 0 && yearBasis > 0) {
+                LocalDate contributionDate = contrib.getCreatedAt().toLocalDate();
+                long daysHeld = calculateDaysHeld(contributionDate, excessEnd);
+                if (daysHeld > 0) {
                     BigDecimal factor = BigDecimal.valueOf(daysHeld)
-                        .divide(BigDecimal.valueOf(yearBasis), 8, RM);
-
-                    interest = totalPension
-                        .multiply(arrRate)
-                        .divide(HUNDRED, 10, RM)
-                        .multiply(factor)
-                        .setScale(2, RM);
-
-                    yearlyContributions = yearlyContributions.add(totalPension);
-                    yearlyInterest = yearlyInterest.add(interest);
-
-                } else {
-                    isEOL = true;
-                    eolMonthsInYear++;
-                    totalEOLMonthsInExcess++;
+                            .divide(BigDecimal.valueOf(yearBasis), 8, RM);
+                    BigDecimal interest = principal
+                            .multiply(rate)
+                            .divide(HUNDRED, 10, RM)
+                            .multiply(factor)
+                            .setScale(2, RM);
+                    totalExcessInterest = totalExcessInterest.add(interest);
                 }
-
-                MemberContributionSummary.ExcessMonthlyDetail monthlyDetail = 
-                    MemberContributionSummary.ExcessMonthlyDetail.builder()
-                        .dueMonth(String.valueOf(yearMonth.getMonthValue()))
-                        .invoiceDate(monthStart)
-                        .mpc(mpc)
-                        .epc(epc)
-                        .totalPension(totalPension)
-                        .days(daysHeld)
-                        .interest(interest)
-                        .cPlusI(totalPension.add(interest))
-                        .isEOL(isEOL)
-                        .build();
-                monthlyDetails.add(monthlyDetail);
-                allMonthlyDetails.add(monthlyDetail);
             }
-
-            BigDecimal intOnOpening = openingBalance
-                .multiply(arrRate)
-                .divide(HUNDRED, 2, RM);
-
-            BigDecimal duringTheYear = yearlyContributions.add(yearlyInterest);
-            BigDecimal closingBalance = openingBalance
-                .add(intOnOpening)
-                .add(duringTheYear);
-
-            log.info("Year {} - Opening: {}, IOB: {}, Contributions: {}, Interest: {}, Closing: {}", 
-                year,
-                openingBalance.setScale(2, RM),
-                intOnOpening.setScale(2, RM),
-                yearlyContributions.setScale(2, RM),
-                yearlyInterest.setScale(2, RM),
-                closingBalance.setScale(2, RM));
-
-            totalExcessContributions = totalExcessContributions.add(yearlyContributions);
-            totalExcessInterest = totalExcessInterest.add(yearlyInterest).add(intOnOpening);
-
-            MemberContributionSummary.ExcessYearDetail yearDetail = 
-                MemberContributionSummary.ExcessYearDetail.builder()
-                    .accountingYear(year)
-                    .yearType(yearType)
-                    .openingBalance(openingBalance)
-                    .interestOnOpening(intOnOpening)
-                    .duringTheYear(duringTheYear)
-                    .closingBalance(closingBalance)
-                    .interestRate(arrRate)
-                    .interestDate(yearEndDate)
-                    .daysInYear(0)
-                    .eolMonthsInYear(eolMonthsInYear)
-                    .yearlyContributions(yearlyContributions)
-                    .yearlyInterest(yearlyInterest)
-                    .monthlyDetails(monthlyDetails)
-                    .build();
-            yearDetails.add(yearDetail);
-
-            openingBalance = closingBalance;
         }
 
-        BigDecimal totalExcessAmount = openingBalance;
+        BigDecimal totalExcessAmount = totalExcessContributions.add(totalExcessInterest);
 
-        log.info("========== EXCESS SERVICE SUMMARY ==========");
-        log.info("Total Excess Contributions: {}", totalExcessContributions.setScale(2, RM));
-        log.info("Total Excess Interest: {}", totalExcessInterest.setScale(2, RM));
-        log.info("Total Excess Amount: {}", totalExcessAmount.setScale(2, RM));
-        log.info("EOL Months in Excess: {}", totalEOLMonthsInExcess);
-        log.info("===========================================");
+        log.info("EXCESS SERVICE SUMMARY:");
+        log.info("  Total Excess Contributions: {}", totalExcessContributions);
+        log.info("  Total Excess Interest: {}", totalExcessInterest);
+        log.info("  Total Excess Amount: {}", totalExcessAmount);
 
         return ExcessCalculationResult.builder()
-            .isEligible(true)
-            .totalExcessAmount(totalExcessAmount)
-            .totalExcessContributions(totalExcessContributions)
-            .totalExcessInterest(totalExcessInterest)
-            .eolMonthsInExcess(totalEOLMonthsInExcess)
-            .cutoffServiceDate(cutoffServiceDate)
-            .cutoffYears(cutoffYears)
-            .excessStartDate(excessStart)
-            .excessEndDate(excessEnd)
-            .totalEOLMonths(totalEOLMonths)
-            .yearDetails(yearDetails)
-            .monthlyDetails(allMonthlyDetails)
-            .build();
+                .isEligible(true)
+                .totalExcessAmount(totalExcessAmount)
+                .totalExcessContributions(totalExcessContributions)
+                .totalExcessInterest(totalExcessInterest)
+                .eolMonthsInExcess(eolMonthsInExcess)
+                .cutoffServiceDate(cutoffServiceDate)
+                .cutoffYears(cutoffYears)
+                .excessStartDate(excessStart)
+                .excessEndDate(excessEnd)
+                .totalEOLMonths(totalEOLMonths)
+                .yearDetails(Collections.emptyList())
+                .monthlyDetails(Collections.emptyList())
+                .build();
     }
 
-    // ========== PRIVATE HELPER METHODS ==========
+    // ================================================================
+    // HELPER METHODS
+    // ================================================================
 
-    private List<MemberBalanceSnapshot> getSnapshots(String cid, String nppfNumber) {
-        if (cid == null || cid.isEmpty()) {
-            return snapshotRepo.findByNppfNumberOrderByAccountingYearDesc(nppfNumber);
-        } else {
-            return snapshotRepo.findByCidAndNppfNumberOrderByAccountingYearDesc(cid, nppfNumber);
-        }
-    }
-
-    private List<MemberInterestRecord> getInterestRecords(String cid, String nppfNumber) {
-        if (cid == null || cid.isEmpty()) {
-            return mirRepo.findByNppfNumberOrderByAccountingYearDesc(nppfNumber);
-        } else {
-            return mirRepo.findByCidAndNppfNumberOrderByAccountingYearDesc(cid, nppfNumber);
-        }
-    }
-
-    private PFTotals aggregatePFTotals(List<MemberBalanceSnapshot> snapshots) {
-        BigDecimal totalPrincipal = BigDecimal.ZERO;
-        BigDecimal totalInterest = BigDecimal.ZERO;
-        LocalDate latestDate = null;
-
-        for (MemberBalanceSnapshot snapshot : snapshots) {
-            totalPrincipal = totalPrincipal.add(n(snapshot.getTotalContributions()));
-            totalInterest = totalInterest.add(n(snapshot.getTotalInterest()));
-            if (snapshot.getLastUpdatedAt() != null) {
-                latestDate = snapshot.getLastUpdatedAt().toLocalDate();
-            }
-        }
-
-        BigDecimal totalBalance = totalPrincipal.add(totalInterest);
-        return new PFTotals(totalPrincipal, totalInterest, totalBalance, latestDate);
-    }
-
-    private List<MemberContributionSummary.ComponentGroup> buildComponentGroups(
-            List<MemberBalanceSnapshot> snapshots,
-            List<MemberInterestRecord> interestRecords) {
-        
-        Map<String, BigDecimal> interestByComponent = new HashMap<>();
-        for (MemberInterestRecord mir : interestRecords) {
-            if ("CREDITED".equals(mir.getStatus()) || "ADJUSTED".equals(mir.getStatus())) {
-                String code = mir.getComponentCode();
-                BigDecimal current = interestByComponent.getOrDefault(code, BigDecimal.ZERO);
-                interestByComponent.put(code, current.add(n(mir.getTotalInterest())));
-            }
-        }
-
-        Map<String, BigDecimal> contributionByComponent = new HashMap<>();
-        for (MemberBalanceSnapshot snap : snapshots) {
-            addToMap(contributionByComponent, "IEC", snap.getPfEc());
-            addToMap(contributionByComponent, "IMC", snap.getPfMc());
-            addToMap(contributionByComponent, "IPC", snap.getPensionEc());
-            addToMap(contributionByComponent, "IGC", snap.getGc());
-            addToMap(contributionByComponent, "IVC", snap.getVc());
-        }
-
-        List<MemberContributionSummary.ComponentGroup> groups = new ArrayList<>();
-        groups.add(createComponentGroup("IEC", "Employee PF Contribution", 
-                contributionByComponent.getOrDefault("IEC", BigDecimal.ZERO),
-                interestByComponent.getOrDefault("IEC", BigDecimal.ZERO)));
-        groups.add(createComponentGroup("IMC", "Employer PF Contribution", 
-                contributionByComponent.getOrDefault("IMC", BigDecimal.ZERO),
-                interestByComponent.getOrDefault("IMC", BigDecimal.ZERO)));
-        groups.add(createComponentGroup("IPC", "Pension Contribution", 
-                contributionByComponent.getOrDefault("IPC", BigDecimal.ZERO),
-                interestByComponent.getOrDefault("IPC", BigDecimal.ZERO)));
-        groups.add(createComponentGroup("IGC", "Government Contribution", 
-                contributionByComponent.getOrDefault("IGC", BigDecimal.ZERO),
-                interestByComponent.getOrDefault("IGC", BigDecimal.ZERO)));
-        groups.add(createComponentGroup("IVC", "Voluntary Contribution", 
-                contributionByComponent.getOrDefault("IVC", BigDecimal.ZERO),
-                interestByComponent.getOrDefault("IVC", BigDecimal.ZERO)));
-
-        return groups;
+    private BigDecimal getTotalContributionAmount(ContributionBifurcationDetail contrib) {
+        return n(contrib.getPfEc())
+                .add(n(contrib.getPfMc()))
+                .add(n(contrib.getPensionEc()))
+                .add(n(contrib.getGc()))
+                .add(n(contrib.getVc()));
     }
 
     private MemberContributionSummary.ComponentGroup createComponentGroup(
@@ -510,22 +636,86 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                 .build();
     }
 
-    private void addToMap(Map<String, BigDecimal> map, String key, BigDecimal value) {
-        if (value != null) {
-            BigDecimal current = map.getOrDefault(key, BigDecimal.ZERO);
-            map.put(key, current.add(value));
+    private List<MemberBalanceSnapshot> getSnapshots(String cid, String nppfNumber) {
+        if (cid == null || cid.isEmpty()) {
+            return snapshotRepo.findByNppfNumberOrderByAccountingYearDesc(nppfNumber);
+        } else {
+            return snapshotRepo.findByCidAndNppfNumberOrderByAccountingYearDesc(cid, nppfNumber);
         }
     }
 
-    private int calculateContributionMonths(List<MemberBalanceSnapshot> snapshots) {
-        if (snapshots.isEmpty()) return 0;
-        Set<String> uniqueYears = new HashSet<>();
-        for (MemberBalanceSnapshot snap : snapshots) {
-            if (snap.getAccountingYear() != null && !snap.getAccountingYear().isEmpty()) {
-                uniqueYears.add(snap.getAccountingYear());
+    private String getAccountingYearForDate(LocalDate date) {
+        if (date == null) {
+            return String.valueOf(LocalDate.now().getYear());
+        }
+        int year = date.getYear();
+        int month = date.getMonthValue();
+
+        if (year < TRANSITION_YEAR) {
+            if (month <= 6)
+                return (year - 1) + "-" + year;
+            else
+                return year + "-" + (year + 1);
+        } else if (year == TRANSITION_YEAR) {
+            if (month <= 6)
+                return (year - 1) + "-" + year;
+            else
+                return year + "-" + year;
+        } else {
+            return year + "-" + year;
+        }
+    }
+
+    private int getYearBasisForYear(String accountingYear) {
+        try {
+            Optional<ArrConfiguration> arrOpt = arrRepo.findByAccountingYear(accountingYear);
+            if (arrOpt.isPresent()) {
+                return arrOpt.get().getYearBasis();
+            }
+            return 365;
+        } catch (Exception e) {
+            return 365;
+        }
+    }
+
+    private AccountingInterestMaster getInterestRateDetail(String accountingYear) {
+        return interestMasterRepository.findByFinancialYear(accountingYear).orElse(null);
+    }
+
+    private int calculateContributionMonths(
+            List<ContributionBifurcationDetail> allContributions,
+            LocalDate asOfDate) {
+
+        int count = 0;
+        for (ContributionBifurcationDetail contrib : allContributions) {
+            String status = contrib.getPostingStatus();
+            if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
+                continue;
+            }
+
+            LocalDate date = contrib.getCreatedAt().toLocalDate();
+            if (!date.isAfter(asOfDate)) {
+                count++;
             }
         }
-        return uniqueYears.size() * 12;
+        return count;
+    }
+
+    private int calculateNonContributionMonths(
+            MemberDetailResponseDto memberDetail,
+            LocalDate relieveDate,
+            List<ContributionBifurcationDetail> allContributions) {
+
+        if (relieveDate == null || !isPensionEligible(memberDetail)) {
+            return 0;
+        }
+
+        LocalDate startDate = getStartDate(memberDetail);
+        if (startDate == null) {
+            return 0;
+        }
+
+        return calculateEOLMonthsFromHistory(allContributions, startDate, relieveDate);
     }
 
     private boolean isPensionEligible(MemberDetailResponseDto memberDetail) {
@@ -533,7 +723,6 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             String categoryId = memberDetail.getMemberCategoryId();
             return categoryId != null && !"04".equals(categoryId.trim());
         } catch (Exception e) {
-            log.warn("Error checking pension eligibility for {}: {}", memberDetail.getNppfNumber(), e.getMessage());
             return false;
         }
     }
@@ -550,20 +739,9 @@ public class MemberContributionServiceImpl implements MemberContributionService 
 
     private CutoffServiceMaster getActiveCutoffConfig() {
         return cutoffServiceMasterRepository.findAll().stream()
-            .filter(config -> "Y".equals(config.getStatus()))
-            .findFirst()
-            .orElse(null);
-    }
-
-    private AccountingInterestMaster getInterestRateDetail(String accountingYear) {
-        return interestMasterRepository
-            .findByFinancialYear(accountingYear)
-            .orElse(null);
-    }
-
-    private int getYearBasisForYear(String accountingYear) {
-        // TODO: Fetch from ArrConfiguration table
-        return 365;
+                .filter(config -> "Y".equals(config.getStatus()))
+                .findFirst()
+                .orElse(null);
     }
 
     private int calculateEOLMonthsFromHistory(
@@ -571,12 +749,14 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             LocalDate startDate,
             LocalDate endDate) {
 
-        if (allContributions.isEmpty() || startDate == null || endDate == null) return 0;
+        if (allContributions.isEmpty() || startDate == null || endDate == null)
+            return 0;
 
         Set<String> contributionMonths = allContributions.stream()
-            .filter(c -> c.getCreatedAt() != null)
-            .map(c -> getMonthYearKey(c.getCreatedAt().toLocalDate()))
-            .collect(Collectors.toSet());
+                .filter(c -> c.getCreatedAt() != null)
+                .map(c -> c.getCreatedAt().toLocalDate().getYear() + "-" +
+                        String.format("%02d", c.getCreatedAt().toLocalDate().getMonthValue()))
+                .collect(Collectors.toSet());
 
         YearMonth startMonth = YearMonth.from(startDate);
         YearMonth endMonth = YearMonth.from(endDate);
@@ -594,133 +774,38 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         return eolMonths;
     }
 
-    private String getYearType(String accountingYear) {
-        try {
-            String[] parts = accountingYear.split("-");
-            if (parts.length < 2) {
-                return "ACCOUNTING_YEAR";
-            }
-            int startYear = Integer.parseInt(parts[0]);
-            int endYear = Integer.parseInt(parts[1]);
-
-            if (startYear == endYear) {
-                if (startYear == TRANSITION_YEAR) {
-                    return "TRANSITION_YEAR";
-                }
-                return "CALENDAR_YEAR";
-            }
-            return "ACCOUNTING_YEAR";
-        } catch (Exception e) {
-            log.warn("Error parsing accounting year: {}, defaulting to ACCOUNTING_YEAR", accountingYear);
-            return "ACCOUNTING_YEAR";
-        }
-    }
-
-    private List<YearMonth> getMonthsInYear(String accountingYear) {
-        List<YearMonth> months = new ArrayList<>();
-        try {
-            String[] parts = accountingYear.split("-");
-            if (parts.length < 2) {
-                return months;
-            }
-            int startYear = Integer.parseInt(parts[0]);
-            int endYear = Integer.parseInt(parts[1]);
-
-            String yearType = getYearType(accountingYear);
-            
-            if ("ACCOUNTING_YEAR".equals(yearType)) {
-                for (int month = 7; month <= 12; month++) {
-                    months.add(YearMonth.of(startYear, month));
-                }
-                for (int month = 1; month <= 6; month++) {
-                    months.add(YearMonth.of(endYear, month));
-                }
-            } else if ("TRANSITION_YEAR".equals(yearType)) {
-                for (int month = 7; month <= 12; month++) {
-                    months.add(YearMonth.of(startYear, month));
-                }
-            } else {
-                for (int month = 1; month <= 12; month++) {
-                    months.add(YearMonth.of(startYear, month));
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Could not parse accounting year: {}", accountingYear);
-        }
-        return months;
-    }
-
-    private String getAccountingYearForDate(LocalDate date) {
-        if (date == null) {
-            return String.valueOf(LocalDate.now().getYear());
-        }
-        int year = date.getYear();
-        int month = date.getMonthValue();
-
-        if (year < TRANSITION_YEAR) {
-            if (month <= 6) return (year - 1) + "-" + year;
-            else return year + "-" + (year + 1);
-        } else if (year == TRANSITION_YEAR) {
-            if (month <= 6) return (year - 1) + "-" + year;
-            else return year + "-" + year;
-        } else {
-            return year + "-" + year;
-        }
-    }
-
-    private List<String> getAccountingYearsInPeriod(LocalDate start, LocalDate end) {
-        List<String> years = new ArrayList<>();
-        if (start == null || end == null) {
-            return years;
-        }
-        LocalDate current = start;
-        while (!current.isAfter(end)) {
-            String year = getAccountingYearForDate(current);
-            if (!years.contains(year)) {
-                years.add(year);
-            }
-            current = current.plusMonths(1);
-        }
-        return years;
-    }
-
-    private String getMonthYearKey(LocalDate date) {
-        if (date == null) {
-            return String.valueOf(YearMonth.now());
-        }
-        return date.getYear() + "-" + String.format("%02d", date.getMonthValue());
-    }
-
     private BigDecimal n(BigDecimal v) {
         return v == null ? BigDecimal.ZERO : v;
     }
 
-    private Long getSchemeTypeId(List<MemberBalanceSnapshot> snapshots) {
-        return snapshots.isEmpty() ? 1L : 1L;
+    private Long getSchemeTypeId(MemberDetailResponseDto memberDetail) {
+        try {
+            return memberDetail.getSchemeTypeId();
+        } catch (Exception e) {
+            return 1L;
+        }
     }
 
     private ExcessCalculationResult buildEmptyExcessResult() {
         return ExcessCalculationResult.builder()
-            .isEligible(false)
-            .totalExcessAmount(BigDecimal.ZERO)
-            .totalExcessContributions(BigDecimal.ZERO)
-            .totalExcessInterest(BigDecimal.ZERO)
-            .eolMonthsInExcess(0)
-            .yearDetails(Collections.emptyList())
-            .monthlyDetails(Collections.emptyList())
-            .build();
+                .isEligible(false)
+                .totalExcessAmount(BigDecimal.ZERO)
+                .totalExcessContributions(BigDecimal.ZERO)
+                .totalExcessInterest(BigDecimal.ZERO)
+                .eolMonthsInExcess(0)
+                .yearDetails(Collections.emptyList())
+                .monthlyDetails(Collections.emptyList())
+                .cutoffServiceDate(null)
+                .cutoffYears(0)
+                .excessStartDate(null)
+                .excessEndDate(null)
+                .totalEOLMonths(0)
+                .build();
     }
 
-    // ========== INNER CLASSES ==========
-
-    @lombok.AllArgsConstructor
-    @lombok.Getter
-    private static class PFTotals {
-        private final BigDecimal totalPrincipal;
-        private final BigDecimal totalInterest;
-        private final BigDecimal totalBalance;
-        private final LocalDate latestDate;
-    }
+    // ================================================================
+    // INNER CLASSES
+    // ================================================================
 
     @lombok.Builder
     @lombok.Getter

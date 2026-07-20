@@ -105,12 +105,8 @@ public interface ClaimSpecialCaseApplicationMapper {
      */
     List<ClaimSpecialCaseApplicationResponseDto> toResponseDtoList(List<ClaimSpecialCaseApplication> entities);
 
-    /**
-     * After mapping from Request DTO to Entity, set default values
-     */
     @AfterMapping
     default void afterMappingToEntity(ClaimSpecialCaseApplicationRequestDto dto, @MappingTarget ClaimSpecialCaseApplication entity) {
-        // Set default values if needed
         if (entity.getIsActive() == null) {
             entity.setIsActive("Y");
         }
@@ -130,4 +126,16 @@ public interface ClaimSpecialCaseApplicationMapper {
             entity.setApprovedAmount(java.math.BigDecimal.ZERO);
         }
     }
+
+    @AfterMapping
+default void afterMappingToResponse(ClaimSpecialCaseApplication entity, @MappingTarget ClaimSpecialCaseApplicationResponseDto response) {
+    if (entity.getPensionAccount() != null) {
+        response.setPensionAccountId(entity.getPensionAccount().getId());
+    }
+    if (entity.getReserveAccount() != null) {
+        response.setReserveAccountId(entity.getReserveAccount().getId());
+    }
+    // caseReasonId is already mapped from entity
+    // caseReasonName should be set in the service layer
+}
 }

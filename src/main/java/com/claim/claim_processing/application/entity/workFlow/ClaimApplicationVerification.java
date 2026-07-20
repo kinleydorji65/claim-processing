@@ -41,21 +41,8 @@ public class ClaimApplicationVerification {
     )
     private StatusMaster status;
 
-    @Column(name = "REQUIRES_RECALCULATION", length = 1)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ActivityEnum requiresRecalculation = ActivityEnum.N;
-
-    @Column(name = "REQUIRES_MANUAL_REVIEW", length = 1)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ActivityEnum requiresManualReview = ActivityEnum.N;
-
-    @Column(name = "REJECTION_REASON", length = 1000)
-    private String rejectionReason;
-
-    @Column(name = "VERIFIER_REMARKS", length = 2000)
-    private String verifierRemarks;
+    @Column(name = "remarks", length = 2000)
+    private String remarks;
 
     @Column(name = "CLAIMED_BY", length = 100)
     private String claimedBy;
@@ -66,16 +53,8 @@ public class ClaimApplicationVerification {
     @Column(name = "VERIFIED_BY", length = 100)
     private String verifiedBy;
 
-    @Column(name = "VERIFIED_BY_ROLE_ID", length = 100)
-    private Long verifiedByRoleId;
-
     @Column(name = "VERIFIED_AT")
     private Timestamp verifiedAt; 
-
-    @Column(name = "IS_ACTIVE", length = 1)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
@@ -99,18 +78,6 @@ public class ClaimApplicationVerification {
 
         if (updatedAt == null) {
             updatedAt = now;
-        }
-
-        if (requiresRecalculation == null) {
-            requiresRecalculation = ActivityEnum.N;
-        }
-
-        if (requiresManualReview == null) {
-            requiresManualReview = ActivityEnum.N;
-        }
-
-        if (isActive == null) {
-            isActive = ActivityEnum.Y;
         }
     }
 

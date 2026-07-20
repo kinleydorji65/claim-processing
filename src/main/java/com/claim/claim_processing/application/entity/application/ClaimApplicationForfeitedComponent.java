@@ -52,11 +52,6 @@ public class ClaimApplicationForfeitedComponent {
     @Column(name = "SUB_CLAIM_CODE", length = 100)
     private String subClaimCode;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "IS_ACTIVE", length = 1)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
-
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
 

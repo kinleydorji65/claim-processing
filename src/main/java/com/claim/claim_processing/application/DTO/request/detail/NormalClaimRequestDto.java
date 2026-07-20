@@ -22,8 +22,6 @@ public class NormalClaimRequestDto {
     // ---------- Always shown ----------
     private String lastPayMonth;
 
-    // ---------- Termination fields ----------
-    private LocalDate dateOfTermination;
 
     private String terminatedBy;
 
@@ -31,8 +29,6 @@ public class NormalClaimRequestDto {
 
     // ---------- Retirement-like fields ----------
     private String relievingOrderNumber;
-
-    private LocalDate relievingOrderDate;
 
     // ---------- Exit-like fields ----------
     private String relievingReferenceNumber;
@@ -44,13 +40,7 @@ public class NormalClaimRequestDto {
     // ---------- Backend/display-related fields ----------
     private LocalDate dateOfServiceJoining;
 
-    private LocalDate pfJoiningDate;
-
-    private LocalDate pensionJoiningDate;
-
     private BigDecimal finalBasicSalary;
-
-    private Integer nonContributionMonths;
 
     private String remarks;
 

@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import com.claim.claim_processing.application.DTO.request.application.ClaimSpecialCaseApplicationRequestDto.SpecialCaseComponentBalanceDTO;
 
 @Data
 @Builder
@@ -19,6 +22,7 @@ public class ClaimSpecialCaseApplicationResponseDto {
 
     // Reference to the claim
     private Long claimApplicationId;
+    private String applicationNumber;
 
     // Special Case Information
     private String caseType;
@@ -51,6 +55,9 @@ public class ClaimSpecialCaseApplicationResponseDto {
     // Reserve Account Reference
     private Long reserveAccountId;
 
+    // Components
+    private List<SpecialCaseComponentBalanceResponseDTO> components;
+
     // Audit Information
     private String isActive;
     private String createdBy;
@@ -58,5 +65,15 @@ public class ClaimSpecialCaseApplicationResponseDto {
     private String updatedBy;
     private LocalDateTime updatedAt;
 
-    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SpecialCaseComponentBalanceResponseDTO {
+        private String code; // PF_MC, PF_IMC, PF_EC, etc.
+        private String name; // Component display name
+        private String type; // CONTRIBUTION, INTEREST, FORFEITED, DEDUCTION
+        private BigDecimal amount; // Component amount
+        private BigDecimal percentalAmount; // Percentage amount (for partial calculations)
+    }
 }

@@ -3,14 +3,16 @@ package com.claim.claim_processing.application.service.application.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationOtherRequestDto;
+import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationCalculationSummaryRequest;
 import com.claim.claim_processing.application.DTO.request.application.GeneralClaimCreateRequest;
 import com.claim.claim_processing.application.DTO.request.application.GeneralClaimPatchRequest;
-import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationApprovalRequestDto;
-import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationVerificationRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationWorkflowRequestDto;
 import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
@@ -25,7 +27,6 @@ import com.claim.claim_processing.application.entity.detail.BeneficiarySettlemen
 import com.claim.claim_processing.application.entity.detail.LegalRecoveryDetail;
 import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 import com.claim.claim_processing.application.entity.detail.PartialWithdrawalDetail;
-import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationWorkflow;
 import com.claim.claim_processing.application.mapper.application.GeneralClaimResponseBuilderMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.BeneficiarySettlementResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.ClaimApplicationBankResponseMapper;
@@ -35,7 +36,6 @@ import com.claim.claim_processing.application.mapper.claimApplicationOtherRespon
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.LegalRecoveryResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.NormalClaimResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.PartialWithdrawalResponseMapper;
-import com.claim.claim_processing.application.repository.workFlow.ClaimApplicationWorkflowRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationBankDetailService;
 import com.claim.claim_processing.application.service.application.ClaimApplicationCalculationService;
 import com.claim.claim_processing.application.service.application.ClaimApplicationDeductionDetailService;
@@ -53,9 +53,6 @@ import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.rule.BenefitCalculation.BenefitCalculationService;
-import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
-import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -106,11 +103,6 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
 
                 List<ClaimApplicationBankDetail> bankDetailEntities = new ArrayList<>();
                 ClaimApplicationCalculationSummary calculationEntity = null;
-                ClaimApplicationDeductionDetail deductionEntity = null;
-                List<ClaimApplicationForfeitedComponent> forfeitedComponents = new ArrayList<>();
-
-                ClaimCalculationResponseDTO calculationResponse = null;
-
                 if (request.getNormalClaim() != null) {
                         normalClaimDetail = normalClaimService.create(
                                         claimApplication,
@@ -141,38 +133,9 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
 
                 if (request.getClaimApplicationOther() != null) {
 
-                        ClaimApplicationOtherRequestDto otherRequest = request.getClaimApplicationOther();
+                        calculationEntity = claimApplicationCalculationService.initialCreate(claimApplication,
+                                        request.getClaimApplicationOther());
 
-                        ClaimInitialPreviewRequest benefitRequest = ClaimInitialPreviewRequest.builder()
-                                        .cessationDate(otherRequest.getCessationDate())
-                                        .identityNumber(otherRequest.getIdentityNumber())
-                                        .cessationTypeId(otherRequest.getCessationTypeId())
-                                        .claimTypeId(claimApplication.getClaimType().getId())
-                                        .nppfNumber(claimApplication.getNppfNumber())
-                                        .isSpecialCase(claimApplication.getIsSpecialCase() == ActivityEnum.Y)
-                                        .reasonTypeId(otherRequest.getReasonTypeId())
-                                        .build();
-
-                        calculationResponse = benefitCalculationService
-                                        .calculateBenefit(benefitRequest)
-                                        .getData();
-
-                        calculationEntity = claimApplicationCalculationService.create(
-                                        claimApplication,
-                                        calculationResponse,
-                                        otherRequest.getFinalPayableAmount());
-
-                        deductionEntity = claimApplicationDeductionDetailService.saveCalculationDeductions(
-                                        claimApplication,
-                                        calculationResponse,
-                                        claimApplication.getCreatedBy());
-                        if (calculationResponse.getForfeitedComponents() != null
-                                        && !calculationResponse.getForfeitedComponents().isEmpty()) {
-                                forfeitedComponents = claimApplicationForfeitedComponentService.saveForfeitedComponents(
-                                                claimApplication,
-                                                calculationResponse,
-                                                claimApplication.getCreatedBy());
-                        }
                 }
                 ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto
                                 .builder()
@@ -184,6 +147,7 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                 .reason(request.getClaimApplication().getReason())
                                 .actionBy(request.getClaimApplication().getCreatedBy())
                                 .build();
+
                 List<ClaimApplicationWorkflowResponseDto> workflowDetails = claimApplicationWorkflowService
                                 .create(claimApplication, workflowRequest);
 
@@ -194,9 +158,6 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                 bankDetailEntities.stream()
                                                 .map(claimApplicationBankResponseMapper::toResponse)
                                                 .toList());
-
-                response.setDeductionDetail(
-                                claimApplicationDeductionResponseMapper.toResponse(deductionEntity));
 
                 response.setCalculationSummary(
                                 claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
@@ -211,12 +172,73 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                 beneficiarySettlementResponseMapper.toResponse(beneficiarySettlementDetail));
                 response.setCalculationSummary(
                                 claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
+                response.setLegalRecoveryDetail(legalRecoveryResponseMapper.toResponse(legalRecoveryDetail));
+                return ApiResponseDTO.created(response);
+        }
+
+        @Override
+        @Transactional
+        public ApiResponseDTO<GeneralClaimResponse> createForVerifier(Long applicationId,
+                        ClaimApplicationCalculationSummaryRequest request) {
+                ClaimApplication claimApplication = claimApplicationService.getById(applicationId);
+
+                ClaimApplicationCalculationSummary calculationEntity = null;
+                ClaimApplicationDeductionDetail deductionEntity = null;
+                List<ClaimApplicationForfeitedComponent> forfeitedComponents = new ArrayList<>();
+
+                if (request != null) {
+                        calculationEntity = claimApplicationCalculationService.createForCalculation(
+                                        claimApplication,
+                                        request);
+
+                        if (request.getForFeitedComponents() != null
+                                        && !request.getForFeitedComponents().isEmpty()) {
+                                forfeitedComponents = claimApplicationForfeitedComponentService.saveForfeitedComponents(
+                                                claimApplication,
+                                                request.getForFeitedComponents());
+                        }
+                        deductionEntity = claimApplicationDeductionDetailService.saveCalculationDeductions(
+                                        claimApplication,
+                                        request.getDeductionDetail());
+
+                }
+                List<ClaimApplicationWorkflowResponseDto> workflowDetails = claimApplicationWorkflowService
+                                .getByApplicationNumber(claimApplication.getApplicationNumber());
+                List<ClaimApplicationBankDetail> bankDetailEntities = claimApplicationBankDetailService
+                                .getByApplicationNumber(claimApplication.getApplicationNumber());
+                GeneralClaimResponse response = generalClaimResponseBuilderMapper.toResponse(claimApplication);
+                response.setWorkflowDetails(workflowDetails);
+
+                response.setBankDetails(
+                                bankDetailEntities.stream()
+                                                .map(claimApplicationBankResponseMapper::toResponse)
+                                                .toList());
+
+                response.setCalculationSummary(
+                                claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
+
+                response.setNormalClaimDetails(
+                                normalClaimResponseMapper.toResponse(claimApplication.getNormalClaimDetail()));
+
+                response.setPartialWithdrawalDetails(
+                                partialWithdrawalResponseMapper
+                                                .toResponse(claimApplication.getPartialWithdrawalDetail()));
+
+                response.setBeneficiarySettlementDetails(
+                                beneficiarySettlementResponseMapper
+                                                .toResponse(claimApplication.getBeneficiarySettlementDetail()));
+                response.setCalculationSummary(
+                                claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
+                response.setLegalRecoveryDetail(
+                                legalRecoveryResponseMapper.toResponse(claimApplication.getLegalRecoveryDetail()));
+                response.setDeductionDetail(
+                                claimApplicationDeductionResponseMapper.toResponse(deductionEntity));
+
                 response.setForfeitedComponents(
                                 forfeitedComponents.stream()
                                                 .map(claimApplicationForfeitedComponentResponseMapper::toResponse)
                                                 .toList());
-                response.setLegalRecoveryDetail(legalRecoveryResponseMapper.toResponse(legalRecoveryDetail));
-                return ApiResponseDTO.created(response);
+                return null;
         }
 
         @Override
@@ -262,10 +284,10 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                         request.getClaimApplicationBankDetail());
                 }
 
-                if (request.getClaimApplicationCalculation() != null) {
-                        calculationSummary = claimApplicationCalculationService.patch(
-                                        request.getClaimApplicationCalculation());
-                }
+                // if (request.getClaimApplicationCalculation() != null) {
+                // calculationSummary = claimApplicationCalculationService.patch(
+                // request.getClaimApplicationCalculation());
+                // }
 
                 if (request.getClaimApplicationDeduction() != null) {
                         deductionDetail = claimApplicationDeductionDetailService.patchDeductionDetail(
@@ -348,15 +370,21 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
 
                 response.setNormalClaimDetails(
                                 normalClaimResponseMapper.toResponse(
-                                                claimApplication.getNormalClaimDetail()!= null ? claimApplication.getNormalClaimDetail() : null));
+                                                claimApplication.getNormalClaimDetail() != null
+                                                                ? claimApplication.getNormalClaimDetail()
+                                                                : null));
 
                 response.setPartialWithdrawalDetails(
                                 partialWithdrawalResponseMapper.toResponse(
-                                                claimApplication.getPartialWithdrawalDetail()!= null ? claimApplication.getPartialWithdrawalDetail() : null));
+                                                claimApplication.getPartialWithdrawalDetail() != null
+                                                                ? claimApplication.getPartialWithdrawalDetail()
+                                                                : null));
 
                 response.setBeneficiarySettlementDetails(
                                 beneficiarySettlementResponseMapper.toResponse(
-                                                claimApplication.getBeneficiarySettlementDetail()!= null ? claimApplication.getBeneficiarySettlementDetail() : null));
+                                                claimApplication.getBeneficiarySettlementDetail() != null
+                                                                ? claimApplication.getBeneficiarySettlementDetail()
+                                                                : null));
 
                 response.setBankDetails(
                                 claimApplication.getBankDetails() == null
@@ -386,15 +414,36 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                                                 .map(claimApplicationForfeitedComponentResponseMapper::toResponse)
                                                                 .toList());
                 response.setWorkflowDetails(
-                                claimApplicationWorkflowService.getByApplicationId(claimApplication.getId())!= null 
-                                                ? claimApplicationWorkflowService.getByApplicationId(claimApplication.getId()) 
+                                claimApplicationWorkflowService.getByApplicationId(claimApplication.getId()) != null
+                                                ? claimApplicationWorkflowService
+                                                                .getByApplicationId(claimApplication.getId())
                                                 : List.of());
 
                 response.setVerificationDetail(
-                                claimApplicationVerificationService.getByApplicationNumber(claimApplication.getApplicationNumber()) != null ? (claimApplicationVerificationService.getByApplicationNumber(claimApplication.getApplicationNumber()) != null) ? claimApplicationVerificationService.getByApplicationNumber(claimApplication.getApplicationNumber()).getData() : null : null);
+                                claimApplicationVerificationService
+                                                .getByApplicationNumber(claimApplication.getApplicationNumber()) != null
+                                                                ? (claimApplicationVerificationService
+                                                                                .getByApplicationNumber(claimApplication
+                                                                                                .getApplicationNumber()) != null)
+                                                                                                                ? claimApplicationVerificationService
+                                                                                                                                .getByApplicationNumber(
+                                                                                                                                                claimApplication.getApplicationNumber())
+                                                                                                                                .getData()
+                                                                                                                : null
+                                                                : null);
 
                 response.setApprovalDetail(
-                                claimApplicationApprovalService.getByApplicationNumber(claimApplication.getApplicationNumber()) != null ? (claimApplicationApprovalService.getByApplicationNumber(claimApplication.getApplicationNumber()) != null) ? claimApplicationApprovalService.getByApplicationNumber(claimApplication.getApplicationNumber()).getData() : null : null);
+                                claimApplicationApprovalService
+                                                .getByApplicationNumber(claimApplication.getApplicationNumber()) != null
+                                                                ? (claimApplicationApprovalService
+                                                                                .getByApplicationNumber(claimApplication
+                                                                                                .getApplicationNumber()) != null)
+                                                                                                                ? claimApplicationApprovalService
+                                                                                                                                .getByApplicationNumber(
+                                                                                                                                                claimApplication.getApplicationNumber())
+                                                                                                                                .getData()
+                                                                                                                : null
+                                                                : null);
                 response.setLegalRecoveryDetail(
                                 claimApplication.getLegalRecoveryDetail() != null
                                                 ? legalRecoveryResponseMapper.toResponse(
@@ -406,8 +455,9 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
         @Override
         @Transactional(readOnly = true)
         public ApiResponseDTO<List<GeneralClaimResponse>> getVerifiedClaimAndClaimedBy(String claimedBy) {
-                List<ClaimApplicationApprovalResponseDto> claimApplications = claimApplicationApprovalService.getVerifiedClaimAndClaimedBy(claimedBy).getData();
-                if(claimApplications == null || claimApplications.isEmpty()){
+                List<ClaimApplicationApprovalResponseDto> claimApplications = claimApplicationApprovalService
+                                .getVerifiedClaimAndClaimedBy(claimedBy).getData();
+                if (claimApplications == null || claimApplications.isEmpty()) {
                         return ApiResponseDTO.success(
                                         "No verified claim applications found",
                                         List.of());
@@ -415,7 +465,8 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
 
                 List<GeneralClaimResponse> responses = claimApplications.stream()
                                 .map(verificationResponse -> {
-                                        ClaimApplication claimApplication = claimApplicationService.getById(verificationResponse.getClaimApplicationId());
+                                        ClaimApplication claimApplication = claimApplicationService
+                                                        .getById(verificationResponse.getClaimApplicationId());
                                         return buildGeneralClaimResponse(claimApplication);
                                 })
                                 .toList();
@@ -440,9 +491,11 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                 "Claim application fetched successfully",
                                 response);
         }
+
         @Override
         @Transactional(readOnly = true)
-        public ApiResponseDTO<List<GeneralClaimResponse>> getByAgencyCodeAndClaimTypeId(String agencyCode, Long claimTypeId) {
+        public ApiResponseDTO<List<GeneralClaimResponse>> getByAgencyCodeAndClaimTypeId(String agencyCode,
+                        Long claimTypeId) {
 
                 if (agencyCode == null) {
                         throw ClaimException.badRequest("Agency code is required");
@@ -452,7 +505,8 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         throw ClaimException.badRequest("Claim type ID is required");
                 }
 
-                List<ClaimApplication> claimApplications = claimApplicationService.getByAgencyCodeAndClaimTypeId(agencyCode, claimTypeId);
+                List<ClaimApplication> claimApplications = claimApplicationService
+                                .getByAgencyCodeAndClaimTypeId(agencyCode, claimTypeId);
 
                 List<GeneralClaimResponse> responses = claimApplications.stream()
                                 .map(this::buildGeneralClaimResponse)
@@ -483,6 +537,38 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
         }
 
         @Override
+@Transactional(readOnly = true)
+public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> findByInitiatedByAndIsSpecialCase(
+        String initiatedBy, 
+        ActivityEnum isSpecialCase, 
+        Pageable page) {
+
+    if (initiatedBy == null || initiatedBy.isBlank()) {
+        throw ClaimException.badRequest("Agency code is required");
+    }
+
+    // Get Page from service
+    Page<ClaimApplication> claimPage = claimApplicationService.findByInitiatedByAndIsSpecialCase(
+            initiatedBy, isSpecialCase, page);
+
+    // Map content to response DTOs
+    List<GeneralClaimResponse> responses = claimPage.getContent().stream()
+            .map(this::buildGeneralClaimResponse)
+            .toList();
+
+    // Add pagination headers
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("X-Total-Count", String.valueOf(claimPage.getTotalElements()));
+    headers.add("X-Total-Pages", String.valueOf(claimPage.getTotalPages()));
+    headers.add("X-Page-Number", String.valueOf(claimPage.getNumber()));
+    headers.add("X-Page-Size", String.valueOf(claimPage.getSize()));
+
+    return ResponseEntity.ok()
+            .headers(headers)
+            .body(ApiResponseDTO.success("Claim applications fetched successfully", responses));
+}
+
+        @Override
         @Transactional
         public ApiResponseDTO<GeneralClaimResponse> claimedBy(String applicationId, String claimedBy) {
                 if (applicationId == null) {
@@ -495,16 +581,15 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
 
                 ClaimApplication claimApplication = claimApplicationService.claimedBy(applicationId, claimedBy);
                 claimApplicationVerificationService.verifiedClaimApplicationClaimedBy(applicationId, claimedBy);
-                
+
                 GeneralClaimResponse response = buildGeneralClaimResponse(claimApplication);
-                
-                
+
                 return ApiResponseDTO.success(
                                 "Claim application fetched successfully",
                                 response);
-                
+
         }
-        
+
         @Override
         @Transactional
         public ApiResponseDTO<GeneralClaimResponse> unClaimedBy(String applicationId, String unclaimedBy) {
@@ -517,28 +602,30 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 }
 
                 ClaimApplication claimApplication = claimApplicationService.unClaimedBy(applicationId, unclaimedBy);
-                
-                List<ClaimApplicationWorkflowResponseDto> workflowResponse = claimApplicationWorkflowService.getByApplicationId(claimApplication.getId());
-                if(workflowResponse == null || workflowResponse.isEmpty()){
+
+                List<ClaimApplicationWorkflowResponseDto> workflowResponse = claimApplicationWorkflowService
+                                .getByApplicationId(claimApplication.getId());
+                if (workflowResponse == null || workflowResponse.isEmpty()) {
                         ClaimApplicationWorkflowResponseDto workFlow = workflowResponse.get(0);
                         ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto
-                                .builder()
-                                .fromStageId(workFlow.getFromStageId())
-                                .toStageId(workFlow.getToStageId())
-                                .toStageId(workFlow.getToStageId())
-                                .fromStatusId(workFlow.getFromStatusId())
-                                .toStatusId(4L)
-                                .reason(workFlow.getReason())
-                                .actionBy(workFlow.getActionBy())
-                                .build();
-                claimApplicationWorkflowService
-                                .create(claimApplication, workflowRequest);
+                                        .builder()
+                                        .fromStageId(workFlow.getFromStageId())
+                                        .toStageId(workFlow.getToStageId())
+                                        .toStageId(workFlow.getToStageId())
+                                        .fromStatusId(workFlow.getFromStatusId())
+                                        .toStatusId(4L)
+                                        .reason(workFlow.getReason())
+                                        .actionBy(workFlow.getActionBy())
+                                        .build();
+                        claimApplicationWorkflowService
+                                        .create(claimApplication, workflowRequest);
                 }
                 GeneralClaimResponse response = buildGeneralClaimResponse(claimApplication);
                 return ApiResponseDTO.success(
                                 "Claim application fetched successfully",
                                 response);
         }
+
         @Override
         @Transactional
         public ApiResponseDTO<List<GeneralClaimResponse>> findByUserCode(String userCode, Long statusId) {
@@ -546,7 +633,8 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         throw ClaimException.badRequest("User code is required");
                 }
 
-                List<ClaimApplication> claimApplications = claimApplicationService.getByUserCodeAndStatusId(userCode, statusId);
+                List<ClaimApplication> claimApplications = claimApplicationService.getByUserCodeAndStatusId(userCode,
+                                statusId);
                 if (claimApplications == null || claimApplications.isEmpty()) {
                         return ApiResponseDTO.success(
                                         "No claim applications found",
@@ -563,7 +651,8 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
         @Override
         @Transactional(readOnly = true)
         public ApiResponseDTO<List<ClaimApplicationWorkflowResponseDto>> getWorkflowDetails(String applicationNumber) {
-                List<ClaimApplicationWorkflowResponseDto> workFlow = claimApplicationWorkflowService.getByApplicationNumber(applicationNumber);
+                List<ClaimApplicationWorkflowResponseDto> workFlow = claimApplicationWorkflowService
+                                .getByApplicationNumber(applicationNumber);
                 return ApiResponseDTO.success(
                                 "Workflow details fetched successfully",
                                 workFlow);
@@ -584,13 +673,17 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                 "Verified claim applications fetched successfully",
                                 responses);
         }
+
         @Override
         @Transactional
         public ApiResponseDTO<GeneralClaimResponse> verifiedClaimActionRejectedByApprover(String applicationNumber,
-             String rejectedBy, String rejectedRemarks) {
-                ClaimApplicationApprovalResponseDto approveClaim = claimApplicationApprovalService.verifiedClaimActionRejectedByApprover(applicationNumber, rejectedBy, rejectedRemarks).getData();
+                        String rejectedBy, String rejectedRemarks) {
+                ClaimApplicationApprovalResponseDto approveClaim = claimApplicationApprovalService
+                                .verifiedClaimActionRejectedByApprover(applicationNumber, rejectedBy, rejectedRemarks)
+                                .getData();
 
-                ClaimApplication claimApplication = claimApplicationService.getByApplicationNumber(approveClaim.getApplicationNumber());
+                ClaimApplication claimApplication = claimApplicationService
+                                .getByApplicationNumber(approveClaim.getApplicationNumber());
                 GeneralClaimResponse response = buildGeneralClaimResponse(claimApplication);
 
                 return ApiResponseDTO.success(
@@ -605,26 +698,8 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         throw ClaimException.badRequest("Claimed by is required");
                 }
 
-                List<ClaimApplicationVerificationResponseDto> verificationResponses = claimApplicationVerificationService.getClaimApplicationWhichClaimedBy(claimedBy).getData();
-                if(verificationResponses == null || verificationResponses.isEmpty()){
-                        return ApiResponseDTO.success(
-                                        "No verified claim applications found",
-                                        List.of());
-                }
-                List<GeneralClaimResponse> responses = verificationResponses.stream()
-                                .map(verificationResponse -> {
-                                        ClaimApplication claimApplication = claimApplicationService.getById(verificationResponse.getClaimApplicationId());
-                                        return buildGeneralClaimResponse(claimApplication);
-                                })
-                                .toList();
-                return ApiResponseDTO.success(
-                                "Verified claim applications fetched successfully",
-                                responses);
-        }
-        @Override
-        @Transactional(readOnly = true)
-        public ApiResponseDTO<List<GeneralClaimResponse>> getVerifiedClaim() {
-                List<ClaimApplicationVerificationResponseDto> verificationResponses = claimApplicationVerificationService.getVerifiedClaim().getData();
+                List<ClaimApplicationVerificationResponseDto> verificationResponses = claimApplicationVerificationService
+                                .getClaimApplicationWhichClaimedBy(claimedBy).getData();
                 if (verificationResponses == null || verificationResponses.isEmpty()) {
                         return ApiResponseDTO.success(
                                         "No verified claim applications found",
@@ -632,7 +707,30 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 }
                 List<GeneralClaimResponse> responses = verificationResponses.stream()
                                 .map(verificationResponse -> {
-                                        ClaimApplication claimApplication = claimApplicationService.getById(verificationResponse.getClaimApplicationId());
+                                        ClaimApplication claimApplication = claimApplicationService
+                                                        .getById(verificationResponse.getClaimApplicationId());
+                                        return buildGeneralClaimResponse(claimApplication);
+                                })
+                                .toList();
+                return ApiResponseDTO.success(
+                                "Verified claim applications fetched successfully",
+                                responses);
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public ApiResponseDTO<List<GeneralClaimResponse>> getVerifiedClaim() {
+                List<ClaimApplicationVerificationResponseDto> verificationResponses = claimApplicationVerificationService
+                                .getVerifiedClaim().getData();
+                if (verificationResponses == null || verificationResponses.isEmpty()) {
+                        return ApiResponseDTO.success(
+                                        "No verified claim applications found",
+                                        List.of());
+                }
+                List<GeneralClaimResponse> responses = verificationResponses.stream()
+                                .map(verificationResponse -> {
+                                        ClaimApplication claimApplication = claimApplicationService
+                                                        .getById(verificationResponse.getClaimApplicationId());
                                         return buildGeneralClaimResponse(claimApplication);
                                 })
                                 .toList();
@@ -644,10 +742,12 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
         @Override
         @Transactional(readOnly = true)
         public ApiResponseDTO<List<GeneralClaimResponse>> getVerifiedClaimButRejectedClaim() {
-                ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> claimApplications = claimApplicationVerificationService.getVerifiedClaimButRejectedClaim();
+                ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> claimApplications = claimApplicationVerificationService
+                                .getVerifiedClaimButRejectedClaim();
                 List<GeneralClaimResponse> responses = claimApplications.getData().stream()
                                 .map(verificationResponse -> {
-                                        ClaimApplication claimApplication = claimApplicationService.getById(verificationResponse.getClaimApplicationId());
+                                        ClaimApplication claimApplication = claimApplicationService
+                                                        .getById(verificationResponse.getClaimApplicationId());
                                         return buildGeneralClaimResponse(claimApplication);
                                 })
                                 .toList();
@@ -658,7 +758,8 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
 
         @Override
         @Transactional
-        public ApiResponseDTO<List<GeneralClaimResponse>> verifiedClaimApplicationClaimedBy(String applicationNumber, String claimedBy) {
+        public ApiResponseDTO<List<GeneralClaimResponse>> verifiedClaimApplicationClaimedBy(String applicationNumber,
+                        String claimedBy) {
                 if (applicationNumber == null || applicationNumber.isBlank()) {
                         throw ClaimException.badRequest("Application number is required");
                 }
@@ -666,11 +767,13 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         throw ClaimException.badRequest("Claimed by is required");
                 }
 
-                List<ClaimApplicationVerificationResponseDto> verificationResponses = claimApplicationVerificationService.verifiedClaimApplicationClaimedBy(applicationNumber, claimedBy).getData();
-                
+                List<ClaimApplicationVerificationResponseDto> verificationResponses = claimApplicationVerificationService
+                                .verifiedClaimApplicationClaimedBy(applicationNumber, claimedBy).getData();
+
                 List<GeneralClaimResponse> responses = verificationResponses.stream()
                                 .map(verificationResponse -> {
-                                        ClaimApplication claimApplication = claimApplicationService.getById(verificationResponse.getClaimApplicationId());
+                                        ClaimApplication claimApplication = claimApplicationService
+                                                        .getById(verificationResponse.getClaimApplicationId());
                                         return buildGeneralClaimResponse(claimApplication);
                                 })
                                 .toList();
@@ -678,9 +781,11 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                 "Verified claim applications fetched successfully",
                                 responses);
         }
+
         @Override
         @Transactional
-        public ApiResponseDTO<List<GeneralClaimResponse>> verifiedClaimApplicationUnClaimedBy(String applicationNumber, String unClaimedBy) {
+        public ApiResponseDTO<List<GeneralClaimResponse>> verifiedClaimApplicationUnClaimedBy(String applicationNumber,
+                        String unClaimedBy) {
                 if (applicationNumber == null || applicationNumber.isBlank()) {
                         throw ClaimException.badRequest("Application number is required");
                 }
@@ -688,11 +793,13 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         throw ClaimException.badRequest("Unclaimed by is required");
                 }
 
-                List<ClaimApplicationVerificationResponseDto> verificationResponses = claimApplicationVerificationService.verifiedClaimApplicationUnClaimedBy(applicationNumber, unClaimedBy).getData();
-                
+                List<ClaimApplicationVerificationResponseDto> verificationResponses = claimApplicationVerificationService
+                                .verifiedClaimApplicationUnClaimedBy(applicationNumber, unClaimedBy).getData();
+
                 List<GeneralClaimResponse> responses = verificationResponses.stream()
                                 .map(verificationResponse -> {
-                                        ClaimApplication claimApplication = claimApplicationService.getById(verificationResponse.getClaimApplicationId());
+                                        ClaimApplication claimApplication = claimApplicationService
+                                                        .getById(verificationResponse.getClaimApplicationId());
                                         return buildGeneralClaimResponse(claimApplication);
                                 })
                                 .toList();
@@ -703,19 +810,18 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
 
         @Override
         @Transactional
-        public ApiResponseDTO<GeneralClaimResponse> rejectedClaimApplication(String applicationNumber, ClaimApplicationVerificationRequestDto request) {
+        public ApiResponseDTO<GeneralClaimResponse> rejectedClaimApplication(String applicationNumber, String rejectedBy, String remarks) {
                 if (applicationNumber == null || applicationNumber.isBlank()) {
                         throw ClaimException.badRequest("Application number is required");
                 }
-                if (request == null) {
-                        throw ClaimException.badRequest("Request body is required");
-                }
 
-                ClaimApplicationVerificationResponseDto verificationResponse = claimApplicationVerificationService.rejectedClaimApplication(applicationNumber, request).getData();
-                
-                ClaimApplication claimApplication = claimApplicationService.getById(verificationResponse.getClaimApplicationId());
+                ClaimApplicationVerificationResponseDto verificationResponse = claimApplicationVerificationService
+                                .rejectedClaimApplication(applicationNumber, rejectedBy, remarks).getData();
+
+                ClaimApplication claimApplication = claimApplicationService
+                                .getById(verificationResponse.getClaimApplicationId());
                 GeneralClaimResponse response = buildGeneralClaimResponse(claimApplication);
-                
+
                 return ApiResponseDTO.success(
                                 "Claim application rejected successfully",
                                 response);
@@ -726,7 +832,8 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         throw ClaimException.badRequest("User code is required");
                 }
 
-                List<ClaimApplication> claimApplications = claimApplicationService.getLegalRecoveryWithUserCode(userCode);
+                List<ClaimApplication> claimApplications = claimApplicationService
+                                .getLegalRecoveryWithUserCode(userCode);
 
                 List<GeneralClaimResponse> responses = claimApplications.stream()
                                 .map(this::buildGeneralClaimResponse)

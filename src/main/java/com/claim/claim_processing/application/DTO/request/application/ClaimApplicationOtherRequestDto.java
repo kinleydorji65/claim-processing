@@ -6,22 +6,24 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClaimApplicationOtherRequestDto {
-    private BigDecimal finalPayableAmount;
-    private Long calculationStatusId;
-    private String identityNumber;
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
+    private Integer totalContributionMonths;
+    private Integer totalNonContributionMonths;
+    private String recommendedBenefitType;
+    private BigDecimal totalPfAmount;
+    private BigDecimal totalPensionAmount;
+    private BigDecimal totalAmount;
     
-    private Long cessationTypeId;
-    private Long reasonTypeId;
-    private LocalDate cessationDate;
+    private BigDecimal totalPensionInterest;
+    private BigDecimal totalPfInterest;
 
-    private String createdBy;
-    private String updatedBy;
+    private EligibilityEnum pfIsEligible;
+    private EligibilityEnum pensionIsEligible;
+    private BigDecimal finalPayableAmount;
 }

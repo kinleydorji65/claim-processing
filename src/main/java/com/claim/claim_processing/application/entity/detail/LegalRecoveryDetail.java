@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
-import com.claim.claim_processing.common.entities.others.StatusMaster;
 
 @Entity
 @Table(name = "LEGAL_RECOVERY_DETAIL", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")

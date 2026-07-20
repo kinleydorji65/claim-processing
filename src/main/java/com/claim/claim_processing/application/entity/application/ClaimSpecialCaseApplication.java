@@ -11,6 +11,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.claim.claim_processing.common.entities.claim.ReserveAccount;
 import com.claim.claim_processing.common.entities.pension.PensionDetail;
+import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
+import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundReasonMaster;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -40,6 +42,11 @@ public class ClaimSpecialCaseApplication {
 
     @Column(name = "CASE_REASON_ID")
     private Long caseReasonId;
+
+    // ADD THIS RELATIONSHIP
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CASE_REASON_ID", referencedColumnName = "ID", insertable = false, updatable = false)
+    private SpecialCaseRefundReasonMaster specialCaseRefundReasonMaster;
 
     // Pension Details (snapshot at time of application)
     @Column(name = "PENSION_TYPE", length = 50)
@@ -102,6 +109,10 @@ public class ClaimSpecialCaseApplication {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "RESERVE_ACCOUNT_ID")
     private ReserveAccount reserveAccount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SPECIAL_CASE_AUTHORITY_ID")
+    private SpecialCaseRefundAuthorityMaster specialCaseAuthority;
 
     // Audit Information
     @Column(name = "IS_ACTIVE", length = 1)

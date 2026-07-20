@@ -36,22 +36,12 @@ public class ClaimRuleEvaluation {
     @Builder.Default
     private ActivityEnum isRuleApplied = ActivityEnum.N;
 
-    @Column(name = "RESULT_MESSAGE", length = 2000)
-    private String resultMessage;
-
     @Column(name = "EVALUATED_AT")
     private Timestamp evaluatedAt;
 
-    @Column(name = "EVALUATED_BY", length = 100)
-    private String evaluatedBy;
 
     @Column(name = "REMARKS", length = 1000)
     private String remarks;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "IS_ACTIVE", length = 1)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;

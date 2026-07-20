@@ -26,8 +26,7 @@ public class PartialWithdrawalResponseDto {
 
     private Long withdrawalReasonId;
     private String withdrawalReasonName;
-
-    private BigDecimal requestedWithdrawalAmount;
+    
     private BigDecimal actualWithdrawalAmount;
 
     @JsonFormat(pattern = "yyyy-MM-dd")

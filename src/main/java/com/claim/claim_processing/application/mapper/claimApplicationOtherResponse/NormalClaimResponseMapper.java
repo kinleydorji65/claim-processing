@@ -44,12 +44,7 @@ public class NormalClaimResponseMapper {
                         ? entity.getTerminationReasonType().getName()
                         : null)
 
-                .dateOfTermination(entity.getDateOfTermination())
-                .pfJoiningDate(entity.getPfJoiningDate())
-                .pensionJoiningDate(entity.getPensionJoiningDate())
-                .relievingOrderDate(entity.getRelievingOrderDate())
                 .cessationEffectiveDate(entity.getCessationEffectiveDate())
-                .exitDate(entity.getExitDate())
                 .dateOfServiceJoining(entity.getDateOfServiceJoining())
 
                 .terminatedBy(entity.getTerminatedBy())
@@ -58,7 +53,6 @@ public class NormalClaimResponseMapper {
                 .relievingReferenceNumber(entity.getRelievingReferenceNumber())
                 .lastPayMonth(entity.getLastPayMonth())
                 .finalBasicSalary(entity.getFinalBasicSalary())
-                .nonContributionMonths(entity.getNonContributionMonths())
                 .remarks(entity.getRemarks())
 
                 .createdBy(entity.getCreatedBy())

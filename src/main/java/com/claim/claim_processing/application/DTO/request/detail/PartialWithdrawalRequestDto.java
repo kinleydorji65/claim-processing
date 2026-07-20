@@ -16,8 +16,6 @@ public class PartialWithdrawalRequestDto {
 
     private Long withdrawalReasonId;
 
-    private BigDecimal requestedWithdrawalAmount;
-
     private BigDecimal actualWithdrawalAmount;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate unemploymentStartDate;

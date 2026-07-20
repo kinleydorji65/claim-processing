@@ -18,6 +18,8 @@ public class MemberDetailResponseDto {
     private String nppfNumber;
     private Long schemeTypeId;
     private String memberCode;
+    private String email;
+    private String contactNo;
     private String identityTypeName;
     private String identityNumber;
     private String memberCategoryId;

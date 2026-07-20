@@ -1,7 +1,7 @@
 package com.claim.claim_processing.application.DTO.response.application;
 
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -15,11 +15,9 @@ public class ClaimApplicationDeductionItemResponseDto {
 
     private Long id;
 
-    private String deductionCategory;
+    private Long deductionDetailId;
 
-    private String referenceNumber;
-
-    private String referenceName;
+    private String deductionCategory; // LOAN / RENTAL / TAX / OTHER
 
     private BigDecimal outstandingAmount;
 
@@ -27,11 +25,7 @@ public class ClaimApplicationDeductionItemResponseDto {
 
     private BigDecimal remainingAmount;
 
-    private Integer priorityOrder;
-
     private String remarks;
-
-    private ActivityEnum isActive;
 
     private String createdBy;
 

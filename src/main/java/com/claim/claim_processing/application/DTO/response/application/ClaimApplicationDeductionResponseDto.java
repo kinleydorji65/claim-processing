@@ -1,6 +1,5 @@
 package com.claim.claim_processing.application.DTO.response.application;
 
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.*;
@@ -15,22 +14,16 @@ import java.util.List;
 @AllArgsConstructor
 public class ClaimApplicationDeductionResponseDto {
 
-    private Long id;
-    private BigDecimal outstandingAmount;
-    private BigDecimal systemDeductedAmount;
-    private BigDecimal verifiedDeductedAmount;
-    private BigDecimal approvedDeductedAmount;
-    private BigDecimal deductedAmount;
+        private Long id;
+        private String applicationNumber;
+        private BigDecimal outstandingAmount;
+        private BigDecimal verifiedDeductedAmount;
+        private BigDecimal approvedDeductedAmount;
 
-    private Long deductionReviewStatusId;
-    private String deductionReviewStatusName;
+        private BigDecimal deductedAmount;
 
-    private ActivityEnum isAutoApplied;
-    private ActivityEnum isManualOverride;
-    private ActivityEnum isActive;
+        private String remarks;
 
-    private String overrideReason;
-    private String remarks;
 
     private List<ClaimApplicationDeductionItemResponseDto> deductionItems;
 

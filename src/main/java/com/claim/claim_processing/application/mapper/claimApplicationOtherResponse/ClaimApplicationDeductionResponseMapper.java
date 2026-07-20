@@ -22,30 +22,12 @@ public class ClaimApplicationDeductionResponseMapper {
 
         return ClaimApplicationDeductionResponseDto.builder()
                 .id(entity.getId())
-                .outstandingAmount(entity.getOutstandingAmount())
-                .systemDeductedAmount(entity.getSystemDeductedAmount())
-                .verifiedDeductedAmount(entity.getVerifiedDeductedAmount())
-                .approvedDeductedAmount(entity.getApprovedDeductedAmount())
-                .deductedAmount(entity.getDeductedAmount())
-
-                .deductionReviewStatusId(
-                        entity.getDeductionReviewStatus() != null
-                                ? entity.getDeductionReviewStatus().getId()
-                                : null
-                )
-
-                .deductionReviewStatusName(
-                        entity.getDeductionReviewStatus() != null
-                                ? entity.getDeductionReviewStatus().getName()
-                                : null
-                )
-
-                .isAutoApplied(entity.getIsAutoApplied())
-                .isManualOverride(entity.getIsManualOverride())
-                .isActive(entity.getIsActive())
-
-                .overrideReason(entity.getOverrideReason())
-                .remarks(entity.getRemarks())
+                .applicationNumber(entity.getClaimApplication().getApplicationNumber())
+                .outstandingAmount(entity.getOutstandingAmount()) // ✅ No semicolon
+                .verifiedDeductedAmount(entity.getVerifiedDeductedAmount()) // ✅ No semicolon
+                .approvedDeductedAmount(entity.getApprovedDeductedAmount()) // ✅ No semicolon
+                .deductedAmount(entity.getDeductedAmount()) // ✅ No semicolon
+                .createdBy(entity.getCreatedBy())
 
                 .deductionItems(
                         entity.getDeductionItems() == null
@@ -79,15 +61,13 @@ public class ClaimApplicationDeductionResponseMapper {
 
         return ClaimApplicationDeductionItemResponseDto.builder()
                 .id(item.getId())
-                .deductionCategory(item.getDeductionCategory())
-                .referenceNumber(item.getReferenceNumber())
-                .referenceName(item.getReferenceName())
+                .deductionDetailId(item.getDeductionDetail().getId())
+                .deductionCategory(item.getDeductionCategory()) // LOAN / RENTAL / TAX / OTHE()R
                 .outstandingAmount(item.getOutstandingAmount())
                 .deductedAmount(item.getDeductedAmount())
                 .remainingAmount(item.getRemainingAmount())
-                .priorityOrder(item.getPriorityOrder())
                 .remarks(item.getRemarks())
-                .isActive(item.getIsActive())
+                .createdBy(item.getCreatedBy())
                 .createdBy(item.getCreatedBy())
                 .createdAt(
                         item.getCreatedAt() != null

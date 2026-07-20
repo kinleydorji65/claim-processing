@@ -9,10 +9,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Entity
-@Table(
-        name = "CLAIM_APPLICATION_CALCULATION_COMPONENT",
-        schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA"
-)
+@Table(name = "CLAIM_APPLICATION_CALCULATION_COMPONENT", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,19 +23,16 @@ public class ClaimApplicationCalculationComponent {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-@JoinColumn(
-        name = "RULE_EVALUATION_ID",
-        nullable = false
-)
-private ClaimApplicationRuleEvaluation ruleEvaluation;
+    @JoinColumn(name = "RULE_EVALUATION_ID", nullable = false)
+    private ClaimApplicationRuleEvaluation ruleEvaluation;
 
-@ManyToOne(fetch = FetchType.LAZY)
-@JoinColumn(
-        name = "COMPONENT_CODE",
-        referencedColumnName = "CODE",
-        nullable = false
-)
-private ComponentMaster componentMaster;
+    // ADD THIS FIELD - Direct component code for easy access
+    @Column(name = "COMPONENT_CODE", length = 50, nullable = false)
+    private String componentCode;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "COMPONENT_MASTER_ID", referencedColumnName = "ID", nullable = false)
+    private ComponentMaster componentMaster;
 
     @Column(name = "AMOUNT", precision = 15, scale = 2)
     private BigDecimal amount;
@@ -67,4 +61,24 @@ private ComponentMaster componentMaster;
 
     @Column(name = "UPDATED_AT", insertable = false, updatable = false)
     private Timestamp updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        createdAt = now;
+        updatedAt = now;
+        // Auto-set componentCode from componentMaster if not set
+        if (componentCode == null && componentMaster != null) {
+            componentCode = componentMaster.getCode();
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = new Timestamp(System.currentTimeMillis());
+        // Keep componentCode in sync with componentMaster
+        if (componentMaster != null && (componentCode == null || !componentCode.equals(componentMaster.getCode()))) {
+            componentCode = componentMaster.getCode();
+        }
+    }
 }

@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.*;
@@ -16,16 +15,10 @@ import lombok.*;
 public class ClaimDeductionResponseDto {
     private Long id;
     private BigDecimal outstandingAmount;
-    private BigDecimal systemDeductedAmount;
     private BigDecimal verifiedDeductedAmount;
     private BigDecimal approvedDeductedAmount;
     private BigDecimal deductedAmount;
 
-    private ActivityEnum isAutoApplied;
-    private ActivityEnum isManualOverride;
-    private ActivityEnum isActive;
-
-    private String overrideReason;
     private String remarks;
 
     private List<ClaimDeductionItemResponseDto> deductionItems;

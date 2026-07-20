@@ -1,8 +1,5 @@
 package com.claim.claim_processing.application.entity.claimDetail;
 
-import com.claim.claim_processing.common.entities.common.StageMaster;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-import com.claim.claim_processing.common.entities.others.StatusMaster;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -35,9 +32,6 @@ public class ClaimCalculationSummary {
     @Column(name = "FINAL_PAYABLE_AMOUNT", precision = 15, scale = 2)
     private BigDecimal finalPayableAmount;
 
-    @Column(name = "ACTUAL_AMOUNT_CALCULATED", precision = 15, scale = 2)
-    private BigDecimal actualAmountCalculated;
-
     @Column(name = "TOTAL_AMOUNT", precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
@@ -52,13 +46,23 @@ public class ClaimCalculationSummary {
     @Column(name = "TOTAL_CONTRIBUTION_MONTH", precision = 15, scale = 2)
     private Integer totalContributionMonth;
 
-    @Column(name = "RECOMMENDED_BENEFIT_TYPE", length = 2000)
-    private String recommendedBenefitType;
+    @Column(name = "TOTAL_NON_CONTRIBUTION_MONTH", precision = 15, scale = 2)
+    private Integer totalNonContributionMonth;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "IS_ACTIVE", length = 1)
-    @Builder.Default
-    private ActivityEnum isActive = ActivityEnum.Y;
+    @Column(name = "TOTAL_PF_AMOUNT", precision = 15, scale = 2)
+    private BigDecimal totalPfAmount;
+
+    @Column(name = "TOTAL_PENSION_AMOUNT", precision = 15, scale = 2)
+    private BigDecimal totalPensionAmount;
+
+    @Column(name = "TOTAL_PF_INTEREST", precision = 15, scale = 2)
+    private BigDecimal totalPfInterest;
+
+    @Column(name = "TOTAL_PENSION_INTEREST", precision = 15, scale = 2)
+    private BigDecimal totalPensionInterest;
+
+    @Column(name = "BENEFIT_TYPE", length = 2000)
+    private String recommendedBenefitType;
 
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;

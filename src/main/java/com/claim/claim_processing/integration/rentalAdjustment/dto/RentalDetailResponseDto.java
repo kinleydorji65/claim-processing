@@ -13,5 +13,7 @@ import lombok.*;
 @Builder
 public class RentalDetailResponseDto {
     private String rentalType;
+    @Builder.Default
+    private String isRetained = "N";
     private BigDecimal outstandingAmount;
 }

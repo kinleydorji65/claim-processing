@@ -94,12 +94,8 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
                 List.of(request.getBankDetail()));
 
         ClaimApplicationVerificationRequestDto verificationRequest = ClaimApplicationVerificationRequestDto.builder()
-                .verificationStatusId(41L)
-                .requiresRecalculation(ActivityEnum.N)
-                .requiresManualReview(ActivityEnum.N)
+                .claimApplicationId(claimApplication.getId())
                 .verifiedBy(claimApplication.getCreatedBy())
-                .verifiedByRoleId(null)
-                .createdBy(claimApplication.getCreatedBy())
                 .build();
         ApiResponseDTO<ClaimApplicationVerificationResponseDto> claimVerifier = claimApplicationVerificationService
                 .patch(claimApplication.getApplicationNumber(), verificationRequest);
@@ -143,12 +139,8 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
                 List.of(request.getBankDetail()));
 
         ClaimApplicationVerificationRequestDto verificationRequest = ClaimApplicationVerificationRequestDto.builder()
-                .verificationStatusId(41L)
-                .requiresRecalculation(ActivityEnum.N)
-                .requiresManualReview(ActivityEnum.N)
+                .claimApplicationId(claimApplication.getId())
                 .verifiedBy(claimApplication.getCreatedBy())
-                .verifiedByRoleId(null)
-                .createdBy(claimApplication.getCreatedBy())
                 .build();
 
         ApiResponseDTO<ClaimApplicationVerificationResponseDto> claimVerifier = claimApplicationVerificationService
@@ -205,10 +197,8 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
 
             approval.setClaimApplication(claimApplication);
             approval.setApprovedBy(request.getApprovedBy());
-            approval.setRoleId(request.getRoleId() != null ? request.getRoleId() : 27L);
             approval.setApprovedAt(new Timestamp(System.currentTimeMillis()));
             approval.setUpdatedBy(request.getApprovedBy());
-            approval.setIsActive(ActivityEnum.Y);
             approval.setApprovalStatus(getStatusById(6L));
 
             // Set approved amounts from special case
@@ -220,16 +210,6 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
                 if (totalAmount == null) {
                     totalAmount = BigDecimal.ZERO;
                 }
-                approval.setApprovedAmount(totalAmount);
-                approval.setFinalNetPayableAmount(totalAmount);
-                approval.setApprovedPensionAmount(
-                        claimApplication.getClaimSpecialCaseApplication().getTotalPensionAmount() != null
-                                ? claimApplication.getClaimSpecialCaseApplication().getTotalPensionAmount()
-                                : BigDecimal.ZERO);
-                approval.setApprovedRefundAmount(
-                        claimApplication.getClaimSpecialCaseApplication().getTotalForfeitedAmount() != null
-                                ? claimApplication.getClaimSpecialCaseApplication().getTotalForfeitedAmount()
-                                : BigDecimal.ZERO);
             }
 
             approvalRepository.saveAndFlush(approval);
@@ -284,9 +264,7 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
                     log.info("Ledger entries created successfully for special case: {}", applicationNumber);
                     if (accountingEvent != null) {
                         log.info("Accounting Event ID: {}, Total DR: {}, Total CR: {}",
-                                accountingEvent.getId(),
-                                accountingEvent.getTotalDr(),
-                                accountingEvent.getTotalCr());
+                                accountingEvent.getId());
                     }
                 } catch (Exception e) {
                     log.error("Failed to create ledger entries for special case: {}", applicationNumber, e);
@@ -404,8 +382,8 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
                     .toStageId(workflowStage.get("toStage"))
                     .fromStatusId(workflowStage.get("fromStatus"))
                     .toStatusId(workflowStage.get("toStatus"))
-                    .actionId(request.getActionId() != null ? request.getActionId() : 2L)
-                    .reason(request.getApproverRemarks() != null ? request.getApproverRemarks() : "Approved")
+                    .actionId(2L)
+                    .reason(request.getRemarks() != null ? request.getRemarks() : "Approved")
                     .actionBy(request.getApprovedBy())
                     .build();
 

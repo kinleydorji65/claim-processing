@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationApprovalRequestDto;
+import com.claim.claim_processing.application.DTO.request.workFlow.GeneralClaimApproverRequestDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.GeneralClaimDetailResponse;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
@@ -18,7 +19,7 @@ public interface ClaimApplicationApprovalService {
 
         ApiResponseDTO<GeneralClaimDetailResponse> approve(
                         String applicationNumber,
-                        ClaimApplicationApprovalRequestDto request);
+                        GeneralClaimApproverRequestDto request);
 
         ApiResponseDTO<ClaimApplicationApprovalResponseDto> getByApplicationNumber(
                         String applicationNumber);

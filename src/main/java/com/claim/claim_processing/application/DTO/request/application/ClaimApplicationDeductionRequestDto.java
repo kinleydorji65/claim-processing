@@ -1,6 +1,5 @@
 package com.claim.claim_processing.application.DTO.request.application;
 
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -10,38 +9,30 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ClaimApplicationDeductionPatchRequestDto {
+public class ClaimApplicationDeductionRequestDto {
     private Long deductionDetailId;
+    private BigDecimal outstandingAmount;
     private BigDecimal verifiedDeductedAmount;
-
     private BigDecimal approvedDeductedAmount;
-
     private BigDecimal deductedAmount;
-
-    private Long deductionReviewStatusId;
-
-    private ActivityEnum isManualOverride;
-
-    private String overrideReason;
-
     private String remarks;
-
+    private String createdBy;
     private String updatedBy;
 
-    private List<DeductionItemPatchDto> deductionItems;
+    private List<DeductionItemDto> deductionItems;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class DeductionItemPatchDto {
-
+    public static class DeductionItemDto {
         private Long deductionItemId;
-
+        private String deductionCategory; // LOAN / RENTAL / TAX / OTHER
+        private BigDecimal outstandingAmount;
         private BigDecimal deductedAmount;
-
         private BigDecimal remainingAmount;
-
         private String remarks;
+        private String createdBy;
+        private String updatedBy;
     }
 }

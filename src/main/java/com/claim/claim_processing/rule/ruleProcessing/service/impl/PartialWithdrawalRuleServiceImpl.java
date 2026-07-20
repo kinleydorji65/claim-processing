@@ -13,6 +13,7 @@ import com.claim.claim_processing.rule.ruleProcessing.service.PartialWithdrawalR
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleService {
 
     private final RuleService ruleService;
@@ -31,110 +33,148 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
     public ApiResponseDTO<ClaimCalculationResponseDTO> calculatePartialWithdrawal(
             ClaimInitialPreviewRequest request) {
 
-        MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
+        log.info("=== START PARTIAL WITHDRAWAL CALCULATION ===");
+        log.info("Request NPPF: {}", request.getNppfNumber());
 
-        MemberContributionSummary contributionSummary = memberContributionService
-                .getContributionSummary(memberDetail, null);
+        try {
+            MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
+            log.info("Member Category: {}, Scheme: {}", 
+                memberDetail.getMemberCategoryId(), 
+                memberDetail.getSchemeTypeId());
 
-        memberDetail.getDateOfServiceJoiningDate();
+            MemberContributionSummary contributionSummary = memberContributionService
+                    .getContributionSummary(memberDetail, null);
+            
+            log.info("Contribution Summary - Total Balance: {}", contributionSummary.getTotalBalance());
 
-        ApiResponseDTO<List<MatchedSubClaimRuleDto>> ruleResponse = ruleService.playWithRule(request);
-        System.out.println("rule size: "
-                + (ruleResponse != null && ruleResponse.getData() != null ? ruleResponse.getData().size() : 0));
-        List<MatchedSubClaimRuleDto> matchedRules = ruleResponse == null || ruleResponse.getData() == null
-                ? List.of()
-                : ruleResponse.getData();
-
-        if (matchedRules.isEmpty()) {
-            return ApiResponseDTO.notFound(
-                    "No partial withdrawal rule found OR Your minimum contribution is less than the required threshold for partial withdrawal.");
-        }
-
-        List<ComponentBalanceDTO> components = new ArrayList<>();
-        List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations = new ArrayList<>();
-
-        BigDecimal finalPayableAmount = BigDecimal.ZERO;
-
-        for (MatchedSubClaimRuleDto matchedRule : matchedRules) {
-
-            BigDecimal withdrawalPercentage = matchedRule.getWithdrawalPercentage();
-
-            if (withdrawalPercentage == null
-                    || withdrawalPercentage.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
+            // Log component groups
+            if (contributionSummary.getComponentGroups() != null) {
+                for (MemberContributionSummary.ComponentGroup comp : contributionSummary.getComponentGroups()) {
+                    log.info("Component: {} = {}", comp.getComponentCode(), comp.getTotalAmount());
+                }
             }
 
-            List<ComponentBalanceDTO> resolvedComponents = getRuleAmountUsingFormulaIfAvailable(
-                    matchedRule,
-                    request,
-                    contributionSummary,
-                    "PARTIAL_WITHDRAWAL",
-                    expressionCalculations);
+            ApiResponseDTO<List<MatchedSubClaimRuleDto>> ruleResponse = ruleService.playWithRule(request);
+            log.info("Rule response status: {}, data size: {}", 
+                ruleResponse != null ? ruleResponse.getStatus() : "null",
+                ruleResponse != null && ruleResponse.getData() != null ? ruleResponse.getData().size() : 0);
+            
+            List<MatchedSubClaimRuleDto> matchedRules = ruleResponse == null || ruleResponse.getData() == null
+                    ? List.of()
+                    : ruleResponse.getData();
 
-            if (resolvedComponents == null || resolvedComponents.isEmpty()) {
-                continue;
+            if (matchedRules.isEmpty()) {
+                log.warn("No partial withdrawal rules found for request: {}", request);
+                return ApiResponseDTO.notFound(
+                        "No partial withdrawal rule found OR Your minimum contribution is less than the required threshold for partial withdrawal.");
             }
 
-            for (ComponentBalanceDTO component : resolvedComponents) {
+            List<ComponentBalanceDTO> components = new ArrayList<>();
+            List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations = new ArrayList<>();
 
-                BigDecimal baseAmount = component.getAmount() == null
-                        ? BigDecimal.ZERO
-                        : component.getAmount();
+            BigDecimal finalPayableAmount = BigDecimal.ZERO;
 
-                BigDecimal partialAmount = baseAmount
-                        .multiply(withdrawalPercentage)
-                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            for (MatchedSubClaimRuleDto matchedRule : matchedRules) {
 
-                if (partialAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                BigDecimal withdrawalPercentage = matchedRule.getWithdrawalPercentage();
+                log.info("Processing rule: {}, Withdrawal Percentage: {}%", 
+                    matchedRule.getSubClaimCode(), withdrawalPercentage);
+
+                if (withdrawalPercentage == null
+                        || withdrawalPercentage.compareTo(BigDecimal.ZERO) <= 0) {
+                    log.warn("Skipping rule {} - invalid percentage", matchedRule.getSubClaimCode());
                     continue;
                 }
 
-                components.add(
-                        ComponentBalanceDTO.builder()
-                                .subRuleCode(matchedRule.getSubClaimCode())
-                                .code(component.getCode())
-                                .name(component.getName())
-                                .type("PARTIAL_WITHDRAWAL")
-                                .amount(partialAmount)
-                                .build());
+                // Build component map
+                Map<String, BigDecimal> componentAmountMap = buildContributionComponentMap(contributionSummary);
+                log.info("Component Amount Map Keys: {}", componentAmountMap.keySet());
 
-                finalPayableAmount = finalPayableAmount.add(partialAmount);
+                List<ComponentBalanceDTO> resolvedComponents = getRuleAmountUsingFormulaIfAvailable(
+                        matchedRule,
+                        componentAmountMap,
+                        "PARTIAL_WITHDRAWAL",
+                        expressionCalculations);
+
+                if (resolvedComponents == null || resolvedComponents.isEmpty()) {
+                    log.warn("No resolved components for rule: {}", matchedRule.getSubClaimCode());
+                    continue;
+                }
+
+                for (ComponentBalanceDTO component : resolvedComponents) {
+
+                    BigDecimal baseAmount = component.getAmount() == null
+                            ? BigDecimal.ZERO
+                            : component.getAmount();
+
+                    BigDecimal partialAmount = baseAmount
+                            .multiply(withdrawalPercentage)
+                            .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+                    if (partialAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                        continue;
+                    }
+
+                    components.add(component);
+                    finalPayableAmount = finalPayableAmount.add(partialAmount);
+                }
             }
+
+            log.info("Final Payable Amount: {}", finalPayableAmount);
+
+            ClaimCalculationResponseDTO response = ClaimCalculationResponseDTO.builder()
+                    .nppfNumber(contributionSummary.getNppfNumber())
+                    .contributionStartDate(memberDetail.getPfJoiningDate())
+                    .contributionEndDate(contributionSummary.getContributionEndDate())
+                    .totalContributionMonths(contributionSummary.getTotalContributionMonths())
+                    .totalNonContributionMonths(contributionSummary.getTotalNonContributionMonths())
+                    .components(components)
+                    .totalAmount(contributionSummary.getTotalBalance())
+                    .finalPayableAmount(finalPayableAmount)
+                    .expressionCalculations(expressionCalculations)
+                    .forfeitedComponents(Collections.emptyList())
+                    .eligibilityNote("Partial withdrawal calculated using component expression and withdrawal percentage.")
+                    .build();
+
+            return ApiResponseDTO.success(response);
+
+        } catch (Exception e) {
+            log.error("Error calculating partial withdrawal: {}", e.getMessage(), e);
+            // FIX: Use builder to create error response with correct type
+            return ApiResponseDTO.<ClaimCalculationResponseDTO>builder()
+                    .status(500L)
+                    .message("Failed to calculate partial withdrawal: " + e.getMessage())
+                    .data(null)
+                    .build();
         }
-
-        ClaimCalculationResponseDTO response = ClaimCalculationResponseDTO.builder()
-                .nppfNumber(contributionSummary.getNppfNumber())
-                .contributionStartDate(memberDetail.getPfJoiningDate())
-                .contributionEndDate(contributionSummary.getContributionEndDate())
-                .totalContributionMonths(contributionSummary.getTotalContributionMonths())
-                .totalNonContributionMonths(contributionSummary.getTotalNonContributionMonths())
-                .components(components)
-                .totalAmount(contributionSummary.getTotalBalance())
-                .finalPayableAmount(finalPayableAmount)
-                .expressionCalculations(expressionCalculations)
-                .eligibilityNote("Partial withdrawal calculated using component expression and withdrawal percentage.")
-                .build();
-
-        return ApiResponseDTO.success(response);
     }
 
     private List<ComponentBalanceDTO> getRuleAmountUsingFormulaIfAvailable(
             MatchedSubClaimRuleDto matchedRule,
-            ClaimInitialPreviewRequest request,
-            MemberContributionSummary contributionSummary,
+            Map<String, BigDecimal> componentAmountMap,
             String calculationType,
             List<ClaimCalculationResponseDTO.ExpressionCalculationDTO> expressionCalculations) {
+
+        log.info("=== GET RULE AMOUNT USING FORMULA ===");
+        log.info("Rule Code: {}", matchedRule.getSubClaimCode());
 
         if (matchedRule == null
                 || matchedRule.getComponentMapping() == null
                 || matchedRule.getComponentMapping().getExpressions() == null
                 || matchedRule.getComponentMapping().getExpressions().isEmpty()) {
+            log.warn("No component mapping or expressions found for rule: {}", 
+                matchedRule != null ? matchedRule.getSubClaimCode() : "null");
             return Collections.emptyList();
         }
 
-        Map<String, BigDecimal> componentAmountMap = buildContributionComponentMap(contributionSummary);
-
         List<ComponentBalanceDTO> results = new ArrayList<>();
+
+        BigDecimal withdrawalPercentage = matchedRule.getWithdrawalPercentage();
+        if (withdrawalPercentage == null) {
+            withdrawalPercentage = BigDecimal.ZERO;
+        }
+
+        String subRuleCode = matchedRule.getSubClaimCode();
 
         for (MatchedSubClaimRuleDto.ComponentExpression expressionDto : matchedRule.getComponentMapping()
                 .getExpressions()) {
@@ -146,15 +186,24 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
             }
 
             String expression = expressionDto.getExpression();
+            log.info("Processing Expression: {}", expression);
 
-            List<String> resolvedCodes = resolveExpressionComponentCodes(
-                    expression,
-                    matchedRule.getComponentMapping(),
-                    componentAmountMap);
+            List<String> resolvedCodes = resolveExpressionComponentCodes(expression, componentAmountMap);
+            log.info("Resolved Codes from expression: {}", resolvedCodes);
+
+            if (resolvedCodes.isEmpty()) {
+                log.warn("No codes resolved from expression: {}", expression);
+                log.warn("Available codes: {}", componentAmountMap.keySet());
+                continue;
+            }
 
             BigDecimal expressionAmount = resolvedCodes.stream()
                     .map(code -> componentAmountMap.getOrDefault(code, BigDecimal.ZERO))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal percentalWithdrawalAmount = expressionAmount
+                    .multiply(withdrawalPercentage)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
             if (expressionCalculations != null) {
                 expressionCalculations.add(
@@ -162,7 +211,8 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
                                 .expression(expression)
                                 .resolvedCodes(resolvedCodes)
                                 .expressionAmount(expressionAmount)
-                                .withdrawalPercentage(matchedRule.getWithdrawalPercentage())
+                                .withdrawalPercentage(withdrawalPercentage)
+                                .precentalWithDrawalAmount(percentalWithdrawalAmount)
                                 .type(calculationType)
                                 .build());
             }
@@ -174,25 +224,35 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
                         BigDecimal.ZERO);
 
                 if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    log.debug("Component {} has zero amount, skipping", componentCode);
                     continue;
                 }
 
+                BigDecimal componentPercentalAmount = amount
+                        .multiply(withdrawalPercentage)
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
                 results.add(
                         ComponentBalanceDTO.builder()
+                                .subRuleCode(subRuleCode)
                                 .code(componentCode)
                                 .name(componentCode)
                                 .type(calculationType)
                                 .amount(amount)
+                                .percentalAmount(componentPercentalAmount)
                                 .build());
+                
+                log.info("Added component: {} = {}, Percental: {}", 
+                    componentCode, amount, componentPercentalAmount);
             }
         }
 
+        log.info("Returning {} results", results.size());
         return results;
     }
 
     private List<String> resolveExpressionComponentCodes(
             String expression,
-            MatchedSubClaimRuleDto.ComponentMapping mapping,
             Map<String, BigDecimal> componentAmountMap) {
 
         if (expression == null || expression.isBlank()
@@ -200,18 +260,33 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
             return Collections.emptyList();
         }
 
+        log.info("=== RESOLVING EXPRESSION ===");
+        log.info("Expression: {}", expression);
+        log.info("Available codes: {}", componentAmountMap.keySet());
+
         String[] tokens = expression
                 .replace(" ", "")
                 .toUpperCase()
                 .split("[+\\-]");
 
-        return Arrays.stream(tokens)
+        List<String> resolved = Arrays.stream(tokens)
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(token -> !token.isBlank())
-                .filter(componentAmountMap::containsKey)
+                .filter(token -> {
+                    boolean exists = componentAmountMap.containsKey(token);
+                    if (!exists) {
+                        log.warn("Component code '{}' NOT found in map", token);
+                    } else {
+                        log.info("Component code '{}' found with value: {}", token, componentAmountMap.get(token));
+                    }
+                    return exists;
+                })
                 .distinct()
                 .toList();
+
+        log.info("Resolved codes: {}", resolved);
+        return resolved;
     }
 
     private Map<String, BigDecimal> buildContributionComponentMap(
@@ -221,76 +296,69 @@ public class PartialWithdrawalRuleServiceImpl implements PartialWithdrawalRuleSe
 
         if (contributionSummary == null
                 || contributionSummary.getComponentGroups() == null) {
+            log.warn("Contribution summary or component groups is null");
             return map;
         }
 
+        log.info("Building component map from {} component groups", 
+            contributionSummary.getComponentGroups().size());
+
+        // Add all components from the contribution summary
         for (MemberContributionSummary.ComponentGroup component : contributionSummary.getComponentGroups()) {
 
             if (component == null || component.getComponentCode() == null) {
                 continue;
             }
 
-            String systemCode = component.getComponentCode().trim().toUpperCase();
-            System.out.println("component codes i am checking: " + systemCode);
+            String code = component.getComponentCode().trim().toUpperCase();
+            BigDecimal totalAmount = component.getTotalAmount() != null ? component.getTotalAmount() : BigDecimal.ZERO;
 
-            // Determine if this is principal or interest
-            // If code ends with '_I' or starts with 'I', it's interest
-            boolean isInterest = systemCode.endsWith("_I") || systemCode.startsWith("I");
-
-            BigDecimal amount;
-            if (isInterest) {
-                amount = component.getInterestAmount() == null
-                        ? BigDecimal.ZERO
-                        : component.getInterestAmount();
-            } else {
-                amount = component.getPrincipalAmount() == null
-                        ? BigDecimal.ZERO
-                        : component.getPrincipalAmount();
+            if (totalAmount.compareTo(BigDecimal.ZERO) > 0) {
+                // Add with the exact code from the component group
+                map.put(code, totalAmount);
+                log.debug("Added component: {} = {}", code, totalAmount);
+                
+                // Also add with alternative keys if needed for expressions
+                addAlternativeKeys(map, code, totalAmount);
             }
-
-            // Build the full component code with PF_ prefix
-            String fullComponentCode = buildFullComponentCode(systemCode);
-
-            // Store with both the system code and the full component code
-            map.put(systemCode, amount);
-            map.put(fullComponentCode, amount);
-
-            System.out.println("Mapped: " + systemCode + " -> " + fullComponentCode + " = " + amount);
         }
 
+        log.info("Built component map with {} entries: {}", map.size(), map.keySet());
         return map;
     }
 
-    /**
-     * Build full component code with PF_ prefix
-     * Example: "IEC" -> "PF_IEC", "IMC" -> "PF_IMC", "MC" -> "PF_MC"
-     */
-    private String buildFullComponentCode(String systemCode) {
-        if (systemCode == null || systemCode.isBlank()) {
-            return systemCode;
+    private void addAlternativeKeys(Map<String, BigDecimal> map, String code, BigDecimal amount) {
+        // Add alternative keys for interest components
+        if (code.equals("PF_IEC")) {
+            map.put("INTEREST_EC", amount);
+            map.put("PF_IEC_INTEREST", amount);
+        } else if (code.equals("PF_IMC")) {
+            map.put("INTEREST_MC", amount);
+            map.put("PF_IMC_INTEREST", amount);
+        } else if (code.equals("P_IEC")) {
+            map.put("INTEREST_PENSION", amount);
+            map.put("P_IEC_INTEREST", amount);
+        } else if (code.equals("IGC")) {
+            map.put("INTEREST_GC", amount);
+            map.put("IGC_INTEREST", amount);
+        } else if (code.equals("IVC")) {
+            map.put("INTEREST_VC", amount);
+            map.put("IVC_INTEREST", amount);
         }
-
-        String code = systemCode.trim().toUpperCase();
-
-        // If already starts with PF_, return as is
-        if (code.startsWith("PF_")) {
-            return code;
+        
+        // Add alternative keys for principal components
+        if (code.equals("PF_EC")) {
+            map.put("EMPLOYEE_PF", amount);
+        } else if (code.equals("PF_MC")) {
+            map.put("EMPLOYER_PF", amount);
+        } else if (code.equals("P_EC")) {
+            map.put("PENSION", amount);
+            map.put("PENSION_EC", amount);
+        } else if (code.equals("GC")) {
+            map.put("GOVERNMENT", amount);
+        } else if (code.equals("VC")) {
+            map.put("VOLUNTARY", amount);
         }
-
-        // Remove trailing _I if present (interest indicator)
-        if (code.endsWith("_I")) {
-            code = code.substring(0, code.length() - 2);
-        }
-
-        // Remove leading I if present (interest indicator)
-        if (code.startsWith("I") && code.length() > 1) {
-            // For codes like IEC -> EC, IMC -> MC
-            // But we want to keep the full code with PF_ prefix
-            return "PF_" + code;
-        }
-
-        // For codes like MC, EC, IMC, IEC
-        return "PF_" + code;
     }
 
     private MemberDetailResponseDto getMemberDetail(String nppfNumber) {

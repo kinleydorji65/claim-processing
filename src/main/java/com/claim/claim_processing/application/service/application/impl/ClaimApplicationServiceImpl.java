@@ -12,13 +12,11 @@ import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.entities.others.UserRegistrateredAgencyMapping;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
-import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeMasterRepository;
 import com.claim.claim_processing.common.repository.common.*;
 import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
 import com.claim.claim_processing.common.repository.agencyRelated.AgencyCategoryRepository;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
-import com.claim.claim_processing.common.repository.specialCase.SpecialCaseAuthorityRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.client.MasterCodeGenClient;
 
@@ -27,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,10 +46,8 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     private final SubmissionChannelRepository submissionChannelMasterRepository;
     private final SchemeTypeRepository schemeMasterRepository;
     private final AgencyCategoryRepository agencyCategoryRepository;
-    private final SpecialCaseAuthorityRepository specialCaseRefundAuthorityMasterRepository;
     private final StageRepository stageMasterRepository;
     private final StatusMasterRepository statusMasterRepository;
-    private final ActionMasterRepository actionMasterRepository;
     private final MasterCodeGenClient masterCodeGenClient;
     private final UserRegistrateredAgencyMappingRepository userRegistrateredAgencyMappingRepository;
 
@@ -112,6 +110,15 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     return cause;
 }
 
+@Override
+@Transactional(readOnly = true)
+public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiatedBy, ActivityEnum isSpecialCase, Pageable pageable) {
+    log.info("Fetching claims for initiated by: {}, isSpecialCase: {}, page: {}, size: {}", 
+            initiatedBy, isSpecialCase, pageable.getPageNumber(), pageable.getPageSize());
+    
+    return claimApplicationRepository.findByInitiatedByAndIsSpecialCase(initiatedBy, isSpecialCase, pageable);
+}
+
     @Override
     public ClaimApplication update(ClaimApplicationRequestDto request) {
 
@@ -158,7 +165,10 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     public List<ClaimApplication> getAll() {
 
         List<ClaimApplication> response = claimApplicationRepository.findAll();
-
+        response.stream().map(m -> {
+            m.getIsSpecialCase().toString().equals("N");
+            return m;
+        }).toString();
         if (response.isEmpty()) {
             throw ClaimException.notFound("No claim applications found");
         }
@@ -172,7 +182,10 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
             String memberCode) {
 
         List<ClaimApplication> response = claimApplicationRepository.findByMemberCode(memberCode);
-
+                response.stream().map(m -> {
+            m.getIsSpecialCase().toString().equals("N");
+            return m;
+        }).toString();
         if (response.isEmpty()) {
             throw ClaimException.notFound(
                     "No claim applications found for member code: " + memberCode);
@@ -187,7 +200,10 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
             String nppfNumber) {
 
         List<ClaimApplication> response = claimApplicationRepository.findByNppfNumber(nppfNumber);
-
+                response.stream().map(m -> {
+            m.getIsSpecialCase().toString().equals("N");
+            return m;
+        }).toString();
         if (response.isEmpty()) {
             throw ClaimException.notFound(
                     "No claim applications found for NPPF number: " + nppfNumber);
@@ -261,7 +277,10 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     @Override
     public List<ClaimApplication> getByAgencyCodeAndClaimTypeId(String agencyCode, Long claimTypeId) {
         List<ClaimApplication> response = claimApplicationRepository.findByAgencyCodeAndClaimType_Id(agencyCode, claimTypeId);
-
+        response.stream().map(m -> {
+            m.getIsSpecialCase().toString().equals("N");
+            return m;
+        }).toString();
         if (response.isEmpty()) {
             throw ClaimException.notFound(
                     "No claim applications found for agency code: " + agencyCode + " and claim type ID: " + claimTypeId);
@@ -280,7 +299,10 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
         List<ClaimApplication> claimApplication = userMappings.stream()
                 .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndStatus_StatusId(mapping.getAgencyCode(), statusId).stream())
                 .toList();
-
+        claimApplication.stream().map(m -> {
+            m.getIsSpecialCase().toString().equals("N");
+            return m;
+        }).toString();
         return claimApplication;
     }
 
@@ -289,6 +311,10 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     public List<ClaimApplication> getVerifiedApplication() {
         List<ClaimApplication> response = claimApplicationRepository.findByStatus_StatusId(41L);
 
+        response.stream().map(m -> {
+            m.getIsSpecialCase().toString().equals("N");
+            return m;
+        }).toString();
         if (response.isEmpty()) {
             throw ClaimException.notFound("No verified claim applications found");
         }
@@ -311,10 +337,6 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
         if (request.getMemberCategoryId() != null && !request.getMemberCategoryId().isBlank()) {
             entity.setMemberCategory(getMemberCategory(request.getMemberCategoryId()));
-        }
-
-        if (request.getSpecialCaseAuthorityId() != null && request.getSpecialCaseAuthorityId() > 0) {
-            entity.setSpecialCaseAuthority(getSpecialCaseAuthority(request.getSpecialCaseAuthorityId()));
         }
 
         if (request.getCurrentStageId() != null && request.getCurrentStageId() > 0) {
@@ -344,10 +366,6 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
 
         if (request.getMemberCategoryId() != null && !request.getMemberCategoryId().isBlank()) {
             entity.setMemberCategory(getMemberCategory(request.getMemberCategoryId()));
-        }
-
-        if (request.getSpecialCaseAuthorityId() != null && request.getSpecialCaseAuthorityId() > 0) {
-            entity.setSpecialCaseAuthority(getSpecialCaseAuthority(request.getSpecialCaseAuthorityId()));
         }
 
         if (request.getCurrentStageId() != null && request.getCurrentStageId() > 0) {
@@ -413,12 +431,6 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
                         "Member category not found with id: " + categoryId));
     }
 
-    private SpecialCaseRefundAuthorityMaster getSpecialCaseAuthority(Long id) {
-        return specialCaseRefundAuthorityMasterRepository.findById(id)
-                .orElseThrow(() -> ClaimException.notFound(
-                        "Special case authority not found with id: " + id));
-    }
-
     private StageMaster getStage(Long id) {
         return stageMasterRepository.findById(id)
                 .orElseThrow(() -> ClaimException.notFound(
@@ -441,7 +453,10 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
         List<ClaimApplication> claimApplication = userMappings.stream()
                 .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndClaimType_Id(mapping.getAgencyCode(), 5L).stream())
                 .toList();
-
+        claimApplication.stream().map(m -> {
+            m.getIsSpecialCase().toString().equals("N");
+            return m;
+        }).toString();
         return claimApplication;
     }
 

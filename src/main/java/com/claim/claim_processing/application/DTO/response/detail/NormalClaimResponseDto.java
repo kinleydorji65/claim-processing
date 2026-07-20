@@ -32,24 +32,8 @@ public class NormalClaimResponseDto {
     private Long terminationReasonTypeId;
     private String terminationReasonTypeName;
 
-    // Dates
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate dateOfTermination;
-
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pfJoiningDate;
-
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pensionJoiningDate;
-
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate relievingOrderDate;
-
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate cessationEffectiveDate;
-
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate exitDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateOfServiceJoining;
@@ -66,8 +50,6 @@ public class NormalClaimResponseDto {
     private String lastPayMonth;
 
     private BigDecimal finalBasicSalary;
-
-    private Integer nonContributionMonths;
 
     private String remarks;
 

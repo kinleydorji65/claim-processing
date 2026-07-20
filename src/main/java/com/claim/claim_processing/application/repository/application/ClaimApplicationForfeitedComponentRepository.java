@@ -13,14 +13,8 @@ public interface ClaimApplicationForfeitedComponentRepository
 
     List<ClaimApplicationForfeitedComponent> findByClaimApplication_Id(Long claimApplicationId);
 
-    List<ClaimApplicationForfeitedComponent> findByClaimApplication_IdAndIsActive(
+    boolean existsByClaimApplication_IdAndComponentCode(
             Long claimApplicationId,
-            ActivityEnum isActive
-    );
-
-    boolean existsByClaimApplication_IdAndComponentCodeAndIsActive(
-            Long claimApplicationId,
-            String componentCode,
-            ActivityEnum isActive
+            String componentCode
     );
 }

@@ -68,6 +68,9 @@ public class SubClaimMapping {
         @Column(name = "CREATED_BY", length = 100)
         private String createdBy;
 
+        @Column(name = "IS_ACTIVE", length = 100)
+        private String isActive;
+
         @Column(name = "UPDATED_AT")
         private LocalDateTime updatedAt;
 

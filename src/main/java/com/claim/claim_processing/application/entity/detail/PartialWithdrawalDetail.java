@@ -49,9 +49,6 @@ private ClaimDetail claimDetail;
     @JoinColumn(name = "WITHDRAWAL_REASON_ID", nullable = false)
     private PartialWithdrawalReasonMaster withdrawalReason;
 
-    @Column(name = "REQUESTED_WITHDRAWAL_AMOUNT", precision = 15, scale = 2)
-    private BigDecimal requestedWithdrawalAmount;
-
     @Column(name = "ACTUAL_WITHDRAWAL_AMOUNT", precision = 15, scale = 2)
     private BigDecimal actualWithdrawalAmount;
 

@@ -49,8 +49,15 @@ public class GeneralClaimResponseBuilderMapper {
                 .officeId(entity.getOfficeId() != null ? entity.getOfficeId() : null)
 
                 .applicationDate(entity.getApplicationDate())
-                .pfJoiningDate(entity.getPfJoiningDate())
-                .pensionJoiningDate(entity.getPensionJoiningDate())
+                .pfStartDate(entity.getPfStartDate())
+                .email(entity.getEmail())
+                .contactNo(entity.getContactNo())
+                .pfEndDate(entity.getPfEndDate())
+                .pensionStartDate(entity.getPensionStartDate())
+                .pensionEndDate(entity.getPensionEndDate())
+                
+                .isLoanApplied(entity.getIsLoanApplied())
+                .isRentalApplied(entity.getIsRentalApplied())
 
                 .onBehalfOfMember(entity.getOnBehalfOfMember())
                 .initiatedBy(entity.getInitiatedBy())
@@ -58,14 +65,9 @@ public class GeneralClaimResponseBuilderMapper {
 
                 .isSpecialCase(entity.getIsSpecialCase())
                 .isActive(entity.getIsActive())
-                .specialCaseAuthorityId(entity.getSpecialCaseAuthority() != null ? entity.getSpecialCaseAuthority().getId() : null)
-                .specialCaseAuthorityName(entity.getSpecialCaseAuthority() != null ? entity.getSpecialCaseAuthority().getName() : null)
                 .claimedBy(entity.getClaimedBy())
                 .unClaimedBy(entity.getUnClaimedBy())
                 .currencyCode(entity.getCurrencyCode())
-
-                .currentStageId(entity.getCurrentStage() != null ? entity.getCurrentStage().getId() : null)
-                .currentStageName(entity.getCurrentStage() != null ? entity.getCurrentStage().getName() : null)
 
                 .statusId(entity.getStatus() != null ? entity.getStatus().getStatusId() : null)
                 .statusName(entity.getStatus() != null ? entity.getStatus().getStatusName() : null)

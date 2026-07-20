@@ -28,6 +28,9 @@ public class SubClaimCondition {
         @Column(name = "CONDITION_CHECK", nullable = false, length = 150)
         private String conditionCheck;
 
+        @Column(name = "IS_ACTIVE", nullable = true, length = 150)
+        private String isActive;
+
         @Column(name = "EXPRESSION", length = 500)
         private String expression;
 

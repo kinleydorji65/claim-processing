@@ -30,8 +30,6 @@ public class ClaimForfeitedComponentResponseDto {
     // Reason
     private String reason;
 
-    // Status
-    private ActivityEnum isActive;
 
     // Audit
     private String createdBy;

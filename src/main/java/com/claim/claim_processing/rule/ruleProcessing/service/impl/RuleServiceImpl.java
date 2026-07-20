@@ -31,9 +31,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,11 +57,12 @@ public class RuleServiceImpl implements RuleService {
         try {
             System.out.println("========== START RULE EVALUATION ==========");
             System.out.println("Request: " + request);
-            
+
             validateRequest(request);
 
             MemberDetailResponseDto memberDetail = getMemberDetail(request.getNppfNumber());
-            MemberContributionSummary contributionSummary = getContributionSummary(memberDetail, request.getCessationDate());
+            MemberContributionSummary contributionSummary = getContributionSummary(memberDetail,
+                    request.getCessationDate());
 
             System.out.println("========== MEMBER DATA ==========");
             System.out.println("NPPF Number: " + request.getNppfNumber());
@@ -101,12 +100,12 @@ public class RuleServiceImpl implements RuleService {
             System.out.println("Is Termination Claim: " + terminationClaim);
 
             List<ClaimTypeRuleMap> claimTypeRuleMaps = getClaimTypeRuleMaps(request.getClaimTypeId());
-            
+
             System.out.println("========== CLAIM TYPE RULE MAPS ==========");
             System.out.println("Total Rule Maps Found: " + claimTypeRuleMaps.size());
             claimTypeRuleMaps.forEach(ctrm -> {
-                System.out.println("  - Rule ID: " + ctrm.getRuleType().getId() + 
-                        ", Rule Code: " + ctrm.getRuleType().getCode() + 
+                System.out.println("  - Rule ID: " + ctrm.getRuleType().getId() +
+                        ", Rule Code: " + ctrm.getRuleType().getCode() +
                         ", Rule Name: " + ctrm.getRuleType().getName());
             });
 
@@ -121,17 +120,21 @@ public class RuleServiceImpl implements RuleService {
             System.out.println("========== RULE TYPE CODES ==========");
             ruleTypeCodes.forEach(code -> System.out.println("  - " + code));
 
-            List<SubClaimMapping> subClaimMappings = getSubClaimMappings(ruleTypeCodes);
+            // ✅ Get active SubClaimMappings (filtered by IS_ACTIVE)
+            List<SubClaimMapping> subClaimMappings = getActiveSubClaimMappings(ruleTypeCodes);
 
-            System.out.println("========== ALL SUB CLAIM MAPPINGS ==========");
-            System.out.println("Total Mappings: " + subClaimMappings.size());
+            System.out.println("========== ALL ACTIVE SUB CLAIM MAPPINGS ==========");
+            System.out.println("Total Active Mappings: " + subClaimMappings.size());
             subClaimMappings.forEach(m -> {
-                System.out.println("  - " + m.getSubClaimCode() + " | Rule: " + 
-                        (m.getRuleType() != null ? m.getRuleType().getCode() : "null") + 
-                        " | Category: " + 
-                        (m.getCategorySchemeMapping() != null ? m.getCategorySchemeMapping().getCategorySchemeCode() : "null") +
-                        " | Time: " + 
-                        (m.getTimeIndication() != null ? m.getTimeIndication().getTimeIndication() : "null"));
+                System.out.println("  ✅ " + m.getSubClaimCode() +
+                        " | Active: " + m.getIsActive() +
+                        " | Rule: " + (m.getRuleType() != null ? m.getRuleType().getCode() : "null") +
+                        " | Category: "
+                        + (m.getCategorySchemeMapping() != null ? m.getCategorySchemeMapping().getCategorySchemeCode()
+                                : "null")
+                        +
+                        " | Time: "
+                        + (m.getTimeIndication() != null ? m.getTimeIndication().getTimeIndication() : "null"));
             });
 
             CategorySchemeMapping normalCategorySchemeMapping = getCategorySchemeMapping(schemeTypeId,
@@ -140,16 +143,19 @@ public class RuleServiceImpl implements RuleService {
             CategorySchemeMapping vestingCategorySchemeMapping = getVestingCategorySchemeMapping(memberCategoryId);
 
             System.out.println("========== CATEGORY SCHEME MAPPINGS ==========");
-            System.out.println("Normal Category Scheme: " + 
-                    (normalCategorySchemeMapping != null ? normalCategorySchemeMapping.getCategorySchemeCode() : "null"));
-            System.out.println("Vesting Category Scheme: " + 
-                    (vestingCategorySchemeMapping != null ? vestingCategorySchemeMapping.getCategorySchemeCode() : "null"));
+            System.out.println("Normal Category Scheme: " +
+                    (normalCategorySchemeMapping != null ? normalCategorySchemeMapping.getCategorySchemeCode()
+                            : "null"));
+            System.out.println("Vesting Category Scheme: " +
+                    (vestingCategorySchemeMapping != null ? vestingCategorySchemeMapping.getCategorySchemeCode()
+                            : "null"));
 
             // =============================================
             // STEP 1: REASON/TERMINATION FILTER
             // =============================================
             System.out.println("\n========== STEP 1: REASON/TERMINATION FILTER ==========");
-            System.out.println("Filtering for: " + (partialClaim ? "PARTIAL" : (terminationClaim ? "TERMINATION" : "NORMAL")));
+            System.out.println(
+                    "Filtering for: " + (partialClaim ? "PARTIAL" : (terminationClaim ? "TERMINATION" : "NORMAL")));
 
             List<SubClaimMapping> reasonOrTerminationFiltered;
 
@@ -160,8 +166,8 @@ public class RuleServiceImpl implements RuleService {
                             boolean matches = Objects.equals(
                                     mapping.getPartialReasonId(),
                                     request.getReasonTypeId());
-                            System.out.println("  Partial check: " + mapping.getSubClaimCode() + 
-                                    " | PartialReasonId: " + mapping.getPartialReasonId() + 
+                            System.out.println("  Partial check: " + mapping.getSubClaimCode() +
+                                    " | PartialReasonId: " + mapping.getPartialReasonId() +
                                     " | RequestReasonId: " + request.getReasonTypeId() +
                                     " | Matches: " + matches);
                             return matches;
@@ -183,8 +189,9 @@ public class RuleServiceImpl implements RuleService {
                                 pass = !isTermRule;
                             }
 
-                            System.out.println("  Filter: " + mapping.getSubClaimCode() + 
-                                    " | RuleType: " + (mapping.getRuleType() != null ? mapping.getRuleType().getCode() : "null") +
+                            System.out.println("  Filter: " + mapping.getSubClaimCode() +
+                                    " | RuleType: "
+                                    + (mapping.getRuleType() != null ? mapping.getRuleType().getCode() : "null") +
                                     " | isVesting: " + isVesting +
                                     " | isTerminationRule: " + isTermRule +
                                     " | Pass: " + pass);
@@ -194,8 +201,7 @@ public class RuleServiceImpl implements RuleService {
             }
 
             System.out.println("\nAfter Reason/Termination Filter: " + reasonOrTerminationFiltered.size() + " rules");
-            reasonOrTerminationFiltered.forEach(m -> 
-                System.out.println("  - " + m.getSubClaimCode() + " | " + 
+            reasonOrTerminationFiltered.forEach(m -> System.out.println("  - " + m.getSubClaimCode() + " | " +
                     (m.getRuleType() != null ? m.getRuleType().getCode() : "null")));
 
             // =============================================
@@ -214,21 +220,29 @@ public class RuleServiceImpl implements RuleService {
                             matches = matchesCategoryScheme(mapping, normalCategorySchemeMapping);
                         }
 
-                        System.out.println("  Category check: " + mapping.getSubClaimCode() + 
+                        System.out.println("  Category check: " + mapping.getSubClaimCode() +
                                 " | isVesting: " + isVesting +
-                                " | CategoryScheme: " + 
-                                (mapping.getCategorySchemeMapping() != null ? mapping.getCategorySchemeMapping().getCategorySchemeCode() : "null") +
-                                " | Target: " + (isVesting ? 
-                                    (vestingCategorySchemeMapping != null ? vestingCategorySchemeMapping.getCategorySchemeCode() : "null") :
-                                    (normalCategorySchemeMapping != null ? normalCategorySchemeMapping.getCategorySchemeCode() : "null")) +
+                                " | CategoryScheme: " +
+                                (mapping.getCategorySchemeMapping() != null
+                                        ? mapping.getCategorySchemeMapping().getCategorySchemeCode()
+                                        : "null")
+                                +
+                                " | Target: "
+                                + (isVesting
+                                        ? (vestingCategorySchemeMapping != null
+                                                ? vestingCategorySchemeMapping.getCategorySchemeCode()
+                                                : "null")
+                                        : (normalCategorySchemeMapping != null
+                                                ? normalCategorySchemeMapping.getCategorySchemeCode()
+                                                : "null"))
+                                +
                                 " | Matches: " + matches);
                         return matches;
                     })
                     .toList();
 
             System.out.println("\nAfter Category Filter: " + categoryFiltered.size() + " rules");
-            categoryFiltered.forEach(m -> 
-                System.out.println("  - " + m.getSubClaimCode()));
+            categoryFiltered.forEach(m -> System.out.println("  - " + m.getSubClaimCode()));
 
             // =============================================
             // STEP 3: TIME FILTER
@@ -240,10 +254,12 @@ public class RuleServiceImpl implements RuleService {
                         boolean matches = matchesTimeIndication(
                                 mapping.getTimeIndication(),
                                 cessationDate);
-                        
-                        System.out.println("  Time check: " + mapping.getSubClaimCode() + 
-                                " | TimeIndication: " + 
-                                (mapping.getTimeIndication() != null ? mapping.getTimeIndication().getTimeIndication() : "null") +
+
+                        System.out.println("  Time check: " + mapping.getSubClaimCode() +
+                                " | TimeIndication: " +
+                                (mapping.getTimeIndication() != null ? mapping.getTimeIndication().getTimeIndication()
+                                        : "null")
+                                +
                                 " | CessationDate: " + cessationDate +
                                 " | Matches: " + matches);
                         return matches;
@@ -251,11 +267,10 @@ public class RuleServiceImpl implements RuleService {
                     .toList();
 
             System.out.println("\nAfter Time Filter: " + timeFiltered.size() + " rules");
-            timeFiltered.forEach(m -> 
-                System.out.println("  - " + m.getSubClaimCode()));
+            timeFiltered.forEach(m -> System.out.println("  - " + m.getSubClaimCode()));
 
             // =============================================
-            // STEP 4: CONDITION FILTER
+            // STEP 4: CONDITION FILTER (✅ Using active conditions only)
             // =============================================
             System.out.println("\n========== STEP 4: CONDITION FILTER ==========");
 
@@ -274,41 +289,40 @@ public class RuleServiceImpl implements RuleService {
                                         totalNonContributionMonths,
                                         totalServiceMonths,
                                         totalServiceYears);
-                        
-                        System.out.println("  Condition check: " + mapping.getSubClaimCode() + 
+
+                        System.out.println("  Condition check: " + mapping.getSubClaimCode() +
                                 " | Matches: " + matches);
                         return matches;
                     })
                     .toList();
 
             System.out.println("\nAfter Condition Filter: " + matchedMappings.size() + " rules");
-            matchedMappings.forEach(m -> 
-                System.out.println("  - " + m.getSubClaimCode()));
+            matchedMappings.forEach(m -> System.out.println("  - " + m.getSubClaimCode()));
 
             // =============================================
             // FINAL RESULT
             // =============================================
             System.out.println("\n========== FINAL RESULT ==========");
-            
+
             if (matchedMappings.isEmpty()) {
                 System.out.println("❌ NO MATCHING RULES FOUND");
                 System.out.println("Summary of filters:");
-                System.out.println("  - Total SubClaimMappings: " + subClaimMappings.size());
+                System.out.println("  - Total Active SubClaimMappings: " + subClaimMappings.size());
                 System.out.println("  - After Reason/Termination: " + reasonOrTerminationFiltered.size());
                 System.out.println("  - After Category: " + categoryFiltered.size());
                 System.out.println("  - After Time: " + timeFiltered.size());
                 System.out.println("  - After Conditions: " + matchedMappings.size());
-                
-                // Print details of why each rule failed
+
+                // Print details of why each rule failed (✅ Using active conditions only)
                 System.out.println("\n========== DETAILED FAILURE ANALYSIS ==========");
                 timeFiltered.forEach(mapping -> {
                     System.out.println("\n--- Rule: " + mapping.getSubClaimCode() + " ---");
-                    List<SubClaimCondition> conditions = subClaimConditionRepository
-                            .findBySubClaimMapping_SubClaimCode(mapping.getSubClaimCode());
+                    // ✅ Use active conditions only
+                    List<SubClaimCondition> conditions = getActiveConditions(mapping.getSubClaimCode());
                     if (conditions == null || conditions.isEmpty()) {
-                        System.out.println("  ❌ No conditions found (should have passed)");
+                        System.out.println("  ❌ No active conditions found");
                     } else {
-                        System.out.println("  Conditions count: " + conditions.size());
+                        System.out.println("  Active conditions count: " + conditions.size());
                         conditions.forEach(cond -> {
                             boolean conditionMet = matchesCondition(
                                     cond,
@@ -318,22 +332,23 @@ public class RuleServiceImpl implements RuleService {
                                     totalNonContributionMonths,
                                     totalServiceMonths,
                                     totalServiceYears);
-                            System.out.println("    - " + cond.getConditionCode() + 
+                            System.out.println("    - " + cond.getConditionCode() +
                                     " | Check: " + cond.getConditionCheck() +
                                     " | Expression: " + cond.getExpression() +
                                     " | Duration: " + cond.getDuration() +
                                     " | Actual Value: " + getActualValue(
-                                        cond.getConditionCheck(),
-                                        totalContributionMonths,
-                                        totalContributionYears,
-                                        totalNonContributionMonths,
-                                        totalServiceMonths,
-                                        totalServiceYears) +
+                                            cond.getConditionCheck(),
+                                            totalContributionMonths,
+                                            totalContributionYears,
+                                            totalNonContributionMonths,
+                                            totalServiceMonths,
+                                            totalServiceYears)
+                                    +
                                     " | Passed: " + conditionMet);
                         });
                     }
                 });
-                
+
                 return ApiResponseDTO.notFound("No matching rule found");
             }
 
@@ -366,36 +381,127 @@ public class RuleServiceImpl implements RuleService {
         }
     }
 
+    // =============================================
+    // ✅ NEW: Get Active SubClaimMappings with IS_ACTIVE filter and Deduplication
+    // =============================================
+    private List<SubClaimMapping> getActiveSubClaimMappings(List<String> ruleTypeCodes) {
+        if (ruleTypeCodes == null || ruleTypeCodes.isEmpty()) {
+            System.out.println("⚠️ No rule type codes provided");
+            return List.of();
+        }
+
+        System.out.println("========== FETCHING ACTIVE SUB CLAIM MAPPINGS ==========");
+        System.out.println("Rule Type Codes: " + ruleTypeCodes);
+
+        // ✅ Fetch active mappings only
+        List<SubClaimMapping> activeMappings = ruleTypeCodes.stream()
+                .map(code -> {
+                    System.out.println("  Fetching for rule code: " + code);
+                    return subClaimMappingRepository.findByRuleType_CodeIgnoreCaseAndIsActive(code, "Y");
+                })
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .filter(Objects::nonNull)
+                .filter(mapping -> "Y".equals(mapping.getIsActive()))
+                .collect(Collectors.toList());
+
+        System.out.println("Total active mappings found before dedup: " + activeMappings.size());
+
+        // ✅ Deduplicate by subClaimCode (keep only one per code)
+        Map<String, SubClaimMapping> uniqueMappings = new LinkedHashMap<>();
+        for (SubClaimMapping mapping : activeMappings) {
+            String code = mapping.getSubClaimCode();
+            if (!uniqueMappings.containsKey(code)) {
+                uniqueMappings.put(code, mapping);
+                System.out.println("  ✅ Keeping: " + code + " (active)");
+            } else {
+                System.out.println("  ❌ Skipping duplicate: " + code);
+            }
+        }
+
+        List<SubClaimMapping> result = new ArrayList<>(uniqueMappings.values());
+        System.out.println("Total unique active mappings: " + result.size());
+
+        return result;
+    }
+
+    // =============================================
+    // ✅ NEW: Get Active Conditions Only (filtered by IS_ACTIVE)
+    // =============================================
+    private List<SubClaimCondition> getActiveConditions(String subClaimCode) {
+        if (subClaimCode == null) {
+            return Collections.emptyList();
+        }
+
+        List<SubClaimCondition> allConditions = subClaimConditionRepository
+                .findBySubClaimMapping_SubClaimCode(subClaimCode);
+
+        if (allConditions == null || allConditions.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // ✅ Filter only active conditions
+        return allConditions.stream()
+                .filter(c -> c.getIsActive() != null && "Y".equals(c.getIsActive()))
+                .collect(Collectors.toList());
+    }
+
+    // =============================================
+    // ✅ UPDATED: getSubClaimMappings with IS_ACTIVE filter and deduplication
+    // =============================================
+    private List<SubClaimMapping> getSubClaimMappings(List<String> ruleTypeCodes) {
+        if (ruleTypeCodes == null || ruleTypeCodes.isEmpty()) {
+            return List.of();
+        }
+
+        // ✅ Add IS_ACTIVE = 'Y' filter and deduplicate
+        return ruleTypeCodes.stream()
+                .map(code -> subClaimMappingRepository.findByRuleType_CodeIgnoreCaseAndIsActive(code, "Y"))
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .filter(Objects::nonNull)
+                .filter(mapping -> "Y".equals(mapping.getIsActive()))
+                .collect(Collectors.toMap(
+                        SubClaimMapping::getSubClaimCode,
+                        mapping -> mapping,
+                        (existing, replacement) -> existing // Keep the first one
+                ))
+                .values()
+                .stream()
+                .collect(Collectors.toList());
+    }
+
     private boolean isVestingRule(SubClaimMapping mapping) {
         if (mapping == null) {
             return false;
         }
-        
+
         String ruleType = mapping.getRuleType() == null
                 ? ""
                 : mapping.getRuleType().getCode().trim().toUpperCase();
-        
+
         String subClaimType = mapping.getSubClaimType() == null
                 ? ""
                 : mapping.getSubClaimType().trim().toUpperCase();
-        
+
         String subClaimCode = mapping.getSubClaimCode() == null
                 ? ""
                 : mapping.getSubClaimCode().trim().toUpperCase();
-        
-        boolean isVesting = ruleType.contains("VEST") 
+
+        boolean isVesting = ruleType.contains("VEST")
                 || subClaimType.contains("VEST")
                 || subClaimCode.contains("VEST");
-        
+
         if (isVesting) {
-            System.out.println("  ✅ isVestingRule: " + mapping.getSubClaimCode() + 
-                    " | ruleType=" + ruleType + 
+            System.out.println("  ✅ isVestingRule: " + mapping.getSubClaimCode() +
+                    " | ruleType=" + ruleType +
                     " | subClaimType=" + subClaimType);
         }
-        
+
         return isVesting;
     }
 
+    // ✅ UPDATED: Use active conditions only
     private boolean matchesPartialMappingCondition(
             SubClaimMapping mapping,
             LocalDate cessationDate,
@@ -405,8 +511,8 @@ public class RuleServiceImpl implements RuleService {
             return false;
         }
 
-        List<SubClaimCondition> conditions = subClaimConditionRepository.findBySubClaimMapping_SubClaimCode(
-                mapping.getSubClaimCode());
+        // ✅ Use active conditions only
+        List<SubClaimCondition> conditions = getActiveConditions(mapping.getSubClaimCode());
 
         if (conditions == null || conditions.isEmpty()) {
             return true;
@@ -425,6 +531,7 @@ public class RuleServiceImpl implements RuleService {
                         null));
     }
 
+    // ✅ UPDATED: Use active conditions only
     private boolean matchesMappingCondition(
             SubClaimMapping mapping,
             LocalDate cessationDate,
@@ -438,18 +545,17 @@ public class RuleServiceImpl implements RuleService {
             return false;
         }
 
-        List<SubClaimCondition> conditions = subClaimConditionRepository
-                .findBySubClaimMapping_SubClaimCode(mapping.getSubClaimCode());
-        
-        // If no conditions, rule is always applicable
+        // ✅ Use active conditions only
+        List<SubClaimCondition> conditions = getActiveConditions(mapping.getSubClaimCode());
+
         if (conditions == null || conditions.isEmpty()) {
-            System.out.println("  ✅ No conditions for " + mapping.getSubClaimCode() + " - ALWAYS applicable");
+            System.out.println("  ✅ No active conditions for " + mapping.getSubClaimCode() + " - ALWAYS applicable");
             return true;
         }
-        
-        System.out.println("  🔍 Checking " + conditions.size() + " conditions for " + mapping.getSubClaimCode());
-        
-        // ALL conditions must be met (AND logic)
+
+        System.out
+                .println("  🔍 Checking " + conditions.size() + " active conditions for " + mapping.getSubClaimCode());
+
         return conditions.stream()
                 .allMatch(condition -> matchesCondition(
                         condition,
@@ -536,14 +642,14 @@ public class RuleServiceImpl implements RuleService {
         }
 
         boolean result = evaluateExpression(actualValue, duration, expression);
-        
-        System.out.println("  📊 " + condition.getConditionCode() + 
+
+        System.out.println("  📊 " + condition.getConditionCode() +
                 " | Check: " + conditionCheck +
                 " | Expression: " + expression +
                 " | Duration: " + duration +
                 " | Actual: " + actualValue +
                 " | Result: " + (result ? "✅ PASS" : "❌ FAIL"));
-        
+
         return result;
     }
 
@@ -669,9 +775,11 @@ public class RuleServiceImpl implements RuleService {
         return response.getData();
     }
 
-    private MemberContributionSummary getContributionSummary(MemberDetailResponseDto memberDetail, LocalDate cessationDate) {
+    private MemberContributionSummary getContributionSummary(MemberDetailResponseDto memberDetail,
+            LocalDate cessationDate) {
 
-        MemberContributionSummary summary = memberContributionService.getContributionSummary(memberDetail, cessationDate);
+        MemberContributionSummary summary = memberContributionService.getContributionSummary(memberDetail,
+                cessationDate);
 
         if (summary == null) {
             throw ClaimException.notFound(
@@ -691,20 +799,6 @@ public class RuleServiceImpl implements RuleService {
         }
 
         return ruleMaps;
-    }
-
-    private List<SubClaimMapping> getSubClaimMappings(List<String> ruleTypeCodes) {
-
-        if (ruleTypeCodes == null || ruleTypeCodes.isEmpty()) {
-            return List.of();
-        }
-
-        return ruleTypeCodes.stream()
-                .map(subClaimMappingRepository::findByRuleType_CodeIgnoreCase)
-                .filter(Objects::nonNull)
-                .flatMap(List::stream)
-                .filter(Objects::nonNull)
-                .toList();
     }
 
     private CategorySchemeMapping getCategorySchemeMapping(
@@ -772,16 +866,12 @@ public class RuleServiceImpl implements RuleService {
         return Objects.equals(claimTypeId, PARTIAL_WITHDRAWAL_CLAIM_TYPE_ID);
     }
 
-    private boolean isWrongRemittanceClaim(Long claimTypeId) {
-        return Objects.equals(claimTypeId, WRONG_REMITTANCE_CLAIM_TYPE_ID);
-    }
-
     private boolean isTerminationClaim(Long cessationTypeId) {
         if (cessationTypeId == null || cessationTypeId <= 0) {
             System.out.println("⚠️ CessationTypeId is null or <= 0: " + cessationTypeId);
             return false;
         }
-        
+
         try {
             CessationTypeMaster cessationType = cessationTypeRepository.findById(cessationTypeId)
                     .orElseThrow(() -> ClaimException.notFound(null));
@@ -795,24 +885,17 @@ public class RuleServiceImpl implements RuleService {
             System.out.println("Cessation Type Name: " + name);
             System.out.println("=============================================");
 
-            // Check if it's a termination type
             if (code == null) {
                 return false;
             }
-            
+
             String upperCode = code.toUpperCase();
-            boolean isTermination = upperCode.equals("TERMINATION") 
-                    || upperCode.equals("TERM")
-                    || upperCode.equals("RESIGNATION")
-                    || upperCode.equals("RESIGN")
-                    || upperCode.equals("DISMISSAL")
-                    || upperCode.equals("DISMISS")
-                    || upperCode.equals("SEPARATION")
-                    || upperCode.equals("QUIT");
-            
+            boolean isTermination = upperCode.equals("TERMINATION")
+                    || upperCode.equals("TERM");
+
             System.out.println("Is Termination: " + isTermination);
             return isTermination;
-            
+
         } catch (ClaimException e) {
             System.out.println("❌ Error finding cessation type: " + e.getMessage());
             return false;
@@ -820,24 +903,20 @@ public class RuleServiceImpl implements RuleService {
     }
 
     private boolean isTerminationRule(SubClaimMapping mapping) {
-
         if (mapping == null || mapping.getRuleType() == null) {
             return false;
         }
-
         String code = mapping.getRuleType().getCode();
         if (code == null) {
             return false;
         }
-
         String upperCode = code.toUpperCase();
-        
-        // Check if it's a termination-related rule
-        return upperCode.contains("TERM")
-                || upperCode.contains("TERMINATION")
-                || upperCode.contains("LAPSED");
+        // ✅ Only check for TERMINATION, not LAPSED
+        return upperCode.contains("TERMINATION")
+                || upperCode.equals("TERM");
     }
 
+    // ✅ UPDATED: Use active conditions only
     private MatchedSubClaimRuleDto mapToMatchedSubClaimRuleDto(
             SubClaimMapping mapping,
             boolean partialClaim,
@@ -892,6 +971,7 @@ public class RuleServiceImpl implements RuleService {
                 .orElse(null);
     }
 
+    // ✅ UPDATED: Use active conditions only
     private MatchedSubClaimRuleDto.Condition mapMatchedPartialCondition(
             SubClaimMapping mapping,
             LocalDate cessationDate,
@@ -901,8 +981,8 @@ public class RuleServiceImpl implements RuleService {
             return null;
         }
 
-        List<SubClaimCondition> conditions = subClaimConditionRepository.findBySubClaimMapping_SubClaimCode(
-                mapping.getSubClaimCode());
+        // ✅ Use active conditions only
+        List<SubClaimCondition> conditions = getActiveConditions(mapping.getSubClaimCode());
 
         if (conditions == null || conditions.isEmpty()) {
             return null;
@@ -924,6 +1004,7 @@ public class RuleServiceImpl implements RuleService {
                 .orElse(null);
     }
 
+    // ✅ UPDATED: Use active conditions only
     private MatchedSubClaimRuleDto.Condition mapMatchedCondition(
             SubClaimMapping mapping,
             LocalDate cessationDate,
@@ -937,8 +1018,8 @@ public class RuleServiceImpl implements RuleService {
             return null;
         }
 
-        List<SubClaimCondition> conditions = subClaimConditionRepository.findBySubClaimMapping_SubClaimCode(
-                mapping.getSubClaimCode());
+        // ✅ Use active conditions only
+        List<SubClaimCondition> conditions = getActiveConditions(mapping.getSubClaimCode());
 
         if (conditions == null || conditions.isEmpty()) {
             return null;
@@ -986,7 +1067,6 @@ public class RuleServiceImpl implements RuleService {
             return false;
         }
 
-        // If mapping has no category scheme, it applies to ALL categories
         if (mapping.getCategorySchemeMapping() == null) {
             System.out.println("  ✅ No category scheme on mapping - matches ALL");
             return true;
@@ -1001,9 +1081,9 @@ public class RuleServiceImpl implements RuleService {
         String targetCategory = categorySchemeMapping.getCategorySchemeCode();
 
         boolean matches = Objects.equals(mappingCategory, targetCategory);
-        System.out.println("  Category match: " + matches + 
+        System.out.println("  Category match: " + matches +
                 " (" + mappingCategory + " vs " + targetCategory + ")");
-        
+
         return matches;
     }
 
@@ -1040,24 +1120,20 @@ public class RuleServiceImpl implements RuleService {
         return MatchedSubClaimRuleDto.ComponentMapping.builder()
                 .id(componentMapping.getId())
                 .componentMappingCode(componentMapping.getComponentMappingCode())
-
                 .hasPfMc(toYN(componentMapping.getHasPfMc()))
                 .hasPfEc(toYN(componentMapping.getHasPfEc()))
                 .hasPfImc(toYN(componentMapping.getHasPfImc()))
                 .hasPfIec(toYN(componentMapping.getHasPfIec()))
-
                 .hasPMc(toYN(componentMapping.getHasPMc()))
                 .hasPEc(toYN(componentMapping.getHasPEc()))
                 .hasPImc(toYN(componentMapping.getHasPImc()))
                 .hasPIec(toYN(componentMapping.getHasPIec()))
-
                 .hasGc(toYN(componentMapping.getHasGc()))
                 .hasGic(toYN(componentMapping.getHasGic()))
                 .hasVc(toYN(componentMapping.getHasVc()))
                 .hasVic(toYN(componentMapping.getHasVic()))
                 .hasIvc(toYN(componentMapping.getHasIvc()))
                 .hasIgc(toYN(componentMapping.getHasIgc()))
-
                 .expressions(mapComponentExpressions(componentMapping.getExpressions()))
                 .effectiveFrom(componentMapping.getEffectiveFrom())
                 .effectiveTo(componentMapping.getEffectiveTo())

@@ -7,10 +7,6 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 
-import com.claim.claim_processing.common.entities.common.DeductionTypeMaster;
-import com.claim.claim_processing.common.entities.common.ReviewStatusMaster;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
-
 @Entity
 @Table(name = "CLAIM_APPLICATION_DEDUCTION_DETAIL", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
 @Getter
@@ -31,9 +27,6 @@ public class ClaimApplicationDeductionDetail {
         @Column(name = "OUTSTANDING_AMOUNT", precision = 15, scale = 2)
         private BigDecimal outstandingAmount;
 
-        @Column(name = "SYSTEM_DEDUCTED_AMOUNT", precision = 15, scale = 2)
-        private BigDecimal systemDeductedAmount;
-
         @Column(name = "VERIFIED_DEDUCTED_AMOUNT", precision = 15, scale = 2)
         private BigDecimal verifiedDeductedAmount;
 
@@ -42,23 +35,6 @@ public class ClaimApplicationDeductionDetail {
 
         @Column(name = "DEDUCTED_AMOUNT", precision = 15, scale = 2)
         private BigDecimal deductedAmount;
-
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "DEDUCTION_REVIEW_STATUS_ID")
-        private ReviewStatusMaster deductionReviewStatus;
-
-        @Enumerated(EnumType.STRING)
-        @Column(name = "IS_AUTO_APPLIED", length = 1)
-        @Builder.Default
-        private ActivityEnum isAutoApplied = ActivityEnum.N;
-
-        @Enumerated(EnumType.STRING)
-        @Column(name = "IS_MANUAL_OVERRIDE", length = 1)
-        @Builder.Default
-        private ActivityEnum isManualOverride = ActivityEnum.N;
-
-        @Column(name = "OVERRIDE_REASON", length = 1000)
-        private String overrideReason;
 
         @Column(name = "REMARKS", length = 1000)
         private String remarks;
@@ -74,11 +50,6 @@ public class ClaimApplicationDeductionDetail {
 
         @Column(name = "UPDATED_AT", insertable = false, updatable = false)
         private Timestamp updatedAt;
-
-        @Enumerated(EnumType.STRING)
-        @Column(name = "IS_ACTIVE", length = 1)
-        @Builder.Default
-        private ActivityEnum isActive = ActivityEnum.Y;
 
         @OneToMany(mappedBy = "deductionDetail", cascade = CascadeType.ALL, orphanRemoval = true)
         @Builder.Default

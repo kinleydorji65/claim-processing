@@ -134,18 +134,6 @@ public class PartialWithdrawalServiceImpl implements PartialWithdrawalService {
                     "withdrawalReasonId",
                     "Withdrawal reason is required");
         }
-
-        if (request.getRequestedWithdrawalAmount() == null) {
-            throw ClaimException.singleValidationError(
-                    "requestedWithdrawalAmount",
-                    "Requested withdrawal amount is required");
-        }
-
-        if (request.getRequestedWithdrawalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw ClaimException.singleValidationError(
-                    "requestedWithdrawalAmount",
-                    "Requested withdrawal amount must be greater than zero");
-        }
     }
 
     private void validateByWithdrawalReason(PartialWithdrawalRequestDto request, String reasonCode) {

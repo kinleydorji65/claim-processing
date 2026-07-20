@@ -40,16 +40,27 @@ public class GeneralSpecialCaseResponse {
     private String memberCode;
     private String nppfNumber;
     private String agencyCode;
+    private String email;
+    private String contactNo;
     private Long officeId;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate applicationDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pfJoiningDate;
+    private LocalDate pfStartDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pensionJoiningDate;
+    private LocalDate pfEndDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate pensionEndDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate pensionStartDate;
+
+    private ActivityEnum isLoanApplied;
+    private ActivityEnum isRentalApplied;
 
     private String onBehalfOfMember;
     private String initiatedBy;
@@ -57,9 +68,6 @@ public class GeneralSpecialCaseResponse {
 
     private ActivityEnum isSpecialCase;
     private ActivityEnum isActive;
-
-    private Long specialCaseAuthorityId;
-    private String specialCaseAuthorityName;
 
     private String currencyCode;
 

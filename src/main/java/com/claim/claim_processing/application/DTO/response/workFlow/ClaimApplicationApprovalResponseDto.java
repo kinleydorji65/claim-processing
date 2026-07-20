@@ -21,20 +21,6 @@ public class ClaimApplicationApprovalResponseDto {
 
     private StatusResponseDTO approvalStatus;
 
-    // ---------- Amounts ----------
-    private BigDecimal approvedAmount;
-    private BigDecimal approvedPfAmount;
-    private BigDecimal approvedPensionAmount;
-    private BigDecimal approvedWithdrawalAmount;
-    private BigDecimal approvedRefundAmount;
-    private BigDecimal approvedDeductionAmount;
-    private BigDecimal finalNetPayableAmount;
-
-    // ---------- Flags ----------
-    private ActivityEnum requiresManualReview;
-
-    private String isActive;
-
     // ---------- Remarks ----------
     private String remarks;
 

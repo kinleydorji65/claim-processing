@@ -43,15 +43,26 @@ public class GeneralClaimResponse {
     private String nppfNumber;
     private String agencyCode;
     private Long officeId;
+    private String email;
+    private String contactNo;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate applicationDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pfJoiningDate;
+    private LocalDate pfStartDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate pensionJoiningDate;
+    private LocalDate pfEndDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate pensionEndDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate pensionStartDate;
+
+    private ActivityEnum isLoanApplied;
+    private ActivityEnum isRentalApplied;
 
     private String onBehalfOfMember;
     private String initiatedBy;
@@ -59,19 +70,11 @@ public class GeneralClaimResponse {
 
     private ActivityEnum isSpecialCase;
     private ActivityEnum isActive;
-
-    private Long parentClaimApplicationId;
-    private String parentApplicationNumber;
-
-    private Long specialCaseAuthorityId;
-    private String specialCaseAuthorityName;
+    
 
     private String currencyCode;
     private String claimedBy;
     private String unClaimedBy;
-
-    private Long currentStageId;
-    private String currentStageName;
 
     private Long statusId;
     private String statusName;

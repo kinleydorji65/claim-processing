@@ -21,11 +21,7 @@ public class RentalDetailServiceImpl implements RentalDetailService {
                 RentalDetailResponseDto.builder()
                         .rentalType("Residential")
                         .outstandingAmount(new BigDecimal(30))
-                        .build(),
-
-                RentalDetailResponseDto.builder()
-                        .rentalType("Commercial")
-                        .outstandingAmount(new BigDecimal(100))
+                        .isRetained("N")
                         .build()
         );
         return ApiResponseDTO.success(response);

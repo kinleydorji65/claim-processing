@@ -3,6 +3,8 @@ package com.claim.claim_processing.application.service.workFlow;
 import java.util.List;
 
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationVerificationRequestDto;
+import com.claim.claim_processing.application.DTO.request.workFlow.GeneralClaimApplicationVerifierRequestDTO;
+import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 
@@ -12,9 +14,9 @@ public interface ClaimApplicationVerificationService {
                         String applicationNumber,
                         ClaimApplicationVerificationRequestDto request);
 
-        ApiResponseDTO<ClaimApplicationVerificationResponseDto> verify(
+        ApiResponseDTO<GeneralClaimResponse> verify(
                         String applicationNumber,
-                        ClaimApplicationVerificationRequestDto request);
+                        GeneralClaimApplicationVerifierRequestDTO request);
 
         ApiResponseDTO<ClaimApplicationVerificationResponseDto> getByVerifiedApplicationNumber(
                         String applicationNumber);
@@ -27,7 +29,9 @@ public interface ClaimApplicationVerificationService {
         ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> getClaimApplicationWhichClaimedBy(String claimedBy);
         ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> verifiedClaimApplicationUnClaimedBy(String applicationNumber, String unClaimedBy);
         
-        ApiResponseDTO<ClaimApplicationVerificationResponseDto> rejectedClaimApplication(String applicationNumber, ClaimApplicationVerificationRequestDto request);
+        ApiResponseDTO<ClaimApplicationVerificationResponseDto> rejectedClaimApplication(
+                        String applicationNumber,
+                        String rejectedBy, String remarks);
         
         ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> getVerifiedClaimButRejectedClaim();
 }
