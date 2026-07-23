@@ -78,6 +78,11 @@ app:
     endpoints:
       types: /api/master-data/codes/types
       generate: /api/master-data/codes/generate
+  pension:
+    base-url: http://10.15.15.20:8086
+    endpoints:
+      auto-trigger-claim-approved: /api/pension/auto-trigger/pf-claim-approved
+
 logging:
   file:
     name: logs/application.log

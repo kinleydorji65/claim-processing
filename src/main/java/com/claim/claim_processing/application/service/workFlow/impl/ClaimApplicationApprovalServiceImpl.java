@@ -14,7 +14,11 @@ import com.claim.claim_processing.application.DTO.response.claimDetail.GeneralCl
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationWorkflowResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.application.entity.application.ClaimApplicationBankDetail;
+import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationComponent;
+import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationApproval;
+import com.claim.claim_processing.application.repository.calculation.ClaimApplicationCalculationComponentRepository;
 import com.claim.claim_processing.application.mapper.application.GeneralClaimResponseBuilderMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.BeneficiarySettlementResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.ClaimApplicationBankResponseMapper;
@@ -43,6 +47,10 @@ import com.claim.claim_processing.common.repository.others.StatusMasterRepositor
 import com.claim.claim_processing.common.service.claim.ReserveAccountService;
 import com.claim.claim_processing.document.service.DocumentMasterService;
 import com.claim.claim_processing.exceptions.ClaimException;
+import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
+import com.claim.claim_processing.integration.client.PensionServiceClient;
+import com.claim.claim_processing.integration.dto.PensionAutoTriggerRequestDto;
+import com.claim.claim_processing.integration.dto.PensionAutoTriggerResponseDto;
 import com.claim.claim_processing.rule.pension.dto.PensionDetailRequestDto;
 import com.claim.claim_processing.rule.pension.dto.PensionDetailResponseDTO;
 import com.claim.claim_processing.rule.pension.service.PensionService;
@@ -57,6 +65,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +97,8 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
 
         private final ReserveAccountService reserveAccountService;
         private final PensionService pensionService;
+        private final PensionServiceClient pensionServiceClient;
+        private final ClaimApplicationCalculationComponentRepository calculationComponentRepository;
         private final DocumentMasterService documentMasterService;
         private final ClaimApplicationCalculationService claimApplicationCalculationService;
 
@@ -222,6 +233,7 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
 
                         if (claimApplication.getIsSpecialCase().toString().equals("N")) {
                                 saveToReserveAccount(claimDetailResponse, approvalRequest.getApprovedBy());
+                                triggerPensionAutoInitiation(claimApplication, approvalRequest.getApprovedBy());
                         }
                 }
 
@@ -363,6 +375,125 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                         log.error("Error saving pension detail: {}", e.getMessage(), e);
                         // Don't throw - pension save failure shouldn't rollback the transaction
                 }
+        }
+
+        private void triggerPensionAutoInitiation(ClaimApplication claimApplication, String approvedBy) {
+                try {
+                        if (claimApplication.getPensionApplicationRef() != null) {
+                                log.info("Pension already auto-initiated for claim {} (ref {}), skipping",
+                                                claimApplication.getApplicationNumber(),
+                                                claimApplication.getPensionApplicationRef());
+                                return;
+                        }
+
+                        boolean isNormalClaim = claimApplication.getClaimType() != null
+                                        && "NORMAL_CLAIM".equalsIgnoreCase(claimApplication.getClaimType().getCode());
+                        boolean isTierOne = claimApplication.getSchemeType() != null
+                                        && "T1".equalsIgnoreCase(claimApplication.getSchemeType().getCode());
+
+                        if (!isNormalClaim || !isTierOne) {
+                                return;
+                        }
+
+                        NormalClaimDetail detail = claimApplication.getNormalClaimDetail();
+                        if (detail == null) {
+                                log.error("NORMAL_CLAIM {} has no NormalClaimDetail — cannot auto-trigger pension",
+                                                claimApplication.getApplicationNumber());
+                                claimApplication.setPensionTriggerStatus("FAILED");
+                                claimApplicationRepository.save(claimApplication);
+                                return;
+                        }
+
+                        String pensionType = resolvePensionType(detail.getCessationType() != null
+                                        ? detail.getCessationType().getCode() : null);
+                        if (pensionType == null) {
+                                log.info("Cessation type {} has no auto-trigger mapping for claim {} — skipping",
+                                                detail.getCessationType() != null ? detail.getCessationType().getCode() : "null",
+                                                claimApplication.getApplicationNumber());
+                                return;
+                        }
+
+                        LocalDate exitDate = detail.getCessationEffectiveDate();
+                        if (exitDate == null) {
+                                log.error("No usable exit date on claim {} — cannot auto-trigger pension",
+                                                claimApplication.getApplicationNumber());
+                                claimApplication.setPensionTriggerStatus("FAILED");
+                                claimApplicationRepository.save(claimApplication);
+                                return;
+                        }
+
+                        ClaimApplicationBankDetail bankDetail = null;
+                        if (claimApplication.getBankDetails() != null && !claimApplication.getBankDetails().isEmpty()) {
+                                bankDetail = claimApplication.getBankDetails().stream()
+                                                .filter(b -> b.getIsDefaultBank() == ActivityEnum.Y)
+                                                .findFirst()
+                                                .orElse(claimApplication.getBankDetails().get(0));
+                        }
+
+                        List<ClaimApplicationCalculationComponent> calculationComponents =
+                                        calculationComponentRepository
+                                                        .findByRuleEvaluation_CalculationSummary_ClaimApplication_Id(
+                                                                        claimApplication.getId());
+                        List<PensionAutoTriggerRequestDto.ComponentDto> componentDtos = calculationComponents.stream()
+                                        .map(c -> PensionAutoTriggerRequestDto.ComponentDto.builder()
+                                                        .id(c.getId())
+                                                        .code(c.getComponentCode())
+                                                        .name(c.getComponentMaster() != null
+                                                                        ? c.getComponentMaster().getName() : null)
+                                                        .amount(c.getAmount())
+                                                        .build())
+                                        .toList();
+
+                        PensionAutoTriggerRequestDto pensionRequest = PensionAutoTriggerRequestDto.builder()
+                                        .memberCode(claimApplication.getMemberCode())
+                                        .agencyCode(claimApplication.getAgencyCode())
+                                        .pensionType(pensionType)
+                                        .exitDate(exitDate)
+                                        .exitReason(detail.getCessationType() != null ? detail.getCessationType().getName() : null)
+                                        .pfSettlementClaimId(claimApplication.getId())
+                                        .remarks("Auto-initiated on claim approval by " + approvedBy)
+                                        .finalBasicSalary(detail.getFinalBasicSalary())
+                                        .dateOfServiceJoining(detail.getDateOfServiceJoining())
+                                        .bankTypeId(bankDetail != null && bankDetail.getBankType() != null
+                                                        ? bankDetail.getBankType().getBankTypeId() : null)
+                                        .bankName(bankDetail != null && bankDetail.getBankType() != null
+                                                        ? bankDetail.getBankType().getBankTypeName() : null)
+                                        .bankAccountNumber(bankDetail != null ? bankDetail.getAccountNumber() : null)
+                                        .accountHolderName(bankDetail != null ? bankDetail.getAccountHolderName() : null)
+                                        .ifscOrRoutingCode(bankDetail != null ? bankDetail.getIfscOrRoutingCode() : null)
+                                        .components(componentDtos)
+                                        .build();
+
+                        PensionAutoTriggerResponseDto response = pensionServiceClient.triggerPfClaimApproved(pensionRequest);
+
+                        if (response != null && response.getApplicationNo() != null) {
+                                claimApplication.setPensionApplicationRef(response.getApplicationNo());
+                                claimApplication.setPensionTriggerStatus("SENT");
+                                log.info("Pension application {} auto-initiated for claim {}",
+                                                response.getApplicationNo(), claimApplication.getApplicationNumber());
+                        } else {
+                                claimApplication.setPensionTriggerStatus("FAILED");
+                                log.error("Pension auto-initiation failed for claim {} — added to retry worklist",
+                                                claimApplication.getApplicationNumber());
+                        }
+                        claimApplicationRepository.save(claimApplication);
+
+                } catch (Exception e) {
+                        log.error("Unexpected error auto-initiating pension for claim {}: {}",
+                                        claimApplication.getApplicationNumber(), e.getMessage(), e);
+                }
+        }
+
+        private String resolvePensionType(String cessationTypeCode) {
+                if (cessationTypeCode == null) {
+                        return null;
+                }
+                return switch (cessationTypeCode.toUpperCase()) {
+                        case "RETIREMENT", "SUPERANNUATION" -> "MEMBER_NORMAL";
+                        case "EARLY_RETIREMENT" -> "MEMBER_EARLY";
+                        case "MEDICAL_GROUND" -> "MEMBER_DISABILITY";
+                        default -> null;
+                };
         }
 
         // Helper method to build response

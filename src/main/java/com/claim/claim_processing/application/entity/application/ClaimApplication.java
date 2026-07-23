@@ -161,6 +161,12 @@ public class ClaimApplication {
     @Column(name = "UPDATED_AT")
     private Timestamp updatedAt;
 
+    @Column(name = "PENSION_APPLICATION_REF", length = 100)
+    private String pensionApplicationRef;
+
+    @Column(name = "PENSION_TRIGGER_STATUS", length = 20)
+    private String pensionTriggerStatus;
+
 
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private NormalClaimDetail normalClaimDetail;
