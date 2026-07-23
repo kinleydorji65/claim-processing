@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 public class RuleServiceImpl implements RuleService {
 
     private static final Long PARTIAL_WITHDRAWAL_CLAIM_TYPE_ID = 2L;
-    private static final Long WRONG_REMITTANCE_CLAIM_TYPE_ID = 5L;
 
     private final ClaimTypeRuleMapRepository claimTypeRuleMapRepository;
     private final SubClaimMappingRepository subClaimMappingRepository;
@@ -127,7 +126,6 @@ public class RuleServiceImpl implements RuleService {
             System.out.println("Total Active Mappings: " + subClaimMappings.size());
             subClaimMappings.forEach(m -> {
                 System.out.println("  ✅ " + m.getSubClaimCode() +
-                        " | Active: " + m.getIsActive() +
                         " | Rule: " + (m.getRuleType() != null ? m.getRuleType().getCode() : "null") +
                         " | Category: "
                         + (m.getCategorySchemeMapping() != null ? m.getCategorySchemeMapping().getCategorySchemeCode()
@@ -141,14 +139,6 @@ public class RuleServiceImpl implements RuleService {
                     memberCategoryId);
 
             CategorySchemeMapping vestingCategorySchemeMapping = getVestingCategorySchemeMapping(memberCategoryId);
-
-            System.out.println("========== CATEGORY SCHEME MAPPINGS ==========");
-            System.out.println("Normal Category Scheme: " +
-                    (normalCategorySchemeMapping != null ? normalCategorySchemeMapping.getCategorySchemeCode()
-                            : "null"));
-            System.out.println("Vesting Category Scheme: " +
-                    (vestingCategorySchemeMapping != null ? vestingCategorySchemeMapping.getCategorySchemeCode()
-                            : "null"));
 
             // =============================================
             // STEP 1: REASON/TERMINATION FILTER
@@ -188,13 +178,6 @@ public class RuleServiceImpl implements RuleService {
                             } else {
                                 pass = !isTermRule;
                             }
-
-                            System.out.println("  Filter: " + mapping.getSubClaimCode() +
-                                    " | RuleType: "
-                                    + (mapping.getRuleType() != null ? mapping.getRuleType().getCode() : "null") +
-                                    " | isVesting: " + isVesting +
-                                    " | isTerminationRule: " + isTermRule +
-                                    " | Pass: " + pass);
                             return pass;
                         })
                         .toList();
@@ -397,12 +380,11 @@ public class RuleServiceImpl implements RuleService {
         List<SubClaimMapping> activeMappings = ruleTypeCodes.stream()
                 .map(code -> {
                     System.out.println("  Fetching for rule code: " + code);
-                    return subClaimMappingRepository.findByRuleType_CodeIgnoreCaseAndIsActive(code, "Y");
+                    return subClaimMappingRepository.findByRuleType_CodeIgnoreCase(code);
                 })
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
                 .filter(Objects::nonNull)
-                .filter(mapping -> "Y".equals(mapping.getIsActive()))
                 .collect(Collectors.toList());
 
         System.out.println("Total active mappings found before dedup: " + activeMappings.size());
@@ -443,31 +425,6 @@ public class RuleServiceImpl implements RuleService {
         // ✅ Filter only active conditions
         return allConditions.stream()
                 .filter(c -> c.getIsActive() != null && "Y".equals(c.getIsActive()))
-                .collect(Collectors.toList());
-    }
-
-    // =============================================
-    // ✅ UPDATED: getSubClaimMappings with IS_ACTIVE filter and deduplication
-    // =============================================
-    private List<SubClaimMapping> getSubClaimMappings(List<String> ruleTypeCodes) {
-        if (ruleTypeCodes == null || ruleTypeCodes.isEmpty()) {
-            return List.of();
-        }
-
-        // ✅ Add IS_ACTIVE = 'Y' filter and deduplicate
-        return ruleTypeCodes.stream()
-                .map(code -> subClaimMappingRepository.findByRuleType_CodeIgnoreCaseAndIsActive(code, "Y"))
-                .filter(Objects::nonNull)
-                .flatMap(List::stream)
-                .filter(Objects::nonNull)
-                .filter(mapping -> "Y".equals(mapping.getIsActive()))
-                .collect(Collectors.toMap(
-                        SubClaimMapping::getSubClaimCode,
-                        mapping -> mapping,
-                        (existing, replacement) -> existing // Keep the first one
-                ))
-                .values()
-                .stream()
                 .collect(Collectors.toList());
     }
 
@@ -568,36 +525,39 @@ public class RuleServiceImpl implements RuleService {
     }
 
     private boolean matchesTimeIndication(
-            SubClaimTimeIndication timeIndication,
-            LocalDate cessationDate) {
+        SubClaimTimeIndication timeIndication,
+        LocalDate cessationDate) {
 
-        if (timeIndication == null) {
-            return true;
-        }
-
-        if (cessationDate == null) {
-            return false;
-        }
-
-        String indication = timeIndication.getTimeIndication();
-
-        if (indication == null || indication.isBlank()) {
-            return true;
-        }
-
-        LocalDate startDate = timeIndication.getStartDate();
-        LocalDate endDate = timeIndication.getEndDate();
-
-        return switch (indication.trim().toUpperCase()) {
-            case "AFTER" -> startDate != null && !cessationDate.isBefore(startDate);
-            case "BEFORE" -> endDate != null && !cessationDate.isAfter(endDate);
-            case "BETWEEN" -> startDate != null && endDate != null
-                    && !cessationDate.isBefore(startDate)
-                    && !cessationDate.isAfter(endDate);
-            case "ANY" -> true;
-            default -> false;
-        };
+    // If no time indication, it matches anything
+    if (timeIndication == null) {
+        return true;
     }
+
+    // If no cessation date, nothing matches
+    if (cessationDate == null) {
+        return false;
+    }
+
+    String indication = timeIndication.getTimeIndication();
+    
+    // If no indication specified, it matches anything
+    if (indication == null || indication.isBlank()) {
+        return true;
+    }
+
+    LocalDate startDate = timeIndication.getStartDate();
+    LocalDate endDate = timeIndication.getEndDate();
+
+    return switch (indication.trim().toUpperCase()) {
+        case "AFTER" -> startDate != null && cessationDate.isAfter(startDate);
+        case "BEFORE" -> endDate != null && cessationDate.isBefore(endDate);
+        case "BETWEEN" -> startDate != null && endDate != null
+                && !cessationDate.isBefore(startDate)
+                && !cessationDate.isAfter(endDate);
+        case "ANY" -> true;
+        default -> false;
+    };
+}
 
     private boolean matchesCondition(
             SubClaimCondition condition,

@@ -293,92 +293,10 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                 }
         }
 
-        
-
-        private void saveToPensionDetail(GeneralClaimDetailResponse claimDetailResponse, String createdBy) {
-                try {
-                        ClaimCalculationSummaryResponseDto summary = claimDetailResponse.getCalculationSummary();
-                        // if (summary.getIsPensionEligible().toString().equals("N")) {
-                        // return;
-                        // }
-                        System.out.println("FUCK YOU");
-                        // Get pension refund amount from accounting event
-                        BigDecimal pensionRefund = BigDecimal.ZERO;
-                        AccountingEventResponseDto accountingEvent = claimDetailResponse.getAccountingEventDetail();
-                        if (accountingEvent != null) {
-                                List<LedgerEntryResponseDto> entries = accountingEvent.getLedgerEntries();
-                                if (entries != null && !entries.isEmpty()) {
-                                        for (LedgerEntryResponseDto entry : entries) {
-                                                String componentCode = entry.getComponentCode();
-                                                if (componentCode != null && componentCode.startsWith("P_")) {
-                                                        BigDecimal amount = entry.getAmount() != null
-                                                                        ? entry.getAmount()
-                                                                        : BigDecimal.ZERO;
-                                                        pensionRefund = pensionRefund.add(amount); // Sum all pension
-                                                                                                   // amounts
-                                                        System.out.println("Added pension component: " + componentCode
-                                                                        + " = " + amount);
-                                                }
-                                        }
-                                }
-                        }
-
-                        if (pensionRefund.compareTo(BigDecimal.ZERO) <= 0) {
-                                log.info("No pension refund amount to save. Pension Refund: {}", pensionRefund);
-                                return;
-                        }
-
-                        log.info("Saving Pension Detail - Pension Refund: {}", pensionRefund);
-
-                        // Get total contribution months from calculation summary
-                        Integer totalMonths = 0;
-                        Integer totalYears = 0;
-                        if (summary != null && summary.getTotalContributionMonth() != null) {
-                                totalMonths = summary.getTotalContributionMonth();
-                                totalYears = totalMonths / 12;
-                        }
-                        System.out.println("son son son");
-                        // Get pension start date from normal claim details
-                        LocalDateTime pensionStartDate = null;
-                        ClaimBankResponseDto bankDetail = claimDetailResponse.getBankDetails().stream()
-                                        .filter(bank -> 3 == bank.getClaimantTypeId())
-                                        .findFirst()
-                                        .orElse(null);
-
-                        PensionDetailRequestDto requestForPesion = PensionDetailRequestDto
-                                        .builder()
-                                        .nppfNumber(claimDetailResponse.getNppfNumber())
-                                        .memberIdentityNumber(claimDetailResponse.getIdentityNumber())
-                                        .agencyCode(claimDetailResponse.getAgencyCode())
-                                        .currencyCode(claimDetailResponse.getCurrencyCode())
-                                        .pensionType(null)
-                                        .totalPensionFund(pensionRefund)
-                                        .totalContributionMonths(totalMonths)
-                                        .totalContributionYears(totalYears)
-                                        .pensionStartDate(pensionStartDate != null ? pensionStartDate.toLocalDate()
-                                                        : null)
-                                        .bankTypeId(bankDetail != null ? bankDetail.getBankTypeId() : null)
-                                        .bankName(bankDetail != null ? bankDetail.getBankTypeName() : null)
-                                        .bankAccountNumber(bankDetail != null ? bankDetail.getAccountNumber() : null)
-                                        .accountHolderName(
-                                                        bankDetail != null ? bankDetail.getAccountHolderName() : null)
-                                        .ifscCode(bankDetail != null ? bankDetail.getIfscOrRoutingCode() : null)
-                                        .createdBy(createdBy)
-                                        .build();
-                        // Call pension service to create or update
-                        PensionDetailResponseDTO pensionResponse = pensionService
-                                        .createOrUpdatePensionDetail(requestForPesion);
-                        System.out.println("Pension detail saved successfully for NPPF: " +
-                                        claimDetailResponse.getNppfNumber());
-
-                } catch (Exception e) {
-                        log.error("Error saving pension detail: {}", e.getMessage(), e);
-                        // Don't throw - pension save failure shouldn't rollback the transaction
-                }
-        }
-
         private void triggerPensionAutoInitiation(ClaimApplication claimApplication, String approvedBy) {
                 try {
+
+                        System.out.println("i am here jangtha: ");
                         if (claimApplication.getPensionApplicationRef() != null) {
                                 log.info("Pension already auto-initiated for claim {} (ref {}), skipping",
                                                 claimApplication.getApplicationNumber(),
@@ -479,6 +397,7 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                         claimApplicationRepository.save(claimApplication);
 
                 } catch (Exception e) {
+                        System.out.println("Unexpected error auto-initiating pension for claim: " + e.getMessage());
                         log.error("Unexpected error auto-initiating pension for claim {}: {}",
                                         claimApplication.getApplicationNumber(), e.getMessage(), e);
                 }
