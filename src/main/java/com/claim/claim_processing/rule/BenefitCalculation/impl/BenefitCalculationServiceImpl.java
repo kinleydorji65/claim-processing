@@ -9,39 +9,27 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberDetailResponseDto;
-import com.claim.claim_processing.common.entities.adjustmentMaster.LoanTypeMaster;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
-import com.claim.claim_processing.common.entities.claim.ReserveAccount;
-import com.claim.claim_processing.common.entities.common.RentalMaster;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
-import com.claim.claim_processing.common.entities.common.activityEnum.CaseTypeEnum;
-import com.claim.claim_processing.common.entities.pension.PensionDetail;
-import com.claim.claim_processing.common.repository.adjustmentMaster.LoanTypeRepository;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
-import com.claim.claim_processing.common.repository.claim.ReserveAccountRepository;
-import com.claim.claim_processing.common.repository.common.RentalMasterRepository;
-import com.claim.claim_processing.common.repository.pension.PensionDetailRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
-import com.claim.claim_processing.integration.loanAdjustment.dto.LoanAdjustmentResultDto;
-import com.claim.claim_processing.integration.loanAdjustment.dto.LoanDetailResponseDto;
-import com.claim.claim_processing.integration.loanAdjustment.dto.RentalAdjustmentResultDto;
 import com.claim.claim_processing.integration.loanAdjustment.service.LoanDetailService;
 import com.claim.claim_processing.integration.member.service.MemberService;
-import com.claim.claim_processing.integration.rentalAdjustment.dto.RentalDetailResponseDto;
 import com.claim.claim_processing.integration.rentalAdjustment.service.RentalDetailService;
 import com.claim.claim_processing.rule.BenefitCalculation.BenefitCalculationService;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
@@ -49,18 +37,10 @@ import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationRespon
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO.ComponentBalanceDTO;
 import com.claim.claim_processing.rule.claim.DTO.response.EligibilityResultDto;
 import com.claim.claim_processing.rule.claim.DTO.response.LapsedResultDto;
-import com.claim.claim_processing.rule.claim.DTO.response.LoanAdjustmentDetailDto;
-import com.claim.claim_processing.rule.claim.DTO.response.RentalAdjustmentDetailDto;
 import com.claim.claim_processing.rule.claim.DTO.response.SpecialCasePreviewResponse;
-import com.claim.claim_processing.rule.claim.DTO.response.SpecialCasePreviewResponse.ForfeitedComponentClaim;
-import com.claim.claim_processing.rule.claim.DTO.response.SpecialCasePreviewResponse.PensionToLumpSumConversion;
 import com.claim.claim_processing.rule.claim.DTO.response.VestingResultDto;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
 import com.claim.claim_processing.rule.ruleProcessing.dto.MatchedSubClaimRuleDto;
-import com.claim.claim_processing.rule.ruleProcessing.entities.rule.LoanDeductionMapping;
-import com.claim.claim_processing.rule.ruleProcessing.entities.rule.RentalDeductionMapping;
-import com.claim.claim_processing.rule.ruleProcessing.repositories.rule.LoanDeductionMappingRepository;
-import com.claim.claim_processing.rule.ruleProcessing.repositories.rule.RentalDeductionMappingRepository;
 import com.claim.claim_processing.rule.ruleProcessing.service.PartialWithdrawalRuleService;
 import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 
@@ -77,8 +57,6 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     private final ClaimTypeRuleMapRepository claimTypeRuleMapRepository;
     private final MemberService memberService;
     private final RentalDetailService rentalDetailService;
-    private final PensionDetailRepository pensionDetailRepository;
-    private final ReserveAccountRepository reserveAccountRepository;
 
     @Override
     public ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(
@@ -683,7 +661,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     private String resolveComponentType(String code) {
 
         if (code == null) {
-            return "UNKNOWN";
+            return null;
         }
 
         String value = code.trim().toUpperCase();
@@ -696,102 +674,68 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     }
 
     private Map<String, BigDecimal> buildContributionComponentMap(
-        MemberContributionSummary contributionSummary) {
+            MemberContributionSummary contributionSummary) {
 
-    Map<String, BigDecimal> map = new HashMap<>();
+        Map<String, BigDecimal> map = new HashMap<>();
 
-    if (contributionSummary == null
-            || contributionSummary.getComponentGroups() == null) {
-        System.out.println("No component groups found in contribution summary");
+        if (contributionSummary == null
+                || contributionSummary.getComponentGroups() == null) {
+            System.out.println("No component groups found in contribution summary");
+            return map;
+        }
+
+        System.out.println("========== BUILDING COMPONENT MAP ==========");
+        System.out.println("Total component groups: " + contributionSummary.getComponentGroups().size());
+
+        for (MemberContributionSummary.ComponentGroup component : contributionSummary.getComponentGroups()) {
+            if (component == null || component.getComponentCode() == null) {
+                continue;
+            }
+
+            String code = component.getComponentCode().trim().toUpperCase();
+
+            System.out.println("Processing: " + code);
+            System.out.println("  Principal: " + component.getPrincipalAmount());
+            System.out.println("  Interest: " + component.getInterestAmount());
+            System.out.println("  Total: " + component.getTotalAmount());
+
+            // Add principal amount
+            if (component.getPrincipalAmount() != null &&
+                    component.getPrincipalAmount().compareTo(BigDecimal.ZERO) > 0) {
+                map.put(code, component.getPrincipalAmount());
+                System.out.println("  ✅ Added principal: " + code + " = " + component.getPrincipalAmount());
+            }
+
+            // Add interest amount - THIS IS THE KEY FIX
+            if (component.getInterestAmount() != null &&
+                    component.getInterestAmount().compareTo(BigDecimal.ZERO) > 0) {
+                // The component code already IS the interest code (PF_IEC, PF_IMC, etc.)
+                // So we add it with the same code
+                map.put(code, component.getInterestAmount());
+                System.out.println("  ✅ Added interest: " + code + " = " + component.getInterestAmount());
+            }
+        }
+
+        System.out.println("========== FINAL COMPONENT MAP ==========");
+        for (Map.Entry<String, BigDecimal> entry : map.entrySet()) {
+            System.out.println("  " + entry.getKey() + " = " + entry.getValue());
+        }
+
         return map;
     }
-
-    System.out.println("========== BUILDING COMPONENT MAP ==========");
-    System.out.println("Total component groups: " + contributionSummary.getComponentGroups().size());
-    
-    for (MemberContributionSummary.ComponentGroup component : contributionSummary.getComponentGroups()) {
-        if (component == null || component.getComponentCode() == null) {
-            continue;
-        }
-
-        String code = component.getComponentCode().trim().toUpperCase();
-        
-        System.out.println("Processing: " + code);
-        System.out.println("  Principal: " + component.getPrincipalAmount());
-        System.out.println("  Interest: " + component.getInterestAmount());
-        System.out.println("  Total: " + component.getTotalAmount());
-        
-        // Add principal amount
-        if (component.getPrincipalAmount() != null && 
-            component.getPrincipalAmount().compareTo(BigDecimal.ZERO) > 0) {
-            map.put(code, component.getPrincipalAmount());
-            System.out.println("  ✅ Added principal: " + code + " = " + component.getPrincipalAmount());
-        }
-        
-        // Add interest amount - THIS IS THE KEY FIX
-        if (component.getInterestAmount() != null && 
-            component.getInterestAmount().compareTo(BigDecimal.ZERO) > 0) {
-            // The component code already IS the interest code (PF_IEC, PF_IMC, etc.)
-            // So we add it with the same code
-            map.put(code, component.getInterestAmount());
-            System.out.println("  ✅ Added interest: " + code + " = " + component.getInterestAmount());
-        }
-    }
-
-    System.out.println("========== FINAL COMPONENT MAP ==========");
-    for (Map.Entry<String, BigDecimal> entry : map.entrySet()) {
-        System.out.println("  " + entry.getKey() + " = " + entry.getValue());
-    }
-
-    return map;
-}
 
     /**
      * Public method to get special case benefit
      * Handles different case types and returns appropriate response
      */
-    public ApiResponseDTO<Object> getSpecialCaseBenefit(CaseTypeEnum caseType, String nppfNumber) {
-
-        String caseTypeString = caseType.toString();
+    public ApiResponseDTO<Object> getSpecialCaseBenefit(String nppfNumber) {
 
         // Handle NORMAL_CLAIM_FORFEITED and SPECIAL_NORMAL_CLAIM
-        if (caseTypeString.equals("NORMAL_CLAIM_FORFEITED") || caseTypeString.equals("SPECIAL_NORMAL_CLAIM")) {
-            ClaimCalculationResponseDTO calculationResponse = calculateSpecialCaseBenefit(nppfNumber);
-            if (calculationResponse == null) {
-                return ApiResponseDTO.success("No Detail Found with nppf number: " + nppfNumber);
-            }
-            SpecialCasePreviewResponse response = mapToSpecialCasePreviewResponse(calculationResponse);
-            return ApiResponseDTO.success(response);
+        ClaimCalculationResponseDTO calculationResponse = calculateSpecialCaseBenefit(nppfNumber);
+        if (calculationResponse == null) {
+            return ApiResponseDTO.success("No Detail Found with nppf number: " + nppfNumber);
         }
-
-        // Handle CONVERSION_FROM_PENSION_TO_LUMSUM
-        PensionToLumpSumConversion pensionDetail = null;
-        ForfeitedComponentClaim forfeitedDetail = null;
-
-        if (caseTypeString.equals("CONVERSION_FROM_PENSION_TO_LUMSUM")) {
-            pensionDetail = getPensionDetail(nppfNumber);
-            if (pensionDetail == null) {
-                return ApiResponseDTO.notFound("No pension detail found for NPPF: " + nppfNumber);
-            }
-        }
-
-        // Handle CLAIM_FORFEITED_COMPONENT
-        if (caseTypeString.equals("CLAIM_FORFEITED_COMPONENT")) {
-            forfeitedDetail = getForfeitedComponentDetail(nppfNumber);
-            if (forfeitedDetail == null) {
-                return ApiResponseDTO.notFound("No forfeited component detail found for NPPF: " + nppfNumber);
-            }
-        }
-
-        // Build response for pension and forfeited cases
-        SpecialCasePreviewResponse response = SpecialCasePreviewResponse.builder()
-                .caseType(caseTypeString)
-                .calculationPreview(SpecialCasePreviewResponse.BenefitCalculationPreview.builder()
-                        .pensionToLumpSum(pensionDetail)
-                        .forfeitedComponentClaim(forfeitedDetail)
-                        .normalClaimDto(null)
-                        .build())
-                .build();
+        SpecialCasePreviewResponse response = mapToSpecialCasePreviewResponse(calculationResponse);
         return ApiResponseDTO.success(response);
     }
 
@@ -800,20 +744,6 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
      */
     private SpecialCasePreviewResponse mapToSpecialCasePreviewResponse(
             ClaimCalculationResponseDTO calculationResponse) {
-        if (calculationResponse == null) {
-            return SpecialCasePreviewResponse.builder()
-                    .caseType("SPECIAL_CASE")
-                    .calculationPreview(SpecialCasePreviewResponse.BenefitCalculationPreview.builder()
-                            .normalClaimDto(SpecialCasePreviewResponse.NormalClaimDto.builder()
-                                    .Components(Collections.emptyList())
-                                    .totalContributionMonths(0)
-                                    .totalNonContributionMonths(0)
-                                    .totalPensionAmount(BigDecimal.ZERO)
-                                    .totalPfAmount(BigDecimal.ZERO)
-                                    .build())
-                            .build())
-                    .build();
-        }
 
         // Map components from the response - FIXED
         List<SpecialCasePreviewResponse.ComponentDto> componentDtos = Optional
@@ -822,46 +752,20 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 .stream()
                 .filter(Objects::nonNull)
                 .map(component -> {
-                    // Get the amount as a String with proper formatting
-                    String amountStr = component.getAmount() != null ? component.getAmount().toString() : "0.00";
-
                     // Get the component code
-                    String code = component.getCode() != null ? component.getCode() : "UNKNOWN";
-
-                    // Add percentage amount if available
-                    if (component.getPercentalAmount() != null) {
-                        amountStr = amountStr + " (" + component.getPercentalAmount().toString() + "%)";
-                    }
+                    System.out.println("component code checking: " + component.getCode());
+                    String code = component.getCode();
 
                     return SpecialCasePreviewResponse.ComponentDto.builder()
                             .component(code)
-                            .componentAmount(amountStr)
+                            .componentAmount(component.getAmount().toString())
                             .build();
                 })
                 .collect(Collectors.toList());
 
-        // Build NormalClaimDto with all available data
-        SpecialCasePreviewResponse.NormalClaimDto normalClaimDto = SpecialCasePreviewResponse.NormalClaimDto.builder()
-                .totalContributionMonths(calculationResponse.getTotalContributionMonths())
-                .totalNonContributionMonths(calculationResponse.getTotalNonContributionMonths())
-                .totalPensionAmount(calculationResponse.getTotalPensionAmount() != null
-                        ? calculationResponse.getTotalPensionAmount()
-                        : BigDecimal.ZERO)
-                .totalPfAmount(calculationResponse.getTotalPfAmount() != null ? calculationResponse.getTotalPfAmount()
-                        : BigDecimal.ZERO)
-                .Components(componentDtos)
-                .build();
-
-        // Create the calculation preview
-        SpecialCasePreviewResponse.BenefitCalculationPreview preview = SpecialCasePreviewResponse.BenefitCalculationPreview
-                .builder()
-                .normalClaimDto(normalClaimDto)
-                .build();
-
         // Return the complete response
         return SpecialCasePreviewResponse.builder()
-                .caseType("SPECIAL_CASE")
-                .calculationPreview(preview)
+                .components(componentDtos)
                 .build();
     }
 
@@ -991,77 +895,68 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
 
         return response;
     }
-
     /**
-     * Build all components as eligible (no rules applied)
-     * This gets all components from the contribution summary
-     */
-    /**
-     * Build all components as eligible (no rules applied)
-     * This gets all components from the contribution summary
-     */
-    private List<ComponentBalanceDTO> buildAllEligibleComponents(MemberContributionSummary contributionSummary) {
-        List<ComponentBalanceDTO> components = new ArrayList<>();
+ * Build all components as eligible (no rules applied)
+ * This gets all components from the contribution summary
+ */
+private List<ComponentBalanceDTO> buildAllEligibleComponents(MemberContributionSummary contributionSummary) {
+    List<ComponentBalanceDTO> components = new ArrayList<>();
 
-        if (contributionSummary == null || contributionSummary.getComponentGroups() == null) {
-            return components;
-        }
-
-        // Map for interest codes - FIXED
-        Map<String, String> interestCodeMap = new HashMap<>();
-        interestCodeMap.put("PF_EC", "PF_IEC"); // Employee PF → Interest on Employee PF
-        interestCodeMap.put("PF_MC", "PF_IMC"); // Employer PF → Interest on Employer PF
-        interestCodeMap.put("P_EC", "P_IEC"); // Pension → Interest on Pension
-        interestCodeMap.put("GC", "IGC"); // Government → Interest on Government
-        interestCodeMap.put("VC", "IVC"); // Voluntary → Interest on Voluntary
-
-        for (MemberContributionSummary.ComponentGroup component : contributionSummary.getComponentGroups()) {
-            if (component == null || component.getComponentCode() == null) {
-                continue;
-            }
-
-            String code = component.getComponentCode().trim().toUpperCase();
-
-            // Get principal (contribution) amount
-            BigDecimal principal = component.getPrincipalAmount() != null
-                    ? component.getPrincipalAmount()
-                    : BigDecimal.ZERO;
-
-            // Get interest amount
-            BigDecimal interest = component.getInterestAmount() != null
-                    ? component.getInterestAmount()
-                    : BigDecimal.ZERO;
-
-            // Add principal component
-            if (principal.compareTo(BigDecimal.ZERO) > 0) {
-                components.add(ComponentBalanceDTO.builder()
-                        .code(code)
-                        .name(getComponentName(code))
-                        .type("CONTRIBUTION")
-                        .amount(principal)
-                        .build());
-                System.out.println("Added principal: " + code + " = " + principal);
-            }
-
-            // Add interest component - FIXED: Use correct interest code mapping
-            if (interest.compareTo(BigDecimal.ZERO) > 0) {
-                // Get the correct interest code from the map
-                components.add(ComponentBalanceDTO.builder()
-                        .code(code)
-                        .name(getComponentName(code))
-                        .type("INTEREST")
-                        .amount(interest)
-                        .build());
-            }
-        }
-
-        System.out.println("Total components built: " + components.size());
+    if (contributionSummary == null || contributionSummary.getComponentGroups() == null) {
         return components;
     }
 
-    /**
-     * Get component name
-     */
+    System.out.println("========== BUILDING ALL ELIGIBLE COMPONENTS ==========");
+    System.out.println("Total component groups: " + contributionSummary.getComponentGroups().size());
+
+    for (MemberContributionSummary.ComponentGroup component : contributionSummary.getComponentGroups()) {
+        if (component == null || component.getComponentCode() == null) {
+            continue;
+        }
+
+        String code = component.getComponentCode().trim().toUpperCase();
+        System.out.println("Processing: " + code);
+
+        BigDecimal principal = component.getPrincipalAmount() != null
+                ? component.getPrincipalAmount()
+                : BigDecimal.ZERO;
+
+        BigDecimal interest = component.getInterestAmount() != null
+                ? component.getInterestAmount()
+                : BigDecimal.ZERO;
+
+        // ✅ If there's a principal amount, add it as CONTRIBUTION
+        if (principal.compareTo(BigDecimal.ZERO) > 0) {
+            components.add(ComponentBalanceDTO.builder()
+                    .code(code)
+                    .name(getComponentName(code))
+                    .type("CONTRIBUTION")
+                    .amount(principal)
+                    .build());
+            System.out.println("  ✅ Added principal: " + code + " = " + principal);
+        }
+
+        // ✅ If there's an interest amount, add it as INTEREST (use the SAME code)
+        if (interest.compareTo(BigDecimal.ZERO) > 0) {
+            components.add(ComponentBalanceDTO.builder()
+                    .code(code)  // ✅ Use the same code - it's already the interest code
+                    .name(getComponentName(code))
+                    .type("INTEREST")
+                    .amount(interest)
+                    .build());
+            System.out.println("  ✅ Added interest: " + code + " = " + interest);
+        }
+    }
+
+    System.out.println("========== FINAL COMPONENTS ==========");
+    System.out.println("Total components built: " + components.size());
+    for (ComponentBalanceDTO comp : components) {
+        System.out.println("  " + comp.getCode() + " = " + comp.getAmount() + " (" + comp.getType() + ")");
+    }
+
+    return components;
+}
+
     /**
      * Get component name
      */
@@ -1096,47 +991,5 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         nameMap.put("PC_IEC", "Interest on Employer's Pension");
 
         return nameMap.getOrDefault(code, code);
-    }
-
-    /**
-     * Get pension detail for conversion from pension to lump sum
-     */
-    private PensionToLumpSumConversion getPensionDetail(String nppfNumber) {
-        PensionDetail pensionDetail = pensionDetailRepository.findByNppfNumber(nppfNumber).orElse(null);
-        if (pensionDetail == null) {
-            return null;
-        }
-        return PensionToLumpSumConversion.builder()
-                .pensionDetailId(pensionDetail.getId())
-                .totalContributionMonths(pensionDetail.getTotalContributionMonths())
-                .totalContributionYears(pensionDetail.getTotalContributionYears())
-                .pensionType(pensionDetail.getPensionType())
-                .pensionStartDate(pensionDetail.getPensionStartDate())
-                .totalPensionAmount(pensionDetail.getTotalPensionFund())
-                .bankTypeId(pensionDetail.getBankTypeId())
-                .bankName(pensionDetail.getBankName())
-                .identityNumber(pensionDetail.getMemberIdentityNumber())
-                .accountHolderName(pensionDetail.getAccountHolderName())
-                .bankAccountNumber(pensionDetail.getBankAccountNumber())
-                .ifscCode(pensionDetail.getIfscCode())
-                .build();
-    }
-
-    /**
-     * Get forfeited component detail
-     */
-    private ForfeitedComponentClaim getForfeitedComponentDetail(String nppfNumber) {
-        ReserveAccount reserveAccount = reserveAccountRepository.findByNppfNumber(nppfNumber).orElse(null);
-        if (reserveAccount == null) {
-            return null;
-        }
-
-        return ForfeitedComponentClaim.builder()
-                .reserveAccountId(reserveAccount.getId())
-                .totalForfeitedAmount(reserveAccount.getForfeitedAmount())
-                .eligibleClaimAmount(reserveAccount.getForfeitedAmount())
-                .forfeitedDate(reserveAccount.getCreatedAt())
-                .componentCodes(reserveAccount.getComponentCodes())
-                .build();
     }
 }

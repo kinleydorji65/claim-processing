@@ -48,5 +48,16 @@ public class ClaimProcessingFlowConfig implements SwaggerConfig {
                 "Claim Document Processing"
         );
     }
+
+    @Bean
+    public GroupedOpenApi validateComponentApi() {
+
+        return createGroupedApi(
+                "Validate Component Management",
+                "Validate Component APIs",
+                "/api/validate/**",
+                "Validate Component"
+        );
+    }
 }
 

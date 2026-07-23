@@ -17,25 +17,9 @@ public interface ClaimSpecialCaseApplicationMapper {
      */
     @Mapping(target = "id", source = "id")
     @Mapping(target = "claimApplicationId", source = "claimApplication.id")
-    @Mapping(target = "caseType", source = "caseType")
-    @Mapping(target = "caseReasonId", ignore = true) // Set in service from caseReasonId
-    @Mapping(target = "pensionType", source = "pensionType")
-    @Mapping(target = "pensionStartDate", source = "pensionStartDate")
-    @Mapping(target = "totalContributionYears", source = "totalContributionYears")
-    @Mapping(target = "totalPensionAmount", source = "totalPensionAmount")
-    @Mapping(target = "pensionAccountId", ignore = true) // Set from pension detail in service
-    @Mapping(target = "currentBenefitType", source = "currentBenefitType")
-    @Mapping(target = "requestedBenefitType", source = "requestedBenefitType")
-    @Mapping(target = "totalForfeitedAmount", source = "totalForfeitedAmount")
-    @Mapping(target = "eligibleClaimAmount", source = "eligibleClaimAmount")
-    @Mapping(target = "forfeitedDate", source = "forfeitedDate")
-    @Mapping(target = "componentCodes", source = "componentCodes")
-    @Mapping(target = "approvedAmount", source = "approvedAmount")
+    @Mapping(target = "caseReasonId", ignore = true) 
     @Mapping(target = "approvedBy", source = "approvedBy")
     @Mapping(target = "approvedDate", source = "approvedDate")
-    @Mapping(target = "approvalReference", source = "approvalReference")
-    @Mapping(target = "rejectionReason", source = "rejectionReason")
-    @Mapping(target = "reserveAccountId", ignore = true) // Set from reserve account in service
     @Mapping(target = "isActive", source = "isActive")
     @Mapping(target = "createdBy", source = "createdBy")
     @Mapping(target = "createdAt", source = "createdAt")
@@ -51,13 +35,8 @@ public interface ClaimSpecialCaseApplicationMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "claimApplication", ignore = true) // FK - Set in service
-    @Mapping(target = "pensionAccount", ignore = true) // FK - Set from pension detail in service
-    @Mapping(target = "reserveAccount", ignore = true) // FK - Set from reserve account in service
-    @Mapping(target = "approvedAmount", ignore = true) // Set during approval
     @Mapping(target = "approvedBy", ignore = true) // Set during approval
     @Mapping(target = "approvedDate", ignore = true) // Set during approval
-    @Mapping(target = "approvalReference", ignore = true) // Set during approval
-    @Mapping(target = "rejectionReason", ignore = true) // Set during rejection
     @Mapping(target = "createdBy", ignore = true) // Set in service from security context
     @Mapping(target = "createdAt", ignore = true) // Set in entity @PrePersist
     @Mapping(target = "updatedBy", ignore = true) // Set in service
@@ -73,26 +52,8 @@ public interface ClaimSpecialCaseApplicationMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "claimApplication", ignore = true) // Cannot update
-    @Mapping(target = "caseType", ignore = true) // Cannot update
-    @Mapping(target = "caseReasonId", ignore = true) // Set in service from caseReasonId
-    @Mapping(target = "pensionType", ignore = true) // Cannot update (snapshot)
-    @Mapping(target = "pensionStartDate", ignore = true) // Cannot update (snapshot)
-    @Mapping(target = "totalContributionYears", ignore = true) // Cannot update (snapshot)
-    @Mapping(target = "totalPensionAmount", ignore = true) // Cannot update (snapshot)
-    @Mapping(target = "pensionAccount", ignore = true) // Cannot update (snapshot)
-    @Mapping(target = "currentBenefitType", source = "currentBenefitType")
-    @Mapping(target = "requestedBenefitType", source = "requestedBenefitType")
-    @Mapping(target = "totalForfeitedAmount", ignore = true) // Cannot update (snapshot)
-    @Mapping(target = "eligibleClaimAmount", ignore = true) // Cannot update (snapshot)
-    @Mapping(target = "forfeitedDate", ignore = true) // Cannot update (snapshot)
-    @Mapping(target = "componentCodes", ignore = true) // Cannot update (snapshot)
-    @Mapping(target = "requestedAmount", source = "requestedAmount")
-    @Mapping(target = "approvedAmount", ignore = true) // Set during approval
     @Mapping(target = "approvedBy", ignore = true) // Set during approval
     @Mapping(target = "approvedDate", ignore = true) // Set during approval
-    @Mapping(target = "approvalReference", ignore = true) // Set during approval
-    @Mapping(target = "rejectionReason", ignore = true) // Set during rejection
-    @Mapping(target = "reserveAccount", ignore = true) // Set from reserve account in service
     @Mapping(target = "isActive", ignore = true) // Cannot update
     @Mapping(target = "createdBy", ignore = true) // Cannot update
     @Mapping(target = "createdAt", ignore = true) // Cannot update
@@ -110,32 +71,5 @@ public interface ClaimSpecialCaseApplicationMapper {
         if (entity.getIsActive() == null) {
             entity.setIsActive("Y");
         }
-        if (entity.getRequestedAmount() == null) {
-            entity.setRequestedAmount(java.math.BigDecimal.ZERO);
-        }
-        if (entity.getTotalPensionAmount() == null) {
-            entity.setTotalPensionAmount(java.math.BigDecimal.ZERO);
-        }
-        if (entity.getTotalForfeitedAmount() == null) {
-            entity.setTotalForfeitedAmount(java.math.BigDecimal.ZERO);
-        }
-        if (entity.getEligibleClaimAmount() == null) {
-            entity.setEligibleClaimAmount(java.math.BigDecimal.ZERO);
-        }
-        if (entity.getApprovedAmount() == null) {
-            entity.setApprovedAmount(java.math.BigDecimal.ZERO);
-        }
     }
-
-    @AfterMapping
-default void afterMappingToResponse(ClaimSpecialCaseApplication entity, @MappingTarget ClaimSpecialCaseApplicationResponseDto response) {
-    if (entity.getPensionAccount() != null) {
-        response.setPensionAccountId(entity.getPensionAccount().getId());
-    }
-    if (entity.getReserveAccount() != null) {
-        response.setReserveAccountId(entity.getReserveAccount().getId());
-    }
-    // caseReasonId is already mapped from entity
-    // caseReasonName should be set in the service layer
-}
 }

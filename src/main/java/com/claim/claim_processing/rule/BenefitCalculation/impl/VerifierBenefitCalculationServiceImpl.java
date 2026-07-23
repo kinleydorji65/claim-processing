@@ -56,7 +56,11 @@ import com.claim.claim_processing.rule.ruleProcessing.service.RuleService;
 import com.claim.claim_processing.rule.ruleProcessing.service.VerifierPartialWithdrawalRuleService;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCalculationService {
@@ -159,7 +163,7 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                                 + ". Recommended benefit type is " + vestingResult.getRefundTypeName()
                                 + (vestingResult.isLumpSumEligible() ? " and it is Eligible."
                                         : " and it is Not Eligible.");
-                        recommendedRefundType = "vestingResult.getRefundTypeName()";
+                        recommendedRefundType = vestingResult.getRefundTypeName();
                     }
 
                 }
@@ -234,18 +238,14 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                     backupTotalPfInterestAmount = backupTotalPfInterestAmount.add(amount);
                     break;
 
-                case "PC_MC":
-                case "PC_EC":
-                case "PC_GC":
-                case "PC_VC":
+                case "P_MC":
+                case "P_EC":
                     totalPensionAmount = totalPensionAmount.add(amount);
                     backupTotalPensionAmount = backupTotalPensionAmount.add(amount);
                     break;
 
-                case "PC_IMC":
-                case "PC_IEC":
-                case "PC_GIC":
-                case "PC_VIC":
+                case "P_IMC":
+                case "P_IEC":
                     totalPensionInterestAmount = totalPensionInterestAmount.add(amount);
                     backupTotalPensionInterestAmount = backupTotalPensionInterestAmount.add(amount);
                     break;
@@ -274,49 +274,108 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
         if (isLoanApply) {
             loanAdjustmentResult = deductLoanByPriority(
                     request.getNppfNumber(),
-                    totalPfAmount, totalPfInterestAmount, finalPayableAmount, recommendedRefundType, ruleTypeIds);
+                    totalPfAmount, 
+                    totalPfInterestAmount,
+                    totalPensionAmount,
+                    totalPensionInterestAmount,
+                    finalPayableAmount, 
+                    recommendedRefundType, 
+                    ruleTypeIds);
 
             if (loanAdjustmentResult != null) {
                 BigDecimal loanDeductionAmount = loanAdjustmentResult.getTotalAdjustedAmount();
-
-                // Deduct from PF first
-                BigDecimal deductedFromPf = totalPfAmount.min(loanDeductionAmount);
-                totalPfAmount = totalPfAmount.subtract(deductedFromPf);
-
-                BigDecimal remainingDeduction = loanDeductionAmount.subtract(deductedFromPf);
-                if (remainingDeduction.compareTo(BigDecimal.ZERO) > 0) {
-                    BigDecimal deductedFromInterest = totalPfInterestAmount.min(remainingDeduction);
-                    totalPfInterestAmount = totalPfInterestAmount.subtract(deductedFromInterest);
+                boolean isLumpSum = "LUMPSUM".equalsIgnoreCase(recommendedRefundType);
+                
+                // Apply deduction and get updated values
+                DeductionResult result = applyDeductionAndReturnResult(
+                        loanDeductionAmount,
+                        totalPfAmount,
+                        totalPfInterestAmount,
+                        totalPensionAmount,
+                        totalPensionInterestAmount,
+                        isLumpSum
+                );
+                
+                // Update all amounts
+                totalPfAmount = result.getPfAmount();
+                totalPfInterestAmount = result.getPfInterest();
+                totalPensionAmount = result.getPensionAmount();
+                totalPensionInterestAmount = result.getPensionInterest();
+                
+                // Log deduction details
+                log.info("Loan deduction applied: {}", loanDeductionAmount);
+                log.info("  Deducted from PF Principal: {}", result.getDeductedFromPf());
+                log.info("  Deducted from PF Interest: {}", result.getDeductedFromPfInterest());
+                if (isLumpSum) {
+                    log.info("  Deducted from Pension Principal: {}", result.getDeductedFromPension());
+                    log.info("  Deducted from Pension Interest: {}", result.getDeductedFromPensionInterest());
+                }
+                if (result.getRemainingDeduction().compareTo(BigDecimal.ZERO) > 0) {
+                    log.warn("  Remaining deduction not applied: {}", result.getRemainingDeduction());
                 }
 
-                finalPayableAmount = totalPfAmount.add(totalPfInterestAmount);
+                System.out.println("=== AFTER LOAN DEDUCTION AND OTHERS ===");
+                System.out.println("totalPfAmount: " + totalPfAmount);
+                System.out.println("totalPfInterestAmount: " + totalPfInterestAmount);
+                System.out.println("totalPensionAmount: " + totalPensionAmount);
+                System.out.println("totalPensionInterestAmount: " + totalPensionInterestAmount);
+                System.out.println("isLumpSum: " + isLumpSum);
+                
+                // Recalculate final payable
+                finalPayableAmount = calculateFinalPayable(
+                        totalPfAmount,
+                        totalPfInterestAmount,
+                        totalPensionAmount,
+                        totalPensionInterestAmount,
+                        isLumpSum
+                );
             }
         }
 
         // 2. RENTAL DEDUCTION (SECOND - AFTER LOAN)
-        if (request.getIsVerifier().equals("N")) {
-            if (isRentalApply) {
-                rentalAdjustmentResult = deductRental(
-                        request.getNppfNumber(),
+        if (request.getIsVerifier().equals("N") && isRentalApply) {
+            rentalAdjustmentResult = deductRental(
+                    request.getNppfNumber(),
+                    totalPfAmount,
+                    totalPfInterestAmount,
+                    ruleTypeIds);
+
+            if (rentalAdjustmentResult != null) {
+                BigDecimal rentalDeductionAmount = rentalAdjustmentResult.getTotalAdjustedAmount();
+                
+                // Rental: ALWAYS deduct from PF only (NEVER from Pension)
+                DeductionResult result = applyDeductionAndReturnResult(
+                        rentalDeductionAmount,
                         totalPfAmount,
                         totalPfInterestAmount,
-                        ruleTypeIds);
-
-                if (rentalAdjustmentResult != null) {
-                    BigDecimal rentalDeductionAmount = rentalAdjustmentResult.getTotalAdjustedAmount();
-
-                    // Deduct from PF first
-                    BigDecimal deductedFromPf = totalPfAmount.min(rentalDeductionAmount);
-                    totalPfAmount = totalPfAmount.subtract(deductedFromPf);
-
-                    BigDecimal remainingDeduction = rentalDeductionAmount.subtract(deductedFromPf);
-                    if (remainingDeduction.compareTo(BigDecimal.ZERO) > 0) {
-                        BigDecimal deductedFromInterest = totalPfInterestAmount.min(remainingDeduction);
-                        totalPfInterestAmount = totalPfInterestAmount.subtract(deductedFromInterest);
-                    }
-
-                    finalPayableAmount = totalPfAmount.add(totalPfInterestAmount);
+                        totalPensionAmount,
+                        totalPensionInterestAmount,
+                        false  // Don't deduct from Pension
+                );
+                
+                // Update all amounts
+                totalPfAmount = result.getPfAmount();
+                totalPfInterestAmount = result.getPfInterest();
+                totalPensionAmount = result.getPensionAmount();
+                totalPensionInterestAmount = result.getPensionInterest();
+                
+                log.info("Rental deduction applied: {}", rentalDeductionAmount);
+                log.info("  Deducted from PF Principal: {}", result.getDeductedFromPf());
+                log.info("  Deducted from PF Interest: {}", result.getDeductedFromPfInterest());
+                if (result.getRemainingDeduction().compareTo(BigDecimal.ZERO) > 0) {
+                    log.warn("  Remaining rental deduction not applied: {}", result.getRemainingDeduction());
                 }
+                
+                // Recalculate final payable
+                System.out.println("what is lumpsum: " + recommendedRefundType);
+                boolean isLumpSum = "LUMPSUM".equalsIgnoreCase(recommendedRefundType);
+                finalPayableAmount = calculateFinalPayable(
+                        totalPfAmount,
+                        totalPfInterestAmount,
+                        totalPensionAmount,
+                        totalPensionInterestAmount,
+                        isLumpSum
+                );
             }
         }
 
@@ -379,6 +438,137 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
 
         return ApiResponseDTO.success(response);
     }
+
+    // ============================================================
+    // HELPER METHODS FOR DEDUCTION
+    // ============================================================
+
+    /**
+     * Inner class for deduction result
+     */
+    @Data
+    @Builder
+    private static class DeductionResult {
+        private BigDecimal pfAmount;
+        private BigDecimal pfInterest;
+        private BigDecimal pensionAmount;
+        private BigDecimal pensionInterest;
+        private BigDecimal deductedFromPf;
+        private BigDecimal deductedFromPfInterest;
+        private BigDecimal deductedFromPension;
+        private BigDecimal deductedFromPensionInterest;
+        private BigDecimal remainingDeduction;
+    }
+
+    /**
+     * Apply deduction to components and return updated values
+     */
+    private DeductionResult applyDeductionAndReturnResult(
+            BigDecimal deductionAmount,
+            BigDecimal pfAmount,
+            BigDecimal pfInterest,
+            BigDecimal pensionAmount,
+            BigDecimal pensionInterest,
+            boolean deductFromAll) {
+        
+        BigDecimal remainingDeduction = deductionAmount != null ? deductionAmount : BigDecimal.ZERO;
+        
+        // Initialize deduction tracking
+        BigDecimal deductedFromPf = BigDecimal.ZERO;
+        BigDecimal deductedFromPfInterest = BigDecimal.ZERO;
+        BigDecimal deductedFromPension = BigDecimal.ZERO;
+        BigDecimal deductedFromPensionInterest = BigDecimal.ZERO;
+        
+        // 1. Deduct from PF Principal (always)
+        if (remainingDeduction.compareTo(BigDecimal.ZERO) > 0) {
+            deductedFromPf = pfAmount.min(remainingDeduction);
+            pfAmount = pfAmount.subtract(deductedFromPf);
+            remainingDeduction = remainingDeduction.subtract(deductedFromPf);
+            log.debug("Deducted {} from PF Principal, remaining: {}", deductedFromPf, remainingDeduction);
+        }
+        
+        // 2. Deduct from PF Interest (always)
+        if (remainingDeduction.compareTo(BigDecimal.ZERO) > 0) {
+            deductedFromPfInterest = pfInterest.min(remainingDeduction);
+            pfInterest = pfInterest.subtract(deductedFromPfInterest);
+            remainingDeduction = remainingDeduction.subtract(deductedFromPfInterest);
+            log.debug("Deducted {} from PF Interest, remaining: {}", deductedFromPfInterest, remainingDeduction);
+        }
+        
+        // 3. Deduct from Pension Principal (only for LUMPSUM)
+        if (deductFromAll && remainingDeduction.compareTo(BigDecimal.ZERO) > 0) {
+            deductedFromPension = pensionAmount.min(remainingDeduction);
+            pensionAmount = pensionAmount.subtract(deductedFromPension);
+            remainingDeduction = remainingDeduction.subtract(deductedFromPension);
+            log.debug("Deducted {} from Pension Principal, remaining: {}", deductedFromPension, remainingDeduction);
+        }
+        
+        // 4. Deduct from Pension Interest (only for LUMPSUM)
+        if (deductFromAll && remainingDeduction.compareTo(BigDecimal.ZERO) > 0) {
+            deductedFromPensionInterest = pensionInterest.min(remainingDeduction);
+            pensionInterest = pensionInterest.subtract(deductedFromPensionInterest);
+            remainingDeduction = remainingDeduction.subtract(deductedFromPensionInterest);
+            log.debug("Deducted {} from Pension Interest, remaining: {}", deductedFromPensionInterest, remainingDeduction);
+        }
+        
+        // If there's still remaining deduction, log it
+        if (remainingDeduction.compareTo(BigDecimal.ZERO) > 0) {
+            log.warn("Remaining deduction of {} could not be applied to any component", remainingDeduction);
+        }
+        
+        return DeductionResult.builder()
+                .pfAmount(pfAmount)
+                .pfInterest(pfInterest)
+                .pensionAmount(pensionAmount)
+                .pensionInterest(pensionInterest)
+                .deductedFromPf(deductedFromPf)
+                .deductedFromPfInterest(deductedFromPfInterest)
+                .deductedFromPension(deductedFromPension)
+                .deductedFromPensionInterest(deductedFromPensionInterest)
+                .remainingDeduction(remainingDeduction)
+                .build();
+    }
+
+    /**
+     * Calculate final payable amount based on benefit type
+     */
+    private BigDecimal calculateFinalPayable(
+            BigDecimal pfAmount,
+            BigDecimal pfInterest,
+            BigDecimal pensionAmount,
+            BigDecimal pensionInterest,
+            boolean isLumpSum) {
+        
+            System.out.println("=== calculateFinalPayable ===");
+            System.out.println("pfAmount: " + pfAmount);
+            System.out.println("pfInterest: " + pfInterest);
+            System.out.println("pensionAmount: " + pensionAmount);
+            System.out.println("pensionInterest: " + pensionInterest);
+            System.out.println("isLumpSum: " + isLumpSum);
+
+        // Start with PF amounts (always included)
+        BigDecimal finalAmount = pfAmount.add(pfInterest);
+        
+        // Add pension amounts only for LUMPSUM
+        if (isLumpSum) {
+            finalAmount = finalAmount.add(pensionAmount).add(pensionInterest);
+        }
+        
+        // Ensure amount is not negative
+        if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
+            log.warn("Final payable amount is negative: {}, setting to 0", finalAmount);
+            return BigDecimal.ZERO;
+        }
+        
+        log.debug("Final payable calculation: PF={}, PF Interest={}, Pension={}, Pension Interest={}, isLumpSum={}, Result={}", 
+                pfAmount, pfInterest, pensionAmount, pensionInterest, isLumpSum, finalAmount);
+        
+        return finalAmount;
+    }
+
+    // ============================================================
+    // EXISTING METHODS (UNCHANGED)
+    // ============================================================
 
     private BigDecimal safeAdd(BigDecimal a, BigDecimal b) {
         return (a != null ? a : BigDecimal.ZERO)
@@ -470,7 +660,6 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
 
             BigDecimal outstandingAmount = rental.getOutstandingAmount();
 
-            // ✅ DIRECT SUBTRACTION - Use full outstanding amount instead of percentage
             BigDecimal adjustedAmount = remainingPayableAmount.min(outstandingAmount);
 
             remainingPayableAmount = remainingPayableAmount.subtract(adjustedAmount);
@@ -483,7 +672,7 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                             .rentalName(rentalMaster.getRentalType())
                             .outstandingAmount(outstandingAmount)
                             .adjustedAmount(adjustedAmount)
-                            .appliedPercentageAmount(BigDecimal.valueOf(100)) // ✅ 100% applied
+                            .appliedPercentageAmount(BigDecimal.valueOf(100))
                             .build());
         }
 
@@ -594,15 +783,29 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                 .build();
     }
 
-    private LoanAdjustmentResultDto deductLoanByPriority(String nppfNumber, BigDecimal totalPfAmount,
-            BigDecimal totalPfInterestAmount, BigDecimal finalPayableAmount, String recommendedRefundType,
+    private LoanAdjustmentResultDto deductLoanByPriority(
+            String nppfNumber, 
+            BigDecimal totalPfAmount,
+            BigDecimal totalPfInterestAmount,
+            BigDecimal totalPensionAmount,
+            BigDecimal totalPensionInterestAmount,
+            BigDecimal finalPayableAmount, 
+            String recommendedRefundType,
             List<Long> ruleTypeIds) {
 
         // Calculate the total available amount for loan deduction
         BigDecimal totalAvailableAmount;
-        if ("LUMPSUM".equals(recommendedRefundType)) {
-            totalAvailableAmount = finalPayableAmount != null ? finalPayableAmount : BigDecimal.ZERO;
+        boolean isLumpSum = "LUMPSUM".equalsIgnoreCase(recommendedRefundType);
+        
+        if (isLumpSum) {
+            // LUMPSUM: All components available
+            BigDecimal pfAmount = totalPfAmount != null ? totalPfAmount : BigDecimal.ZERO;
+            BigDecimal pfInterest = totalPfInterestAmount != null ? totalPfInterestAmount : BigDecimal.ZERO;
+            BigDecimal pensionAmount = totalPensionAmount != null ? totalPensionAmount : BigDecimal.ZERO;
+            BigDecimal pensionInterest = totalPensionInterestAmount != null ? totalPensionInterestAmount : BigDecimal.ZERO;
+            totalAvailableAmount = pfAmount.add(pfInterest).add(pensionAmount).add(pensionInterest);
         } else {
+            // PENSION: Only PF components available
             BigDecimal pfAmount = totalPfAmount != null ? totalPfAmount : BigDecimal.ZERO;
             BigDecimal pfInterest = totalPfInterestAmount != null ? totalPfInterestAmount : BigDecimal.ZERO;
             totalAvailableAmount = pfAmount.add(pfInterest);
@@ -611,6 +814,7 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
         System.out.println("=== LOAN DEDUCTION DEBUG ===");
         System.out.println("totalAvailableAmount: " + totalAvailableAmount);
         System.out.println("recommendedRefundType: " + recommendedRefundType);
+        System.out.println("isLumpSum: " + isLumpSum);
 
         // Early validation checks
         if (nppfNumber == null || nppfNumber.isBlank()) {
@@ -738,12 +942,10 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
             System.out.println("  Outstanding: " + outstandingAmount);
             System.out.println("  Remaining payable before: " + remainingPayableAmount);
 
-            // Check if we have enough money to pay this loan
             if (remainingPayableAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 adjustedAmount = BigDecimal.ZERO;
                 System.out.println("  No money left, adjustedAmount = 0");
             } else {
-                // Deduct as much as possible from this loan
                 adjustedAmount = remainingPayableAmount.min(outstandingAmount);
                 remainingPayableAmount = remainingPayableAmount.subtract(adjustedAmount);
                 totalLoanAdjustedAmount = totalLoanAdjustedAmount.add(adjustedAmount);
@@ -754,7 +956,6 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
             BigDecimal remainingOutstandingAmount = outstandingAmount.subtract(adjustedAmount);
             LoanDeductionMapping mapping = mappingMap.get(loan.getLoanName().trim().toUpperCase());
 
-            // Determine status
             String status;
             if (adjustedAmount.compareTo(BigDecimal.ZERO) == 0) {
                 status = "NOT_ADJUSTABLE";
@@ -929,12 +1130,10 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                     matchedRule.getComponentMapping(),
                     componentAmountMap);
 
-            // Calculate expression amount from resolved codes
             BigDecimal expressionAmount = resolvedCodes.stream()
                     .map(code -> componentAmountMap.getOrDefault(code, BigDecimal.ZERO))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            // Build expression calculation DTO
             if (expressionCalculations != null) {
                 expressionCalculations.add(
                         VerifierClaimCalculationResponseDTO.ExpressionCalculationDTO.builder()
@@ -945,7 +1144,6 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                                 .build());
             }
 
-            // Add individual component balances
             for (String componentCode : resolvedCodes) {
 
                 BigDecimal amount = componentAmountMap.getOrDefault(
@@ -1174,18 +1372,14 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
             System.out.println("  Interest: " + component.getInterestAmount());
             System.out.println("  Total: " + component.getTotalAmount());
 
-            // ✅ Add principal amount (if > 0)
             if (component.getPrincipalAmount() != null &&
                     component.getPrincipalAmount().compareTo(BigDecimal.ZERO) > 0) {
                 map.put(code, component.getPrincipalAmount());
                 System.out.println("  ✅ Added principal: " + code + " = " + component.getPrincipalAmount());
             }
 
-            // ✅ Add interest amount (if > 0) - THIS IS THE KEY FIX
             if (component.getInterestAmount() != null &&
                     component.getInterestAmount().compareTo(BigDecimal.ZERO) > 0) {
-                // The component code already IS the interest code (PF_IEC, PF_IMC, etc.)
-                // So we add it with the same code
                 map.put(code, component.getInterestAmount());
                 System.out.println("  ✅ Added interest: " + code + " = " + component.getInterestAmount());
             }

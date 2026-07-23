@@ -21,16 +21,19 @@ import com.claim.claim_processing.application.DTO.response.application.Accountin
 import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationBankResponseDto;
 import com.claim.claim_processing.application.DTO.response.application.ClaimSpecialCaseApplicationResponseDto;
 import com.claim.claim_processing.application.DTO.response.application.GeneralSpecialCaseApplicationResponseDTO;
+import com.claim.claim_processing.application.DTO.response.application.ClaimSpecialCaseApplicationResponseDto.SpecialCaseComponentBalanceResponseDTO;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationWorkflowResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.entity.application.ClaimApplicationBankDetail;
+import com.claim.claim_processing.application.entity.application.ClaimSpecialCaseComponent;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationApproval;
 import com.claim.claim_processing.application.mapper.application.SpecialCaseApplicationGeneralResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.ClaimApplicationBankResponseMapper;
 import com.claim.claim_processing.application.mapper.workFlow.ClaimApplicationApprovalMapper;
 import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
+import com.claim.claim_processing.application.repository.application.ClaimSpecialCaseComponentRepository;
 import com.claim.claim_processing.application.repository.workFlow.ClaimApplicationApprovalRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationBankDetailService;
 import com.claim.claim_processing.application.service.application.ClaimApplicationService;
@@ -44,6 +47,7 @@ import com.claim.claim_processing.application.service.workFlow.ClaimApplicationW
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
+import com.claim.claim_processing.common.repository.contribution.ComponentMasterRepository;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
 import com.claim.claim_processing.document.service.DocumentMasterService;
 import com.claim.claim_processing.exceptions.ClaimException;
@@ -68,8 +72,10 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
     private final ClaimApplicationApprovalService claimApplicationApprovalService;
     private final ClaimApplicationBankResponseMapper claimApplicationBankResponseMapper;
     private final SpecialCaseService specialCaseService;
+    private final ClaimSpecialCaseComponentRepository claimSpecialCaseComponentRepository;
     private final SpecialCaseLedgerService specialCaseLedgerService;
     private final DocumentMasterService documentMasterService;
+    private final ComponentMasterRepository componentMasterRepository;
     
     // ADD THESE MISSING DEPENDENCIES
     private final ClaimApplicationApprovalRepository approvalRepository;
@@ -201,16 +207,6 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
             approval.setUpdatedBy(request.getApprovedBy());
             approval.setApprovalStatus(getStatusById(6L));
 
-            // Set approved amounts from special case
-            if (claimApplication.getClaimSpecialCaseApplication() != null) {
-                BigDecimal totalAmount = claimApplication.getClaimSpecialCaseApplication().getTotalPensionAmount();
-                if (totalAmount == null) {
-                    totalAmount = claimApplication.getClaimSpecialCaseApplication().getTotalForfeitedAmount();
-                }
-                if (totalAmount == null) {
-                    totalAmount = BigDecimal.ZERO;
-                }
-            }
 
             approvalRepository.saveAndFlush(approval);
 
@@ -232,7 +228,18 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
             // 6. Get verification details
             ApiResponseDTO<ClaimApplicationVerificationResponseDto> claimVerifier = claimApplicationVerificationService
                     .getByApplicationNumber(applicationNumber);
-
+            List<ClaimSpecialCaseComponent> components = claimSpecialCaseComponentRepository.findBySpecialCaseApplication_Id(specialCaseResponse.getData().getId());
+                        List<SpecialCaseComponentBalanceResponseDTO> componentsDto = components.stream()
+                        .filter(Objects::nonNull)
+                        .filter(m -> m.getComponentMaster() != null)
+                        .map(m -> SpecialCaseComponentBalanceResponseDTO.builder()
+                                .id(m.getId())
+                                .code(m.getComponentMaster().getCode())
+                                .name(m.getComponentMaster().getName())
+                                .amount(m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
+                                .build()
+                        )
+                        .collect(Collectors.toList());
             // 7. Build response DTO
             GeneralSpecialCaseApplicationResponseDTO responseDTO = buildResponseDTO(
                     claimApplication,
@@ -240,11 +247,12 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
                     bankDetails,
                     workflowDetails,
                     claimVerifier,
-                    approvalDetail);
+                    approvalDetail,
+                    componentsDto);
 
             // 8. Create special case
             GeneralSpecialCaseResponse specialCaseResponseDTO = specialCaseService.createSpecialCase(responseDTO);
-
+            System.out.println("i am here bro: " + specialCaseResponse.getData().getApplicationNumber());
             if (specialCaseResponseDTO == null) {
                 log.error("ERROR: specialCaseResponseDTO is null for application: {}", applicationNumber);
                 throw new RuntimeException("Failed to create special case response");
@@ -319,7 +327,9 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
             List<ClaimApplicationBankDetail> bankDetails,
             List<ClaimApplicationWorkflowResponseDto> workflowDetails,
             ApiResponseDTO<ClaimApplicationVerificationResponseDto> claimVerifier,
-            ClaimApplicationApprovalResponseDto approvalDetail) {
+            ClaimApplicationApprovalResponseDto approvalDetail,
+            List<SpecialCaseComponentBalanceResponseDTO> componentsDto
+            ) {
 
         try {
             // Map to general response
@@ -333,6 +343,9 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
             // Set all data
             if (specialCaseResponse != null && specialCaseResponse.getData() != null) {
                 responseDTO.setClaimSpecialCaseApplicationResponseDto(specialCaseResponse.getData());
+            }
+            if (componentsDto != null && !componentsDto.isEmpty()) {
+                responseDTO.getClaimSpecialCaseApplicationResponseDto().setComponents(componentsDto);
             }
 
             if (claimVerifier != null && claimVerifier.getData() != null) {
@@ -655,8 +668,22 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
                         // Build response
                         GeneralSpecialCaseApplicationResponseDTO responseDTO = specialCaseGeneralResponseMapper
                                 .mapToGeneralClaimResponse(claimApplication);
-
+                        List<ClaimSpecialCaseComponent> components = claimSpecialCaseComponentRepository.findBySpecialCaseApplication_Id(specialCaseResponse.getData().getId());
+                        List<SpecialCaseComponentBalanceResponseDTO> componentsDto = components.stream()
+                        .filter(Objects::nonNull)
+                        .filter(m -> m.getComponentMaster() != null)
+                        .map(m -> SpecialCaseComponentBalanceResponseDTO.builder()
+                                .id(m.getId())
+                                .code(m.getComponentMaster().getCode())
+                                .name(m.getComponentMaster().getName())
+                                .amount(m.getAmount() != null ? m.getAmount() : BigDecimal.ZERO)
+                                .build()
+                        )
+                        .collect(Collectors.toList());
+                        
+                        
                         responseDTO.setClaimSpecialCaseApplicationResponseDto(specialCaseResponse.getData());
+                        responseDTO.getClaimSpecialCaseApplicationResponseDto().setComponents(componentsDto);
                         responseDTO.setVerificationDetail(claimVerifier != null ? claimVerifier.getData() : null);
                         responseDTO.setWorkflowDetails(workflowDetails != null ? workflowDetails : new ArrayList<>());
 

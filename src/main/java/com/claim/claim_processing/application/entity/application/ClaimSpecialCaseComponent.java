@@ -30,28 +30,12 @@ public class ClaimSpecialCaseComponent {
     @JoinColumn(name = "SPECIAL_CASE_APPLICATION_ID", nullable = false)
     private ClaimSpecialCaseApplication specialCaseApplication;
 
-    @Column(name = "COMPONENT_CODE", length = 50, nullable = false)
-    private String componentCode;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "COMPONENT_MASTER_ID")
     private ComponentMaster componentMaster;
 
-    @Column(name = "COMPONENT_NAME", length = 100)
-    private String componentName;
-
     @Column(name = "AMOUNT", precision = 18, scale = 2)
     private BigDecimal amount;
-
-    @Column(name = "COMPONENT_TYPE", length = 20)
-    private String componentType; // ELIGIBLE, FORFEITED, DEDUCTION, INTEREST
-
-
-    @Column(name = "PERCENTAGE_AMOUNT", precision = 18, scale = 2)
-    private BigDecimal percentageAmount;
-
-    @Column(name = "NOTES", length = 500)
-    private String notes;
 
     @Column(name = "IS_ACTIVE", length = 1)
     private String isActive;
@@ -76,9 +60,6 @@ public class ClaimSpecialCaseComponent {
         }
         if (amount == null) {
             amount = BigDecimal.ZERO;
-        }
-        if (percentageAmount == null) {
-            percentageAmount = BigDecimal.ZERO;
         }
     }
 

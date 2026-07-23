@@ -46,8 +46,8 @@ public class ReserveAccount {
     @Column(name = "FORFEITED_AMOUNT")
     private BigDecimal forfeitedAmount;
 
-    @Column(name = "COMPONENT_CODES")
-    private String componentCodes;
+    @Column(name = "COMPONENT_CODE")
+    private String componentCode;
 
     @Column(name = "STATUS")
     private String status;

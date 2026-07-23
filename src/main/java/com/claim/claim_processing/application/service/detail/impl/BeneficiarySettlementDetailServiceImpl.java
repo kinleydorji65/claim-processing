@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -182,67 +183,69 @@ public class BeneficiarySettlementDetailServiceImpl
         }
     }
 
-    //added the claimant detail
+    // =============================================
+    // CREATE CLAIMANT DETAILS
+    // =============================================
     private List<BeneficiaryClaimantDetail> createClaimantDetails(
-        BeneficiarySettlementDetail settlementDetail, 
-        List<BeneficiaryClaimantRequestDto> requests) {
-    
-    if (requests == null || requests.isEmpty()) {
-        return List.of();
-    }
-    
-    List<BeneficiaryClaimantDetail> claimantDetails = new ArrayList<>();
-    
-    for (int i = 0; i < requests.size(); i++) {
-        BeneficiaryClaimantRequestDto request = requests.get(i);
-        
-        try {
-            // ✅ VALIDATE: Check if dependentId is null
-            if (request.getDependentId() == null) {
-                throw ClaimException.singleValidationError(
-                    String.format("beneficiaryClaimants[%d].dependentId", i),
-                    "Dependent ID is required for claimant detail"
+            BeneficiarySettlementDetail settlementDetail,
+            List<BeneficiaryClaimantRequestDto> requests) {
+
+        if (requests == null || requests.isEmpty()) {
+            log.info("No claimant details to create");
+            return List.of();
+        }
+
+        List<BeneficiaryClaimantDetail> claimantDetails = new ArrayList<>();
+
+        for (int i = 0; i < requests.size(); i++) {
+            BeneficiaryClaimantRequestDto request = requests.get(i);
+
+            try {
+                log.info("Creating claimant at index {} with claimantTypeId: {}", 
+                    i, request.getClaimantTypeId());
+
+                // ✅ Validate the request based on claimant type
+                validateClaimantRequest(request, i);
+
+                BeneficiaryClaimantDetail detail = beneficiaryClaimantDetailMapper.toEntity(request);
+                detail.setBeneficiarySettlementDetail(settlementDetail);
+
+                // ✅ Set relationships with proper null handling
+                detail.setDependent(getMemberFamily(request.getDependentId()));
+                detail.setNominee(getMemberNominee(request.getNomineeId()));
+                detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
+                detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
+                detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
+
+                // Set audit fields
+                if (settlementDetail.getCreatedBy() != null) {
+                    detail.setCreatedBy(settlementDetail.getCreatedBy());
+                }
+
+                beneficiaryClaimantDetailRepository.saveAndFlush(detail);
+                claimantDetails.add(detail);
+
+                log.info("✅ Created claimant at index {} with ID: {}", i, detail.getId());
+
+            } catch (ClaimException e) {
+                // Re-throw ClaimException as is
+                throw e;
+            } catch (Exception e) {
+                log.error("Error creating claimant at index {}: {}", i, e.getMessage(), e);
+                log.error("Request data: {}", request);
+                throw ClaimException.badRequest(
+                        String.format("Error creating claimant at index %d: %s", i, e.getMessage())
                 );
             }
-            
-            BeneficiaryClaimantDetail detail = beneficiaryClaimantDetailMapper.toEntity(request);
-            detail.setBeneficiarySettlementDetail(settlementDetail);
-            if (request.getDependentId() != null && request.getDependentId() > 0) {
-                detail.setDependent(getMemberFamily(request.getDependentId()));
-            }
-            
-            // ✅ Handle optional fields
-            if (request.getNomineeId() != null && request.getNomineeId() > 0) {
-                detail.setNominee(getMemberNominee(request.getNomineeId()));
-            }
-            
-            if (request.getClaimantTypeId() != null) {
-                detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
-            }
-            
-            if (request.getPayeeTypeId() != null) {
-                detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
-            }
-            
-            if (request.getRelationshipTypeId() != null) {
-                detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
-            }
-            
-            beneficiaryClaimantDetailRepository.saveAndFlush(detail);
-            claimantDetails.add(detail);
-            
-        } catch (Exception e) {
-            log.error("Error creating claimant at index {}: {}", i, e.getMessage());
-            log.error("Request data: {}", request);
-            throw ClaimException.badRequest(
-                String.format("Error creating claimant at index %d: %s", i, e.getMessage())
-            );
         }
-    }
-    
-    return claimantDetails;
-}
 
+        log.info("✅ Successfully created {} claimant details", claimantDetails.size());
+        return claimantDetails;
+    }
+
+    // =============================================
+    // UPDATE CLAIMANT DETAILS
+    // =============================================
     private List<BeneficiaryClaimantDetail> updateClaimantDetails(
             BeneficiarySettlementDetail settlementDetail,
             List<BeneficiaryClaimantRequestDto> requests) {
@@ -260,6 +263,9 @@ public class BeneficiarySettlementDetailServiceImpl
             BeneficiaryClaimantRequestDto request = requests.get(i);
 
             try {
+                // ✅ Validate the request based on claimant type
+                validateClaimantRequest(request, i);
+
                 BeneficiaryClaimantDetail detail;
 
                 if (request.getBeneficiaryClaimantDetailId() != null) {
@@ -280,6 +286,11 @@ public class BeneficiarySettlementDetailServiceImpl
                     detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
                     detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
 
+                    // Update audit fields
+                    if (settlementDetail.getUpdatedBy() != null) {
+                        detail.setUpdatedBy(settlementDetail.getUpdatedBy());
+                    }
+
                 } else {
                     log.info("Creating new claimant at index {} (no ID provided)", i);
 
@@ -290,10 +301,19 @@ public class BeneficiarySettlementDetailServiceImpl
                     detail.setClaimantType(getClaimantType(request.getClaimantTypeId()));
                     detail.setPayeeType(getPayeeType(request.getPayeeTypeId()));
                     detail.setRelationshipType(getRelationshipType(request.getRelationshipTypeId()));
+
+                    if (settlementDetail.getCreatedBy() != null) {
+                        detail.setCreatedBy(settlementDetail.getCreatedBy());
+                    }
                 }
 
                 claimantDetails.add(beneficiaryClaimantDetailRepository.saveAndFlush(detail));
 
+                log.info("✅ Processed claimant at index {} with ID: {}", i, detail.getId());
+
+            } catch (ClaimException e) {
+                // Re-throw ClaimException as is
+                throw e;
             } catch (Exception e) {
                 log.error("Error processing claimant at index {}: {}", i, e.getMessage(), e);
                 log.error("Problematic request data: {}", request);
@@ -308,7 +328,68 @@ public class BeneficiarySettlementDetailServiceImpl
         return claimantDetails;
     }
 
-    // ✅ FIXED: Returns null for invalid IDs, fetches for valid ones
+    // =============================================
+    // VALIDATION METHODS
+    // =============================================
+    
+    /**
+     * Validate claimant request based on claimant type
+     */
+    private void validateClaimantRequest(BeneficiaryClaimantRequestDto request, int index) {
+    // Common validations for all claimants
+    if (request.getClaimantTypeId() == null) {
+        throw ClaimException.singleValidationError(
+            String.format("beneficiaryClaimants[%d].claimantTypeId", index),
+            "Claimant type is required"
+        );
+    }
+
+    if (request.getBeneficiaryIdentifier() == null || request.getBeneficiaryIdentifier().isEmpty()) {
+        throw ClaimException.singleValidationError(
+            String.format("beneficiaryClaimants[%d].beneficiaryIdentifier", index),
+            "Beneficiary identifier is required"
+        );
+    }
+
+    // ✅ Fixed BigDecimal validation
+    if (request.getBeneficiarySharePercentage() != null) {
+        BigDecimal sharePercentage = request.getBeneficiarySharePercentage();
+        if (sharePercentage.compareTo(BigDecimal.ZERO) < 0 || 
+            sharePercentage.compareTo(BigDecimal.valueOf(100)) > 0) {
+            throw ClaimException.singleValidationError(
+                String.format("beneficiaryClaimants[%d].beneficiarySharePercentage", index),
+                "Share percentage must be between 0 and 100"
+            );
+        }
+    }
+
+    // Type-specific validations
+    Long claimantTypeId = request.getClaimantTypeId();
+
+    if (claimantTypeId == 2) { // Nominee
+        if (request.getNomineeId() == null || request.getNomineeId() <= 0) {
+            throw ClaimException.singleValidationError(
+                String.format("beneficiaryClaimants[%d].nomineeId", index),
+                "Nominee ID is required for nominee claimant type"
+            );
+        }
+    } else if (claimantTypeId == 3) { // Dependent
+        if (request.getDependentId() == null || request.getDependentId() <= 0) {
+            throw ClaimException.singleValidationError(
+                String.format("beneficiaryClaimants[%d].dependentId", index),
+                "Dependent ID is required for dependent claimant type"
+            );
+        }
+    }
+}
+
+    // =============================================
+    // HELPER METHODS - FETCH ENTITIES
+    // =============================================
+
+    /**
+     * Fetch MemberFamily by ID - returns null for invalid IDs
+     */
     private MemberFamily getMemberFamily(Long memberFamilyId) {
         if (memberFamilyId == null || memberFamilyId <= 0) {
             log.debug("Invalid memberFamilyId: {}, returning null", memberFamilyId);
@@ -320,7 +401,9 @@ public class BeneficiarySettlementDetailServiceImpl
                         String.valueOf(memberFamilyId)));
     }
 
-    // ✅ FIXED: Returns null for invalid IDs, fetches for valid ones
+    /**
+     * Fetch MemberNominee by ID - returns null for invalid IDs
+     */
     private MemberNominee getMemberNominee(Long memberNomineeId) {
         if (memberNomineeId == null || memberNomineeId <= 0) {
             log.debug("Invalid memberNomineeId: {}, returning null", memberNomineeId);
@@ -332,6 +415,23 @@ public class BeneficiarySettlementDetailServiceImpl
                         String.valueOf(memberNomineeId)));
     }
 
+    /**
+     * Fetch ClaimantTypeMaster by ID - returns null for invalid IDs
+     */
+    private ClaimantTypeMaster getClaimantType(Long claimantTypeId) {
+        if (claimantTypeId == null || claimantTypeId <= 0) {
+            log.debug("Invalid claimantTypeId: {}, returning null", claimantTypeId);
+            return null;
+        }
+        return claimantTypeMasterRepository.findById(claimantTypeId)
+                .orElseThrow(() -> ClaimException.resourceNotFound(
+                        "Claimant type",
+                        String.valueOf(claimantTypeId)));
+    }
+
+    /**
+     * Fetch PayeeTypeMaster by ID - returns null for invalid IDs
+     */
     private PayeeTypeMaster getPayeeType(Long payeeTypeId) {
         if (payeeTypeId == null || payeeTypeId <= 0) {
             log.debug("Invalid payeeTypeId: {}, returning null", payeeTypeId);
@@ -343,6 +443,9 @@ public class BeneficiarySettlementDetailServiceImpl
                         String.valueOf(payeeTypeId)));
     }
 
+    /**
+     * Fetch RelationType by ID - returns null for invalid IDs
+     */
     private RelationType getRelationshipType(Long relationshipTypeId) {
         if (relationshipTypeId == null || relationshipTypeId <= 0) {
             log.debug("Invalid relationshipTypeId: {}, returning null", relationshipTypeId);
@@ -352,15 +455,5 @@ public class BeneficiarySettlementDetailServiceImpl
                 .orElseThrow(() -> ClaimException.resourceNotFound(
                         "Relationship type",
                         String.valueOf(relationshipTypeId)));
-    }
-
-
-    
-
-    private ClaimantTypeMaster getClaimantType(Long claimantTypeId) {
-        return claimantTypeMasterRepository.findById(claimantTypeId)
-                .orElseThrow(() -> ClaimException.resourceNotFound(
-                        "Claimant type",
-                        String.valueOf(claimantTypeId)));
     }
 }

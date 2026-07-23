@@ -87,7 +87,7 @@ public class AccountTypeServiceImpl implements AccountTypeService {
 
         AccountTypeMaster savedEntity = repository.save(entity);
 
-        return ApiResponseDTO.created(
+        return ApiResponseDTO.success(
                 mapper.toResponseDto(savedEntity)
         );
     }

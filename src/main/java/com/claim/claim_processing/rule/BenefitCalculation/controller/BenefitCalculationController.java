@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
-import com.claim.claim_processing.common.entities.common.activityEnum.CaseTypeEnum;
 import com.claim.claim_processing.rule.BenefitCalculation.BenefitCalculationService;
 import com.claim.claim_processing.rule.BenefitCalculation.VerifierBenefitCalculationService;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
@@ -39,8 +38,8 @@ public class BenefitCalculationController {
         return ResponseEntity.ok(response);
     }
     @GetMapping
-    public ResponseEntity<ApiResponseDTO<Object>> getSpecialCaseBenefit(@RequestParam CaseTypeEnum caseType, @RequestParam String nppfNumber) {
-        ApiResponseDTO<Object> response = benefitCalculationService.getSpecialCaseBenefit(caseType, nppfNumber);
+    public ResponseEntity<ApiResponseDTO<Object>> getSpecialCaseBenefit(@RequestParam String nppfNumber) {
+        ApiResponseDTO<Object> response = benefitCalculationService.getSpecialCaseBenefit(nppfNumber);
         return ResponseEntity.ok(response);
     }
 }

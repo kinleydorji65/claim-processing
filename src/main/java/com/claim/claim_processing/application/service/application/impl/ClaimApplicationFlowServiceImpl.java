@@ -173,7 +173,7 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 response.setCalculationSummary(
                                 claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
                 response.setLegalRecoveryDetail(legalRecoveryResponseMapper.toResponse(legalRecoveryDetail));
-                return ApiResponseDTO.created(response);
+                return ApiResponseDTO.success(response);
         }
 
         @Override

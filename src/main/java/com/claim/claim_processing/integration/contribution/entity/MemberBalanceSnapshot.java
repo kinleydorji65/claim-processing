@@ -59,6 +59,10 @@ public class MemberBalanceSnapshot {
     @Column(name = "PENSION_EC", precision = 20, scale = 4, nullable = false)
     private BigDecimal pensionEc = BigDecimal.ZERO;
 
+//     @Builder.Default
+//     @Column(name = "PENSION_MC", precision = 20, scale = 4, nullable = false)
+//     private BigDecimal pensionMc = BigDecimal.ZERO;
+
     @Builder.Default
     @Column(name = "GC", precision = 20, scale = 4, nullable = false)
     private BigDecimal gc = BigDecimal.ZERO;

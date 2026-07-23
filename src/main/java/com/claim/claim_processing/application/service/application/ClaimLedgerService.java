@@ -11,6 +11,5 @@ public interface ClaimLedgerService {
     AccountingEventResponseDto createLedgerEntries(GeneralClaimDetailResponse claimResponse, String createdBy);
     AccountingEventResponseDto getAccountingEventByClaimId(Long claimId);
     List<LedgerEntryResponseDto> getLedgerEntriesByEventId(Long eventId);
-    void reverseLedgerEntries(Long claimId, String reversedBy, String reason);
     boolean hasLedgerEntries(Long claimId);
 }

@@ -114,8 +114,8 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             if (dto.getForfeitedAmount() != null) {
                 entity.setForfeitedAmount(dto.getForfeitedAmount());
             }
-            if (dto.getComponentCodes() != null) {
-                entity.setComponentCodes(dto.getComponentCodes());
+            if (dto.getComponentCode() != null) {
+                entity.setComponentCode(dto.getComponentCode());
             }
                 entity.setStatus("Y");
 

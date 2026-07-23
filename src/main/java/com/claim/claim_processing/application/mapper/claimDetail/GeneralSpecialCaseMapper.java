@@ -14,7 +14,6 @@ import com.claim.claim_processing.application.entity.claimDetail.ClaimBankDetail
 import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimSpecialCase;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimSpecialCaseComponentDetail;
-
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GeneralSpecialCaseMapper {
 
-    public GeneralSpecialCaseResponse mapToGeneralSpecialCaseResponse(ClaimDetail claimDetail,
+        public GeneralSpecialCaseResponse mapToGeneralSpecialCaseResponse(ClaimDetail claimDetail,
             ClaimSpecialCase specialCase, ClaimBankDetail bankDetail) {
         
         GeneralSpecialCaseResponse generalSpecialCaseResponse = GeneralSpecialCaseResponse.builder()
@@ -117,43 +116,12 @@ public class GeneralSpecialCaseMapper {
         return ClaimSpecialCaseResponse.builder()
                 .id(specialCase.getId())
                 .claimDetailId(claimDetail.getId())
-
-                // Special Case Information
-                .caseType(specialCase.getCaseType())
                 .caseReasonId(specialCase.getCaseReasonId())
 
-                // Pension Details (snapshot at time of application)
-                .pensionType(specialCase.getPensionType())
-                .pensionStartDate(specialCase.getPensionStartDate())
-                .totalContributionYears(specialCase.getTotalContributionYears())
-                .totalPensionAmount(specialCase.getTotalPensionAmount())
-                .pensionAccountId(specialCase.getPensionAccountId())
-
-                // For Pension Conversion
-                .currentBenefitType(specialCase.getCurrentBenefitType())
-                .requestedBenefitType(specialCase.getRequestedBenefitType())
-
-                // For Forfeited Repayment (snapshot at time of application)
-                .totalForfeitedAmount(specialCase.getTotalForfeitedAmount())
-                .eligibleClaimAmount(specialCase.getEligibleClaimAmount())
-                .forfeitedDate(specialCase.getForfeitedDate())
-                .componentCodes(specialCase.getComponentCodes())
-
-                // Amount Details
-                .requestedAmount(specialCase.getRequestedAmount())
-                .approvedAmount(specialCase.getApprovedAmount())
 
                 // Approval Information
                 .approvedBy(specialCase.getApprovedBy())
                 .approvedDate(specialCase.getApprovedDate())
-                .approvalReference(specialCase.getApprovalReference())
-                .rejectionReason(specialCase.getRejectionReason())
-
-                // Reserve Account Reference
-                .reserveAccountId(
-                        specialCase.getReserveAccount() != null ? specialCase.getReserveAccount().getId() : null)
-                .pensionDetailId(specialCase.getPensionAccountId() != null ? specialCase.getPensionAccountId() : null)
-                
                 // Audit Information
                 .isActive(specialCase.getIsActive())
                 .createdBy(specialCase.getCreatedBy())
@@ -193,18 +161,11 @@ public class GeneralSpecialCaseMapper {
         if (detail == null) {
             return null;
         }
-
         return SpecialCaseComponentBalanceResponseDTO.builder()
                 .id(detail.getId())
-                .code(detail.getComponentCode())
-                .name(detail.getComponentName())
-                .type(detail.getComponentType())
                 .amount(detail.getAmount())
-                .percentalAmount(detail.getPercentageAmount())
-                // .createdBy(detail.getCreatedBy())
-                // .createdAt(detail.getCreatedAt())
-                // .updatedBy(detail.getUpdatedBy())
-                // .updatedAt(detail.getUpdatedAt())
+                .code(detail.getComponentMaster().getCode())
+                .name(detail.getComponentMaster().getName())
                 .build();
     }
 }

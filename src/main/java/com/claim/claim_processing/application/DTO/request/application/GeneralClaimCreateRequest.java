@@ -21,4 +21,5 @@ public class GeneralClaimCreateRequest {
     private LegalRecoveryDetailRequest legalRecovery;
     private PartialWithdrawalRequestDto partialWithdrawal;
     private BeneficiarySettlementDetailRequestDto beneficiarySettlement;
+    private ClaimApplicationCalculationSummaryRequest calculationSummary;
 }

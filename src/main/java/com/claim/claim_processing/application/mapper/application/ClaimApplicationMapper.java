@@ -17,6 +17,7 @@ public interface ClaimApplicationMapper {
     // ---------- Request -> Entity ----------
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "applicationNumber", ignore = true)
+    @Mapping(target = "identityNumber", source = "identityNumber")
     @Mapping(target = "claimType", ignore = true)
     @Mapping(target = "submissionChannel", ignore = true)
     @Mapping(target = "schemeType", ignore = true)

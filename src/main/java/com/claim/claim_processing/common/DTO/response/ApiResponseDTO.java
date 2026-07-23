@@ -64,6 +64,30 @@ public class ApiResponseDTO<T> {
                 .build();
     }
 
+    public static <T> ApiResponseDTO<T> conflict(T data) {
+    return ApiResponseDTO.<T>builder()
+            .status(409L)
+            .message("Conflict occurred")
+            .data(data)
+            .build();
+}
+
+public static <T> ApiResponseDTO<T> conflict(String message, T data) {
+    return ApiResponseDTO.<T>builder()
+            .status(409L)
+            .message(message)
+            .data(data)
+            .build();
+}
+
+public static <T> ApiResponseDTO<T> conflict(String message) {
+    return ApiResponseDTO.<T>builder()
+            .status(409L)
+            .message(message)
+            .data(null)
+            .build();
+}
+
     public static <T> ApiResponseDTO<T> notFound(String message) {
         return ApiResponseDTO.<T>builder()
                 .status(404L)

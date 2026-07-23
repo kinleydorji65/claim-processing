@@ -610,6 +610,9 @@ private List<ClaimCalculationComponentDto> mapCalculationComponents(List<ClaimCa
 
 private AccountingEventResponseDto mapAccountingEvent(ClaimDetail claimDetail) {
     ClaimAccountingEvent accountingEvent = claimAccountingEventRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+    if (accountingEvent == null) {
+        
+    }
 if (accountingEvent == null) {
         return null;
     }
@@ -625,7 +628,6 @@ if (accountingEvent == null) {
             .agencyCode(accountingEvent.getAgencyCode())
             .agencyName(accountingEvent.getAgencyName())
             .status(accountingEvent.getStatus())
-            .narration(accountingEvent.getNarration())
             .postedBy(accountingEvent.getPostedBy())
             .postedAt(accountingEvent.getPostedAt())
             .createdBy(accountingEvent.getCreatedBy())

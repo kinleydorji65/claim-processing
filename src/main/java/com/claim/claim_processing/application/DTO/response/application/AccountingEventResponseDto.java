@@ -33,7 +33,6 @@ public class AccountingEventResponseDto {
 
     // Transaction Information
     private String status;
-    private String narration;
 
     // Audit Information
     private String postedBy;

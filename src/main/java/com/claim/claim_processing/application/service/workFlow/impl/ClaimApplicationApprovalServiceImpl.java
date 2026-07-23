@@ -3,25 +3,17 @@ package com.claim.claim_processing.application.service.workFlow.impl;
 import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationDeductionRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationApprovalRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationWorkflowRequestDto;
-import com.claim.claim_processing.application.DTO.request.workFlow.GeneralClaimApplicationVerifierRequestDTO;
 import com.claim.claim_processing.application.DTO.request.workFlow.GeneralClaimApproverRequestDto;
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto;
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto.LedgerEntryResponseDto;
 import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimBankResponseDto;
-import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimCalculationComponentDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimCalculationSummaryResponseDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimForfeitedComponentResponseDto;
-import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimRuleEvaluationListDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.GeneralClaimDetailResponse;
-import com.claim.claim_processing.application.DTO.response.detail.BeneficiaryClaimantResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationWorkflowResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
-import com.claim.claim_processing.application.entity.application.ClaimSpecialCaseApplication;
-import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationComponent;
-import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationSummary;
-import com.claim.claim_processing.application.entity.calculation.ClaimApplicationRuleEvaluation;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationApproval;
 import com.claim.claim_processing.application.mapper.application.GeneralClaimResponseBuilderMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.BeneficiarySettlementResponseMapper;
@@ -44,8 +36,9 @@ import com.claim.claim_processing.application.service.workFlow.ClaimApplicationW
 import com.claim.claim_processing.common.DTO.request.claim.ReserveAccountRequestDto;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.claim.ReserveAccountResponseDto;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
+import com.claim.claim_processing.common.entities.others.member.MemberDetail;
+import com.claim.claim_processing.common.repository.others.MemberDetailRepository;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
 import com.claim.claim_processing.common.service.claim.ReserveAccountService;
 import com.claim.claim_processing.document.service.DocumentMasterService;
@@ -64,11 +57,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -88,6 +79,7 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
         private final ClaimApplicationForfeitedComponentResponseMapper claimApplicationForfeitedComponentResponseMapper;
 
         private final StatusMasterRepository statusRepository;
+        private final MemberDetailRepository memberRepository;
         private final ClaimApplicationWorkflowService workflowService;
 
         private final ClaimApplicationApprovalMapper approvalMapper;
@@ -99,7 +91,6 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
         private final DocumentMasterService documentMasterService;
         private final ClaimApplicationCalculationService claimApplicationCalculationService;
 
-        
         private final ClaimApplicationDeductionDetailService claimApplicationDeductionDetailService;
         private final ClaimApplicationForfeitedComponentService claimApplicationForfeitedComponentService;
 
@@ -128,115 +119,118 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
         }
 
         @Override
-@Transactional
-public ApiResponseDTO<GeneralClaimDetailResponse> approve(
-        String applicationNumber,
-        GeneralClaimApproverRequestDto request) {
-        
-    ClaimApplicationApprovalRequestDto approvalRequest = request.getRequest();
-    ClaimApplication claimApplication = getClaimApplication(applicationNumber);
-    claimApplication.setStatus(getStatus(6L));
-    claimApplicationRepository.save(claimApplication);
-    
-    ClaimApplicationApproval approval = approvalRepository
-            .findByClaimApplication_ApplicationNumber(applicationNumber)
-            .orElse(new ClaimApplicationApproval());
+        @Transactional
+        public ApiResponseDTO<GeneralClaimDetailResponse> approve(
+                        String applicationNumber,
+                        GeneralClaimApproverRequestDto request) {
 
-    // Apply all updates from request
-    applyRequest(approval, claimApplication, approvalRequest);
+                ClaimApplicationApprovalRequestDto approvalRequest = request.getRequest();
+                ClaimApplication claimApplication = getClaimApplication(applicationNumber);
+                claimApplication.setStatus(getStatus(6L));
+                claimApplicationRepository.save(claimApplication);
 
-    // Validate required fields for approval
-    if (approvalRequest.getApprovedBy() == null || approvalRequest.getApprovedBy().isBlank()) {
-        throw ClaimException.badRequest("Approved By is required");
-    }
+                ClaimApplicationApproval approval = approvalRepository
+                                .findByClaimApplication_ApplicationNumber(applicationNumber)
+                                .orElse(new ClaimApplicationApproval());
 
-    // Set approval specific fields
-    approval.setApprovedBy(approvalRequest.getApprovedBy());
-    approval.setApprovedAt(new Timestamp(System.currentTimeMillis()));
-    approval.setUpdatedBy(approvalRequest.getApprovedBy());
-    approval.setClaimApplication(claimApplication);
-    
-    // Save approval
-    ClaimApplicationApproval saved = approvalRepository.saveAndFlush(approval);
+                // Apply all updates from request
+                applyRequest(approval, claimApplication, approvalRequest);
 
-    // Create workflow entry
-    Map<String, Long> workflowStage = resolveFromStageAndToStageAndAction(claimApplication.getId(), 6L);
+                // Validate required fields for approval
+                if (approvalRequest.getApprovedBy() == null || approvalRequest.getApprovedBy().isBlank()) {
+                        throw ClaimException.badRequest("Approved By is required");
+                }
 
-    ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto.builder()
-            .fromStageId(workflowStage.get("fromStage"))
-            .toStageId(workflowStage.get("toStage"))
-            .fromStatusId(workflowStage.get("fromStatus"))
-            .toStatusId(workflowStage.get("toStatus"))
-            .actionId(3L)
-            .reason(approvalRequest.getRemarks())
-            .actionBy(approvalRequest.getApprovedBy())
-            .build();
+                // Set approval specific fields
+                approval.setApprovedBy(approvalRequest.getApprovedBy());
+                approval.setApprovedAt(new Timestamp(System.currentTimeMillis()));
+                approval.setUpdatedBy(approvalRequest.getApprovedBy());
+                approval.setClaimApplication(claimApplication);
 
-    workflowService.create(claimApplication, workflowRequest);
-    claimApplicationRepository.findById(claimApplication.getId()).orElse(null);
-    
-    // ✅ 1. Save Calculation Summary (ELIGIBLE components)
-    if (request.getCalculationSummary() != null) {
-        claimApplicationCalculationService.createForCalculation(claimApplication, request.getCalculationSummary());
-    }
+                // Save approval
+                ClaimApplicationApproval saved = approvalRepository.saveAndFlush(approval);
 
-    // ✅ 2. Save DEDUCTION DETAIL (LOAN, RENTAL, TAX, etc.)
-    if (request.getCalculationSummary() != null && 
-        request.getCalculationSummary().getDeductionDetail() != null) {
-        
-        ClaimApplicationDeductionRequestDto deductionRequest = request.getCalculationSummary().getDeductionDetail();
-        
-        // If createdBy is null, use the approvedBy
-        if (deductionRequest.getCreatedBy() == null) {
-            deductionRequest.setCreatedBy(approvalRequest.getApprovedBy());
+                // Create workflow entry
+                Map<String, Long> workflowStage = resolveFromStageAndToStageAndAction(claimApplication.getId(), 6L);
+
+                ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto.builder()
+                                .fromStageId(workflowStage.get("fromStage"))
+                                .toStageId(workflowStage.get("toStage"))
+                                .fromStatusId(workflowStage.get("fromStatus"))
+                                .toStatusId(workflowStage.get("toStatus"))
+                                .actionId(3L)
+                                .reason(approvalRequest.getRemarks())
+                                .actionBy(approvalRequest.getApprovedBy())
+                                .build();
+
+                workflowService.create(claimApplication, workflowRequest);
+                claimApplicationRepository.findById(claimApplication.getId()).orElse(null);
+
+                // ✅ 1. Save Calculation Summary (ELIGIBLE components)
+                if (request.getCalculationSummary() != null) {
+                        claimApplicationCalculationService.createForCalculation(claimApplication,
+                                        request.getCalculationSummary());
+                }
+
+                // ✅ 2. Save DEDUCTION DETAIL (LOAN, RENTAL, TAX, etc.)
+                if (request.getCalculationSummary() != null &&
+                                request.getCalculationSummary().getDeductionDetail() != null) {
+
+                        ClaimApplicationDeductionRequestDto deductionRequest = request.getCalculationSummary()
+                                        .getDeductionDetail();
+
+                        // If createdBy is null, use the approvedBy
+                        if (deductionRequest.getCreatedBy() == null) {
+                                deductionRequest.setCreatedBy(approvalRequest.getApprovedBy());
+                        }
+
+                        // Save deduction details
+                        claimApplicationDeductionDetailService.saveCalculationDeductions(claimApplication,
+                                        deductionRequest);
+                        log.info("Saved deduction details for claim: {}", claimApplication.getApplicationNumber());
+                }
+
+                // ✅ 3. Save FORFEITED COMPONENTS (if any)
+                if (request.getCalculationSummary() != null &&
+                                request.getCalculationSummary().getForFeitedComponents() != null &&
+                                !request.getCalculationSummary().getForFeitedComponents().isEmpty()) {
+
+                        claimApplicationForfeitedComponentService.saveForfeitedComponents(
+                                        claimApplication,
+                                        request.getCalculationSummary().getForFeitedComponents());
+                        log.info("Saved forfeited components for claim: {}", claimApplication.getApplicationNumber());
+                }
+                
+                // Build response
+                GeneralClaimResponse response = null;
+                GeneralClaimDetailResponse claimDetailResponse = null;
+
+                if (claimApplication.getIsSpecialCase().toString().equals("N")) {
+                        response = buildGeneralClaimResponse(claimApplication);
+                        System.out.println("here is claim build response: " + response.getAgencyCode());
+                        MemberDetail member = memberRepository.findByNppfNumber(claimApplication.getNppfNumber()).orElse(null);
+                        member.setRoleId(32L);
+                        memberRepository.saveAndFlush(member);
+                        // Create claim detail
+                        claimDetailResponse = claimDetailService.create(response);
+
+                        // ✅ 4. Create ledger entries (this will use the saved data)
+                        AccountingEventResponseDto accountingEventResponse = claimLedgerService.createLedgerEntries(
+                                        claimDetailResponse,
+                                        approvalRequest.getApprovedBy());
+                        claimDetailResponse.setAccountingEventDetail(accountingEventResponse);
+
+                        if (claimApplication.getIsSpecialCase().toString().equals("N")) {
+                                saveToReserveAccount(claimDetailResponse, approvalRequest.getApprovedBy());
+                        }
+                }
+
+                // documentMasterService.transferDocumentsForApproval(claimApplication.getApplicationNumber(),
+                // claimDetailResponse.getApplicationNumber(),
+                // "MEMBER", request.getApprovedBy());
+
+                return ApiResponseDTO.success(claimDetailResponse);
         }
-        
-        // Save deduction details
-        claimApplicationDeductionDetailService.saveCalculationDeductions(claimApplication, deductionRequest);
-        log.info("Saved deduction details for claim: {}", claimApplication.getApplicationNumber());
-    }
-
-    // ✅ 3. Save FORFEITED COMPONENTS (if any)
-    if (request.getCalculationSummary() != null && 
-        request.getCalculationSummary().getForFeitedComponents() != null && 
-        !request.getCalculationSummary().getForFeitedComponents().isEmpty()) {
-        
-        claimApplicationForfeitedComponentService.saveForfeitedComponents(
-            claimApplication, 
-            request.getCalculationSummary().getForFeitedComponents()
-        );
-        log.info("Saved forfeited components for claim: {}", claimApplication.getApplicationNumber());
-    }
-
-    // Build response
-    GeneralClaimResponse response = null;
-    GeneralClaimDetailResponse claimDetailResponse = null;
-    
-    if (claimApplication.getIsSpecialCase().toString().equals("N")) {
-        response = buildGeneralClaimResponse(claimApplication);
-        System.out.println("here is claim build response: " + response.getAgencyCode());
-        
-        // Create claim detail
-        claimDetailResponse = claimDetailService.create(response);
-
-        // ✅ 4. Create ledger entries (this will use the saved data)
-        AccountingEventResponseDto accountingEventResponse = claimLedgerService.createLedgerEntries(
-                claimDetailResponse,
-                approvalRequest.getApprovedBy());
-        claimDetailResponse.setAccountingEventDetail(accountingEventResponse);
-        
-        if (claimApplication.getIsSpecialCase().toString().equals("N")) {
-            saveToReserveAccount(claimDetailResponse, approvalRequest.getApprovedBy());
-            saveToPensionDetail(claimDetailResponse, approvalRequest.getApprovedBy());
-        }
-    }
-
-    // documentMasterService.transferDocumentsForApproval(claimApplication.getApplicationNumber(),
-    //                 claimDetailResponse.getApplicationNumber(),
-    //                 "MEMBER", request.getApprovedBy());
-
-    return ApiResponseDTO.success(claimDetailResponse);
-}
 
         @Override
         public ApiResponseDTO<Page<GeneralClaimDetailResponse>> getAllApprovedDetails(Pageable pageable) {
@@ -244,119 +238,56 @@ public ApiResponseDTO<GeneralClaimDetailResponse> approve(
         }
 
         private void saveToReserveAccount(GeneralClaimDetailResponse claimDetailResponse, String createdBy) {
-    try {
-        // Get forfeited components
-        List<ClaimForfeitedComponentResponseDto> forfeitedComponents = claimDetailResponse
-                        .getForfeitedComponents();
+                try {
+                        // Get forfeited components
+                        List<ClaimForfeitedComponentResponseDto> forfeitedComponents = claimDetailResponse
+                                        .getForfeitedComponents();
 
-        // Calculate total forfeited amount
-        BigDecimal totalForfeitedAmount = BigDecimal.ZERO;
-        StringBuilder componentCodes = new StringBuilder();
+                        // Get lapse amount from accounting event
+                        BigDecimal lapseAmount = BigDecimal.ZERO;
+                        AccountingEventResponseDto accountingEvent = claimDetailResponse.getAccountingEventDetail();
 
-        if (forfeitedComponents != null && !forfeitedComponents.isEmpty()) {
-            for (ClaimForfeitedComponentResponseDto forfeited : forfeitedComponents) {
-                BigDecimal amount = forfeited.getAmount() != null ? forfeited.getAmount()
-                                : BigDecimal.ZERO;
-                if (amount.compareTo(BigDecimal.ZERO) > 0) {
-                    totalForfeitedAmount = totalForfeitedAmount.add(amount);
-                    if (componentCodes.length() > 0) {
-                        componentCodes.append(",");
-                    }
-                    componentCodes.append(forfeited.getComponentCode());
-                }
-            }
-        }
+                        System.out.println("========== DEBUG: saveToReserveAccount ==========");
+                        System.out.println("Accounting Event is null: " + (accountingEvent == null));
 
-        // Get lapse amount from accounting event
-        BigDecimal lapseAmount = BigDecimal.ZERO;
-        AccountingEventResponseDto accountingEvent = claimDetailResponse.getAccountingEventDetail();
-        
-        System.out.println("========== DEBUG: saveToReserveAccount ==========");
-        System.out.println("Accounting Event is null: " + (accountingEvent == null));
-        
-        if (accountingEvent != null && accountingEvent.getLedgerEntries() != null) {
-            System.out.println("Ledger entries count: " + accountingEvent.getLedgerEntries().size());
-            
-            // Find LAPSE entry by checking entryRole
-            for (LedgerEntryResponseDto entry : accountingEvent.getLedgerEntries()) {
-                System.out.println("Entry: ComponentCode=" + entry.getComponentCode() + 
-                                 ", EntryRole=" + entry.getEntryRole() + 
-                                 ", Amount=" + entry.getAmount());
-                
-                // Check by entryRole instead of componentCode
-                if ("LAPSE".equals(entry.getEntryRole())) {
-                    lapseAmount = entry.getAmount() != null ? entry.getAmount() : BigDecimal.ZERO;
-                    System.out.println("✅ Found LAPSE entry: " + lapseAmount);
-                    break;
-                }
-            }
-            
-            // If not found by entryRole, try by componentCode containing "LAPSE" or "FORFEITED"
-            if (lapseAmount.compareTo(BigDecimal.ZERO) == 0) {
-                for (LedgerEntryResponseDto entry : accountingEvent.getLedgerEntries()) {
-                    String compCode = entry.getComponentCode() != null ? entry.getComponentCode() : "";
-                    if (compCode.contains("LAPSE") || compCode.contains("FORFEITED") || 
-                        "PF_EC".equals(compCode) || "PF_IEC".equals(compCode)) {
-                        if ("C".equals(entry.getDrcr())) { // Only CREDIT entries
-                            lapseAmount = lapseAmount.add(entry.getAmount() != null ? entry.getAmount() : BigDecimal.ZERO);
-                            System.out.println("Found CREDIT entry: " + compCode + " = " + entry.getAmount());
+                        if (forfeitedComponents != null && !forfeitedComponents.isEmpty()) {
+                                System.out.println(
+                                                "Ledger entries count: " + accountingEvent.getLedgerEntries().size());
+
+                                // Find LAPSE entry by checking entryRole
+                                for (ClaimForfeitedComponentResponseDto forfeitedComponent : forfeitedComponents) {
+                                        ReserveAccountRequestDto reserveRequest = ReserveAccountRequestDto.builder()
+                                        .memberCode(claimDetailResponse.getMemberCode())
+                                        .nppfNumber(claimDetailResponse.getNppfNumber())
+                                        .identityNumber(claimDetailResponse.getIdentityNumber())
+                                        .agencyCategoryId(claimDetailResponse.getMemberCategoryId())
+                                        .agencyCode(claimDetailResponse.getAgencyCode())
+                                        .reserveType("FORFEITED")
+                                        .totalAmount(forfeitedComponent.getAmount())
+                                        .forfeitedAmount(forfeitedComponent.getAmount()) // For individual component, both are the same
+                                        .componentCode(forfeitedComponent.getComponentCode())
+                                        .build();
+
+                        ApiResponseDTO<ReserveAccountResponseDto> response = reserveAccountService
+                                        .create(reserveRequest);
+                                }
+
                         }
-                    }
+
+                } catch (Exception e) {
+                        System.out.println("❌ Error saving to reserve account: " + e.getMessage());
+                        e.printStackTrace();
+                        // Don't throw - reserve account save failure shouldn't rollback the transaction
                 }
-            }
         }
 
-        BigDecimal totalReserveAmount = totalForfeitedAmount.add(lapseAmount);
-        System.out.println("Total Forfeited Amount: " + totalForfeitedAmount);
-        System.out.println("Lapse Amount: " + lapseAmount);
-        System.out.println("Total Reserve Amount: " + totalReserveAmount);
-
-        if (totalReserveAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            System.out.println("No reserve amount to save. Forfeited: " + totalForfeitedAmount +
-                            ", Lapse: " + lapseAmount);
-            return;
-        }
-
-        System.out.println("Saving to Reserve Account - Forfeited: " + totalForfeitedAmount +
-                        ", Lapse: " + lapseAmount + ", Total: " + totalReserveAmount);
-
-        String agencyCategoryId = claimDetailResponse.getMemberCategoryId();
-
-        ReserveAccountRequestDto reserveRequest = ReserveAccountRequestDto.builder()
-                        .memberCode(claimDetailResponse.getMemberCode())
-                        .nppfNumber(claimDetailResponse.getNppfNumber())
-                        .identityNumber(claimDetailResponse.getNppfNumber())
-                        .agencyCategoryId(agencyCategoryId)
-                        .agencyCode(claimDetailResponse.getAgencyCode())
-                        .reserveType("LAPSE_FUND")
-                        .totalAmount(totalReserveAmount)
-                        .forfeitedAmount(totalForfeitedAmount)
-                        .componentCodes(componentCodes.toString())
-                        .build();
-
-        ApiResponseDTO<ReserveAccountResponseDto> response = reserveAccountService
-                        .create(reserveRequest);
-
-        if (response != null && response.getData() != null) {
-            System.out.println("✅ Reserve account created successfully for NPPF: " + 
-                            claimDetailResponse.getNppfNumber() + ", Amount: " + totalReserveAmount);
-        } else {
-            System.out.println("❌ Failed to create reserve account: " +
-                            (response != null ? response.getMessage() : "No response"));
-        }
-
-    } catch (Exception e) {
-        System.out.println("❌ Error saving to reserve account: " + e.getMessage());
-        e.printStackTrace();
-        // Don't throw - reserve account save failure shouldn't rollback the transaction
-    }
-}
+        
 
         private void saveToPensionDetail(GeneralClaimDetailResponse claimDetailResponse, String createdBy) {
                 try {
                         ClaimCalculationSummaryResponseDto summary = claimDetailResponse.getCalculationSummary();
                         // if (summary.getIsPensionEligible().toString().equals("N")) {
-                        //         return;
+                        // return;
                         // }
                         System.out.println("FUCK YOU");
                         // Get pension refund amount from accounting event
@@ -386,7 +317,6 @@ public ApiResponseDTO<GeneralClaimDetailResponse> approve(
                         }
 
                         log.info("Saving Pension Detail - Pension Refund: {}", pensionRefund);
-
 
                         // Get total contribution months from calculation summary
                         Integer totalMonths = 0;
@@ -618,12 +548,10 @@ public ApiResponseDTO<GeneralClaimDetailResponse> approve(
                         ClaimApplication claimApplication,
                         ClaimApplicationApprovalRequestDto request) {
 
-                        approval.setApprovalStatus(
-                                        statusRepository.findById(6L)
-                                                        .orElseThrow(() -> ClaimException.notFound(
-                                                                        "Approval status not found with id: " + 6L)));
-
-
+                approval.setApprovalStatus(
+                                statusRepository.findById(6L)
+                                                .orElseThrow(() -> ClaimException.notFound(
+                                                                "Approval status not found with id: " + 6L)));
 
                 approval.setRemarks(request.getRemarks());
         }

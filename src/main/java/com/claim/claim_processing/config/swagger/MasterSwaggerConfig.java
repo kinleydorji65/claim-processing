@@ -160,7 +160,7 @@ public class MasterSwaggerConfig implements SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("Rule Service APIs")
                 .pathsToMatch(
-                        "/api/rule-service/**"
+                        "/api/rules/**"
                 )
                 .displayName("Rule Service APIs")
                 .build();

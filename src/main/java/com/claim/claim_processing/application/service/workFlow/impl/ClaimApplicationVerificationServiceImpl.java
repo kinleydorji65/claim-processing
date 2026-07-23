@@ -5,12 +5,9 @@ import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicat
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationWorkflowRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.GeneralClaimApplicationVerifierRequestDTO;
 import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
-import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationWorkflowResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
-import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationSummary;
-import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationApproval;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationVerification;
 import com.claim.claim_processing.application.mapper.application.GeneralClaimResponseBuilderMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.BeneficiarySettlementResponseMapper;
@@ -31,7 +28,6 @@ import com.claim.claim_processing.application.service.workFlow.ClaimApplicationA
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationVerificationService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationWorkflowService;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
@@ -43,7 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

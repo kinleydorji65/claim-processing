@@ -76,6 +76,7 @@ public interface AllClaimDetailMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "ruleEvaluations", ignore = true)
+    @Mapping(target = "finalPayableAmount", source = "finalPayableAmount")
     ClaimCalculationSummary toCalculationSummaryEntity(ClaimApplicationCalculationSummaryResponseDto dto);
 
     @Mapping(target = "id", ignore = true)

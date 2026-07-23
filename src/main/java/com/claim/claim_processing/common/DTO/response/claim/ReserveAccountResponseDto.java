@@ -39,7 +39,7 @@ public class ReserveAccountResponseDto {
     // -------------------------------
     private BigDecimal totalAmount;
     private BigDecimal forfeitedAmount;
-    private String componentCodes;
+    private String componentCode;
 
     // -------------------------------
     // STATUS

@@ -174,6 +174,9 @@ public class ClaimDetail {
     @Builder.Default
     private List<ClaimBankDetail> bankDetails = new ArrayList<>();
 
+    @OneToOne(mappedBy = "claimDetail", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ClaimAccountingEvent accountingDetail;
+
     @OneToOne(mappedBy = "claimDetail")
     private ClaimDeductionDetail deductionDetail;
 

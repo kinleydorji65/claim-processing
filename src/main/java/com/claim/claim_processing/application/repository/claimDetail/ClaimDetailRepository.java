@@ -1,6 +1,7 @@
 package com.claim.claim_processing.application.repository.claimDetail;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,4 +17,5 @@ public interface ClaimDetailRepository extends JpaRepository<ClaimDetail, Long> 
 
      @Query("SELECT cd FROM ClaimDetail cd ORDER BY cd.createdAt DESC")
     Page<ClaimDetail> findAllWithPagination(Pageable pageable);
+    Optional<ClaimDetail> findByApplicationNumber(String applicationNumber);
 }

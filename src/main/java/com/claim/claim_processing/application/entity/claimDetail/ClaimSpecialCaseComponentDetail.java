@@ -31,36 +31,12 @@ public class ClaimSpecialCaseComponentDetail {
     @JoinColumn(name = "SPECIAL_CASE_ID", nullable = false)
     private ClaimSpecialCase specialCase;
 
-    @Column(name = "COMPONENT_CODE", length = 50, nullable = false)
-    private String componentCode;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "COMPONENT_MASTER_ID")
     private ComponentMaster componentMaster;
 
-    @Column(name = "COMPONENT_NAME", length = 100)
-    private String componentName;
-
     @Column(name = "AMOUNT", precision = 18, scale = 2)
     private BigDecimal amount;
-
-    @Column(name = "COMPONENT_TYPE", length = 20)
-    private String componentType; // ELIGIBLE, FORFEITED, DEDUCTION, INTEREST
-
-    @Column(name = "PERCENTAGE_AMOUNT", precision = 18, scale = 2)
-    private BigDecimal percentageAmount;
-
-    @Column(name = "NOTES", length = 500)
-    private String notes;
-
-    @Column(name = "SUB_RULE_CODE", length = 50)
-    private String subRuleCode;
-
-    @Column(name = "RULE_CODE", length = 50)
-    private String ruleCode;
-
-    @Column(name = "REASON", length = 1000)
-    private String reason;
 
     @Column(name = "IS_ACTIVE", length = 1)
     private String isActive;
@@ -87,9 +63,6 @@ public class ClaimSpecialCaseComponentDetail {
         if (amount == null) {
             amount = BigDecimal.ZERO;
         }
-        if (percentageAmount == null) {
-            percentageAmount = BigDecimal.ZERO;
-        }
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
@@ -109,68 +82,5 @@ public class ClaimSpecialCaseComponentDetail {
     public void deactivate(String deactivatedBy) {
         this.isActive = "N";
         this.updatedBy = deactivatedBy;
-    }
-
-    public boolean isActive() {
-        return "Y".equalsIgnoreCase(isActive);
-    }
-
-    public boolean isEligible() {
-        return "ELIGIBLE".equalsIgnoreCase(componentType);
-    }
-
-    public boolean isForfeited() {
-        return "FORFEITED".equalsIgnoreCase(componentType);
-    }
-
-    public boolean isDeduction() {
-        return "DEDUCTION".equalsIgnoreCase(componentType);
-    }
-
-    public boolean isInterest() {
-        return "INTEREST".equalsIgnoreCase(componentType);
-    }
-
-    /**
-     * Calculate total amount (amount + percentageAmount if any)
-     */
-    public BigDecimal getTotalAmount() {
-        BigDecimal total = amount != null ? amount : BigDecimal.ZERO;
-        if (percentageAmount != null) {
-            total = total.add(percentageAmount);
-        }
-        return total;
-    }
-
-    /**
-     * Set component as ELIGIBLE
-     */
-    public void markAsEligible(String updatedBy) {
-        this.componentType = "ELIGIBLE";
-        this.updatedBy = updatedBy;
-    }
-
-    /**
-     * Set component as FORFEITED
-     */
-    public void markAsForfeited(String updatedBy) {
-        this.componentType = "FORFEITED";
-        this.updatedBy = updatedBy;
-    }
-
-    /**
-     * Set component as DEDUCTION
-     */
-    public void markAsDeduction(String updatedBy) {
-        this.componentType = "DEDUCTION";
-        this.updatedBy = updatedBy;
-    }
-
-    /**
-     * Set component as INTEREST
-     */
-    public void markAsInterest(String updatedBy) {
-        this.componentType = "INTEREST";
-        this.updatedBy = updatedBy;
     }
 }

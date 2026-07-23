@@ -26,8 +26,8 @@ public class ClaimAccountingEvent {
     @Column(name = "EVENT_TYPE", nullable = false)
     private String eventType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLAIM_DETAIL_ID", insertable = false, updatable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CLAIM_DETAIL_ID")
     private ClaimDetail claimDetail;
 
     // Member Information
@@ -69,9 +69,6 @@ public class ClaimAccountingEvent {
 
     @Column(name = "STATUS")
     private String status;
-
-    @Column(name = "NARRATION")
-    private String narration;
 
     // Audit Information
     @Column(name = "POSTED_BY")

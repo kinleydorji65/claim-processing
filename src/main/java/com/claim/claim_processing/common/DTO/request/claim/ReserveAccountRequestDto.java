@@ -32,5 +32,5 @@ public class ReserveAccountRequestDto {
     // -------------------------------
     private BigDecimal totalAmount;
     private BigDecimal forfeitedAmount;
-    private String componentCodes;
+    private String componentCode;
 }

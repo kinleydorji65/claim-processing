@@ -22,17 +22,11 @@ import com.claim.claim_processing.application.repository.application.ClaimSpecia
 import com.claim.claim_processing.application.repository.application.ClaimSpecialCaseComponentRepository;
 import com.claim.claim_processing.application.service.specialCase.ClaimSpecialCaseApplicationService;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
-import com.claim.claim_processing.common.entities.claim.ReserveAccount;
 import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
-import com.claim.claim_processing.common.entities.pension.PensionDetail;
 import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundReasonMaster;
-import com.claim.claim_processing.common.repository.claim.ReserveAccountRepository;
 import com.claim.claim_processing.common.repository.contribution.ComponentMasterRepository;
-import com.claim.claim_processing.common.repository.pension.PensionDetailRepository;
 import com.claim.claim_processing.common.repository.specialCase.SpecialCaseRefundReasonMasterRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
-import com.claim.claim_processing.rule.claim.DTO.response.VerifierClaimCalculationResponseDTO.ComponentBalanceDTO;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,8 +39,6 @@ public class ClaimSpecialCaseApplicationServiceImpl implements ClaimSpecialCaseA
     private final ClaimSpecialCaseApplicationRepository claimSpecialCaseApplicationRepository;
     private final ClaimSpecialCaseComponentRepository claimSpecialCaseComponentRepository;
     private final ComponentMasterRepository componentMasterRepository;
-    private final PensionDetailRepository pensionDetailRepository;
-    private final ReserveAccountRepository reserveAccountRepository;
     private final ClaimApplicationRepository claimApplicationRepository;
     private final SpecialCaseRefundReasonMasterRepository specialCaseRefundReasonMasterRepository;
 
@@ -68,10 +60,6 @@ public class ClaimSpecialCaseApplicationServiceImpl implements ClaimSpecialCaseA
                 return ApiResponseDTO.notFound("Claim application is required");
             }
 
-            if (dto.getCaseType() == null) {
-                return ApiResponseDTO.notFound("Case type is required");
-            }
-
             // Check if special case already exists for this claim
             ClaimSpecialCaseApplication checkClaimApplication = claimSpecialCaseApplicationRepository
                     .findByClaimApplicationId(claimApplication.getId())
@@ -80,69 +68,28 @@ public class ClaimSpecialCaseApplicationServiceImpl implements ClaimSpecialCaseA
                 return ApiResponseDTO.notFound("Special case application already exists for this claim");
             }
 
-            // Fetch pension details
-            PensionDetail pensionDetail = null;
-            if (dto.getCaseType() != null && dto.getCaseType().toString().equals("CONVERSION_FROM_PENSION_TO_LUMSUM")) {
-                pensionDetail = pensionDetailRepository
-                        .findByNppfNumber(claimApplication.getNppfNumber())
-                        .orElseThrow(() -> ClaimException.notFound(
-                                "Pension detail not found for NPPF number: " + claimApplication.getNppfNumber()));
-            }
+            BigDecimal totalAmount = BigDecimal.ZERO;
+        List<SpecialCaseComponentBalanceDTO> componentBalances = dto.getComponentBalances();
+        
+        if (componentBalances != null && !componentBalances.isEmpty()) {
+            totalAmount = componentBalances.stream()
+                    .filter(Objects::nonNull)
+                    .map(SpecialCaseComponentBalanceDTO::getAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            log.info("Calculated total amount from {} components: {}", componentBalances.size(), totalAmount);
+        } 
 
-            // Fetch reserve account for forfeited component case
-            ReserveAccount reserveAccount = null;
-            if (dto.getCaseType() != null && dto.getCaseType().toString().equals("CLAIM_FORFEITED_COMPONENT")) {
-                reserveAccount = reserveAccountRepository
-                        .findByNppfNumber(claimApplication.getNppfNumber())
-                        .orElseThrow(() -> ClaimException.notFound(
-                                "Reserve account not found for NPPF number: " + claimApplication.getNppfNumber()));
-            }
 
-            // Create entity from DTO
-            SpecialCaseRefundReasonMaster specialCaseRefundReasonMaster = null;
             ClaimSpecialCaseApplication entity = claimSpecialCaseApplicationMapper.toEntity(dto);
-            if (dto.getCaseType() != null && dto.getCaseType().toString().equals("SPECIAL_NORMAL_CLAIM")) {
-                specialCaseRefundReasonMaster = specialCaseRefundReasonMasterRepository
-                        .findById(dto.getCaseReasonId())
-                        .orElseThrow(() -> ClaimException
-                                .notFound("No Case Detail found with id: " + dto.getCaseReasonId()));
-                entity.setEligibleClaimAmount(calculateTotalComponentAmount(dto.getComponentBalances()));
-            }
+            SpecialCaseRefundReasonMaster caseReason = specialCaseRefundReasonMasterRepository.findById(dto.getCaseReasonId()).orElse(null);
             // Set default values
-            entity.setCaseReasonId(dto.getCaseReasonId());
+            entity.setSpecialCaseRefundReasonMaster(caseReason != null ? caseReason : null);
             entity.setIsActive("Y");
             entity.setCreatedBy(dto.getCreatedBy());
             entity.setCreatedAt(LocalDateTime.now());
             entity.setClaimApplication(claimApplication);
-
-            // Set pension snapshot
-            if (pensionDetail != null) {
-                entity.setPensionType(pensionDetail.getPensionType());
-                entity.setPensionStartDate(pensionDetail.getPensionStartDate());
-                entity.setTotalContributionYears(pensionDetail.getTotalContributionYears());
-                entity.setTotalPensionAmount(pensionDetail.getTotalPensionFund());
-                entity.setPensionAccount(pensionDetail);
-            }
-
-            // Set forfeited snapshot if applicable
-            if (dto.getCaseType() != null && dto.getCaseType().toString().equals("CLAIM_FORFEITED_COMPONENT")
-                    && reserveAccount != null) {
-                entity.setTotalForfeitedAmount(reserveAccount.getForfeitedAmount());
-                entity.setEligibleClaimAmount(calculateEligibleClaimAmount(reserveAccount.getForfeitedAmount()));
-                entity.setForfeitedDate(reserveAccount.getCreatedAt());
-                entity.setComponentCodes(reserveAccount.getComponentCodes());
-                entity.setReserveAccount(reserveAccount);
-            }
-
-            // Set forfeited snapshot if applicable
-            if (dto.getCaseType() != null && dto.getCaseType().toString().equals("SPECIAL_NORMAL_CLAIM")
-                    && reserveAccount != null) {
-                entity.setTotalForfeitedAmount(reserveAccount.getForfeitedAmount());
-                entity.setEligibleClaimAmount(calculateEligibleClaimAmount(reserveAccount.getForfeitedAmount()));
-                entity.setForfeitedDate(reserveAccount.getCreatedAt());
-                entity.setComponentCodes(reserveAccount.getComponentCodes());
-                entity.setReserveAccount(reserveAccount);
-            }
+            entity.setTotalAmount(totalAmount);
 
             // Save entity
             ClaimSpecialCaseApplication saved = claimSpecialCaseApplicationRepository.saveAndFlush(entity);
@@ -153,12 +100,8 @@ public class ClaimSpecialCaseApplicationServiceImpl implements ClaimSpecialCaseA
                     claimApplication.getCreatedBy());
             // Build response
             ClaimSpecialCaseApplicationResponseDto response = claimSpecialCaseApplicationMapper.toResponseDto(saved);
-            response.setReserveAccountId(
-                    entity.getReserveAccount() != null ? entity.getReserveAccount().getId() : null);
-            response.setPensionAccountId(
-                    entity.getPensionAccount() != null ? entity.getPensionAccount().getId() : null);
-            response.setCaseReasonId(specialCaseRefundReasonMaster != null ?specialCaseRefundReasonMaster.getId() : null);
-            response.setCaseReasonName(specialCaseRefundReasonMaster != null ?specialCaseRefundReasonMaster.getName() : null);
+            response.setCaseReasonId(caseReason != null ?caseReason.getId() : null);
+            response.setCaseReasonName(caseReason != null ?caseReason.getName() : null);
             response.setComponents(specialClaimComponents);
             return ApiResponseDTO.success(response);
 
@@ -170,22 +113,6 @@ public class ClaimSpecialCaseApplicationServiceImpl implements ClaimSpecialCaseA
             throw ClaimException.internalError("Failed to create special case: " + e.getMessage());
         }
     }
-
-    private BigDecimal calculateTotalComponentAmount(List<SpecialCaseComponentBalanceDTO> components) {
-    if (components == null || components.isEmpty()) {
-        log.warn("No components found, returning ZERO");
-        return BigDecimal.ZERO;
-    }
-    
-    BigDecimal total = components.stream()
-            .filter(Objects::nonNull)
-            .map(SpecialCaseComponentBalanceDTO::getAmount)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    
-    log.info("Total component amount calculated: {}", total);
-    return total;
-}
     /**
      * PATCH - Update an existing special case application (partial update)
      */
@@ -203,25 +130,11 @@ public class ClaimSpecialCaseApplicationServiceImpl implements ClaimSpecialCaseA
                     .findById(dto.getId())
                     .orElseThrow(() -> ClaimException
                             .notFound("Special case application not found with ID: " + dto.getId()));
+            SpecialCaseRefundReasonMaster caseReason = specialCaseRefundReasonMasterRepository.findById(dto.getCaseReasonId()).orElse(null);
 
             // Update only allowed fields
             if (dto.getCaseReasonId() != null) {
-                entity.setCaseReasonId(dto.getCaseReasonId());
-            }
-            if (dto.getCurrentBenefitType() != null) {
-                entity.setCurrentBenefitType(dto.getCurrentBenefitType());
-            }
-            if (dto.getRequestedBenefitType() != null) {
-                entity.setRequestedBenefitType(dto.getRequestedBenefitType());
-            }
-            if (dto.getRequestedAmount() != null) {
-                entity.setRequestedAmount(dto.getRequestedAmount());
-            }
-            if (dto.getReserveAccountId() != null) {
-                ReserveAccount reserveAccount = reserveAccountRepository.findById(dto.getReserveAccountId())
-                        .orElseThrow(() -> ClaimException
-                                .notFound("Reserve account not found with ID: " + dto.getReserveAccountId()));
-                entity.setReserveAccount(reserveAccount);
+                entity.setSpecialCaseRefundReasonMaster(caseReason);
             }
 
             // Update audit fields
@@ -302,131 +215,69 @@ public class ClaimSpecialCaseApplicationServiceImpl implements ClaimSpecialCaseA
      */
 
     public List<SpecialCaseComponentBalanceResponseDTO> storeSpecialCaseComponents(
-            ClaimSpecialCaseApplication claimSpecialCaseApplication,
-            List<com.claim.claim_processing.application.DTO.request.application.ClaimSpecialCaseApplicationRequestDto.SpecialCaseComponentBalanceDTO> components,
-            String createdBy) {
+        ClaimSpecialCaseApplication claimSpecialCaseApplication,
+        List<SpecialCaseComponentBalanceDTO> components,
+        String createdBy) {
 
-        log.info("Storing components for special case application ID: {}",
-                claimSpecialCaseApplication != null ? claimSpecialCaseApplication.getId() : "null");
+    log.info("Storing components for special case application ID: {}",
+            claimSpecialCaseApplication != null ? claimSpecialCaseApplication.getId() : "null");
 
-        // 1. Validate inputs
-        if (claimSpecialCaseApplication == null) {
-            throw new RuntimeException("Special case application is required");
-        }
-
-        if (components == null || components.isEmpty()) {
-            log.info("No components to store for special case application: {}",
-                    claimSpecialCaseApplication.getId());
-            return new ArrayList<>();
-        }
-        // 3. Save new components
-        List<SpecialCaseComponentBalanceResponseDTO> savedComponents = new ArrayList<>();
-
-        for (SpecialCaseComponentBalanceDTO componentDto : components) {
-            if (componentDto == null || componentDto.getCode() == null) {
-                log.warn("Skipping null component or component with null code");
-                continue;
-            }
-
-            // Get component master by code
-            ComponentMaster componentMaster = componentMasterRepository
-                    .findByCode(componentDto.getCode())
-                    .orElse(null);
-
-            if (componentMaster == null) {
-                log.warn("Component master not found for code: {}", componentDto.getCode());
-                // Continue without component master - it's optional
-            }
-
-            // Determine component type
-            String componentType = determineComponentType(componentDto);
-
-            // Build the entity
-            ClaimSpecialCaseComponent component = ClaimSpecialCaseComponent.builder()
-                    .specialCaseApplication(claimSpecialCaseApplication)
-                    .componentCode(componentDto.getCode())
-                    .componentMaster(componentMaster)
-                    .componentName(componentDto.getName() != null ? componentDto.getName() : componentDto.getCode())
-                    .amount(componentDto.getAmount() != null ? componentDto.getAmount() : BigDecimal.ZERO)
-                    .componentType(componentType)
-                    .notes("Component from special case calculation")
-                    .isActive("Y")
-                    .createdBy(createdBy != null ? createdBy : claimSpecialCaseApplication.getCreatedBy())
-                    .build();
-
-            ClaimSpecialCaseComponent saved = claimSpecialCaseComponentRepository.save(component);
-
-            // ✅ Convert saved entity back to DTO
-            SpecialCaseComponentBalanceResponseDTO savedDto = SpecialCaseComponentBalanceResponseDTO.builder()
-                    .code(saved.getComponentCode())
-                    .name(saved.getComponentName())
-                    .type(saved.getComponentType())
-                    .amount(saved.getAmount())
-                    .percentalAmount(saved.getPercentageAmount())
-                    .build();
-
-            savedComponents.add(savedDto);
-
-            log.info("✅ Saved component: {} with amount: {} and type: {}",
-                    componentDto.getCode(),
-                    componentDto.getAmount(),
-                    componentType);
-        }
-
-        log.info("✅ Saved {} components for special case application: {}",
-                savedComponents.size(), claimSpecialCaseApplication.getId());
-
-        return savedComponents;
+    // 1. Validate inputs
+    if (claimSpecialCaseApplication == null) {
+        throw new RuntimeException("Special case application is required");
     }
 
-    /**
-     * GET COMPONENTS BY SPECIAL CASE APPLICATION ID - Get all components for a
-     * special case application
-     * 
-     * @param specialCaseApplicationId The ID of the special case application
-     * @return List of ClaimSpecialCaseComponent entities
-     */
-
-    /**
-     * Determine the component type based on the component code and metadata
-     */
-    private String determineComponentType(SpecialCaseComponentBalanceDTO component) {
-        if (component == null || component.getCode() == null) {
-            return "ELIGIBLE";
-        }
-
-        String code = component.getCode().toUpperCase();
-        String type = component.getType();
-
-        // If type is explicitly provided, use it
-        if (type != null) {
-            if (type.equalsIgnoreCase("INTEREST")) {
-                return "INTEREST";
-            }
-            if (type.equalsIgnoreCase("CONTRIBUTION")) {
-                return "CONTRIBUTION";
-            }
-        }
-
-        // Determine by component code
-        if (code.startsWith("PF_I") || code.startsWith("P_I") ||
-                code.endsWith("_IMC") || code.endsWith("_IEC") ||
-                code.contains("INTEREST")) {
-            return "INTEREST";
-        }
-
-        // Default to ELIGIBLE
-        return "ELIGIBLE";
+    if (components == null || components.isEmpty()) {
+        log.info("No components to store for special case application: {}",
+                claimSpecialCaseApplication.getId());
+        return new ArrayList<>();
     }
 
-    /**
-     * Calculate eligible claim amount (80% of total forfeited)
-     */
-    private BigDecimal calculateEligibleClaimAmount(BigDecimal totalForfeited) {
-        if (totalForfeited == null || totalForfeited.compareTo(BigDecimal.ZERO) <= 0) {
-            return BigDecimal.ZERO;
+    // 2. Save new components
+    List<SpecialCaseComponentBalanceResponseDTO> savedComponents = new ArrayList<>();
+
+    for (SpecialCaseComponentBalanceDTO componentDto : components) {
+        if (componentDto == null || componentDto.getCode() == null) {
+            log.warn("Skipping null component or component with null code");
+            continue;
         }
-        return totalForfeited.multiply(BigDecimal.valueOf(0.8))
-                .setScale(2, java.math.RoundingMode.HALF_UP);
+
+        // ✅ Get component master by code using the REPOSITORY
+        ComponentMaster componentMaster = componentMasterRepository
+                .findByCode(componentDto.getCode())
+                .orElse(null);
+
+        // ✅ Build the entity with ALL required fields
+        ClaimSpecialCaseComponent component = ClaimSpecialCaseComponent.builder()
+                .specialCaseApplication(claimSpecialCaseApplication)
+                .componentMaster(componentMaster != null ? componentMaster : null)
+                .amount(componentDto.getAmount() != null ? componentDto.getAmount() : BigDecimal.ZERO)
+                .isActive("Y")
+                .createdBy(createdBy != null ? createdBy : claimSpecialCaseApplication.getCreatedBy())
+                .build();
+
+        // ✅ Save the component
+        ClaimSpecialCaseComponent saved = claimSpecialCaseComponentRepository.save(component);
+        log.debug("Saved component with ID: {}", saved.getId());
+
+
+        // ✅ Convert saved entity back to DTO
+        SpecialCaseComponentBalanceResponseDTO savedDto = SpecialCaseComponentBalanceResponseDTO.builder()
+                .code(componentMaster != null ? componentMaster.getCode() : componentDto.getCode())
+                .name(componentMaster.getName())
+                .amount(saved.getAmount())
+                .build();
+
+        savedComponents.add(savedDto);
+
+        log.info("✅ Saved component: {} with amount: {}",
+                componentDto.getCode(),
+                componentDto.getAmount());
     }
+
+    log.info("✅ Saved {} components for special case application: {}",
+            savedComponents.size(), claimSpecialCaseApplication.getId());
+
+    return savedComponents;
+}
 }

@@ -13,10 +13,7 @@ import com.claim.claim_processing.application.entity.claimDetail.ClaimSpecialCas
 @Mapper(componentModel = "spring")
 public interface ClaimSpecialCaseMapper {
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "claimDetail", ignore = true) // FK ignored - set in service
-    @Mapping(target = "caseType", source = "caseType")
-    @Mapping(target = "currentBenefitType", source = "currentBenefitType")
-    @Mapping(target = "requestedBenefitType", source = "requestedBenefitType")
+    @Mapping(target = "claimDetail", ignore = true)
     @Mapping(target = "isActive", ignore = true) // Set in entity @PrePersist
     @Mapping(target = "createdBy", ignore = true) // Set in service
     @Mapping(target = "createdAt", ignore = true) // Set in entity @PrePersist
