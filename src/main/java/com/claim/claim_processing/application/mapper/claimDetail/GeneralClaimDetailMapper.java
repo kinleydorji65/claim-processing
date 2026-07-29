@@ -88,6 +88,7 @@ public class GeneralClaimDetailMapper {
             .memberCode(claimDetail.getMemberCode())
             .nppfNumber(claimDetail.getNppfNumber())
             .agencyCode(claimDetail.getAgencyCode())
+            .identityNumber(claimDetail.getIdentityNumber())
             .officeId(claimDetail.getOfficeId())
             .applicationDate(claimDetail.getApplicationDate())
             .email(claimDetail.getEmail())
@@ -277,7 +278,25 @@ private ClaimCalculationSummaryResponseDto mapCalculationSummary(ClaimCalculatio
             .isPfEligible(source.getIsPfEligible())
             .isPensionEligible(source.getIsPensionEligible())
             .totalContributionMonth(source.getTotalContributionMonth())
+            .totalNonContributionMonth(source.getTotalNonContributionMonth())
+            .totalPfAmount(source.getTotalPfAmount())
+            .totalPensionAmount(source.getTotalPensionAmount())
+            .totalPfInterest(source.getTotalPfInterest())
+            .totalPensionInterest(source.getTotalPensionInterest())
             .recommendedBenefitType(source.getRecommendedBenefitType())
+            
+            // ================================================================
+            // EXCESS SERVICE FIELDS
+            // ================================================================
+            .excessOpeningBalance(source.getExcessOpeningBalance())
+            .excessServiceAmount(source.getExcessServiceAmount())
+            .excessCutoffDate(source.getExcessCutoffDate())
+            .excessStartDate(source.getExcessStartDate())
+            .excessEndDate(source.getExcessEndDate())
+            .excessTotalContributions(source.getExcessTotalContributions())
+            .excessTotalInterest(source.getExcessTotalInterest())
+            .excessEolMonths(source.getExcessEolMonths())
+            
             .ruleEvaluations(mapRuleEvaluations(ruleEvaluations))
             .createdBy(source.getCreatedBy())
             .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)

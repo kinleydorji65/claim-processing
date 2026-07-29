@@ -9,7 +9,6 @@ import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.rule.BenefitCalculation.BenefitCalculationService;
 import com.claim.claim_processing.rule.BenefitCalculation.VerifierBenefitCalculationService;
 import com.claim.claim_processing.rule.claim.DTO.response.ClaimCalculationResponseDTO;
-import com.claim.claim_processing.rule.claim.DTO.response.SpecialCasePreviewResponse;
 import com.claim.claim_processing.rule.claim.DTO.response.VerifierClaimCalculationResponseDTO;
 import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
 

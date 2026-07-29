@@ -1,5 +1,6 @@
 package com.claim.claim_processing.application.service.application.impl;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,6 +82,7 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
         if (claimCalculationSummary == null) {
             claimCalculationSummary = ClaimApplicationCalculationSummary
                             .builder()
+                            .calculationEffectiveDate(request.getCalculationEffectiveDate())
                             .finalPayableAmount(request.getFinalPayableAmount())
                             .totalAmount(request.getTotalAmount())
                             .isPfEligible(request.getIsPfEligible())
@@ -93,11 +95,26 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
                             .totalPensionInterest(request.getTotalPensionInterest())
                             .recommendedBenefitType(request.getRecommendedBenefitType())
                             .createdBy(request.getCreatedBy())
+
+                            .excessOpeningBalance(request.getExcessOpeningBalance() != null ? 
+                                request.getExcessOpeningBalance() : BigDecimal.ZERO)
+                            .excessServiceAmount(request.getExcessServiceAmount() != null ? 
+                                request.getExcessServiceAmount() : BigDecimal.ZERO)
+                            .excessCutoffDate(request.getExcessCutoffDate())
+                            .excessStartDate(request.getExcessStartDate())
+                            .excessEndDate(request.getExcessEndDate())
+                            .excessTotalContributions(request.getExcessTotalContributions() != null ? 
+                                request.getExcessTotalContributions() : BigDecimal.ZERO)
+                            .excessTotalInterest(request.getExcessTotalInterest() != null ? 
+                                request.getExcessTotalInterest() : BigDecimal.ZERO)
+                            .excessEolMonths(request.getExcessEolMonths() != null ? 
+                                request.getExcessEolMonths() : 0)
                             .build();
             claimCalculationSummary.setClaimApplication(claimApplication);
         } else {
             // Update existing summary
             claimCalculationSummary.setFinalPayableAmount(request.getFinalPayableAmount());
+            claimCalculationSummary.setCalculationEffectiveDate(request.getCalculationEffectiveDate());
             claimCalculationSummary.setTotalAmount(request.getTotalAmount());
             claimCalculationSummary.setIsPfEligible(request.getIsPfEligible());
             claimCalculationSummary.setIsPensionEligible(request.getIsPensionEligible());
@@ -109,6 +126,15 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
             claimCalculationSummary.setTotalPensionInterest(request.getTotalPensionInterest());
             claimCalculationSummary.setRecommendedBenefitType(request.getRecommendedBenefitType());
             claimCalculationSummary.setUpdatedBy(request.getCreatedBy());
+
+            claimCalculationSummary.setExcessOpeningBalance(request.getExcessOpeningBalance());
+            claimCalculationSummary.setExcessServiceAmount(request.getExcessServiceAmount());
+            claimCalculationSummary.setExcessCutoffDate(request.getExcessCutoffDate());
+            claimCalculationSummary.setExcessStartDate(request.getExcessStartDate());
+            claimCalculationSummary.setExcessEndDate(request.getExcessEndDate());
+            claimCalculationSummary.setExcessTotalContributions(request.getExcessTotalContributions());
+            claimCalculationSummary.setExcessTotalInterest(request.getExcessTotalInterest());
+            claimCalculationSummary.setExcessEolMonths(request.getExcessEolMonths());
         }
 
         // 2. Save the summary first
@@ -279,40 +305,68 @@ private void storeClaimApplicationRuleEvaluation(
                         .orElseThrow(() -> new RuntimeException(
                                         "Calculation summary not found with id: " + calculationId));
 
-        // Update fields
         if (request.getFinalPayableAmount() != null) {
-            claimCalculationSummary.setFinalPayableAmount(request.getFinalPayableAmount());
-        }
-        if (request.getTotalAmount() != null) {
-            claimCalculationSummary.setTotalAmount(request.getTotalAmount());
-        }
-        if (request.getIsPfEligible() != null) {
-            claimCalculationSummary.setIsPfEligible(request.getIsPfEligible());
-        }
-        if (request.getIsPensionEligible() != null) {
-            claimCalculationSummary.setIsPensionEligible(request.getIsPensionEligible());
-        }
-        if (request.getTotalContributionMonth() != null) {
-            claimCalculationSummary.setTotalContributionMonth(request.getTotalContributionMonth());
-        }
-        if (request.getTotalNonContributionMonth() != null) {
-            claimCalculationSummary.setTotalNonContributionMonth(request.getTotalNonContributionMonth());
-        }
-        if (request.getTotalPfAmount() != null) {
-            claimCalculationSummary.setTotalPfAmount(request.getTotalPfAmount());
-        }
-        if (request.getTotalPensionAmount() != null) {
-            claimCalculationSummary.setTotalPensionAmount(request.getTotalPensionAmount());
-        }
-        if (request.getTotalPfInterest() != null) {
-            claimCalculationSummary.setTotalPfInterest(request.getTotalPfInterest());
-        }
-        if (request.getTotalPensionInterest() != null) {
-            claimCalculationSummary.setTotalPensionInterest(request.getTotalPensionInterest());
-        }
-        if (request.getRecommendedBenefitType() != null) {
-            claimCalculationSummary.setRecommendedBenefitType(request.getRecommendedBenefitType());
-        }
+        claimCalculationSummary.setFinalPayableAmount(request.getFinalPayableAmount());
+    }
+    if (request.getTotalAmount() != null) {
+        claimCalculationSummary.setTotalAmount(request.getTotalAmount());
+    }
+    if (request.getIsPfEligible() != null) {
+        claimCalculationSummary.setIsPfEligible(request.getIsPfEligible());
+    }
+    if (request.getIsPensionEligible() != null) {
+        claimCalculationSummary.setIsPensionEligible(request.getIsPensionEligible());
+    }
+    if (request.getTotalContributionMonth() != null) {
+        claimCalculationSummary.setTotalContributionMonth(request.getTotalContributionMonth());
+    }
+    if (request.getTotalNonContributionMonth() != null) {
+        claimCalculationSummary.setTotalNonContributionMonth(request.getTotalNonContributionMonth());
+    }
+    if (request.getTotalPfAmount() != null) {
+        claimCalculationSummary.setTotalPfAmount(request.getTotalPfAmount());
+    }
+    if (request.getTotalPensionAmount() != null) {
+        claimCalculationSummary.setTotalPensionAmount(request.getTotalPensionAmount());
+    }
+    if (request.getTotalPfInterest() != null) {
+        claimCalculationSummary.setTotalPfInterest(request.getTotalPfInterest());
+    }
+    if (request.getTotalPensionInterest() != null) {
+        claimCalculationSummary.setTotalPensionInterest(request.getTotalPensionInterest());
+    }
+    if (request.getRecommendedBenefitType() != null) {
+        claimCalculationSummary.setRecommendedBenefitType(request.getRecommendedBenefitType());
+    }
+    
+    // ================================================================
+    // EXCESS SERVICE FIELDS WITH NULL SAFETY
+    // ================================================================
+    
+    if (request.getExcessOpeningBalance() != null) {
+        claimCalculationSummary.setExcessOpeningBalance(request.getExcessOpeningBalance());
+    }
+    if (request.getExcessServiceAmount() != null) {
+        claimCalculationSummary.setExcessServiceAmount(request.getExcessServiceAmount());
+    }
+    if (request.getExcessCutoffDate() != null) {
+        claimCalculationSummary.setExcessCutoffDate(request.getExcessCutoffDate());
+    }
+    if (request.getExcessStartDate() != null) {
+        claimCalculationSummary.setExcessStartDate(request.getExcessStartDate());
+    }
+    if (request.getExcessEndDate() != null) {
+        claimCalculationSummary.setExcessEndDate(request.getExcessEndDate());
+    }
+    if (request.getExcessTotalContributions() != null) {
+        claimCalculationSummary.setExcessTotalContributions(request.getExcessTotalContributions());
+    }
+    if (request.getExcessTotalInterest() != null) {
+        claimCalculationSummary.setExcessTotalInterest(request.getExcessTotalInterest());
+    }
+    if (request.getExcessEolMonths() != null) {
+        claimCalculationSummary.setExcessEolMonths(request.getExcessEolMonths());
+    }
         
         claimCalculationSummary.setUpdatedBy(request.getCreatedBy());
 

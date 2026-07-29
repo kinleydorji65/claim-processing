@@ -5,10 +5,7 @@ import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicat
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationWorkflowRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.GeneralClaimApproverRequestDto;
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto;
-import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto.LedgerEntryResponseDto;
 import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
-import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimBankResponseDto;
-import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimCalculationSummaryResponseDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimForfeitedComponentResponseDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.GeneralClaimDetailResponse;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
@@ -51,8 +48,6 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import com.claim.claim_processing.integration.client.PensionServiceClient;
 import com.claim.claim_processing.integration.dto.PensionAutoTriggerRequestDto;
 import com.claim.claim_processing.integration.dto.PensionAutoTriggerResponseDto;
-import com.claim.claim_processing.rule.pension.dto.PensionDetailRequestDto;
-import com.claim.claim_processing.rule.pension.dto.PensionDetailResponseDTO;
 import com.claim.claim_processing.rule.pension.service.PensionService;
 
 import lombok.RequiredArgsConstructor;
@@ -66,7 +61,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -211,7 +205,7 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                                         request.getCalculationSummary().getForFeitedComponents());
                         log.info("Saved forfeited components for claim: {}", claimApplication.getApplicationNumber());
                 }
-                
+
                 // Build response
                 GeneralClaimResponse response = null;
                 GeneralClaimDetailResponse claimDetailResponse = null;
@@ -219,7 +213,8 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                 if (claimApplication.getIsSpecialCase().toString().equals("N")) {
                         response = buildGeneralClaimResponse(claimApplication);
                         System.out.println("here is claim build response: " + response.getAgencyCode());
-                        MemberDetail member = memberRepository.findByNppfNumber(claimApplication.getNppfNumber()).orElse(null);
+                        MemberDetail member = memberRepository.findByNppfNumber(claimApplication.getNppfNumber())
+                                        .orElse(null);
                         member.setRoleId(32L);
                         memberRepository.saveAndFlush(member);
                         // Create claim detail
@@ -251,39 +246,52 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
 
         private void saveToReserveAccount(GeneralClaimDetailResponse claimDetailResponse, String createdBy) {
                 try {
-                        // Get forfeited components
                         List<ClaimForfeitedComponentResponseDto> forfeitedComponents = claimDetailResponse
                                         .getForfeitedComponents();
 
-                        // Get lapse amount from accounting event
-                        BigDecimal lapseAmount = BigDecimal.ZERO;
-                        AccountingEventResponseDto accountingEvent = claimDetailResponse.getAccountingEventDetail();
+                        if (forfeitedComponents == null || forfeitedComponents.isEmpty()) {
+                                System.out.println("No forfeited components found, skipping reserve account creation");
+                                return;
+                        }
 
                         System.out.println("========== DEBUG: saveToReserveAccount ==========");
-                        System.out.println("Accounting Event is null: " + (accountingEvent == null));
+                        System.out.println("Forfeited components count: " + forfeitedComponents.size());
 
-                        if (forfeitedComponents != null && !forfeitedComponents.isEmpty()) {
-                                System.out.println(
-                                                "Ledger entries count: " + accountingEvent.getLedgerEntries().size());
+                        for (ClaimForfeitedComponentResponseDto forfeited : forfeitedComponents) {
+                                BigDecimal amount = forfeited.getAmount() != null ? forfeited.getAmount()
+                                                : BigDecimal.ZERO;
 
-                                // Find LAPSE entry by checking entryRole
-                                for (ClaimForfeitedComponentResponseDto forfeitedComponent : forfeitedComponents) {
-                                        ReserveAccountRequestDto reserveRequest = ReserveAccountRequestDto.builder()
-                                        .memberCode(claimDetailResponse.getMemberCode())
-                                        .nppfNumber(claimDetailResponse.getNppfNumber())
-                                        .identityNumber(claimDetailResponse.getIdentityNumber())
-                                        .agencyCategoryId(claimDetailResponse.getMemberCategoryId())
-                                        .agencyCode(claimDetailResponse.getAgencyCode())
-                                        .reserveType("FORFEITED")
-                                        .totalAmount(forfeitedComponent.getAmount())
-                                        .forfeitedAmount(forfeitedComponent.getAmount()) // For individual component, both are the same
-                                        .componentCode(forfeitedComponent.getComponentCode())
-                                        .build();
-
-                        ApiResponseDTO<ReserveAccountResponseDto> response = reserveAccountService
-                                        .create(reserveRequest);
+                                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                                        continue;
                                 }
 
+                                System.out.println("Processing forfeited component: " + forfeited.getComponentCode() +
+                                                " = " + amount);
+
+                                // Create ONE reserve account for EACH component (singular)
+                                ReserveAccountRequestDto reserveRequest = ReserveAccountRequestDto.builder()
+                                                .memberCode(claimDetailResponse.getMemberCode())
+                                                .nppfNumber(claimDetailResponse.getNppfNumber())
+                                                .identityNumber(claimDetailResponse.getIdentityNumber())
+                                                .agencyCategoryId(claimDetailResponse.getMemberCategoryId())
+                                                .agencyCode(claimDetailResponse.getAgencyCode())
+                                                .reserveType("FORFEITED")
+                                                .totalAmount(amount)
+                                                .forfeitedAmount(amount)
+                                                .componentCode(forfeited.getComponentCode()) // SINGLE component code
+                                                .build();
+
+                                ApiResponseDTO<ReserveAccountResponseDto> response = reserveAccountService
+                                                .create(reserveRequest);
+
+                                if (response != null && response.getData() != null) {
+                                        System.out.println("✅ Reserve account created for " +
+                                                        forfeited.getComponentCode() + ": "
+                                                        + response.getData().getId());
+                                } else {
+                                        System.out.println("❌ Failed to create reserve account for " +
+                                                        forfeited.getComponentCode());
+                                }
                         }
 
                 } catch (Exception e) {
@@ -293,125 +301,157 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                 }
         }
 
-        private void triggerPensionAutoInitiation(ClaimApplication claimApplication, String approvedBy) {
-                try {
-
-                        System.out.println("i am here jangtha: ");
-                        if (claimApplication.getPensionApplicationRef() != null) {
-                                log.info("Pension already auto-initiated for claim {} (ref {}), skipping",
-                                                claimApplication.getApplicationNumber(),
-                                                claimApplication.getPensionApplicationRef());
-                                return;
-                        }
-
-                        boolean isNormalClaim = claimApplication.getClaimType() != null
-                                        && "NORMAL_CLAIM".equalsIgnoreCase(claimApplication.getClaimType().getCode());
-                        boolean isTierOne = claimApplication.getSchemeType() != null
-                                        && "T1".equalsIgnoreCase(claimApplication.getSchemeType().getCode());
-
-                        if (!isNormalClaim || !isTierOne) {
-                                return;
-                        }
-
-                        NormalClaimDetail detail = claimApplication.getNormalClaimDetail();
-                        if (detail == null) {
-                                log.error("NORMAL_CLAIM {} has no NormalClaimDetail — cannot auto-trigger pension",
-                                                claimApplication.getApplicationNumber());
-                                claimApplication.setPensionTriggerStatus("FAILED");
-                                claimApplicationRepository.save(claimApplication);
-                                return;
-                        }
-
-                        String pensionType = resolvePensionType(detail.getCessationType() != null
-                                        ? detail.getCessationType().getCode() : null);
-                        if (pensionType == null) {
-                                log.info("Cessation type {} has no auto-trigger mapping for claim {} — skipping",
-                                                detail.getCessationType() != null ? detail.getCessationType().getCode() : "null",
-                                                claimApplication.getApplicationNumber());
-                                return;
-                        }
-
-                        LocalDate exitDate = detail.getCessationEffectiveDate();
-                        if (exitDate == null) {
-                                log.error("No usable exit date on claim {} — cannot auto-trigger pension",
-                                                claimApplication.getApplicationNumber());
-                                claimApplication.setPensionTriggerStatus("FAILED");
-                                claimApplicationRepository.save(claimApplication);
-                                return;
-                        }
-
-                        ClaimApplicationBankDetail bankDetail = null;
-                        if (claimApplication.getBankDetails() != null && !claimApplication.getBankDetails().isEmpty()) {
-                                bankDetail = claimApplication.getBankDetails().stream()
-                                                .filter(b -> b.getIsDefaultBank() == ActivityEnum.Y)
-                                                .findFirst()
-                                                .orElse(claimApplication.getBankDetails().get(0));
-                        }
-
-                        List<ClaimApplicationCalculationComponent> calculationComponents =
-                                        calculationComponentRepository
-                                                        .findByRuleEvaluation_CalculationSummary_ClaimApplication_Id(
-                                                                        claimApplication.getId());
-                        List<PensionAutoTriggerRequestDto.ComponentDto> componentDtos = calculationComponents.stream()
-                                        .map(c -> PensionAutoTriggerRequestDto.ComponentDto.builder()
-                                                        .id(c.getId())
-                                                        .code(c.getComponentCode())
-                                                        .name(c.getComponentMaster() != null
-                                                                        ? c.getComponentMaster().getName() : null)
-                                                        .amount(c.getAmount())
-                                                        .build())
-                                        .toList();
-
-                        PensionAutoTriggerRequestDto pensionRequest = PensionAutoTriggerRequestDto.builder()
-                                        .memberCode(claimApplication.getMemberCode())
-                                        .agencyCode(claimApplication.getAgencyCode())
-                                        .pensionType(pensionType)
-                                        .exitDate(exitDate)
-                                        .exitReason(detail.getCessationType() != null ? detail.getCessationType().getName() : null)
-                                        .pfSettlementClaimId(claimApplication.getId())
-                                        .remarks("Auto-initiated on claim approval by " + approvedBy)
-                                        .finalBasicSalary(detail.getFinalBasicSalary())
-                                        .dateOfServiceJoining(detail.getDateOfServiceJoining())
-                                        .bankTypeId(bankDetail != null && bankDetail.getBankType() != null
-                                                        ? bankDetail.getBankType().getBankTypeId() : null)
-                                        .bankName(bankDetail != null && bankDetail.getBankType() != null
-                                                        ? bankDetail.getBankType().getBankTypeName() : null)
-                                        .bankAccountNumber(bankDetail != null ? bankDetail.getAccountNumber() : null)
-                                        .accountHolderName(bankDetail != null ? bankDetail.getAccountHolderName() : null)
-                                        .ifscOrRoutingCode(bankDetail != null ? bankDetail.getIfscOrRoutingCode() : null)
-                                        .components(componentDtos)
-                                        .build();
-
-                        PensionAutoTriggerResponseDto response = pensionServiceClient.triggerPfClaimApproved(pensionRequest);
-
-                        if (response != null && response.getApplicationNo() != null) {
-                                claimApplication.setPensionApplicationRef(response.getApplicationNo());
-                                claimApplication.setPensionTriggerStatus("SENT");
-                                log.info("Pension application {} auto-initiated for claim {}",
-                                                response.getApplicationNo(), claimApplication.getApplicationNumber());
-                        } else {
-                                claimApplication.setPensionTriggerStatus("FAILED");
-                                log.error("Pension auto-initiation failed for claim {} — added to retry worklist",
-                                                claimApplication.getApplicationNumber());
-                        }
-                        claimApplicationRepository.save(claimApplication);
-
-                } catch (Exception e) {
-                        System.out.println("Unexpected error auto-initiating pension for claim: " + e.getMessage());
-                        log.error("Unexpected error auto-initiating pension for claim {}: {}",
-                                        claimApplication.getApplicationNumber(), e.getMessage(), e);
-                }
+private void triggerPensionAutoInitiation(ClaimApplication claimApplication, String approvedBy) {
+    try {
+        log.info("=== STARTING PENSION AUTO-INITIATION ===");
+        log.info("Claim Application Number: {}, Claim ID: {}, MemberCode: {}", 
+                claimApplication.getApplicationNumber(), 
+                claimApplication.getId(),
+                claimApplication.getMemberCode());
+        
+        if (claimApplication.getPensionApplicationRef() != null) {
+            log.info("Pension already auto-initiated for claim {} (ref {}), skipping",
+                    claimApplication.getApplicationNumber(),
+                    claimApplication.getPensionApplicationRef());
+            return;
         }
 
+        boolean isNormalClaim = claimApplication.getClaimType() != null
+                        && "NORMAL_CLAIM".equalsIgnoreCase(claimApplication.getClaimType().getCode());
+        boolean isTierOne = claimApplication.getSchemeType() != null
+                        && "T1".equalsIgnoreCase(claimApplication.getSchemeType().getCode());
+
+        if (!isNormalClaim || !isTierOne) {
+            return;
+        }
+
+        NormalClaimDetail detail = claimApplication.getNormalClaimDetail();
+        if (detail == null) {
+            log.error("NORMAL_CLAIM {} has no NormalClaimDetail", claimApplication.getApplicationNumber());
+            claimApplication.setPensionTriggerStatus("FAILED");
+            claimApplicationRepository.saveAndFlush(claimApplication);
+            return;
+        }
+
+        String pensionType = resolvePensionType(detail.getCessationType() != null
+                        ? detail.getCessationType().getCode() : null);
+        if (pensionType == null) {
+            log.info("Cessation type has no auto-trigger mapping for claim {}", claimApplication.getApplicationNumber());
+            return;
+        }
+
+        LocalDate exitDate = detail.getCessationEffectiveDate();
+        if (exitDate == null) {
+            log.error("No exit date on claim {}", claimApplication.getApplicationNumber());
+            claimApplication.setPensionTriggerStatus("FAILED");
+            claimApplicationRepository.saveAndFlush(claimApplication);
+            return;
+        }
+
+        ClaimApplicationBankDetail bankDetail = null;
+        if (claimApplication.getBankDetails() != null && !claimApplication.getBankDetails().isEmpty()) {
+            bankDetail = claimApplication.getBankDetails().stream()
+                            .filter(b -> b.getIsDefaultBank() == ActivityEnum.Y)
+                            .findFirst()
+                            .orElse(claimApplication.getBankDetails().get(0));
+        }
+
+        List<ClaimApplicationCalculationComponent> calculationComponents =
+                        calculationComponentRepository
+                                        .findByRuleEvaluation_CalculationSummary_ClaimApplication_Id(
+                                                        claimApplication.getId());
+
+        List<PensionAutoTriggerRequestDto.ComponentDto> componentDtos = calculationComponents.stream()
+                .filter(c -> c.getComponentCode() != null && c.getComponentCode().startsWith("P_"))
+                .map(c -> PensionAutoTriggerRequestDto.ComponentDto.builder()
+                                .id(c.getId())
+                                .code(c.getComponentCode())
+                                .name(c.getComponentMaster() != null
+                                                ? c.getComponentMaster().getName() : c.getComponentCode())
+                                .amount(c.getAmount())
+                                .build())
+                .toList();
+
+        if (componentDtos.isEmpty()) {
+            log.error("No pension components found for claim {}", claimApplication.getApplicationNumber());
+            claimApplication.setPensionTriggerStatus("FAILED");
+            claimApplicationRepository.saveAndFlush(claimApplication);
+            return;
+        }
+
+        // ✅ FIX: Convert dates to strings
+        String exitDateStr = exitDate.toString(); // "2026-07-23"
+        String joiningDateStr = detail.getDateOfServiceJoining() != null 
+                ? detail.getDateOfServiceJoining().toString() 
+                : null;
+
+        // ✅ FIX: If the DTO expects String for dates, you need to use a different approach
+        // Since the DTO has LocalDate fields, we need to use them as LocalDate
+        
+        // But if the DTO expects String, you need to create a new DTO with String fields
+        // OR use the ObjectMapper approach in PensionServiceClient
+
+        // ✅ Build the request with LocalDate (will be serialized correctly now)
+        PensionAutoTriggerRequestDto pensionRequest = PensionAutoTriggerRequestDto.builder()
+                        .memberCode(claimApplication.getMemberCode())
+                        .agencyCode(claimApplication.getAgencyCode())
+                        .pensionType(pensionType)
+                        .exitDate(exitDate)  // LocalDate
+                        .exitReason(detail.getCessationType() != null ? detail.getCessationType().getName() : null)
+                        .pfSettlementClaimId(claimApplication.getId())
+                        .remarks("Auto-initiated on claim approval by " + approvedBy)
+                        .finalBasicSalary(detail.getFinalBasicSalary())
+                        .dateOfServiceJoining(detail.getDateOfServiceJoining())  // LocalDate
+                        .bankTypeId(bankDetail != null && bankDetail.getBankType() != null
+                                        ? bankDetail.getBankType().getBankTypeId() : null)
+                        .bankName(bankDetail != null && bankDetail.getBankType() != null
+                                        ? bankDetail.getBankType().getBankTypeName() : null)
+                        .bankAccountNumber(bankDetail != null ? bankDetail.getAccountNumber() : null)
+                        .accountHolderName(bankDetail != null ? bankDetail.getAccountHolderName() : null)
+                        // ✅ Fix: Send empty string instead of null
+                        .ifscOrRoutingCode(bankDetail != null && bankDetail.getIfscOrRoutingCode() != null 
+                                        ? bankDetail.getIfscOrRoutingCode() : "")
+                        .components(componentDtos)
+                        .build();
+
+        // Log the request
+        log.info("=== PENSION AUTO-TRIGGER REQUEST ===");
+        log.info("exitDate: {}", exitDateStr);
+        log.info("dateOfServiceJoining: {}", joiningDateStr);
+
+        // Send request
+        PensionAutoTriggerResponseDto response = pensionServiceClient.triggerPfClaimApproved(pensionRequest);
+
+        if (response != null && response.getApplicationNo() != null) {
+            claimApplication.setPensionApplicationRef(response.getApplicationNo());
+            claimApplication.setPensionTriggerStatus("SENT");
+            claimApplicationRepository.saveAndFlush(claimApplication);
+            log.info("✅ Pension application {} auto-initiated for claim {}",
+                            response.getApplicationNo(), claimApplication.getApplicationNumber());
+        } else {
+            claimApplication.setPensionTriggerStatus("FAILED");
+            claimApplicationRepository.saveAndFlush(claimApplication);
+            log.error("❌ Pension service returned null or empty response for claim {}", 
+                    claimApplication.getApplicationNumber());
+        }
+
+    } catch (Exception e) {
+        log.error("=== PENSION AUTO-INITIATION FAILED ===");
+        log.error("Exception Message: {}", e.getMessage());
+        log.error("Full stack trace: ", e);
+        claimApplication.setPensionTriggerStatus("FAILED");
+        claimApplicationRepository.saveAndFlush(claimApplication);
+    }
+}
         private String resolvePensionType(String cessationTypeCode) {
                 if (cessationTypeCode == null) {
                         return null;
                 }
                 return switch (cessationTypeCode.toUpperCase()) {
-                        case "RETIREMENT", "SUPERANNUATION" -> "MEMBER_NORMAL";
-                        case "EARLY_RETIREMENT" -> "MEMBER_EARLY";
-                        case "MEDICAL_GROUND" -> "MEMBER_DISABILITY";
-                        default -> null;
+                case "RETIREMENT", "SUPERANNUATION" -> "MEMBER_NORMAL";
+                case "EARLY_RETIREMENT" -> "MEMBER_EARLY";
+                case "MEDICAL_GROUND" -> "MEMBER_DISABILITY";
+                default -> null;
                 };
         }
 

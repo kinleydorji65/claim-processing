@@ -1,6 +1,6 @@
 package com.claim.claim_processing.application.controller.application;
 
-import com.claim.claim_processing.application.service.application.ValidateComponent;
+import com.claim.claim_processing.application.service.application.ValidateComponentService;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ValidateComponentController {
 
-    private final ValidateComponent validateComponentService;
+    private final ValidateComponentService validateComponentService;
 
     /**
      * Validate component by NPPF number and component name

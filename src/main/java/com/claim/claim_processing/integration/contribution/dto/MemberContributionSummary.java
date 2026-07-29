@@ -3,9 +3,9 @@ package com.claim.claim_processing.integration.contribution.dto;
 import lombok.Builder;
 import lombok.Data;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -23,31 +23,33 @@ public class MemberContributionSummary {
     private BigDecimal totalPrincipalAmount;
     private BigDecimal totalInterestAmount;
     private BigDecimal totalBalance;
+    private BigDecimal rate;
 
     @JsonProperty("components")
     @JsonAlias({ "componentGroups", "components" })
     private List<ComponentGroup> componentGroups;
 
-    // ========== NEW: As-Of-Date Fields (MISSING) ==========
-    private LocalDate asOfDate;                    // ← MISSING
-    private String latestSnapshotYear;             // ← MISSING
-    private String currentAccountingYear;          // ← MISSING
-    private BigDecimal openingBalanceFromSnapshot; // ← MISSING
+    // ========== As-Of-Date Fields ==========
+    private LocalDate asOfDate;
+    private String currentAccountingYear;
 
-    // ========== NEW: Excess Service Fields ==========
-    private BigDecimal excessServiceAmount;
-    private LocalDate cutoffServiceDate;
-    private Integer cutoffYears;
-    private LocalDate excessStartDate;
-    private LocalDate excessEndDate;
-    private Integer totalEOLMonths;
-    private Integer eolMonthsInExcess;
-    private BigDecimal totalContributionsInExcess;
-    private BigDecimal totalInterestInExcess;
-    private String excessStatus;
-    private String excessMessage;
-    private List<ExcessYearDetail> excessYearDetails;
-    private List<ExcessMonthlyDetail> excessMonthlyDetails;
+    // ========== Opening Balances ==========
+    // PF (Provident Fund) Opening Balances
+    private BigDecimal openingPfMc;    // PF Member Contribution
+    private BigDecimal openingPfEc;    // PF Employer Contribution
+    private BigDecimal openingPfImc;   // PF Interest on Member Contribution
+    private BigDecimal openingPfIec;   // PF Interest on Employer Contribution
+    
+    // P (Pension) Opening Balances
+    private BigDecimal openingPMc;     // P Member Contribution
+    private BigDecimal openingPEc;     // P Employer Contribution
+    private BigDecimal openingPImc;    // P Interest on Member Contribution
+    private BigDecimal openingPIec;    // P Interest on Employer Contribution
+
+    // ================================================================
+    // ✅ EXCESS SERVICE - Using ExcessServiceResultDto
+    // ================================================================
+    private ExcessServiceResultDto excessService;
 
     // ========== Inner Classes ==========
     @Data
@@ -60,84 +62,34 @@ public class MemberContributionSummary {
         private BigDecimal totalAmount;
     }
 
-    @Data
-    @Builder
-    public static class ExcessYearDetail {
-        private String accountingYear;
-        private String yearType;
-        private BigDecimal openingBalance;
-        private BigDecimal interestOnOpening;
-        private BigDecimal duringTheYear;
-        private BigDecimal closingBalance;
-        private BigDecimal interestRate;
-        private LocalDate interestDate;
-        private Integer daysInYear;
-        private Integer eolMonthsInYear;
-        private BigDecimal yearlyContributions;
-        private BigDecimal yearlyInterest;
-        private List<ExcessMonthlyDetail> monthlyDetails;
-    }
-
-    @Data
-    @Builder
-    public static class ExcessMonthlyDetail {
-        private String dueMonth;
-        private LocalDate invoiceDate;
-        private BigDecimal mpc;
-        private BigDecimal epc;
-        private BigDecimal totalPension;
-        private Integer days;
-        private BigDecimal interest;
-        private BigDecimal cPlusI;
-        private boolean isEOL;
-    }
-
     // ========== Helper Methods ==========
+    
     public boolean hasExcessService() {
-        return excessServiceAmount != null
-                && excessServiceAmount.compareTo(BigDecimal.ZERO) > 0
-                && "CALCULATED".equals(excessStatus);
+        return excessService != null 
+                && excessService.isEligible() 
+                && excessService.getTotalExcessAmount() != null
+                && excessService.getTotalExcessAmount().compareTo(BigDecimal.ZERO) > 0;
     }
 
     public BigDecimal getTotalPayableWithExcess() {
         BigDecimal total = totalBalance != null ? totalBalance : BigDecimal.ZERO;
-        if (hasExcessService()) {
-            total = total.add(excessServiceAmount);
+        if (hasExcessService() && excessService.getTotalExcessAmount() != null) {
+            total = total.add(excessService.getTotalExcessAmount());
         }
         return total;
     }
 
-    // ========== Additional Helper Methods ==========
-    
-    /**
-     * Check if this calculation is based on current date or a specific date
-     */
     public boolean isAsOfCurrentDate() {
         return asOfDate != null && asOfDate.equals(LocalDate.now());
     }
     
-    /**
-     * Get the current year contribution total (principal + interest)
-     */
-    public BigDecimal getCurrentYearTotal() {
-        if (openingBalanceFromSnapshot == null || totalBalance == null) {
-            return BigDecimal.ZERO;
-        }
-        return totalBalance.subtract(openingBalanceFromSnapshot);
-    }
-    
-    /**
-     * Get the percentage of excess service
-     */
-    public BigDecimal getExcessPercentage() {
-        if (totalBalance == null || totalBalance.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
+    public String getExcessSummary() {
         if (!hasExcessService()) {
-            return BigDecimal.ZERO;
+            return "No excess service";
         }
-        return excessServiceAmount
-            .divide(totalBalance, 4, RoundingMode.HALF_UP)
-            .multiply(BigDecimal.valueOf(100));
+        return String.format("Excess service: %.2f from %s to %s",
+            excessService.getTotalExcessAmount(),
+            excessService.getExcessStartDate(),
+            excessService.getExcessEndDate());
     }
 }

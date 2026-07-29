@@ -24,6 +24,7 @@ public interface ClaimApplicationRepository extends JpaRepository<ClaimApplicati
 
     List<ClaimApplication> findByClaimType_Id(Long claimTypeId);
 
+    List<ClaimApplication> findByStatus_StatusIdIn(List<Long> statusIds);
     List<ClaimApplication> findByStatus_StatusId(Long statusId);
 
     List<ClaimApplication> findByCurrentStage_Id(Long currentStageId);

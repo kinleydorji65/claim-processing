@@ -36,6 +36,12 @@ public class ClaimApplicationCalculationSummaryResponseDto {
     private String isPensionEligible;
 
     private Integer totalContributionMonth;
+    private Integer totalNonContributionMonth;
+
+    private BigDecimal totalPfAmount;
+    private BigDecimal totalPensionAmount;
+    private BigDecimal totalPfInterest;
+    private BigDecimal totalPensionInterest;
 
     private String recommendedBenefitType;
 
@@ -44,6 +50,26 @@ public class ClaimApplicationCalculationSummaryResponseDto {
     private ActivityEnum isActive;
 
     private List<ClaimApplicationRuleEvaluationListDto> ruleEvaluations;
+
+    // ================================================================
+    // EXCESS SERVICE FIELDS
+    // ================================================================
+    
+    private BigDecimal excessOpeningBalance;
+    private BigDecimal excessServiceAmount;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate excessCutoffDate;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate excessStartDate;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate excessEndDate;
+    
+    private BigDecimal excessTotalContributions;
+    private BigDecimal excessTotalInterest;
+    private Integer excessEolMonths;
 
     private String createdBy;
 

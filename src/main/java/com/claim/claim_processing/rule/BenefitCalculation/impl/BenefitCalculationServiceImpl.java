@@ -209,13 +209,13 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                     totalPfInterestAmount = totalPfInterestAmount.add(amount);
                     break;
 
-                case "PC_MC":
-                case "PC_EC":
+                case "P_MC":
+                case "P_EC":
                     totalPensionAmount = totalPensionAmount.add(amount);
                     break;
 
-                case "PC_IMC":
-                case "PC_IEC":
+                case "P_IMC":
+                case "P_IEC":
                     totalPensionInterestAmount = totalPensionInterestAmount.add(amount);
                     break;
 
@@ -273,7 +273,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                         ? EligibilityEnum.ELIGIBLE
                         : EligibilityEnum.NOT_ELIGIBLE)
                 .pensionIsEligible(vestingResult != null && vestingResult.getRefundTypeName() != null
-                        && vestingResult.getRefundTypeName().equals("PENSION")
+                        && vestingResult.getRefundTypeName().equals("Pension")
                                 ? EligibilityEnum.ELIGIBLE
                                 : EligibilityEnum.NOT_ELIGIBLE)
                 .eligibilityNote(eligibilityNote)

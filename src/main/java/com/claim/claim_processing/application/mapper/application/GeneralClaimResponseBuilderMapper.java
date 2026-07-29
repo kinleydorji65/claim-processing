@@ -41,7 +41,7 @@ public class GeneralClaimResponseBuilderMapper {
 
                 .memberCategoryId(entity.getMemberCategory() != null ? entity.getMemberCategory().getCategoryId() : null)
                 .memberCategoryName(entity.getMemberCategory() != null ? entity.getMemberCategory().getCategoryName() : null)
-
+                .identityNumber(entity.getIdentityNumber())
                 .employmentType(entity.getEmploymentType())
                 .memberCode(entity.getMemberCode())
                 .nppfNumber(entity.getNppfNumber())

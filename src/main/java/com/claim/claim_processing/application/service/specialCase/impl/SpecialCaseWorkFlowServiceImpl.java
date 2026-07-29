@@ -37,6 +37,7 @@ import com.claim.claim_processing.application.repository.application.ClaimSpecia
 import com.claim.claim_processing.application.repository.workFlow.ClaimApplicationApprovalRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationBankDetailService;
 import com.claim.claim_processing.application.service.application.ClaimApplicationService;
+import com.claim.claim_processing.application.service.application.ValidateComponentService;
 import com.claim.claim_processing.application.service.claimDetail.SpecialCaseService;
 import com.claim.claim_processing.application.service.specialCase.ClaimSpecialCaseApplicationService;
 import com.claim.claim_processing.application.service.specialCase.SpecialCaseLedgerService;
@@ -49,6 +50,7 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.repository.contribution.ComponentMasterRepository;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
+import com.claim.claim_processing.common.service.claim.ReserveAccountService;
 import com.claim.claim_processing.document.service.DocumentMasterService;
 import com.claim.claim_processing.exceptions.ClaimException;
 
@@ -80,6 +82,7 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
     // ADD THESE MISSING DEPENDENCIES
     private final ClaimApplicationApprovalRepository approvalRepository;
     private final ClaimApplicationApprovalMapper approvalMapper;
+    private final ValidateComponentService validateComponentService;
 
     @Override
     @Transactional
@@ -304,11 +307,7 @@ public class SpecialCaseWorkFlowServiceImpl implements SpecialCaseWorkFlowServic
 
             // 11. CREATE WORKFLOW ENTRY FOR APPROVAL
             createApprovalWorkflowEntry(claimApplication, request);
-
-            long duration = System.currentTimeMillis() - startTime;
-            log.info("========== END: approveSpecialCase SUCCESS for application: {} (duration: {} ms) ==========",
-                    applicationNumber, duration);
-
+            validateComponentService.updateComponents(specialCaseResponseDTO.getNppfNumber(), specialCaseResponseDTO.getSpecialCaseDetail().getComponents());
             return ApiResponseDTO.success(specialCaseResponseDTO);
 
         } catch (Exception e) {

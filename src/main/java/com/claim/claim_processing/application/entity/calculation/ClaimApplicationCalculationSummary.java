@@ -65,6 +65,34 @@ public class ClaimApplicationCalculationSummary {
     @Column(name = "BENEFIT_TYPE", length = 2000)
     private String recommendedBenefitType;
 
+    // ================================================================
+    // EXCESS SERVICE FIELDS
+    // ================================================================
+
+    @Column(name = "EXCESS_OPENING_BALANCE", precision = 15, scale = 2)
+    private BigDecimal excessOpeningBalance;
+
+    @Column(name = "EXCESS_SERVICE_AMOUNT", precision = 15, scale = 2)
+    private BigDecimal excessServiceAmount;
+
+    @Column(name = "EXCESS_CUTOFF_DATE")
+    private LocalDate excessCutoffDate;
+
+    @Column(name = "EXCESS_START_DATE")
+    private LocalDate excessStartDate;
+
+    @Column(name = "EXCESS_END_DATE")
+    private LocalDate excessEndDate;
+
+    @Column(name = "EXCESS_TOTAL_CONTRIBUTIONS", precision = 15, scale = 2)
+    private BigDecimal excessTotalContributions;
+
+    @Column(name = "EXCESS_TOTAL_INTEREST", precision = 15, scale = 2)
+    private BigDecimal excessTotalInterest;
+
+    @Column(name = "EXCESS_EOL_MONTHS")
+    private Integer excessEolMonths;
+
     @Column(name = "CREATED_BY", length = 100)
     private String createdBy;
 

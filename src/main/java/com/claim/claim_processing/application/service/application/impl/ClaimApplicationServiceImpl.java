@@ -63,7 +63,7 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
         validateCreateRequest(request);
 
         ClaimApplication entity = claimApplicationMapper.toEntity(request);
-
+        entity.setIdentityNumber(request.getIdentityNumber());
         resolveAndSetForeignKeys(entity, request);
         entity.setApplicationNumber(
                 masterCodeGenClient.generateCode(applicationCodeType, claimPrefix));
@@ -163,8 +163,8 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
     @Override
     @Transactional(readOnly = true)
     public List<ClaimApplication> getAll() {
-
-        List<ClaimApplication> response = claimApplicationRepository.findAll();
+        List<Long> statusIds = List.of(63L, 4L, 8L, 2L);
+        List<ClaimApplication> response = claimApplicationRepository.findByStatus_StatusIdIn(statusIds);
         response.stream().map(m -> {
             m.getIsSpecialCase().toString().equals("N");
             return m;

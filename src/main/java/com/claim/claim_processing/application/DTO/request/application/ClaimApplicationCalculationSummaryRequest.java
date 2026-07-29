@@ -29,6 +29,15 @@ public class ClaimApplicationCalculationSummaryRequest {
     private String updatedBy;
     private Timestamp updatedAt;
 
+    private BigDecimal excessOpeningBalance;
+    private BigDecimal excessServiceAmount;
+    private LocalDate excessCutoffDate;
+    private LocalDate excessStartDate;
+    private LocalDate excessEndDate;
+    private BigDecimal excessTotalContributions;
+    private BigDecimal excessTotalInterest;
+    private Integer excessEolMonths;
+
     private List<ClaimApplicationRuleEvaluationRequestDto> ruleEvaluations;
     private List<ClaimApplicationForfeitedComponentRequestDto> forFeitedComponents;
     private ClaimApplicationDeductionRequestDto deductionDetail;

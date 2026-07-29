@@ -29,6 +29,11 @@ public interface ReserveAccountRepository extends JpaRepository<ReserveAccount, 
         String componentCode, 
         String isActive
     );
+    Optional<ReserveAccount> findByNppfNumberAndComponentCodeAndIsActive(
+        String nppfNumber, 
+        String componentCode, 
+        String isActive
+    );
     /**
      * Find reserve accounts by identity number (CID/Passport/Work Permit)
      */
@@ -45,8 +50,9 @@ public interface ReserveAccountRepository extends JpaRepository<ReserveAccount, 
     /**
      * Check if reserve account exists by identity number and account code
      */
-    boolean existsByIdentityNumber(
-            String identityNumber
+    boolean existsByIdentityNumberAndComponentCode(
+            String identityNumber,
+            String componentCode
     );
 
     /**

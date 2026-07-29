@@ -254,13 +254,15 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                     break;
             }
         }
-
+        
         BigDecimal grossPayableAmount = finalComponents.stream()
                 .filter(Objects::nonNull)
                 .map(ComponentBalanceDTO::getAmount)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+                
+        totalAmount = calculateTotalAmount(eligibleComponents, forfeitedComponents);
+System.out.println("Total Amount (Eligible + Forfeited): " + totalAmount);
         LoanAdjustmentResultDto loanAdjustmentResult = null;
         RentalAdjustmentResultDto rentalAdjustmentResult = null;
         BigDecimal finalPayableAmount = grossPayableAmount;
@@ -394,7 +396,11 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                 totalPfAmount,
                 totalPensionAmount);
 
-        VerifierClaimCalculationResponseDTO response = VerifierClaimCalculationResponseDTO.builder()
+        // ================================================================
+        // ✅ BUILD RESPONSE WITH EXCESS SERVICE
+        // ================================================================
+        VerifierClaimCalculationResponseDTO.VerifierClaimCalculationResponseDTOBuilder responseBuilder = 
+                VerifierClaimCalculationResponseDTO.builder()
                 .nppfNumber(contributionSummary != null ? contributionSummary.getNppfNumber() : null)
                 .contributionStartDate(
                         contributionSummary != null
@@ -413,8 +419,17 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                                 ? contributionSummary.getTotalNonContributionMonths()
                                 : null)
                 .loanAdjustmentResult(loanAdjustmentResult)
+                .openingPfMc(contributionSummary.getOpeningPfMc())    // PF Member Contribution
+                .openingPfEc(contributionSummary.getOpeningPEc())    // PF Employer Contribution
+                .openingPfImc(contributionSummary.getOpeningPImc())   // PF Interest on Member Contribution
+                .openingPfIec(contributionSummary.getOpeningPfIec())  
+                .openingPMc(contributionSummary.getOpeningPMc())     // P Member Contribution
+                .openingPEc(contributionSummary.getOpeningPEc())     // P Employer Contribution
+                .openingPImc(contributionSummary.getOpeningPImc())    // P Interest on Member Contribution
+                .openingPIec(contributionSummary.getOpeningPIec())
+                .interestRate(contributionSummary.getRate())
                 .noOfYearInService(serviceYears)
-                .totalAmount(contributionSummary.getTotalBalance())
+                .totalAmount(totalAmount)
                 .components(finalComponents)
                 .expressionCalculations(expressionCalculations)
                 .loanCheck(isLoanApply)
@@ -433,11 +448,69 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
                 .vestingNote(vestingNote)
                 .recommendedBenefitType(recommendedRefundType)
                 .finalPayableAmount(finalPayableAmount)
-                .forfeitedComponents(forfeitedComponents)
-                .build();
+                .forfeitedComponents(forfeitedComponents);
+
+        // ✅ ADD EXCESS SERVICE FROM CONTRIBUTION SUMMARY
+        if (contributionSummary != null && contributionSummary.getExcessService() != null) {
+            responseBuilder.excessService(!isPartialWithdrawalRule(request.getClaimTypeId()) ? contributionSummary.getExcessService() : null);
+            
+            log.info("✅ Excess Service added to response");
+            log.info("  Total Excess Amount: {}", contributionSummary.getExcessService().getTotalExcessAmount());
+            log.info("  Years in Excess: {}", 
+                contributionSummary.getExcessService().getYearDetails() != null 
+                    ? contributionSummary.getExcessService().getYearDetails().size() 
+                    : 0);
+        }
+
+        VerifierClaimCalculationResponseDTO response = responseBuilder.build();
 
         return ApiResponseDTO.success(response);
     }
+
+    private BigDecimal calculateTotalAmount(List<ComponentBalanceDTO> eligibleComponents, 
+                                        List<ComponentBalanceDTO> forfeitedComponents) {
+    BigDecimal total = BigDecimal.ZERO;
+    
+    // Add eligible components
+    if (eligibleComponents != null) {
+        for (ComponentBalanceDTO component : eligibleComponents) {
+            if (component != null && component.getAmount() != null) {
+                total = total.add(component.getAmount());
+            }
+        }
+    }
+    
+    // Add forfeited components
+    if (forfeitedComponents != null) {
+        for (ComponentBalanceDTO component : forfeitedComponents) {
+            if (component != null && component.getAmount() != null) {
+                total = total.add(component.getAmount());
+            }
+        }
+    }
+    
+    System.out.println("========== CALCULATE TOTAL AMOUNT ==========");
+    System.out.println("Eligible Components Total: " + calculateComponentTotal(eligibleComponents));
+    System.out.println("Forfeited Components Total: " + calculateComponentTotal(forfeitedComponents));
+    System.out.println("Total Amount (Eligible + Forfeited): " + total);
+    System.out.println("============================================");
+    
+    return total;
+}
+
+/**
+ * Helper method to calculate total of a component list
+ */
+private BigDecimal calculateComponentTotal(List<ComponentBalanceDTO> components) {
+    if (components == null || components.isEmpty()) {
+        return BigDecimal.ZERO;
+    }
+    return components.stream()
+            .filter(Objects::nonNull)
+            .map(ComponentBalanceDTO::getAmount)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+}
 
     // ============================================================
     // HELPER METHODS FOR DEDUCTION
@@ -530,41 +603,36 @@ public class VerifierBenefitCalculationServiceImpl implements VerifierBenefitCal
     }
 
     /**
-     * Calculate final payable amount based on benefit type
-     */
-    private BigDecimal calculateFinalPayable(
-            BigDecimal pfAmount,
-            BigDecimal pfInterest,
-            BigDecimal pensionAmount,
-            BigDecimal pensionInterest,
-            boolean isLumpSum) {
-        
-            System.out.println("=== calculateFinalPayable ===");
-            System.out.println("pfAmount: " + pfAmount);
-            System.out.println("pfInterest: " + pfInterest);
-            System.out.println("pensionAmount: " + pensionAmount);
-            System.out.println("pensionInterest: " + pensionInterest);
-            System.out.println("isLumpSum: " + isLumpSum);
+ * Calculate final payable amount - Includes ALL components (PF + Pension)
+ */
+private BigDecimal calculateFinalPayable(
+        BigDecimal pfAmount,
+        BigDecimal pfInterest,
+        BigDecimal pensionAmount,
+        BigDecimal pensionInterest,
+        boolean isLumpSum) {
+    
+    log.info("=== calculateFinalPayable ===");
+    log.info("pfAmount: {}", pfAmount);
+    log.info("pfInterest: {}", pfInterest);
+    log.info("pensionAmount: {}", pensionAmount);
+    log.info("pensionInterest: {}", pensionInterest);
+    log.info("isLumpSum: {}", isLumpSum);
 
-        // Start with PF amounts (always included)
-        BigDecimal finalAmount = pfAmount.add(pfInterest);
-        
-        // Add pension amounts only for LUMPSUM
-        if (isLumpSum) {
-            finalAmount = finalAmount.add(pensionAmount).add(pensionInterest);
-        }
-        
-        // Ensure amount is not negative
-        if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
-            log.warn("Final payable amount is negative: {}, setting to 0", finalAmount);
-            return BigDecimal.ZERO;
-        }
-        
-        log.debug("Final payable calculation: PF={}, PF Interest={}, Pension={}, Pension Interest={}, isLumpSum={}, Result={}", 
-                pfAmount, pfInterest, pensionAmount, pensionInterest, isLumpSum, finalAmount);
-        
-        return finalAmount;
+    // ✅ FIXED: Include ALL components (PF + Pension) regardless of LumpSum
+    BigDecimal finalAmount = pfAmount.add(pfInterest)
+            .add(pensionAmount).add(pensionInterest);
+    
+    // Ensure amount is not negative
+    if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
+        log.warn("Final payable amount is negative: {}, setting to 0", finalAmount);
+        return BigDecimal.ZERO;
     }
+    
+    log.info("Final payable result: {}", finalAmount);
+    
+    return finalAmount;
+}
 
     // ============================================================
     // EXISTING METHODS (UNCHANGED)

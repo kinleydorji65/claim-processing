@@ -87,7 +87,11 @@ logging:
   file:
     name: logs/application.log
   level:
-    nppf.org.bt.claim-processing: DEBUG
+    com.claim.claim_processing: DEBUG
+    com.claim.claim_processing.integration.contribution.service.impl: DEBUG
+    com.claim.claim_processing.rule.ruleProcessing.service.impl: DEBUG
+    com.claim.claim_processing.application.service.workFlow.impl: DEBUG
+    com.claim.claim_processing.application.service.application.impl: DEBUG
     # org.hibernate.SQL: DEBUG
     # org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     # org.hibernate.engine.jdbc.spi.SqlExceptionHelper: DEBUG

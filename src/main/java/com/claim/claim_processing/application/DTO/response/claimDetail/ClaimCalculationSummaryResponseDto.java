@@ -5,9 +5,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.claim.claim_processing.common.DTO.response.common.StageResponseDto;
-import com.claim.claim_processing.common.DTO.response.others.StatusMasterResponseDto;
-import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.*;
@@ -30,8 +27,34 @@ public class ClaimCalculationSummaryResponseDto {
     private String isPensionEligible;
 
     private Integer totalContributionMonth;
+    private Integer totalNonContributionMonth;
+
+    private BigDecimal totalPfAmount;
+    private BigDecimal totalPensionAmount;
+    private BigDecimal totalPfInterest;
+    private BigDecimal totalPensionInterest;
 
     private String recommendedBenefitType;
+
+    // ================================================================
+    // EXCESS SERVICE FIELDS
+    // ================================================================
+    
+    private BigDecimal excessOpeningBalance;
+    private BigDecimal excessServiceAmount;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate excessCutoffDate;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate excessStartDate;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate excessEndDate;
+    
+    private BigDecimal excessTotalContributions;
+    private BigDecimal excessTotalInterest;
+    private Integer excessEolMonths;
 
     private List<ClaimRuleEvaluationListDto> ruleEvaluations;
 

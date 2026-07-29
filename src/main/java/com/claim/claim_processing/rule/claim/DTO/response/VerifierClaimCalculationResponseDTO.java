@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.claim.claim_processing.integration.contribution.dto.ExcessServiceResultDto;
 import com.claim.claim_processing.integration.loanAdjustment.dto.LoanAdjustmentResultDto;
 import com.claim.claim_processing.integration.loanAdjustment.dto.RentalAdjustmentResultDto;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
@@ -20,6 +21,17 @@ public class VerifierClaimCalculationResponseDTO {
     private BigDecimal noOfYearInService;
     private boolean loanCheck;
     private boolean rentalCheck;
+
+    private BigDecimal openingPfMc;    // PF Member Contribution
+    private BigDecimal openingPfEc;    // PF Employer Contribution
+    private BigDecimal openingPfImc;   // PF Interest on Member Contribution
+    private BigDecimal openingPfIec;   // PF Interest on Employer Contribution
+    
+    // P (Pension) Opening Balances
+    private BigDecimal openingPMc;     // P Member Contribution
+    private BigDecimal openingPEc;     // P Employer Contribution
+    private BigDecimal openingPImc;    // P Interest on Member Contribution
+    private BigDecimal openingPIec;
 
     // Service period
     private LocalDate contributionStartDate;
@@ -40,7 +52,7 @@ public class VerifierClaimCalculationResponseDTO {
     private BigDecimal totalPensionAmount;
     private BigDecimal totalAmount;
     private BigDecimal openingBalance;
-    private Double interestRate;
+    private BigDecimal interestRate;
 
     private BigDecimal totalPensionInterestAmount;
     private BigDecimal totalPfInterestAmount;
@@ -52,6 +64,8 @@ public class VerifierClaimCalculationResponseDTO {
     // Component balances (raw components from Table 1)
     private List<ComponentBalanceDTO> components;
     private List<ExpressionCalculationDTO> expressionCalculations;
+
+    private ExcessServiceResultDto excessService;
 
     @Data
     @Builder

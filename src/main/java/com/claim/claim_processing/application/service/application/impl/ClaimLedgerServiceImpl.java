@@ -54,6 +54,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
 
     private static final String EVENT_TYPE_CLAIM = "CLAIM";
     private static final String EVENT_TYPE_REFUND = "REFUND";
+    private static final String EVENT_TYPE_LAPSE = "LAPSE";
     private static final String EVENT_TYPE_DEDUCTION = "DEDUCTION";
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_POSTED = "POSTED";
@@ -72,9 +73,9 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
     @Override
     @Transactional
     public AccountingEventResponseDto createLedgerEntries(GeneralClaimDetailResponse claimResponse, String createdBy) {
-        System.out.println("========== START: createLedgerEntries ==========");
-        System.out.println("Claim ID: " + claimResponse.getId() + ", Status: " + claimResponse.getStatusName()
-                + ", Agency: " + claimResponse.getMemberCategoryId());
+        log.info("========== START: createLedgerEntries ==========");
+        log.info("Claim ID: {}, Status: {}, Agency: {}", 
+                claimResponse.getId(), claimResponse.getStatusName(), claimResponse.getMemberCategoryId());
 
         String claimReference = "CLM-" + claimResponse.getId();
 
@@ -90,45 +91,51 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         }
 
         boolean isPartialWithdrawal = isPartialWithdrawalClaim(claimResponse);
-        System.out.println("Is Partial Withdrawal: " + isPartialWithdrawal);
+        log.info("Is Partial Withdrawal: {}", isPartialWithdrawal);
 
         // 3. Determine TRAN_CODE based on Agency Category
         String agencyCategoryId = claimResponse.getMemberCategoryId();
         String tranCode = isPartialWithdrawal
                 ? PARTIAL_TRAN_CODE_MAP.getOrDefault(agencyCategoryId, "PWP")
                 : TRAN_CODE_MAP.getOrDefault(agencyCategoryId, "RPFC");
-        System.out.println("Agency Category: " + agencyCategoryId + ", TRAN_CODE: " + tranCode
-                + ", isPartialWithdrawal: " + isPartialWithdrawal);
+        log.info("Agency Category: {}, TRAN_CODE: {}, isPartialWithdrawal: {}", 
+                agencyCategoryId, tranCode, isPartialWithdrawal);
 
         // 4. Build detailed component amounts (NOT grouped!)
         Map<String, BigDecimal> componentAmounts = buildDetailedComponentAmounts(claimResponse);
-        System.out.println("Detailed Components: " + componentAmounts);
+        log.info("=== DETAILED COMPONENT AMOUNTS ===");
+        componentAmounts.forEach((key, value) -> log.info("  {} = {}", key, value));
+        log.info("Total Component Amounts: {}", calculateTotalAmount(componentAmounts));
 
         // 5. Build deduction amounts
         Map<String, BigDecimal> deductionAmounts = buildDeductionAmounts(claimResponse);
-        System.out.println("Deduction Amounts: " + deductionAmounts);
+        log.info("=== DEDUCTION AMOUNTS ===");
+        deductionAmounts.forEach((key, value) -> log.info("  {} = {}", key, value));
+        log.info("Total Deductions: {}", calculateTotalAmount(deductionAmounts));
 
         // 6. Build forfeited amounts (These ARE the lapse amounts)
         Map<String, BigDecimal> forfeitedAmounts = buildForfeitedAmounts(claimResponse);
-        System.out.println("Forfeited Amounts: " + forfeitedAmounts);
+        log.info("=== FORFEITED AMOUNTS ===");
+        forfeitedAmounts.forEach((key, value) -> log.info("  {} = {}", key, value));
+        log.info("Total Forfeited: {}", calculateTotalAmount(forfeitedAmounts));
 
         // 7. Calculate total eligible amount
         BigDecimal totalEligible = calculateTotalAmount(componentAmounts);
-        System.out.println("Total Eligible Amount: " + totalEligible);
+        log.info("Total Eligible Amount: {}", totalEligible);
 
         // 8. Calculate total deductions
         BigDecimal totalDeductions = calculateTotalAmount(deductionAmounts);
-        System.out.println("Total Deductions: " + totalDeductions);
+        log.info("Total Deductions: {}", totalDeductions);
 
         // 9. Calculate total forfeited (this IS the lapse amount)
         BigDecimal totalForfeited = calculateTotalAmount(forfeitedAmounts);
-        System.out.println("Total Forfeited: " + totalForfeited);
+        log.info("Total Forfeited: {}", totalForfeited);
 
         // 10. Get final payable amount (NET amount after deductions)
         BigDecimal finalPayable = claimResponse.getCalculationSummary() != null
                 ? claimResponse.getCalculationSummary().getFinalPayableAmount()
                 : BigDecimal.ZERO;
-        System.out.println("Final Payable (Net) Amount: " + finalPayable);
+        log.info("Final Payable (Net) Amount: {}", finalPayable);
 
         // ================================================================
         // FIX: For Partial Withdrawal, adjust component amounts
@@ -136,10 +143,10 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         Map<String, BigDecimal> componentAmountsForLedger = new HashMap<>();
 
         if (isPartialWithdrawal) {
-            System.out.println("Processing Partial Withdrawal - Scaling components individually");
+            log.info("Processing Partial Withdrawal - Scaling components individually");
             if (totalEligible.compareTo(BigDecimal.ZERO) > 0 && finalPayable.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal ratio = finalPayable.divide(totalEligible, 10, java.math.RoundingMode.HALF_UP);
-                System.out.println("Partial Withdrawal Ratio: " + ratio);
+                log.info("Partial Withdrawal Ratio: {}", ratio);
 
                 // Scale each component individually
                 for (Map.Entry<String, BigDecimal> entry : componentAmounts.entrySet()) {
@@ -148,40 +155,40 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                     // Only add if amount > 0
                     if (scaledAmount.compareTo(BigDecimal.ZERO) > 0) {
                         componentAmountsForLedger.put(entry.getKey(), scaledAmount);
-                        System.out.println("Component: " + entry.getKey() + " -> Original: " + entry.getValue()
-                                + ", Scaled: " + scaledAmount);
+                        log.info("Component: {} -> Original: {}, Scaled: {}", 
+                                entry.getKey(), entry.getValue(), scaledAmount);
                     }
                 }
             } else {
-                // If ratio is zero or invalid, don't add any components
-                System.out.println("No eligible amount or final payable, skipping components");
+                log.info("No eligible amount or final payable, skipping components");
             }
         } else {
-            System.out.println("Regular Claim - Using full amounts");
+            log.info("Regular Claim - Using full amounts");
             componentAmountsForLedger = componentAmounts;
         }
 
-        System.out.println("Component Amounts For Ledger: " + componentAmountsForLedger);
+        log.info("=== COMPONENT AMOUNTS FOR LEDGER ===");
+        componentAmountsForLedger.forEach((key, value) -> log.info("  {} = {}", key, value));
 
         // 11. LAPSE AMOUNT = FORFEITED AMOUNT (only for regular claims)
         BigDecimal lapseAmount = BigDecimal.ZERO;
         if (!isPartialWithdrawal) {
             lapseAmount = totalForfeited;
-            System.out.println("Lapse Amount (Forfeited): " + lapseAmount);
+            log.info("Lapse Amount (Forfeited): {}", lapseAmount);
 
             BigDecimal totalCredited = totalDeductions.add(finalPayable).add(totalForfeited);
-            System.out.println("Balance check: Total Eligible (" + totalEligible
-                    + ") vs Deductions + Final Payable + Forfeited (" + totalCredited + ")");
+            log.info("Balance check: Total Eligible ({}) vs Deductions + Final Payable + Forfeited ({})", 
+                    totalEligible, totalCredited);
             if (totalEligible.compareTo(totalCredited) != 0) {
-                System.out.println("⚠️ Balance check FAILED! Difference: " + totalEligible.subtract(totalCredited));
+                log.warn("⚠️ Balance check FAILED! Difference: {}", totalEligible.subtract(totalCredited));
             } else {
-                System.out.println("✅ Balance check PASSED!");
+                log.info("✅ Balance check PASSED!");
             }
         }
 
         // 12. Get COA Mappings
         String eventType = EVENT_TYPE_REFUND;
-        System.out.println("Event Type: " + eventType);
+        log.info("Event Type: {}", eventType);
 
         List<CoaAccountMapping> refundMappings = coaAccountMappingRepository
                 .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
@@ -189,18 +196,29 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
 
         // If no partial withdrawal mappings found, fall back to REFUND
         if (refundMappings.isEmpty()) {
-            System.out.println("No " + eventType + " mappings found, falling back to REFUND");
+            log.info("No {} mappings found, falling back to REFUND", eventType);
             refundMappings = coaAccountMappingRepository
                     .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
                             EVENT_TYPE_REFUND, agencyCategoryId);
+        }
+
+        List<CoaAccountMapping> lapseMappings = coaAccountMappingRepository
+        .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
+                EVENT_TYPE_LAPSE, agencyCategoryId);
+
+        log.info("LAPSE Mappings found: {}", lapseMappings.size());
+        if (!lapseMappings.isEmpty()) {
+            log.info("First LAPSE Mapping: {}, MainAccount: {}", 
+                    lapseMappings.get(0).getComponentCode(), 
+                    lapseMappings.get(0).getMainAccountCode());
         }
 
         List<CoaAccountMapping> deductionMappings = coaAccountMappingRepository
                 .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
                         EVENT_TYPE_DEDUCTION, agencyCategoryId);
 
-        System.out.println("REFUND Mappings found: " + refundMappings.size() + ", DEDUCTION Mappings found: "
-                + deductionMappings.size());
+        log.info("REFUND Mappings found: {}, DEDUCTION Mappings found: {}", 
+                refundMappings.size(), deductionMappings.size());
 
         // 13. DEBUG - Show what we have
         debugComponentAmounts(componentAmountsForLedger, refundMappings, deductionAmounts, finalPayable, lapseAmount,
@@ -208,31 +226,33 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
 
         ClaimDetail claimDetail = claimDetailRepository.findById(claimResponse.getId())
                 .orElseThrow(() -> ClaimException.notFound("claim detail not found"));
-        System.out.println("i am claim detail id: " + claimDetail.getId());
+        log.info("Claim Detail ID: {}", claimDetail.getId());
+        
         // 14. Create and SAVE Accounting Event
         ClaimAccountingEvent event = createAccountingEvent(claimResponse, tranCode, createdBy);
         event.setClaimDetail(claimDetail);
         event = accountingEventRepository.saveAndFlush(event);
-        System.out.println("Accounting Event created with ID: " + event.getId());
+        log.info("Accounting Event created with ID: {}", event.getId());
 
         // 15. Generate Ledger Entries
         List<ClaimLedgerEntry> ledgerEntries = new ArrayList<>();
         int seqNo = 0;
 
         // 15a. Process REFUND mappings (DEBIT - All refund components)
-        System.out.println("========== Processing DEBIT Entries ==========");
+        log.info("========== Processing DEBIT Entries ==========");
         for (CoaAccountMapping mapping : refundMappings) {
             String componentCode = mapping.getComponentCode();
 
             if ("BANK".equals(componentCode) || "LAPSE".equals(componentCode)) {
+                log.info("Skipping BANK/LAPSE mapping: {}", componentCode);
                 continue;
             }
 
             BigDecimal amount = componentAmountsForLedger.getOrDefault(componentCode, BigDecimal.ZERO);
-            System.out.println("DEBIT - Component: " + componentCode + ", Amount: " + amount);
+            log.info("DEBIT - Component: {}, Amount: {}", componentCode, amount);
 
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                System.out.println("Skipping zero amount for component: " + componentCode);
+                log.info("Skipping zero amount for component: {}", componentCode);
                 continue;
             }
             CoaSubAccount subAccount = coaSubAccountRepository.findBySubAccountCode(mapping.getSubAccountCode())
@@ -252,27 +272,29 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                     .createdAt(LocalDateTime.now())
                     .build();
             ledgerEntries.add(entry);
-            System.out.println("✅ DEBIT Entry: SEQ=" + seqNo + ", Component=" + componentCode + ", Amount=" + amount);
+            log.info("✅ DEBIT Entry: SEQ={}, Component={}, Amount={}, MainAccount={}, SubAccount={}", 
+                    seqNo, componentCode, amount, mapping.getMainAccountCode(), mapping.getSubAccountCode());
         }
 
         // 15b. Process DEDUCTION mappings (CREDIT) - Only for regular claims
-        System.out.println("========== Processing CREDIT Entries ==========");
+        log.info("========== Processing CREDIT Entries ==========");
         Map<String, BigDecimal> matchedDeductions = new HashMap<>();
 
         if (!isPartialWithdrawal) {
-            System.out.println("Processing deductions for regular claim");
+            log.info("Processing deductions for regular claim");
             for (CoaAccountMapping mapping : deductionMappings) {
                 String componentCode = mapping.getComponentCode();
 
                 if ("LAPSE".equals(componentCode)) {
+                    log.info("Skipping LAPSE in deduction mappings");
                     continue;
                 }
 
                 BigDecimal amount = deductionAmounts.getOrDefault(componentCode, BigDecimal.ZERO);
-                System.out.println("CREDIT - Deduction Component: " + componentCode + ", Amount: " + amount);
+                log.info("CREDIT - Deduction Component: {}, Amount: {}", componentCode, amount);
 
                 if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                    System.out.println("No matching deduction for component: " + componentCode);
+                    log.info("No matching deduction for component: {}", componentCode);
                     continue;
                 }
 
@@ -295,8 +317,8 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                         .createdAt(LocalDateTime.now())
                         .build();
                 ledgerEntries.add(entry);
-                System.out.println(
-                        "✅ CREDIT Entry: SEQ=" + seqNo + ", Component=" + componentCode + ", Amount=" + amount);
+                log.info("✅ CREDIT Entry: SEQ={}, Component={}, Amount={}, MainAccount={}, SubAccount={}", 
+                        seqNo, componentCode, amount, mapping.getMainAccountCode(), mapping.getSubAccountCode());
             }
 
             // 15c. Process any remaining deductions - Only for regular claims
@@ -308,7 +330,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                     continue;
                 }
 
-                System.out.println("Remaining deduction - Code: " + deductionCode + ", Amount: " + amount);
+                log.info("Remaining deduction - Code: {}, Amount: {}", deductionCode, amount);
 
                 CoaAccountMapping defaultMapping = deductionMappings.stream()
                         .filter(m -> !"LAPSE".equals(m.getComponentCode()))
@@ -335,28 +357,44 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                             .createdAt(LocalDateTime.now())
                             .build();
                     ledgerEntries.add(ledgerEntry);
-                    System.out.println("✅ CREDIT Entry (Default): SEQ=" + seqNo + ", Component=" + deductionCode
-                            + ", Amount=" + amount);
+                    log.info("✅ CREDIT Entry (Default): SEQ={}, Component={}, Amount={}", 
+                            seqNo, deductionCode, amount);
+                } else {
+                    log.warn("⚠️ No default mapping found for remaining deduction: {}", deductionCode);
                 }
             }
         } else {
-            System.out.println("Partial Withdrawal - Skipping deductions");
+            log.info("Partial Withdrawal - Skipping deductions");
         }
 
         // 15d. Process FORFEITED components - ONLY for regular claims
         if (!isPartialWithdrawal) {
-            System.out.println("Processing forfeited components for regular claim");
+            log.info("Processing forfeited components for regular claim");
+            log.info("forfeitedAmounts: {}", forfeitedAmounts);
+            log.info("lapseMappings size: {}", lapseMappings != null ? lapseMappings.size() : 0);
+            
+            // Get the LAPSE mapping from lapseMappings (NOT refundMappings)
+            final CoaAccountMapping lapseMapping;
+            if (lapseMappings != null && !lapseMappings.isEmpty()) {
+                lapseMapping = lapseMappings.get(0);
+                log.info("Found LAPSE mapping: {}, MainAccount: {}, SubAccount: {}", 
+                        lapseMapping.getComponentCode(), 
+                        lapseMapping.getMainAccountCode(),
+                        lapseMapping.getSubAccountCode());
+            } else {
+                log.warn("⚠️ No LAPSE mappings found in database!");
+                lapseMapping = null;
+            }
+            
             for (Map.Entry<String, BigDecimal> entry : forfeitedAmounts.entrySet()) {
                 String componentCode = entry.getKey();
                 BigDecimal amount = entry.getValue();
 
-                System.out.println("Forfeited - Component: " + componentCode + ", Amount: " + amount);
+                log.info("Forfeited - Component: {}, Amount: {}", componentCode, amount);
 
                 if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                     continue;
                 }
-
-                CoaAccountMapping lapseMapping = findMappingByComponent(refundMappings, "LAPSE");
 
                 if (lapseMapping != null) {
                     CoaSubAccount subAccount = coaSubAccountRepository
@@ -369,28 +407,27 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                             .seqNo(seqNo)
                             .mainAccountCode(lapseMapping.getMainAccountCode())
                             .subAccountCode(lapseMapping.getSubAccountCode())
-                            .drcr(lapseMapping.getDrcr())
+                            .drcr(lapseMapping.getDrcr()) // CREDIT for LAPSE
                             .amount(amount)
                             .entryRole("LAPSE")
                             .componentCode(componentCode)
-                            .narration(subAccount.getSubAccountName())
+                            .narration("LAPSE - " + componentCode + " - " + subAccount.getSubAccountName())
                             .createdBy(createdBy)
                             .createdAt(LocalDateTime.now())
                             .build();
                     ledgerEntries.add(ledgerEntry);
-                    System.out.println("✅ CREDIT Entry (LAPSE): SEQ=" + seqNo + ", Component=" + componentCode
-                            + ", Amount=" + amount);
+                    log.info("✅ CREDIT Entry (LAPSE): SEQ={}, Component={}, Amount={}", 
+                            seqNo, componentCode, amount);
                 } else {
-                    System.out.println("⚠️ No LAPSE mapping found for forfeited component: " + componentCode);
+                    log.warn("⚠️ No LAPSE mapping found for forfeited component: {}", componentCode);
                 }
             }
         } else {
-            System.out.println("Partial Withdrawal - Skipping forfeited components");
+            log.info("Partial Withdrawal - Skipping forfeited components");
         }
 
-        // 15e. BANK Entry (CREDIT) - Net payment to member (for both partial and
-        // regular)
-        System.out.println("Processing BANK entry - Final Payable: " + finalPayable);
+        // 15e. BANK Entry (CREDIT) - Net payment to member (for both partial and regular)
+        log.info("Processing BANK entry - Final Payable: {}", finalPayable);
         if (finalPayable.compareTo(BigDecimal.ZERO) > 0) {
             CoaAccountMapping bankMapping = findMappingByComponent(refundMappings, "BANK");
             if (bankMapping != null) {
@@ -412,29 +449,47 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                         .createdAt(LocalDateTime.now())
                         .build();
                 ledgerEntries.add(entry);
-                System.out.println("✅ CREDIT Entry: SEQ=" + seqNo + ", BANK, Amount=" + finalPayable);
+                log.info("✅ CREDIT Entry: SEQ={}, BANK, Amount={}", seqNo, finalPayable);
             } else {
-                System.out.println("⚠️ No BANK mapping found!");
+                log.warn("⚠️ No BANK mapping found!");
             }
         } else {
-            System.out.println("Final Payable is zero, skipping BANK entry");
+            log.info("Final Payable is zero, skipping BANK entry");
         }
 
-        System.out.println("Total ledger entries to save: " + ledgerEntries.size());
+        log.info("Total ledger entries to save: {}", ledgerEntries.size());
 
         // 16. Save all ledger entries
         List<ClaimLedgerEntry> savedEntries = ledgerEntryRepository.saveAll(ledgerEntries);
-        System.out.println(savedEntries.size() + " ledger entries saved for claim: " + claimReference);
+        log.info("{} ledger entries saved for claim: {}", savedEntries.size(), claimReference);
 
         // 17. Calculate totals
         BigDecimal totalDr = calculateTotal(savedEntries, "D");
         BigDecimal totalCr = calculateTotal(savedEntries, "C");
-        System.out.println("Total DR: " + totalDr + ", Total CR: " + totalCr);
+        log.info("=== LEDGER TOTALS ===");
+        log.info("Total DR: {}", totalDr);
+        log.info("Total CR: {}", totalCr);
+
+        // Log all entries with their DR/CR
+        log.info("=== LEDGER ENTRIES SUMMARY ===");
+        for (ClaimLedgerEntry entry : savedEntries) {
+            log.info("SEQ: {}, Component: {}, DR/CR: {}, Amount: {}, MainAccount: {}, SubAccount: {}", 
+                    entry.getSeqNo(), entry.getComponentCode(), entry.getDrcr(), 
+                    entry.getAmount(), entry.getMainAccountCode(), entry.getSubAccountCode());
+        }
 
         // 18. Validate balance
         if (totalDr.compareTo(totalCr) != 0) {
-            System.out.println("❌❌❌ LEDGER NOT BALANCED! DR: " + totalDr + ", CR: " + totalCr + ", Difference: "
-                    + totalDr.subtract(totalCr));
+            log.error("❌❌❌ LEDGER NOT BALANCED! DR: {}, CR: {}, Difference: {}", 
+                    totalDr, totalCr, totalDr.subtract(totalCr));
+            
+            // Log detailed breakdown of what's missing
+            log.error("=== LEDGER IMBALANCE DIAGNOSIS ===");
+            log.error("Component Amounts For Ledger: {}", componentAmountsForLedger);
+            log.error("Deduction Amounts: {}", deductionAmounts);
+            log.error("Final Payable: {}", finalPayable);
+            log.error("Forfeited Amounts: {}", forfeitedAmounts);
+            
             debugComponentAmounts(componentAmountsForLedger, refundMappings, deductionAmounts, finalPayable,
                     lapseAmount, forfeitedAmounts);
             throw new RuntimeException(
@@ -442,7 +497,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                             ", Total CR: " + totalCr +
                             ", Difference: " + totalDr.subtract(totalCr));
         } else {
-            System.out.println("✅✅✅ LEDGER BALANCED! DR: " + totalDr + ", CR: " + totalCr);
+            log.info("✅✅✅ LEDGER BALANCED! DR: {}, CR: {}", totalDr, totalCr);
         }
 
         // 19. Update event with totals and status
@@ -453,7 +508,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         event.setUpdatedAt(LocalDateTime.now());
         ClaimAccountingEvent updatedEvent = accountingEventRepository.save(event);
 
-        System.out.println("========== END: createLedgerEntries SUCCESS ==========");
+        log.info("========== END: createLedgerEntries SUCCESS ==========");
         return buildResponse(updatedEvent, savedEntries);
     }
 
@@ -463,38 +518,39 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
             BigDecimal finalPayable,
             BigDecimal lapseAmount,
             Map<String, BigDecimal> forfeitedAmounts) {
-        System.out.println("========== DEBUG: COMPONENT AMOUNTS ==========");
-        System.out.println("Component Amounts Map: " + componentAmounts);
-        System.out.println("Total Component Amounts: " + calculateTotalAmount(componentAmounts));
+        
+        log.info("========== DEBUG: COMPONENT AMOUNTS ==========");
+        log.info("Component Amounts Map: {}", componentAmounts);
+        log.info("Total Component Amounts: {}", calculateTotalAmount(componentAmounts));
 
-        System.out.println("========== DEBUG: FORFEITED AMOUNTS ==========");
-        System.out.println("Forfeited Amounts Map: " + forfeitedAmounts);
-        System.out.println("Total Forfeited: " + calculateTotalAmount(forfeitedAmounts));
-        System.out.println("Lapse Amount: " + lapseAmount);
-        System.out.println("NOTE: Forfeited amounts are INCLUDED in DEBIT, NOT added to CREDIT");
+        log.info("========== DEBUG: FORFEITED AMOUNTS ==========");
+        log.info("Forfeited Amounts Map: {}", forfeitedAmounts);
+        log.info("Total Forfeited: {}", calculateTotalAmount(forfeitedAmounts));
+        log.info("Lapse Amount: {}", lapseAmount);
+        log.info("NOTE: Forfeited amounts are INCLUDED in DEBIT, NOT added to CREDIT");
 
-        System.out.println("========== DEBUG: REFUND MAPPINGS ==========");
+        log.info("========== DEBUG: REFUND MAPPINGS ==========");
         for (CoaAccountMapping mapping : refundMappings) {
             if (!"BANK".equals(mapping.getComponentCode()) && !"LAPSE".equals(mapping.getComponentCode())) {
                 BigDecimal amount = componentAmounts.getOrDefault(mapping.getComponentCode(), BigDecimal.ZERO);
-                System.out.println("Mapping: " + mapping.getComponentCode() + " -> Amount: " + amount);
+                log.info("Mapping: {} -> Amount: {}", mapping.getComponentCode(), amount);
             }
         }
 
-        System.out.println("========== DEBUG: DEDUCTION AMOUNTS ==========");
-        System.out.println("Deduction Amounts Map: " + deductionAmounts);
-        System.out.println("Total Deductions: " + calculateTotalAmount(deductionAmounts));
+        log.info("========== DEBUG: DEDUCTION AMOUNTS ==========");
+        log.info("Deduction Amounts Map: {}", deductionAmounts);
+        log.info("Total Deductions: {}", calculateTotalAmount(deductionAmounts));
 
-        System.out.println("========== DEBUG: TOTALS ==========");
-        System.out.println("Final Payable: " + finalPayable);
+        log.info("========== DEBUG: TOTALS ==========");
+        log.info("Final Payable: {}", finalPayable);
 
         BigDecimal totalDebitExpected = calculateTotalAmount(componentAmounts);
         BigDecimal totalCreditExpected = calculateTotalAmount(deductionAmounts).add(finalPayable);
 
-        System.out.println("Expected Total DR: " + totalDebitExpected);
-        System.out.println("Expected Total CR: " + totalCreditExpected);
-        System.out.println("Difference: " + totalDebitExpected.subtract(totalCreditExpected));
-        System.out.println("==============================================");
+        log.info("Expected Total DR: {}", totalDebitExpected);
+        log.info("Expected Total CR: {}", totalCreditExpected);
+        log.info("Difference: {}", totalDebitExpected.subtract(totalCreditExpected));
+        log.info("==============================================");
     }
 
     private Map<String, BigDecimal> buildDetailedComponentAmounts(GeneralClaimDetailResponse claimResponse) {
@@ -503,12 +559,12 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         ClaimCalculationSummaryResponseDto summary = claimResponse.getCalculationSummary();
         boolean isPartialWithdrawal = isPartialWithdrawalClaim(claimResponse);
 
-        System.out.println("========== buildDetailedComponentAmounts ==========");
-        System.out.println("isPartialWithdrawal: " + isPartialWithdrawal);
+        log.info("========== buildDetailedComponentAmounts ==========");
+        log.info("isPartialWithdrawal: {}", isPartialWithdrawal);
 
         // 1. Add eligible components from rule evaluations
         if (summary != null && summary.getRuleEvaluations() != null) {
-            System.out.println("Processing rule evaluations...");
+            log.info("Processing rule evaluations...");
             for (ClaimRuleEvaluationListDto ruleEvaluation : summary.getRuleEvaluations()) {
                 if (ruleEvaluation.getComponents() == null) {
                     continue;
@@ -518,164 +574,112 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                     String code = component.getComponentCode();
                     BigDecimal amount = component.getAmount() != null ? component.getAmount() : BigDecimal.ZERO;
 
-                    System.out.println("Component from rule: " + code + " = " + amount);
+                    log.info("Component from rule: {} = {}", code, amount);
 
                     if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                         continue;
                     }
 
-                    // ✅ Map each component individually - same for both normal and partial
+                    // Map each component individually
                     String mappedCode = mapComponentToCoaCode(code);
                     if (mappedCode != null) {
                         componentMap.merge(mappedCode, amount, BigDecimal::add);
-                        System.out.println("  ✅ Component: " + code + " -> " + mappedCode + ", Amount: " + amount);
+                        log.info("  ✅ Component: {} -> {}, Amount: {}", code, mappedCode, amount);
                     } else {
-                        System.out.println("  ⚠️ No mapping found for component: " + code);
+                        log.warn("  ⚠️ No mapping found for component: {}", code);
                     }
                 }
             }
         } else {
-            System.out.println("No summary or rule evaluations found!");
+            log.info("No summary or rule evaluations found!");
         }
 
         // 2. ADD FORFEITED COMPONENTS TO DEBIT FOR NORMAL CLAIMS ONLY
         if (!isPartialWithdrawal) {
             List<ClaimForfeitedComponentResponseDto> forfeitedComponents = claimResponse.getForfeitedComponents();
-            System.out.println("Processing forfeited components, count: "
-                    + (forfeitedComponents != null ? forfeitedComponents.size() : 0));
+            log.info("Processing forfeited components, count: {}", 
+                    forfeitedComponents != null ? forfeitedComponents.size() : 0);
 
             if (forfeitedComponents != null) {
                 for (ClaimForfeitedComponentResponseDto forfeited : forfeitedComponents) {
                     String code = forfeited.getComponentCode();
                     BigDecimal amount = forfeited.getAmount() != null ? forfeited.getAmount() : BigDecimal.ZERO;
 
-                    System.out.println("Forfeited component: " + code + " = " + amount);
+                    log.info("Forfeited component: {} = {}", code, amount);
 
                     if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                         continue;
                     }
 
-                    String mappedCode = mapForfeitedComponentCode(code);
+                    String mappedCode = mapComponentToCoaCode(code);
                     if (mappedCode != null) {
                         componentMap.merge(mappedCode, amount, BigDecimal::add);
-                        System.out.println("  ✅ Forfeited Component added to DEBIT: " + code + " -> " + mappedCode
-                                + ", Amount: " + amount);
+                        log.info("  ✅ Forfeited Component: {} -> {}, Amount: {}", code, mappedCode, amount);
                     } else {
-                        System.out.println("  ⚠️ No mapping found for forfeited component: " + code);
+                        log.warn("  ⚠️ No mapping found for forfeited component: {}", code);
                     }
                 }
             }
         } else {
-            System.out.println("Partial Withdrawal - Skipping forfeited components");
+            log.info("Partial Withdrawal - Skipping forfeited components");
         }
 
-        System.out.println("Final Component Map: " + componentMap);
+        log.info("Final Component Map: {}", componentMap);
         return componentMap;
     }
 
     private String mapComponentToCoaCode(String componentCode) {
-    if (componentCode == null) return null;
+        if (componentCode == null) return null;
 
-    String cleanCode = componentCode.toUpperCase().trim();
-    cleanCode = cleanCode.replace("_CUMULATIVE", "")
-            .replace("_CUM", "")
-            .replace("_YEAR", "");
+        String cleanCode = componentCode.toUpperCase().trim();
+        cleanCode = cleanCode.replace("_CUMULATIVE", "")
+                .replace("_CUM", "")
+                .replace("_YEAR", "");
 
-    System.out.println("Mapping component: " + cleanCode);
+        log.debug("Mapping component: {}", cleanCode);
 
-    // PF Components - Map to themselves (they exist in COA_ACCOUNT_MAPPING)
-    switch (cleanCode) {
-        case "PF_MC":
-        case "PF_IMC":
-        case "PF_EC":
-        case "PF_IEC":
-        case "PF_GC":
-        case "PF_IGC":
-            System.out.println("  ✅ PF Component mapped to: " + cleanCode);
-            return cleanCode;
+        // PF Components - Map to themselves (they exist in COA_ACCOUNT_MAPPING)
+        switch (cleanCode) {
+            case "PF_MC":
+            case "PF_IMC":
+            case "PF_EC":
+            case "PF_IEC":
+            case "PF_GC":
+            case "PF_IGC":
+                log.debug("  ✅ PF Component mapped to: {}", cleanCode);
+                return cleanCode;
 
-        // =============================================
-        // PENSION COMPONENTS - Map to COA component codes
-        // =============================================
-        
-        // Employer Pension (P_EC) → PENSION_REFUND
-        case "P_EC":
-        case "PC_EC":
-            System.out.println("  ✅ Pension Employer mapped to: PENSION_REFUND");
-            return "P_EC";
-            
-        // Employer Pension Interest (P_IEC) → PENSION_INT_REFUND
-        case "P_IEC":
-        case "PC_IEC":
-            System.out.println("  ✅ Pension Employer Interest mapped to: PENSION_INT_REFUND");
-            return "P_IEC";
-            
-        // Member Pension (P_MC) → PENSION_PAYMENT
-        case "P_MC":
-        case "PC_MC":
-            System.out.println("  ✅ Pension Member mapped to: PENSION_PAYMENT");
-            return "P_MC";
-            
-        // Member Pension Interest (P_IMC) → PENSION_INT_PAYMENT
-        case "P_IMC":
-        case "PC_IMC":
-            System.out.println("  ✅ Pension Member Interest mapped to: PENSION_INT_PAYMENT");
-            return "P_IMC";
+            // =============================================
+            // PENSION COMPONENTS - Map to COA component codes
+            // =============================================
+            case "P_EC":
+            case "PC_EC":
+                log.debug("  ✅ Pension Employer mapped to: P_EC");
+                return "P_EC";
+                
+            // Employer Pension Interest (P_IEC)
+            case "P_IEC":
+            case "PC_IEC":
+                log.debug("  ✅ Pension Employer Interest mapped to: P_IEC");
+                return "P_IEC";
+                
+            // Member Pension (P_MC)
+            case "P_MC":
+            case "PC_MC":
+                log.debug("  ✅ Pension Member mapped to: P_MC");
+                return "P_MC";
+                
+            // Member Pension Interest (P_IMC)
+            case "P_IMC":
+            case "PC_IMC":
+                log.debug("  ✅ Pension Member Interest mapped to: P_IMC");
+                return "P_IMC";
 
-        // Partial Withdrawal
-        case "PARTIAL_PF":
-            System.out.println("  ✅ Partial PF mapped to: PARTIAL_PF");
-            return "PARTIAL_PF";
-
-        default:
-            System.out.println("  ⚠️ No mapping found for: " + componentCode);
-            return null;
+            default:
+                log.warn("  ⚠️ No mapping found for: {}", componentCode);
+                return null;
+        }
     }
-}
-
-/**
- * Map forfeited component code to COA component code
- */
-private String mapForfeitedComponentCode(String componentCode) {
-    if (componentCode == null) return null;
-
-    String cleanCode = componentCode.toUpperCase().trim();
-
-    System.out.println("Mapping forfeited component: " + cleanCode);
-
-    // PF Components - Map to themselves (they exist in COA_ACCOUNT_MAPPING)
-    switch (cleanCode) {
-        case "PF_MC":
-        case "PF_IMC":
-        case "PF_EC":
-        case "PF_IEC":
-        case "PF_GC":
-        case "PF_IGC":
-            System.out.println("  ✅ PF Forfeited mapped to: " + cleanCode);
-            return cleanCode;
-
-        // =============================================
-        // PENSION COMPONENTS - All go to LAPSE_PENSION when forfeited
-        // =============================================
-        case "P_EC":
-        case "PC_EC":
-        case "P_IEC":
-        case "PC_IEC":
-        case "P_MC":
-        case "PC_MC":
-        case "P_IMC":
-        case "PC_IMC":
-            System.out.println("  ✅ Pension Forfeited mapped to: LAPSE_PENSION");
-            return "LAPSE_PENSION";
-
-        case "PARTIAL_PF":
-            return "PARTIAL_PF";
-
-        default:
-            System.out.println("  ⚠️ No forfeited mapping found for: " + componentCode);
-            return null;
-    }
-}
 
     /**
      * Build deduction amounts from claim response - FIXED VERSION
@@ -690,8 +694,7 @@ private String mapForfeitedComponentCode(String componentCode) {
             return deductionMap;
         }
 
-        log.info("Deduction Detail , Deducted Amount: {}",
-                deductionDetail.getDeductedAmount());
+        log.info("Deduction Detail, Deducted Amount: {}", deductionDetail.getDeductedAmount());
 
         List<ClaimDeductionItemResponseDto> deductionItems = deductionDetail.getDeductionItems();
 
@@ -742,7 +745,7 @@ private String mapForfeitedComponentCode(String componentCode) {
     }
 
     /**
-     * Build forfeited amounts from claim response
+     * Build forfeited amounts from claim response - Single LAPSE total
      */
     private Map<String, BigDecimal> buildForfeitedAmounts(GeneralClaimDetailResponse claimResponse) {
         Map<String, BigDecimal> forfeitedMap = new HashMap<>();
@@ -759,60 +762,32 @@ private String mapForfeitedComponentCode(String componentCode) {
             return forfeitedMap;
         }
 
+        BigDecimal totalForfeited = BigDecimal.ZERO;
+        
+        log.info("========== BUILDING FORFEITED AMOUNTS ==========");
         for (ClaimForfeitedComponentResponseDto forfeited : forfeitedComponents) {
             String componentCode = forfeited.getComponentCode();
             BigDecimal amount = forfeited.getAmount() != null ? forfeited.getAmount() : BigDecimal.ZERO;
+
+            log.info("Forfeited component: {} = {}", componentCode, amount);
 
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
 
-            String mappedCode = mapForfeitedComponentCode(componentCode);
-            if (mappedCode != null) {
-                BigDecimal existingAmount = forfeitedMap.getOrDefault(mappedCode, BigDecimal.ZERO);
-                forfeitedMap.put(mappedCode, existingAmount.add(amount));
-                log.debug("Forfeited Component: {} -> {}, Amount: {}", componentCode, mappedCode, amount);
-            }
+            totalForfeited = totalForfeited.add(amount);
+            log.info("  Total so far: {}", totalForfeited);
         }
 
-        log.info("Total forfeited map: {}", forfeitedMap);
+        // Add single LAPSE entry with total amount
+        if (totalForfeited.compareTo(BigDecimal.ZERO) > 0) {
+            forfeitedMap.put("LAPSE", totalForfeited);
+            log.info("  ✅ Added LAPSE total: {}", totalForfeited);
+        }
+
+        log.info("Final forfeited map: {}", forfeitedMap);
         return forfeitedMap;
     }
-
-    // private String mapForfeitedComponentCode(String componentCode) {
-    //     if (componentCode == null)
-    //         return null;
-
-    //     String cleanCode = componentCode.toUpperCase().trim();
-    //     System.out.println("Mapping forfeited component: " + cleanCode);
-
-    //     // PF_EC and PF_IEC should map to themselves
-    //     switch (cleanCode) {
-    //         case "PF_MC":
-    //         case "PF_IMC":
-    //         case "PF_EC":
-    //         case "PF_IEC":
-    //         case "PF_GC":
-    //         case "PF_IGC":
-    //         case "P_MC":
-    //         case "P_IMC":
-    //         case "P_EC":
-    //         case "P_IEC":
-    //             System.out.println("  Mapped to: " + cleanCode);
-    //             return cleanCode;
-    //         case "PC_MC":
-    //             return "P_MC";
-    //         case "PC_IMC":
-    //             return "P_IMC";
-    //         case "PC_EC":
-    //             return "P_EC";
-    //         case "PC_IEC":
-    //             return "P_IEC";
-    //         default:
-    //             System.out.println("  ⚠️ No forfeited mapping found for: " + componentCode);
-    //             return null;
-    //     }
-    // }
 
     /**
      * Map deduction item to component code
@@ -837,8 +812,7 @@ private String mapForfeitedComponentCode(String componentCode) {
     }
 
     /**
-     * Map deduction category to component code - FIXED to handle "Housing Loan" and
-     * "Vehicle Loan"
+     * Map deduction category to component code
      */
     private String mapDeductionCategoryToComponentCode(String category) {
         if (category == null)
@@ -878,8 +852,7 @@ private String mapForfeitedComponentCode(String componentCode) {
     }
 
     /**
-     * Map deduction reference name to component code - FIXED to handle "Housing
-     * Loan" and "Vehicle Loan"
+     * Map deduction reference name to component code
      */
     private String mapDeductionReferenceNameToComponentCode(String referenceName) {
         if (referenceName == null)

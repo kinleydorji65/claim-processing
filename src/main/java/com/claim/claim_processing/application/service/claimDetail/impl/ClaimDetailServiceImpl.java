@@ -140,6 +140,7 @@ public class ClaimDetailServiceImpl implements ClaimDetailService {
 
         // 1. Convert to entity
         ClaimDetail claimDetail = allClaimDetailMapper.toEntity(requestResponse);
+        claimDetail.setIdentityNumber(requestResponse.getIdentityNumber());
         setClaimDetailReferences(claimDetail, requestResponse);
 
         // 3. Save claim detail first

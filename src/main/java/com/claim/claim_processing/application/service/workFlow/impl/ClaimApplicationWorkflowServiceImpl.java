@@ -188,16 +188,16 @@ public class ClaimApplicationWorkflowServiceImpl implements ClaimApplicationWork
             throw new RuntimeException("Claim application id is required.");
         }
 
-        boolean claimExists = claimApplicationRepository.existsById(applicationId);
+        // ❌ REMOVE THIS - It's triggering the JOIN FETCH
+        // boolean claimExists = claimApplicationRepository.existsById(applicationId);
+        // if (!claimExists) {
+        // throw new RuntimeException("Claim application not found with id: " +
+        // applicationId);
+        // }
 
-        if (!claimExists) {
-            throw new RuntimeException(
-                    "Claim application not found with id: " + applicationId);
-        }
-
+        // ✅ Just fetch workflows directly
         List<ClaimApplicationWorkflow> workflows = workflowRepository
-                .findByClaimApplication_IdOrderByActionAtDescCreatedAtDesc(
-                        applicationId);
+                .findByClaimApplication_IdOrderByActionAtDescCreatedAtDesc(applicationId);
 
         return mapper.toResponseList(workflows);
     }

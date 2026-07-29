@@ -29,21 +29,18 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
     // CREATE
     // -------------------------------
     @Override
-    @Transactional
     public ApiResponseDTO<ReserveAccountResponseDto> create(
-            ReserveAccountRequestDto dto
-    ) {
+            ReserveAccountRequestDto dto) {
 
         try {
             log.info("Creating Reserve Account for member: {}", dto.getMemberCode());
 
             // Check if reserve account already exists for this member
-            if (dto.getIdentityNumber() != null) {
-                if (repository.existsByIdentityNumber(
-                        dto.getIdentityNumber())) {
+            if (dto.getIdentityNumber() != null && dto.getComponentCode() != null) {
+                if (repository.existsByIdentityNumberAndComponentCode(
+                        dto.getIdentityNumber(), dto.getComponentCode())) {
                     throw ClaimException.conflict(
-                            "Reserve Account already exists for this member"
-                    );
+                            "Reserve Account already exists for this member");
                 }
             }
 
@@ -66,14 +63,13 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
 
-            ReserveAccount savedEntity = repository.save(entity);
+            ReserveAccount savedEntity = repository.saveAndFlush(entity);
 
             log.info("Reserve Account created successfully with ID: {}", savedEntity.getId());
 
             return ApiResponseDTO.success(
                     "Reserve Account created successfully",
-                    mapper.toResponseDto(savedEntity)
-            );
+                    mapper.toResponseDto(savedEntity));
 
         } catch (ClaimException ex) {
             throw ex;
@@ -81,8 +77,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             log.error("Failed to create Reserve Account", ex);
             throw ClaimException.internalError(
                     "Failed to create Reserve Account: " + ex.getMessage(),
-                    ex
-            );
+                    ex);
         }
     }
 
@@ -93,19 +88,15 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
     @Transactional
     public ApiResponseDTO<ReserveAccountResponseDto> update(
             Long id,
-            ReserveAccountRequestDto dto
-    ) {
+            ReserveAccountRequestDto dto) {
 
         try {
             log.info("Updating Reserve Account with ID: {}", id);
 
             ReserveAccount entity = repository.findById(id)
-                    .orElseThrow(() ->
-                            ClaimException.resourceNotFound(
-                                    "Reserve Account",
-                                    String.valueOf(id)
-                            )
-                    );
+                    .orElseThrow(() -> ClaimException.resourceNotFound(
+                            "Reserve Account",
+                            String.valueOf(id)));
 
             // Update only allowed fields
             if (dto.getTotalAmount() != null) {
@@ -117,7 +108,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             if (dto.getComponentCode() != null) {
                 entity.setComponentCode(dto.getComponentCode());
             }
-                entity.setStatus("Y");
+            entity.setStatus("Y");
 
             entity.setUpdatedAt(LocalDateTime.now());
 
@@ -127,8 +118,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
 
             return ApiResponseDTO.success(
                     "Reserve Account updated successfully",
-                    mapper.toResponseDto(updatedEntity)
-            );
+                    mapper.toResponseDto(updatedEntity));
 
         } catch (ClaimException ex) {
             throw ex;
@@ -136,8 +126,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             log.error("Failed to update Reserve Account", ex);
             throw ClaimException.internalError(
                     "Failed to update Reserve Account: " + ex.getMessage(),
-                    ex
-            );
+                    ex);
         }
     }
 
@@ -146,24 +135,19 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
     // -------------------------------
     @Override
     public ApiResponseDTO<ReserveAccountResponseDto> getById(
-            Long id
-    ) {
+            Long id) {
 
         try {
             log.info("Fetching Reserve Account with ID: {}", id);
 
             ReserveAccount entity = repository.findById(id)
-                    .orElseThrow(() ->
-                            ClaimException.resourceNotFound(
-                                    "Reserve Account",
-                                    String.valueOf(id)
-                            )
-                    );
+                    .orElseThrow(() -> ClaimException.resourceNotFound(
+                            "Reserve Account",
+                            String.valueOf(id)));
 
             return ApiResponseDTO.success(
                     "Reserve Account fetched successfully",
-                    mapper.toResponseDto(entity)
-            );
+                    mapper.toResponseDto(entity));
 
         } catch (ClaimException ex) {
             throw ex;
@@ -171,8 +155,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             log.error("Failed to fetch Reserve Account", ex);
             throw ClaimException.internalError(
                     "Failed to fetch Reserve Account: " + ex.getMessage(),
-                    ex
-            );
+                    ex);
         }
     }
 
@@ -185,22 +168,19 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
         try {
             log.info("Fetching all Reserve Accounts");
 
-            List<ReserveAccountResponseDto> response =
-                    repository.findAll()
-                            .stream()
-                            .map(mapper::toResponseDto)
-                            .toList();
+            List<ReserveAccountResponseDto> response = repository.findAll()
+                    .stream()
+                    .map(mapper::toResponseDto)
+                    .toList();
 
             if (response.isEmpty()) {
                 throw ClaimException.notFound(
-                        "No Reserve Accounts found"
-                );
+                        "No Reserve Accounts found");
             }
 
             return ApiResponseDTO.success(
                     "Reserve Accounts fetched successfully",
-                    response
-            );
+                    response);
 
         } catch (ClaimException ex) {
             throw ex;
@@ -208,8 +188,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             log.error("Failed to fetch Reserve Accounts", ex);
             throw ClaimException.internalError(
                     "Failed to fetch Reserve Accounts: " + ex.getMessage(),
-                    ex
-            );
+                    ex);
         }
     }
 
@@ -224,12 +203,9 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             log.info("Deleting Reserve Account with ID: {}", id);
 
             ReserveAccount entity = repository.findById(id)
-                    .orElseThrow(() ->
-                            ClaimException.resourceNotFound(
-                                    "Reserve Account",
-                                    String.valueOf(id)
-                            )
-                    );
+                    .orElseThrow(() -> ClaimException.resourceNotFound(
+                            "Reserve Account",
+                            String.valueOf(id)));
 
             // Soft delete - set isActive to 'N'
             entity.setIsActive("N");
@@ -240,8 +216,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
 
             return ApiResponseDTO.success(
                     "Reserve Account deleted successfully",
-                    "Deleted successfully"
-            );
+                    "Deleted successfully");
 
         } catch (ClaimException ex) {
             throw ex;
@@ -249,8 +224,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             log.error("Failed to delete Reserve Account", ex);
             throw ClaimException.internalError(
                     "Failed to delete Reserve Account: " + ex.getMessage(),
-                    ex
-            );
+                    ex);
         }
     }
 
@@ -259,28 +233,24 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
     // -------------------------------
     @Override
     public ApiResponseDTO<List<ReserveAccountResponseDto>> getByNppfNumber(
-            String nppfNumber
-    ) {
+            String nppfNumber) {
 
         try {
             log.info("Fetching Reserve Accounts for NPPF: {}", nppfNumber);
 
-            List<ReserveAccountResponseDto> response =
-                    repository.findByNppfNumber(nppfNumber)
-                            .stream()
-                            .map(mapper::toResponseDto)
-                            .toList();
+            List<ReserveAccountResponseDto> response = repository.findByNppfNumber(nppfNumber)
+                    .stream()
+                    .map(mapper::toResponseDto)
+                    .toList();
 
             if (response.isEmpty()) {
                 throw ClaimException.notFound(
-                        "No Reserve Accounts found for NPPF: " + nppfNumber
-                );
+                        "No Reserve Accounts found for NPPF: " + nppfNumber);
             }
 
             return ApiResponseDTO.success(
                     "Reserve Accounts fetched successfully",
-                    response
-            );
+                    response);
 
         } catch (ClaimException ex) {
             throw ex;
@@ -288,8 +258,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             log.error("Failed to fetch Reserve Accounts by NPPF", ex);
             throw ClaimException.internalError(
                     "Failed to fetch Reserve Accounts: " + ex.getMessage(),
-                    ex
-            );
+                    ex);
         }
     }
 
@@ -298,28 +267,24 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
     // -------------------------------
     @Override
     public ApiResponseDTO<List<ReserveAccountResponseDto>> getByIdentityNumber(
-            String identityNumber
-    ) {
+            String identityNumber) {
 
         try {
             log.info("Fetching Reserve Accounts for Identity: {}", identityNumber);
 
-            List<ReserveAccountResponseDto> response =
-                    repository.findByIdentityNumber(identityNumber)
-                            .stream()
-                            .map(mapper::toResponseDto)
-                            .toList();
+            List<ReserveAccountResponseDto> response = repository.findByIdentityNumber(identityNumber)
+                    .stream()
+                    .map(mapper::toResponseDto)
+                    .toList();
 
             if (response.isEmpty()) {
                 throw ClaimException.notFound(
-                        "No Reserve Accounts found for Identity: " + identityNumber
-                );
+                        "No Reserve Accounts found for Identity: " + identityNumber);
             }
 
             return ApiResponseDTO.success(
                     "Reserve Accounts fetched successfully",
-                    response
-            );
+                    response);
 
         } catch (ClaimException ex) {
             throw ex;
@@ -327,8 +292,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             log.error("Failed to fetch Reserve Accounts by Identity", ex);
             throw ClaimException.internalError(
                     "Failed to fetch Reserve Accounts: " + ex.getMessage(),
-                    ex
-            );
+                    ex);
         }
     }
 
@@ -337,28 +301,24 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
     // -------------------------------
     @Override
     public ApiResponseDTO<List<ReserveAccountResponseDto>> getByStatus(
-            String status
-    ) {
+            String status) {
 
         try {
             log.info("Fetching Reserve Accounts with status: {}", status);
 
-            List<ReserveAccountResponseDto> response =
-                    repository.findByStatus(status)
-                            .stream()
-                            .map(mapper::toResponseDto)
-                            .toList();
+            List<ReserveAccountResponseDto> response = repository.findByStatus(status)
+                    .stream()
+                    .map(mapper::toResponseDto)
+                    .toList();
 
             if (response.isEmpty()) {
                 throw ClaimException.notFound(
-                        "No Reserve Accounts found with status: " + status
-                );
+                        "No Reserve Accounts found with status: " + status);
             }
 
             return ApiResponseDTO.success(
                     "Reserve Accounts fetched successfully",
-                    response
-            );
+                    response);
 
         } catch (ClaimException ex) {
             throw ex;
@@ -366,8 +326,7 @@ public class ReserveAccountServiceImpl implements ReserveAccountService {
             log.error("Failed to fetch Reserve Accounts by status", ex);
             throw ClaimException.internalError(
                     "Failed to fetch Reserve Accounts: " + ex.getMessage(),
-                    ex
-            );
+                    ex);
         }
     }
 }

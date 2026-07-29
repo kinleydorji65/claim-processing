@@ -302,6 +302,7 @@ public ApiResponseDTO<GeneralClaimResponse> verify(
                         throw ClaimException.badRequest("Rejected By is required");
                 }
                 rejection.setClaimApplication(claimApplication);
+                rejection.setRemarks(remarks);
                 rejection.setRejectedBy(rejectedBy);
                 rejection.setVerifiedAt(new Timestamp(System.currentTimeMillis()));
                 rejection.setUpdatedBy(rejectedBy);
