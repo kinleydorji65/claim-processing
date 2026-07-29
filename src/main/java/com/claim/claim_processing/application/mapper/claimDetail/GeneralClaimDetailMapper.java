@@ -165,7 +165,11 @@ private LegalRecoveryResponseDto mapLegalRecoveryDetails(LegalRecoveryDetail ent
             // Basic fields
             .judgementNumber(entity.getJudgementNumber())
             .judgementDate(entity.getJudgementDate())
-            .reason(entity.getReason())
+            .dzongkhagId(entity.getDzongkhag().getDzongkhagId())
+            .dzongkhagName(entity.getDzongkhag().getDzongkhagName())
+            .convictedOrder(entity.getConvictedOrder())
+            .isConvicted(entity.getIsConvicted())
+            .payToMember(entity.getPayToMember())
 
             // Audit fields
             .createdBy(entity.getCreatedBy())

@@ -37,8 +37,8 @@ public class BenefitCalculationController {
         return ResponseEntity.ok(response);
     }
     @GetMapping
-    public ResponseEntity<ApiResponseDTO<Object>> getSpecialCaseBenefit(@RequestParam String nppfNumber) {
-        ApiResponseDTO<Object> response = benefitCalculationService.getSpecialCaseBenefit(nppfNumber);
+    public ResponseEntity<ApiResponseDTO<Object>> getSpecialCaseBenefit(@RequestParam String nppfNumber, @RequestParam String isLegalRecovery) {
+        ApiResponseDTO<Object> response = benefitCalculationService.getSpecialCaseBenefit(nppfNumber, isLegalRecovery);
         return ResponseEntity.ok(response);
     }
 }

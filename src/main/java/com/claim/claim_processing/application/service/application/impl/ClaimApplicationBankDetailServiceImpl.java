@@ -15,8 +15,10 @@ import com.claim.claim_processing.application.repository.application.ClaimApplic
 import com.claim.claim_processing.application.service.application.ClaimApplicationBankDetailService;
 import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
 import com.claim.claim_processing.common.entities.others.BankType;
+import com.claim.claim_processing.common.entities.others.RelationType;
 import com.claim.claim_processing.common.repository.beneficiary.ClaimantTypeRepository;
 import com.claim.claim_processing.common.repository.others.BankTypeRepository;
+import com.claim.claim_processing.common.repository.others.RelationTypeRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +31,7 @@ public class ClaimApplicationBankDetailServiceImpl
         private final ClaimApplicationBankDetailMapper claimApplicationBankDetailMapper;
         private final ClaimantTypeRepository claimantTypeRepository;
         private final BankTypeRepository bankTypeRepository;
+        private final RelationTypeRepository relationTypeRepository;
 
         @Override
         public List<ClaimApplicationBankDetail> create(
@@ -48,6 +51,7 @@ public class ClaimApplicationBankDetailServiceImpl
                                 .map(request -> {
 
                                         ClaimantTypeMaster claimantType = null;
+                                        RelationType relation = null;
                                         if (request.getClaimantTypeId() != null && request.getClaimantTypeId() > 0) {
                                                 claimantType = claimantTypeRepository
                                                                 .findById(request.getClaimantTypeId())
@@ -55,7 +59,10 @@ public class ClaimApplicationBankDetailServiceImpl
                                                                                 "Claimant type not found with id: "
                                                                                                 + request.getClaimantTypeId()));
                                         }
+                                        if (request.getRelationTypeId() != null && request.getRelationTypeId() > 0) {
+                                                relation = relationTypeRepository.findById(request.getRelationTypeId()).orElse(null);
 
+                                        }
                                         BankType bankType = null;
                                         if (request.getBankTypeId() != null && request.getBankTypeId() > 0) {
                                                 bankType = bankTypeRepository.findById(request.getBankTypeId())
@@ -66,6 +73,7 @@ public class ClaimApplicationBankDetailServiceImpl
 
                                         ClaimApplicationBankDetail claimApplicationBankDetail = claimApplicationBankDetailMapper
                                                         .toEntity(request);
+                                        claimApplicationBankDetail.setRelationType(relation);
                                         claimApplicationBankDetail.setClaimApplication(claimApplication);
                                         claimApplicationBankDetail.setClaimantType(claimantType);
                                         claimApplicationBankDetail.setBankType(bankType);

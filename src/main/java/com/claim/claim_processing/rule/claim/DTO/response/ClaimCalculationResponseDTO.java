@@ -18,6 +18,7 @@ public class ClaimCalculationResponseDTO {
     private BigDecimal noOfYearInService;
     private boolean loanCheck;
     private boolean rentalCheck;
+    private boolean showClculationButton;
 
     // Service period
     private LocalDate contributionStartDate;

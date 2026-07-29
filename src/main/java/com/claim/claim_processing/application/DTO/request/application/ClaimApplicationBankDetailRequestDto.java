@@ -12,6 +12,8 @@ public class ClaimApplicationBankDetailRequestDto {
     private Long id;
     private String beneficiaryIdentifier;
 
+    private Long relationTypeId;
+    
     private Long claimantTypeId;
 
     private Long bankTypeId;

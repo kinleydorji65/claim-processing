@@ -79,6 +79,7 @@ import com.claim.claim_processing.common.entities.common.SubmissionChannelMaster
 import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
 import com.claim.claim_processing.common.entities.contribution.SchemeType;
 import com.claim.claim_processing.common.entities.others.BankType;
+import com.claim.claim_processing.common.entities.others.RelationType;
 import com.claim.claim_processing.common.entities.others.StatusMaster;
 import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
 import com.claim.claim_processing.common.entities.specialCase.SpecialCaseRefundAuthorityMaster;
@@ -90,6 +91,7 @@ import com.claim.claim_processing.common.repository.common.SubmissionChannelRepo
 import com.claim.claim_processing.common.repository.contribution.ComponentMasterRepository;
 import com.claim.claim_processing.common.repository.contribution.SchemeTypeRepository;
 import com.claim.claim_processing.common.repository.others.BankTypeRepository;
+import com.claim.claim_processing.common.repository.others.RelationTypeRepository;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
 import com.claim.claim_processing.common.repository.specialCase.SpecialCaseAuthorityRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
@@ -132,6 +134,7 @@ public class ClaimDetailServiceImpl implements ClaimDetailService {
     private final ClaimantTypeRepository claimantTypeRepository;
     private final BankTypeRepository bankTypeRepository;
     private final ClaimAccountingEventRepository claimAccountingEventRepository;
+    private final RelationTypeRepository relationTypeRepository;
 
     @Override
     @Transactional
@@ -527,8 +530,11 @@ private LegalRecoveryResponseDto mapLegalRecoveryDetail(ClaimDetail claimDetail)
             .payeeTypeName(legalRecoveryDetail.getPayeeType() != null ? 
                     legalRecoveryDetail.getPayeeType().getName() : null)
             .judgementDate(legalRecoveryDetail.getJudgementDate())
-            .reason(legalRecoveryDetail.getReason())
-            .currentStatusName(null) // No StatusMaster relationship in entity
+        .dzongkhagId(legalRecoveryDetail.getDzongkhag().getDzongkhagId())
+        .dzongkhagName(legalRecoveryDetail.getDzongkhag().getDzongkhagName())
+        .convictedOrder(legalRecoveryDetail.getConvictedOrder())
+        .isConvicted(legalRecoveryDetail.getIsConvicted())
+        .payToMember(legalRecoveryDetail.getConvictedOrder())
             .createdBy(legalRecoveryDetail.getCreatedBy())
             .createdAt(legalRecoveryDetail.getCreatedAt())
             .updatedBy(legalRecoveryDetail.getUpdatedBy())
@@ -795,6 +801,7 @@ private List<ClaimDeductionItemResponseDto> mapDeductionItems(List<ClaimDeductio
         List<ClaimBankDetail> claimBankDetails = bankDetails.stream()
                 .filter(Objects::nonNull)
                 .map(bankDetailResponse -> {
+                        RelationType relation = null;
                     ClaimBankDetail bankDetail = allClaimDetailMapper.toBankDetailEntity(bankDetailResponse);
                     BankType bankType = bankTypeRepository.findByBankTypeId(bankDetailResponse.getBankTypeId())
                             .orElseThrow(() -> new RuntimeException(
@@ -806,9 +813,14 @@ private List<ClaimDeductionItemResponseDto> mapDeductionItems(List<ClaimDeductio
                                     "Claimant Type not found with ID: " + bankDetailResponse.getClaimantTypeId()));
                         bankDetail.setClaimantType(claimantTypeMaster);
                     }
+
+                    if (bankDetailResponse.getRelationTypeId() != null && bankDetailResponse.getRelationTypeId() > 0) {
+                        relation = relationTypeRepository.findById(bankDetailResponse.getRelationTypeId()).orElse(null);
+                    }
                     
                     bankDetail.setClaimDetail(claimDetail);
                     bankDetail.setBankType(bankType);
+                    bankDetail.setRelationType(relation);
                     return bankDetail;
                 })
                 .toList();

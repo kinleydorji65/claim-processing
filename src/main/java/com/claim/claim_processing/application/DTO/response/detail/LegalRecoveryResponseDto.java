@@ -22,8 +22,11 @@ public class LegalRecoveryResponseDto {
     private Long payeeTypeId;
     private String payeeTypeName;  // Optional: include payee type name
     private LocalDate judgementDate;
-    private String reason;
-    private String currentStatusName;  // Optional: include status name
+    private Long dzongkhagId;
+    private String dzongkhagName;
+    private String convictedOrder;
+    private String isConvicted;
+    private String payToMember;
     private String createdBy;
     private Timestamp createdAt;
     private String updatedBy;

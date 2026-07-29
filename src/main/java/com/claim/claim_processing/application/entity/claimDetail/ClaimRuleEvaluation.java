@@ -28,7 +28,7 @@ public class ClaimRuleEvaluation {
     private ClaimCalculationSummary calculationSummary;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SUB_CLAIM_CODE", referencedColumnName = "SUB_CLAIM_CODE", nullable = false)
+    @JoinColumn(name = "SUB_CLAIM_CODE", referencedColumnName = "SUB_CLAIM_CODE", nullable = true)
     private SubClaimMapping subRule;
 
     @Enumerated(EnumType.STRING)

@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
+import com.claim.claim_processing.common.entities.others.Dzongkhag;
 
 @Entity
 @Table(name = "LEGAL_RECOVERY_DETAIL", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
@@ -42,8 +43,20 @@ public class LegalRecoveryDetail {
         @Column(name = "JUDGEMENT_DATE")
         private LocalDate judgementDate;
 
-        @Column(name = "REASON", length = 1000)
-        private String reason;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "DZONGKHAG_ID")
+        private Dzongkhag dzongkhag;
+
+        @Column(name = "CONVICTED_ORDER", length = 100)
+        private String convictedOrder;
+
+        @Column(name = "IS_CONVICTED", length = 100)
+        @Builder.Default
+        private String isConvicted = "Y";
+
+        @Column(name = "PAY_TO_MEMBER", length = 100)
+        @Builder.Default
+        private String payToMember = "Y";
 
         @Column(name = "CREATED_BY", length = 100)
         private String createdBy;

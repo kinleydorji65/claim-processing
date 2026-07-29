@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import com.claim.claim_processing.common.entities.beneficiaryMaster.ClaimantTypeMaster;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.others.BankType;
+import com.claim.claim_processing.common.entities.others.RelationType;
 
 @Entity
 @Table(name = "CLAIM_APPLICATION_BANK_DETAIL", schema = "PPFMS_CLAIM_PROCESSING_SERVICE_SCHEMA")
@@ -29,6 +30,10 @@ public class ClaimApplicationBankDetail {
 
         @Column(name = "BENEFICIARY_IDENTIFIER", length = 100)
         private String beneficiaryIdentifier;
+
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "RELATION_TYPE_ID")
+        private RelationType relationType;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "CLAIMANT_TYPE_ID")

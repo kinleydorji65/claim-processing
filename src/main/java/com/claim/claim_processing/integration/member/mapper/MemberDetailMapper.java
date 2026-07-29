@@ -45,43 +45,54 @@ public abstract class MemberDetailMapper {
     public abstract MemberDetailResponseDto toMemberDetailResponseDto(MemberDetail memberDetail);
 
     @AfterMapping
-protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberDetailResponseDto responseDto) {
-    responseDto.setMemberName(getFullName(memberDetail.getFirstName(), memberDetail.getMiddleName(), memberDetail.getLastName()));
-    String identityTypeName = personIdentityRepository.findById(memberDetail.getIdentityTypeId()).orElseThrow(()-> ClaimException.notFound("Identy type not found with ID: " + memberDetail.getId())).getName();
-    String employmentTypeName = null;
-    if(memberDetail.getWorkInfo() != null && memberDetail.getWorkInfo().getEmploymentTypeId() > 0){
-        employmentTypeName = employmentTypeRepository.findById(memberDetail.getWorkInfo().getEmploymentTypeId()).orElseThrow(()-> ClaimException.notFound("Employment type not found with ID: " + memberDetail.getWorkInfo().getEmploymentTypeId())).getEmploymentTypeName();
+    protected void setOtherDetails(MemberDetail memberDetail, @MappingTarget MemberDetailResponseDto responseDto) {
+        responseDto.setMemberName(
+                getFullName(memberDetail.getFirstName(), memberDetail.getMiddleName(), memberDetail.getLastName()));
+        String identityTypeName = personIdentityRepository.findById(memberDetail.getIdentityTypeId())
+                .orElseThrow(() -> ClaimException.notFound("Identy type not found with ID: " + memberDetail.getId()))
+                .getName();
+        String employmentTypeName = null;
+        if (memberDetail.getWorkInfo() != null && memberDetail.getWorkInfo().getEmploymentTypeId() > 0) {
+            employmentTypeName = employmentTypeRepository.findById(memberDetail.getWorkInfo().getEmploymentTypeId())
+                    .orElseThrow(() -> ClaimException.notFound(
+                            "Employment type not found with ID: " + memberDetail.getWorkInfo().getEmploymentTypeId()))
+                    .getEmploymentTypeName();
+        }
+
+        responseDto.setDateOfServiceJoiningDate(memberDetail.getWorkInfo().getServiceJoiningDate());
+        responseDto.setContactNo(memberDetail.getContactNo() != null && memberDetail.getContactNo() > 0
+                ? memberDetail.getContactNo().toString()
+                : null);
+        responseDto.setEmail(memberDetail.getEmail());
+        responseDto.setMemberCategory(getAgencyCategoryName(memberDetail.getAgencyCategoryId()));
+        responseDto.setMemberCategoryId(memberDetail.getAgencyCategoryId());
+        responseDto.setIdentityTypeName(identityTypeName);
+        responseDto.setEmploymentTypeName(employmentTypeName != null ? employmentTypeName : "Unknown");
+        responseDto.setMemberStatus(memberDetail.getStatus());
+        responseDto.setBasicSalary(
+                memberDetail.getWorkInfo().getBasicPay() != null ? memberDetail.getWorkInfo().getBasicPay().toString()
+                        : null);
+        responseDto.setMemberBanks(toMemberBankResponseList(memberDetail.getMemberBanks()));
+        responseDto.setMemberNominees(toMemberNomineeResponseList(memberDetail.getMemberNominees()));
+        responseDto.setMemberFamilies(toMemberFamilyResponseList(memberDetail.getMemberFamilies()));
+        responseDto.setSchemeTypeId(responseDto.getEmploymentTypeName().equals("Regular") ? 1L : 3L);
+        responseDto.setAgencyCode(
+                memberDetail.getAgencyDetail() != null ? memberDetail.getAgencyDetail().getAgencyCode() : null);
     }
-    
-    responseDto.setDateOfServiceJoiningDate(memberDetail.getWorkInfo().getServiceJoiningDate());
-    responseDto.setContactNo(memberDetail.getContactNo() != null && memberDetail.getContactNo() > 0 ? memberDetail.getContactNo().toString() : null);
-    responseDto.setEmail(memberDetail.getEmail());
-    responseDto.setMemberCategory(getAgencyCategoryName(memberDetail.getAgencyCategoryId()));
-    responseDto.setMemberCategoryId(memberDetail.getAgencyCategoryId());
-    responseDto.setIdentityTypeName(identityTypeName);
-    responseDto.setEmploymentTypeName(employmentTypeName != null ? employmentTypeName : "Unknown");
-    responseDto.setMemberStatus(memberDetail.getStatus());
-    responseDto.setBasicSalary(memberDetail.getWorkInfo().getBasicPay() != null ? memberDetail.getWorkInfo().getBasicPay().toString() : null);
-    responseDto.setMemberBanks(toMemberBankResponseList(memberDetail.getMemberBanks()));
-    responseDto.setMemberNominees(toMemberNomineeResponseList(memberDetail.getMemberNominees()));
-    responseDto.setMemberFamilies(toMemberFamilyResponseList(memberDetail.getMemberFamilies()));
-    responseDto.setSchemeTypeId(responseDto.getEmploymentTypeName().equals("Regular") ? 1L : 3L);
-    responseDto.setAgencyCode(memberDetail.getAgencyDetail() != null ? memberDetail.getAgencyDetail().getAgencyCode() : null);
-}
 
-private String getAgencyCategoryName(String agencyCategoryId) {
-    return agencyCategoryRepository.findById(agencyCategoryId)
-            .orElseThrow(() -> ClaimException.notFound("Agency category not found with ID: " + agencyCategoryId))
-            .getCategoryName();
-}
+    private String getAgencyCategoryName(String agencyCategoryId) {
+        return agencyCategoryRepository.findById(agencyCategoryId)
+                .orElseThrow(() -> ClaimException.notFound("Agency category not found with ID: " + agencyCategoryId))
+                .getCategoryName();
+    }
 
-private String joinNonNullTrimmed(String... parts) {
-    return Arrays.stream(parts)
-        .filter(p -> p != null && !p.isBlank())
-        .collect(Collectors.joining(" "));
-}
+    private String joinNonNullTrimmed(String... parts) {
+        return Arrays.stream(parts)
+                .filter(p -> p != null && !p.isBlank())
+                .collect(Collectors.joining(" "));
+    }
 
-private List<MemberBankResponseDto> toMemberBankResponseList(List<MemberBank> banks) {
+    private List<MemberBankResponseDto> toMemberBankResponseList(List<MemberBank> banks) {
         if (banks == null || banks.isEmpty())
             return List.of();
 
@@ -98,11 +109,13 @@ private List<MemberBankResponseDto> toMemberBankResponseList(List<MemberBank> ba
                         .build())
                 .toList();
     }
+
     private String getBankName(Long bankId) {
         return bankTypeRepository.findById(bankId)
                 .orElseThrow(() -> ClaimException.notFound("Bank not found with ID: " + bankId))
                 .getBankTypeName();
     }
+
     private List<MemberNomineeResponseDto> toMemberNomineeResponseList(List<MemberNominee> nominees) {
         if (nominees == null || nominees.isEmpty())
             return List.of();

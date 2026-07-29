@@ -21,4 +21,9 @@ public class MemberServiceController {
     public ResponseEntity<?> getMemberDetails(@PathVariable("nppfNumber") String nppfNumber) {
         return ResponseEntity.ok(memberService.getMemberDetails(nppfNumber));
     }
+
+    @GetMapping("/get-member-details/{agencyCode}")
+    public ResponseEntity<?> getMemberDetailByAgencyCode(@PathVariable("agencyCode") String agencyCode) {
+        return ResponseEntity.ok(memberService.getMemberDetailByAgencyCode(agencyCode));
+    }
 }

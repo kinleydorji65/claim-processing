@@ -1,5 +1,7 @@
 package com.claim.claim_processing.rule.BenefitCalculation.impl;
 
+import com.claim.claim_processing.integration.pension.entity.PensionContributionComponent;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
@@ -10,12 +12,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -23,13 +23,16 @@ import org.springframework.stereotype.Service;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberDetailResponseDto;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeRuleMap;
+import com.claim.claim_processing.common.entities.claim.ReserveAccount;
 import com.claim.claim_processing.common.entities.common.RuleTypeMaster;
 import com.claim.claim_processing.common.repository.claim.ClaimTypeRuleMapRepository;
+import com.claim.claim_processing.common.repository.claim.ReserveAccountRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import com.claim.claim_processing.integration.loanAdjustment.service.LoanDetailService;
 import com.claim.claim_processing.integration.member.service.MemberService;
+import com.claim.claim_processing.integration.pension.repository.PensionContributionComponentRepository;
 import com.claim.claim_processing.integration.rentalAdjustment.service.RentalDetailService;
 import com.claim.claim_processing.rule.BenefitCalculation.BenefitCalculationService;
 import com.claim.claim_processing.rule.EligibleEnum.EligibilityEnum;
@@ -57,6 +60,10 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
     private final ClaimTypeRuleMapRepository claimTypeRuleMapRepository;
     private final MemberService memberService;
     private final RentalDetailService rentalDetailService;
+
+    private final ReserveAccountRepository reserveAccountRepository;
+    private final PensionContributionComponentRepository pensionContributionComponentRepository;
+
 
     @Override
     public ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(
@@ -728,10 +735,11 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
      * Public method to get special case benefit
      * Handles different case types and returns appropriate response
      */
-    public ApiResponseDTO<Object> getSpecialCaseBenefit(String nppfNumber) {
+    @Override
+    public ApiResponseDTO<Object> getSpecialCaseBenefit(String nppfNumber, String isSpecialCase) {
 
         // Handle NORMAL_CLAIM_FORFEITED and SPECIAL_NORMAL_CLAIM
-        ClaimCalculationResponseDTO calculationResponse = calculateSpecialCaseBenefit(nppfNumber);
+        ClaimCalculationResponseDTO calculationResponse = calculateSpecialCaseBenefit(nppfNumber, isSpecialCase);
         if (calculationResponse == null) {
             return ApiResponseDTO.success("No Detail Found with nppf number: " + nppfNumber);
         }
@@ -773,14 +781,14 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
      * Public method to get special case preview
      */
     public SpecialCasePreviewResponse getSpecialCasePreview(String nppfNumber) {
-        ClaimCalculationResponseDTO calculationResponse = calculateSpecialCaseBenefit(nppfNumber);
+        ClaimCalculationResponseDTO calculationResponse = calculateSpecialCaseBenefit(nppfNumber, null);
         return mapToSpecialCasePreviewResponse(calculationResponse);
     }
 
     /**
      * Calculate special case benefit where all components are eligible
      */
-    private ClaimCalculationResponseDTO calculateSpecialCaseBenefit(String nppfNumber) {
+    private ClaimCalculationResponseDTO calculateSpecialCaseBenefit(String nppfNumber, String isLegalRecovery) {
 
         // 1. Validate request
         if (nppfNumber == null || nppfNumber.isBlank()) {
@@ -798,8 +806,17 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
             throw ClaimException.notFound("No contribution data found for member: " + nppfNumber);
         }
 
+        boolean showCalculationButton = true;
         // 4. Build all components as eligible (no rules applied)
         List<ComponentBalanceDTO> allComponents = buildAllEligibleComponents(contributionSummary);
+        if(isLegalRecovery.equals("N")){
+            List<ComponentBalanceDTO> filterComponents = filterTheComponents(nppfNumber, allComponents);
+
+            if (filterComponents != null) {
+                allComponents = filterComponents;
+                showCalculationButton = false;
+            }
+        }
 
         // 5. Calculate totals using the same logic as your main service
         BigDecimal totalPfAmount = BigDecimal.ZERO;
@@ -866,6 +883,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         // 9. Build response
         ClaimCalculationResponseDTO response = ClaimCalculationResponseDTO.builder()
                 .nppfNumber(contributionSummary.getNppfNumber())
+                .showClculationButton(showCalculationButton)
                 .contributionStartDate(memberDetail.getPfJoiningDate())
                 .contributionEndDate(contributionSummary.getContributionEndDate())
                 .totalContributionMonths(contributionSummary.getTotalContributionMonths())
@@ -894,6 +912,36 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
                 .build();
 
         return response;
+    }
+
+    private List<ComponentBalanceDTO> filterTheComponents(String nppfNumber, List<ComponentBalanceDTO> allComponents) {
+        List<ComponentBalanceDTO> result = allComponents
+            .stream()
+            .map(m -> {
+                ReserveAccount reserveAccount = reserveAccountRepository.findByNppfNumberAndComponentCodeAndIsActive(nppfNumber, m.getCode(), "Y").orElse(null);
+                if (reserveAccount != null && m.getCode().equals(reserveAccount.getComponentCode())) {
+                    return ComponentBalanceDTO
+                        .builder()
+                        .code(m.getCode())
+                        .name(m.getName())
+                        .amount(reserveAccount.getTotalAmount())
+                        .build();    
+                }
+                PensionContributionComponent pensionComponent = pensionContributionComponentRepository.findActiveComponentsByNppfAndComponentCode(nppfNumber, m.getCode()).orElse(null);
+                
+
+                if (pensionComponent != null && m.getCode().equals(pensionComponent.getComponentCode())) {
+                    return ComponentBalanceDTO
+                        .builder()
+                        .code(m.getCode())
+                        .name(m.getName())
+                        .amount(pensionComponent.getAmount())
+                        .build();
+                }
+                return m;
+            })
+            .toList();
+            return result;
     }
     /**
  * Build all components as eligible (no rules applied)

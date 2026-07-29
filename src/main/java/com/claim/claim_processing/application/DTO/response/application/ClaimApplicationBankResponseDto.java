@@ -14,7 +14,9 @@ import java.time.LocalDateTime;
 public class ClaimApplicationBankResponseDto {
 
     private Long id;
-
+    private Long relationTypeId;
+    
+    private String relationTypeName;
     // ---------------------------------
     // Beneficiary
     // ---------------------------------

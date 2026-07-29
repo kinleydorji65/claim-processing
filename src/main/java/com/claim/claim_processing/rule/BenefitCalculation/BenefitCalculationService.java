@@ -7,6 +7,6 @@ import com.claim.claim_processing.rule.dto.ClaimInitialPreviewRequest;
 
 public interface BenefitCalculationService {
     ApiResponseDTO<ClaimCalculationResponseDTO> calculateBenefit(ClaimInitialPreviewRequest request);
-    ApiResponseDTO<Object> getSpecialCaseBenefit(String nppfNumber);
+    ApiResponseDTO<Object> getSpecialCaseBenefit(String nppfNumber, String isLegalRecovery);
     // ApiResponseDTO<BigDecimal> getFinalAmountAfterDeduction(BigDecimal calculatedAmount, Boolean isLoanThere);
 }

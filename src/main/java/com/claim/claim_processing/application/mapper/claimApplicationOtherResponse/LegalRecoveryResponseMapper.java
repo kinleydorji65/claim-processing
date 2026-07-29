@@ -38,7 +38,11 @@ public class LegalRecoveryResponseMapper {
 
                 .judgementDate(entity.getJudgementDate())
 
-                .reason(entity.getReason())
+                .dzongkhagId(entity.getDzongkhag().getDzongkhagId())
+                .dzongkhagName(entity.getDzongkhag().getDzongkhagName())
+                .convictedOrder(entity.getConvictedOrder())
+                .isConvicted(entity.getIsConvicted())
+                .payToMember(entity.getPayToMember())
 
                 .createdBy(entity.getCreatedBy())
                 .createdAt(entity.getCreatedAt())

@@ -25,13 +25,15 @@ public class ClaimApplicationBankResponseMapper {
                 //                 : null
                 // )
 
-                .beneficiaryIdentifier(entity.getBeneficiaryIdentifier())
+                .beneficiaryIdentifier(entity.getBeneficiaryIdentifier() != null ? entity.getBeneficiaryIdentifier() : null)
 
                 .claimantTypeId(
                         entity.getClaimantType() != null
                                 ? entity.getClaimantType().getId()
                                 : null
                 )
+                .relationTypeId(entity.getRelationType() != null ? entity.getRelationType().getRelationTypeId() : null)
+                .relationTypeName(entity.getRelationType() != null ? entity.getRelationType().getRelationTypeName() : null)
                 .claimantTypeName(
                         entity.getClaimantType() != null
                                 ? entity.getClaimantType().getName()
