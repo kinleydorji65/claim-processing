@@ -752,7 +752,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
      */
     private SpecialCasePreviewResponse mapToSpecialCasePreviewResponse(
             ClaimCalculationResponseDTO calculationResponse) {
-
+               
         // Map components from the response - FIXED
         List<SpecialCasePreviewResponse.ComponentDto> componentDtos = Optional
                 .ofNullable(calculationResponse.getComponents())
@@ -774,6 +774,7 @@ public class BenefitCalculationServiceImpl implements BenefitCalculationService 
         // Return the complete response
         return SpecialCasePreviewResponse.builder()
                 .components(componentDtos)
+                .showCalcutionButton(calculationResponse.isShowClculationButton() ? "Y" : "N")
                 .build();
     }
 

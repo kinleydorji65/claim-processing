@@ -11,6 +11,7 @@ import com.claim.claim_processing.application.service.application.ClaimApplicati
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +35,10 @@ public class ClaimApplicationDeductionDetailServiceImpl
         if (request == null) {
             throw new RuntimeException("Calculation response is required.");
         }
+         BigDecimal legalLoanAdjustment = BigDecimal.valueOf(0.0);
+        if(claimApplication.getClaimType().getId() == 5L) {
+            legalLoanAdjustment = claimApplication.getCalculationSummary().getFinalPayableAmount();
+        }
         ClaimApplicationDeductionDetail deductionDetail = deductionDetailRepository
                 .findById(request.getDeductionDetailId()).orElse(null);
         if (deductionDetail == null) {
@@ -41,7 +46,7 @@ public class ClaimApplicationDeductionDetailServiceImpl
                     .outstandingAmount(request.getOutstandingAmount()) // ✅ No semicolon
                     .verifiedDeductedAmount(request.getVerifiedDeductedAmount()) // ✅ No semicolon
                     .approvedDeductedAmount(request.getApprovedDeductedAmount()) // ✅ No semicolon
-                    .deductedAmount(request.getDeductedAmount()) // ✅ No semicolon
+                    .deductedAmount((request.getDeductedAmount() != null && request.getDeductedAmount().compareTo(BigDecimal.ZERO) > 0) ? request.getDeductedAmount() : legalLoanAdjustment) // ✅ No semicolon
                     .remarks(request.getRemarks()) // ✅ No semicolon
                     .claimApplication(claimApplication)
                     .createdBy(request.getCreatedBy()) // ✅ No semicolon
@@ -56,6 +61,17 @@ public class ClaimApplicationDeductionDetailServiceImpl
             deductionDetail.setClaimApplication(claimApplication);
         }
         deductionDetailRepository.saveAndFlush(deductionDetail);
+        if (request.getDeductionItems() == null && claimApplication.getClaimType().getId() == 5L) {
+            request.setDeductionItems(
+                List.of(DeductionItemDto
+                    .builder()
+                    .deductionCategory("LOAN")
+                    .deductedAmount(legalLoanAdjustment)
+                    .outstandingAmount(BigDecimal.valueOf(0.0))
+                    .remainingAmount(BigDecimal.valueOf(0.0))
+                    .build())
+                );
+        }
         addDeductionItems(deductionDetail, request.getDeductionItems());
 
         return deductionDetail;

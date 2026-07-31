@@ -13,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationCalculationSummaryRequest;
 import com.claim.claim_processing.application.DTO.request.application.GeneralClaimCreateRequest;
 import com.claim.claim_processing.application.DTO.request.application.GeneralClaimPatchRequest;
+import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationVerificationRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationWorkflowRequestDto;
+import com.claim.claim_processing.application.DTO.request.workFlow.GeneralClaimApplicationVerifierRequestDTO;
 import com.claim.claim_processing.application.DTO.response.application.GeneralClaimResponse;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
@@ -94,53 +96,80 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         throw ClaimException.badRequest("Request body is required");
                 }
 
+                // 1. Create Claim Application
                 ClaimApplication claimApplication = claimApplicationService.create(request.getClaimApplication());
 
+                // 2. Initialize all entities
                 NormalClaimDetail normalClaimDetail = null;
                 PartialWithdrawalDetail partialWithdrawalDetail = null;
                 BeneficiarySettlementDetail beneficiarySettlementDetail = null;
                 LegalRecoveryDetail legalRecoveryDetail = null;
-
                 List<ClaimApplicationBankDetail> bankDetailEntities = new ArrayList<>();
                 ClaimApplicationCalculationSummary calculationEntity = null;
+                ClaimApplicationDeductionDetail deductionEntity = null;
+                List<ClaimApplicationForfeitedComponent> forfeitedComponents = new ArrayList<>();
+
+                // 3. Create Normal Claim
                 if (request.getNormalClaim() != null) {
-                        normalClaimDetail = normalClaimService.create(
-                                        claimApplication,
-                                        request.getNormalClaim());
+                        normalClaimDetail = normalClaimService.create(claimApplication, request.getNormalClaim());
                 }
 
+                // 4. Create Partial Withdrawal
                 if (request.getPartialWithdrawal() != null) {
-                        partialWithdrawalDetail = partialWithdrawalService.create(
-                                        claimApplication,
+                        partialWithdrawalDetail = partialWithdrawalService.create(claimApplication,
                                         request.getPartialWithdrawal());
                 }
 
+                // 5. Create Beneficiary Settlement
                 if (request.getBeneficiarySettlement() != null) {
                         beneficiarySettlementDetail = beneficiarySettlementDetailService.create(
                                         claimApplication,
                                         request.getBeneficiarySettlement());
                 }
 
+                // 6. Create Legal Recovery
                 if (request.getLegalRecovery() != null) {
                         legalRecoveryDetail = legalRecoveryService.create(request.getLegalRecovery(), claimApplication);
                 }
 
+                // 7. Create Bank Details
                 if (request.getBankDetails() != null && !request.getBankDetails().isEmpty()) {
-                        bankDetailEntities = claimApplicationBankDetailService.create(
-                                        claimApplication,
+                        bankDetailEntities = claimApplicationBankDetailService.create(claimApplication,
                                         request.getBankDetails());
                 }
 
+                // 8. Create Initial Calculation Summary (if Other request exists)
                 if (request.getClaimApplicationOther() != null) {
-
-                        calculationEntity = claimApplicationCalculationService.initialCreate(claimApplication,
+                        calculationEntity = claimApplicationCalculationService.initialCreate(
+                                        claimApplication,
                                         request.getClaimApplicationOther());
-
                 }
-                ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto
-                                .builder()
+
+                // 9. Create/Update Calculation Summary with full details
+                if (request.getCalculationSummary() != null) {
+                        calculationEntity = claimApplicationCalculationService.createForCalculation(
+                                        claimApplication,
+                                        request.getCalculationSummary());
+
+                        // 9a. Save Forfeited Components
+                        if (request.getCalculationSummary().getForFeitedComponents() != null
+                                        && !request.getCalculationSummary().getForFeitedComponents().isEmpty()) {
+                                forfeitedComponents = claimApplicationForfeitedComponentService.saveForfeitedComponents(
+                                                claimApplication,
+                                                request.getCalculationSummary().getForFeitedComponents());
+                        }
+
+                        // 9b. Save Deduction Detail
+                        if (request.getCalculationSummary().getDeductionDetail() != null) {
+                                deductionEntity = claimApplicationDeductionDetailService.saveCalculationDeductions(
+                                                claimApplication,
+                                                request.getCalculationSummary().getDeductionDetail());
+                        }
+                }
+
+                // 10. Create Workflow
+                ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto.builder()
                                 .fromStageId(request.getClaimApplication().getFromStageId())
-                                .toStageId(request.getClaimApplication().getToStageId())
                                 .toStageId(request.getClaimApplication().getToStageId())
                                 .fromStatusId(request.getClaimApplication().getFromStatusId())
                                 .toStatusId(request.getClaimApplication().getToStatusId())
@@ -151,28 +180,62 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 List<ClaimApplicationWorkflowResponseDto> workflowDetails = claimApplicationWorkflowService
                                 .create(claimApplication, workflowRequest);
 
+                // 11. Build Response with Null Safety
                 GeneralClaimResponse response = generalClaimResponseBuilderMapper.toResponse(claimApplication);
                 response.setWorkflowDetails(workflowDetails);
 
-                response.setBankDetails(
-                                bankDetailEntities.stream()
-                                                .map(claimApplicationBankResponseMapper::toResponse)
-                                                .toList());
+                // 11a. Set Bank Details (with null safety)
+                if (bankDetailEntities != null && !bankDetailEntities.isEmpty()) {
+                        response.setBankDetails(
+                                        bankDetailEntities.stream()
+                                                        .map(claimApplicationBankResponseMapper::toResponse)
+                                                        .toList());
+                }
 
-                response.setCalculationSummary(
-                                claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
+                // 11b. Set Calculation Summary (ONLY ONCE - with null safety)
+                if (calculationEntity != null) {
+                        response.setCalculationSummary(
+                                        claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
+                }
 
-                response.setNormalClaimDetails(
-                                normalClaimResponseMapper.toResponse(normalClaimDetail));
+                // 11c. Set Normal Claim Details (with null safety)
+                if (normalClaimDetail != null) {
+                        response.setNormalClaimDetails(
+                                        normalClaimResponseMapper.toResponse(normalClaimDetail));
+                }
 
-                response.setPartialWithdrawalDetails(
-                                partialWithdrawalResponseMapper.toResponse(partialWithdrawalDetail));
+                // 11d. Set Partial Withdrawal Details (with null safety)
+                if (partialWithdrawalDetail != null) {
+                        response.setPartialWithdrawalDetails(
+                                        partialWithdrawalResponseMapper.toResponse(partialWithdrawalDetail));
+                }
 
-                response.setBeneficiarySettlementDetails(
-                                beneficiarySettlementResponseMapper.toResponse(beneficiarySettlementDetail));
-                response.setCalculationSummary(
-                                claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
-                response.setLegalRecoveryDetail(legalRecoveryResponseMapper.toResponse(legalRecoveryDetail));
+                // 11e. Set Beneficiary Settlement Details (with null safety)
+                if (beneficiarySettlementDetail != null) {
+                        response.setBeneficiarySettlementDetails(
+                                        beneficiarySettlementResponseMapper.toResponse(beneficiarySettlementDetail));
+                }
+
+                // 11f. Set Legal Recovery Detail (with null safety)
+                if (legalRecoveryDetail != null) {
+                        response.setLegalRecoveryDetail(
+                                        legalRecoveryResponseMapper.toResponse(legalRecoveryDetail));
+                }
+
+                // 11g. Set Deduction Detail (with null safety)
+                if (deductionEntity != null) {
+                        response.setDeductionDetail(
+                                        claimApplicationDeductionResponseMapper.toResponse(deductionEntity));
+                }
+
+                // 11h. Set Forfeited Components (with null safety)
+                if (forfeitedComponents != null && !forfeitedComponents.isEmpty()) {
+                        response.setForfeitedComponents(
+                                        forfeitedComponents.stream()
+                                                        .map(claimApplicationForfeitedComponentResponseMapper::toResponse)
+                                                        .toList());
+                }
+
                 return ApiResponseDTO.success(response);
         }
 
@@ -298,6 +361,21 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                 && !request.getClaimApplicationForfeitedComponent().isEmpty()) {
                         forfeitedComponents = claimApplicationForfeitedComponentService.patchForfeitedComponent(
                                         request.getClaimApplicationForfeitedComponent());
+                }
+                if (request.getClaimApplication().getSubmissionChannelId() != null
+                                && request.getClaimApplication().getSubmissionChannelId() > 0
+                                && request.getClaimApplication().getSubmissionChannelId() == 2L) {
+                        GeneralClaimApplicationVerifierRequestDTO requestForVerifier = GeneralClaimApplicationVerifierRequestDTO.builder()
+                                        .verifierRequest(
+                                                        ClaimApplicationVerificationRequestDto
+                                                                        .builder()
+                                                                        .claimApplicationId(claimApplication.getId())
+                                                                        .verifiedBy(claimApplication.getCreatedBy())
+                                                                        .build())
+                                        .calculationSummary(null)
+                                        .build();
+                        claimApplicationVerificationService.verify(claimApplication.getApplicationNumber(),
+                                        requestForVerifier);
                 }
 
                 ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto
@@ -537,36 +615,36 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
         }
 
         @Override
-@Transactional(readOnly = true)
-public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> findByInitiatedByAndIsSpecialCase(
-        String initiatedBy, 
-        ActivityEnum isSpecialCase, 
-        Pageable page) {
+        @Transactional(readOnly = true)
+        public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> findByInitiatedByAndIsSpecialCase(
+                        String initiatedBy,
+                        ActivityEnum isSpecialCase,
+                        Pageable page) {
 
-    if (initiatedBy == null || initiatedBy.isBlank()) {
-        throw ClaimException.badRequest("Agency code is required");
-    }
+                if (initiatedBy == null || initiatedBy.isBlank()) {
+                        throw ClaimException.badRequest("Agency code is required");
+                }
 
-    // Get Page from service
-    Page<ClaimApplication> claimPage = claimApplicationService.findByInitiatedByAndIsSpecialCase(
-            initiatedBy, isSpecialCase, page);
+                // Get Page from service
+                Page<ClaimApplication> claimPage = claimApplicationService.findByInitiatedByAndIsSpecialCase(
+                                initiatedBy, isSpecialCase, page);
 
-    // Map content to response DTOs
-    List<GeneralClaimResponse> responses = claimPage.getContent().stream()
-            .map(this::buildGeneralClaimResponse)
-            .toList();
+                // Map content to response DTOs
+                List<GeneralClaimResponse> responses = claimPage.getContent().stream()
+                                .map(this::buildGeneralClaimResponse)
+                                .toList();
 
-    // Add pagination headers
-    HttpHeaders headers = new HttpHeaders();
-    headers.add("X-Total-Count", String.valueOf(claimPage.getTotalElements()));
-    headers.add("X-Total-Pages", String.valueOf(claimPage.getTotalPages()));
-    headers.add("X-Page-Number", String.valueOf(claimPage.getNumber()));
-    headers.add("X-Page-Size", String.valueOf(claimPage.getSize()));
+                // Add pagination headers
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("X-Total-Count", String.valueOf(claimPage.getTotalElements()));
+                headers.add("X-Total-Pages", String.valueOf(claimPage.getTotalPages()));
+                headers.add("X-Page-Number", String.valueOf(claimPage.getNumber()));
+                headers.add("X-Page-Size", String.valueOf(claimPage.getSize()));
 
-    return ResponseEntity.ok()
-            .headers(headers)
-            .body(ApiResponseDTO.success("Claim applications fetched successfully", responses));
-}
+                return ResponseEntity.ok()
+                                .headers(headers)
+                                .body(ApiResponseDTO.success("Claim applications fetched successfully", responses));
+        }
 
         @Override
         @Transactional
@@ -810,7 +888,8 @@ public ResponseEntity<ApiResponseDTO<List<GeneralClaimResponse>>> findByInitiate
 
         @Override
         @Transactional
-        public ApiResponseDTO<GeneralClaimResponse> rejectedClaimApplication(String applicationNumber, String rejectedBy, String remarks) {
+        public ApiResponseDTO<GeneralClaimResponse> rejectedClaimApplication(String applicationNumber,
+                        String rejectedBy, String remarks) {
                 if (applicationNumber == null || applicationNumber.isBlank()) {
                         throw ClaimException.badRequest("Application number is required");
                 }

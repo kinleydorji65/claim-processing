@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class SpecialCasePreviewResponse {
     
-    
+    private String showCalcutionButton;
     private List<ComponentDto> components;
 
     @Data

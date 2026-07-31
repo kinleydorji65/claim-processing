@@ -59,5 +59,16 @@ public class ClaimProcessingFlowConfig implements SwaggerConfig {
                 "Validate Component"
         );
     }
+
+    @Bean
+    public GroupedOpenApi wrongRemitanceManagementApi() {
+
+        return createGroupedApi(
+                "Wrong Remitance Management",
+                "Wrong Remitance APIs",
+                "/api/wrong-remitance/contributions/**",
+                "Wrong Remitance Management"
+        );
+    }
 }
 

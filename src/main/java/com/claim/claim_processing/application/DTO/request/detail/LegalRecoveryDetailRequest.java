@@ -1,8 +1,5 @@
 package com.claim.claim_processing.application.DTO.request.detail;
 
-
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,8 +21,10 @@ public class LegalRecoveryDetailRequest {
     private Long payeeTypeId;
     
     private LocalDate judgementDate;
-    
-    private String reason;
+    private Long dzongkhagId;
+    private String convictedOrder;
+    private String isConvicted;
+    private String payToMember;
     private String createdBy;
     private String updatedBy;
 }

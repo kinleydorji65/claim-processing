@@ -319,7 +319,10 @@ public ApiResponseDTO<Page<GeneralClaimDetailResponse>> getAllApprovedDetails(Pa
 // ========== BENEFICIARY SETTLEMENT MAPPING ==========
 
 private BeneficiarySettlementResponseDto mapBeneficiarySettlementDetail(ClaimDetail claimDetail) {
-        BeneficiarySettlementDetail beneficiarySettlementDetail = beneficiarySettlementDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+    if (claimDetail == null) {
+        return null;
+    }
+    BeneficiarySettlementDetail beneficiarySettlementDetail = beneficiarySettlementDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
     if (beneficiarySettlementDetail == null) {
         return null;
     }
@@ -412,7 +415,10 @@ private List<BeneficiaryClaimantResponseDto> mapBeneficiaryClaimants(List<Benefi
 // ========== NORMAL CLAIM DETAIL MAPPING ==========
 
 private NormalClaimResponseDto mapNormalClaimDetail(ClaimDetail claimDetail) {
-        NormalClaimDetail normalClaimDetail = normalClaimDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+    if (claimDetail == null) {
+        return null;
+    }
+    NormalClaimDetail normalClaimDetail = normalClaimDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
     if (normalClaimDetail == null) {
         return null;
     }
@@ -459,7 +465,10 @@ private NormalClaimResponseDto mapNormalClaimDetail(ClaimDetail claimDetail) {
 // ========== PARTIAL WITHDRAWAL DETAIL MAPPING ==========
 
 private PartialWithdrawalResponseDto mapPartialWithdrawalDetail(ClaimDetail claimDetail) {
-        PartialWithdrawalDetail partialWithdrawalDetail = partialWithdrawalDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+    if (claimDetail == null) {
+        return null;
+    }
+    PartialWithdrawalDetail partialWithdrawalDetail = partialWithdrawalDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
     if (partialWithdrawalDetail == null) {
         return null;
     }
@@ -512,8 +521,11 @@ private PartialWithdrawalResponseDto mapPartialWithdrawalDetail(ClaimDetail clai
 // ========== LEGAL RECOVERY DETAIL MAPPING ==========
 
 private LegalRecoveryResponseDto mapLegalRecoveryDetail(ClaimDetail claimDetail) {
+    if (claimDetail == null) {
+        return null;
+    }
     LegalRecoveryDetail legalRecoveryDetail = legalRecoveryDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
-        if (legalRecoveryDetail == null) {
+    if (legalRecoveryDetail == null) {
         return null;
     }
     return LegalRecoveryResponseDto.builder()
@@ -530,11 +542,11 @@ private LegalRecoveryResponseDto mapLegalRecoveryDetail(ClaimDetail claimDetail)
             .payeeTypeName(legalRecoveryDetail.getPayeeType() != null ? 
                     legalRecoveryDetail.getPayeeType().getName() : null)
             .judgementDate(legalRecoveryDetail.getJudgementDate())
-        .dzongkhagId(legalRecoveryDetail.getDzongkhag().getDzongkhagId())
-        .dzongkhagName(legalRecoveryDetail.getDzongkhag().getDzongkhagName())
-        .convictedOrder(legalRecoveryDetail.getConvictedOrder())
-        .isConvicted(legalRecoveryDetail.getIsConvicted())
-        .payToMember(legalRecoveryDetail.getConvictedOrder())
+            .dzongkhagId(legalRecoveryDetail.getDzongkhag() != null ? legalRecoveryDetail.getDzongkhag().getDzongkhagId() : null)
+            .dzongkhagName(legalRecoveryDetail.getDzongkhag() != null ? legalRecoveryDetail.getDzongkhag().getDzongkhagName() : null)
+            .convictedOrder(legalRecoveryDetail.getConvictedOrder())
+            .isConvicted(legalRecoveryDetail.getIsConvicted())
+            .payToMember(legalRecoveryDetail.getConvictedOrder())
             .createdBy(legalRecoveryDetail.getCreatedBy())
             .createdAt(legalRecoveryDetail.getCreatedAt())
             .updatedBy(legalRecoveryDetail.getUpdatedBy())
@@ -545,8 +557,11 @@ private LegalRecoveryResponseDto mapLegalRecoveryDetail(ClaimDetail claimDetail)
 // ========== CALCULATION SUMMARY MAPPING ==========
 
 private ClaimCalculationSummaryResponseDto mapCalculationSummary(ClaimDetail claimDetail) {
+    if (claimDetail == null) {
+        return null;
+    }
     ClaimCalculationSummary calculationSummary = claimCalculationSummaryRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
-        if (calculationSummary == null) {
+    if (calculationSummary == null) {
         return null;
     }
     return ClaimCalculationSummaryResponseDto.builder()
@@ -578,11 +593,12 @@ private List<ClaimRuleEvaluationListDto> mapRuleEvaluations(List<ClaimRuleEvalua
                 return ClaimRuleEvaluationListDto.builder()
                         .id(rule.getId())
                         .calculationSummaryId(rule.getCalculationSummary() != null ? rule.getCalculationSummary().getId() : null)
-                        .subClaimCode(rule.getSubRule().getSubClaimCode())
-                        .subClaimType(rule.getSubRule().getSubClaimType())
-                        .subClaimDesc(rule.getSubRule().getSubClaimDesc())
-                        .ruleCode(rule.getSubRule().getRuleType().getCode())
-                        .evaluatedAt(rule.getEvaluatedAt().toLocalDateTime())
+                        .subClaimCode(rule.getSubRule() != null ? rule.getSubRule().getSubClaimCode() : null)
+                        .subClaimType(rule.getSubRule() != null ? rule.getSubRule().getSubClaimType() : null)
+                        .subClaimDesc(rule.getSubRule() != null ? rule.getSubRule().getSubClaimDesc() : null)
+                        .ruleCode(rule.getSubRule() != null && rule.getSubRule().getRuleType() != null ? 
+                                rule.getSubRule().getRuleType().getCode() : null)
+                        .evaluatedAt(rule.getEvaluatedAt() != null ? rule.getEvaluatedAt().toLocalDateTime() : null)
                         .remarks(rule.getRemarks())
                         .components(mapCalculationComponents(rule.getComponents()))
                         .build();
@@ -593,8 +609,7 @@ private List<ClaimRuleEvaluationListDto> mapRuleEvaluations(List<ClaimRuleEvalua
 // ========== CALCULATION COMPONENTS MAPPING ==========
 
 private List<ClaimCalculationComponentDto> mapCalculationComponents(List<ClaimCalculationComponent> components) {
-    
-        if (components == null || components.isEmpty()) {
+    if (components == null || components.isEmpty()) {
         return null;
     }
     return components.stream()
@@ -603,8 +618,8 @@ private List<ClaimCalculationComponentDto> mapCalculationComponents(List<ClaimCa
                 return ClaimCalculationComponentDto.builder()
                         .id(component.getId())
                         .ruleEvaluationId(component.getRuleEvaluation() != null ? component.getRuleEvaluation().getId() : null)
-                        .componentCode(component.getComponentMaster().getCode())
-                        .componentName(component.getComponentMaster().getName())
+                        .componentCode(component.getComponentMaster() != null ? component.getComponentMaster().getCode() : null)
+                        .componentName(component.getComponentMaster() != null ? component.getComponentMaster().getName() : null)
                         .amount(component.getAmount())
                         .createdBy(component.getCreatedBy())
                         .createdAt(component.getCreatedAt() != null ? component.getCreatedAt().toLocalDateTime() : null)
@@ -616,11 +631,11 @@ private List<ClaimCalculationComponentDto> mapCalculationComponents(List<ClaimCa
 }
 
 private AccountingEventResponseDto mapAccountingEvent(ClaimDetail claimDetail) {
+    if (claimDetail == null) {
+        return null;
+    }
     ClaimAccountingEvent accountingEvent = claimAccountingEventRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
     if (accountingEvent == null) {
-        
-    }
-if (accountingEvent == null) {
         return null;
     }
     return AccountingEventResponseDto.builder()
@@ -658,9 +673,9 @@ private List<AccountingEventResponseDto.LedgerEntryResponseDto> mapLedgerEntries
                         .id(entry.getId())
                         .seqNo(entry.getSeqNo())
                         .mainAccountCode(entry.getMainAccountCode())
-                        .mainAccountName(main.getAccountName()) // Will need to fetch from COA table if needed
+                        .mainAccountName(main != null ? main.getAccountName() : null)
                         .subAccountCode(entry.getSubAccountCode())
-                        .subAccountName(sub.getSubAccountName()) // Will need to fetch from COA table if needed
+                        .subAccountName(sub != null ? sub.getSubAccountName() : null)
                         .drcr(entry.getDrcr())
                         .amount(entry.getAmount())
                         .entryRole(entry.getEntryRole())
@@ -676,6 +691,9 @@ private List<AccountingEventResponseDto.LedgerEntryResponseDto> mapLedgerEntries
 // ========== FORFEITED COMPONENTS MAPPING ==========
 
 private List<ClaimForfeitedComponentResponseDto> mapForfeitedComponents(ClaimDetail claimDetail) {
+    if (claimDetail == null) {
+        return null;
+    }
     List<ClaimForfeitedComponent> forfeitedComponents = claimForfeitedComponentRepository.findByClaimDetail_Id(claimDetail.getId());
     if (forfeitedComponents == null || forfeitedComponents.isEmpty()) {
         return null;
@@ -703,6 +721,9 @@ private List<ClaimForfeitedComponentResponseDto> mapForfeitedComponents(ClaimDet
 // ========== ONLY BANK DETAILS MAPPING ==========
 
 private List<ClaimBankResponseDto> mapBankDetails(ClaimDetail claimDetail) {
+    if (claimDetail == null) {
+        return null;
+    }
     List<ClaimBankDetail> bankDetails = claimBankDetailRepository.findByClaimDetail_Id(claimDetail.getId());
     if (bankDetails == null || bankDetails.isEmpty()) {
         return null;
@@ -733,6 +754,9 @@ private List<ClaimBankResponseDto> mapBankDetails(ClaimDetail claimDetail) {
 }
 
 private ClaimDeductionResponseDto mapDeductionDetail(ClaimDetail claimDetail) {
+    if (claimDetail == null) {
+        return null;
+    }
     ClaimDeductionDetail deductionDetail = claimDeductionDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
     if (deductionDetail == null) {
         return null;
@@ -833,7 +857,7 @@ private List<ClaimDeductionItemResponseDto> mapDeductionItems(List<ClaimDeductio
 
     private ClaimDeductionDetail saveDeductionDetail(ClaimApplicationDeductionResponseDto deductionDetailResponse,
             ClaimDetail claimDetail) {
-        if (deductionDetailResponse == null) {
+        if (deductionDetailResponse == null || claimDetail == null) {
             return null;
         }
 

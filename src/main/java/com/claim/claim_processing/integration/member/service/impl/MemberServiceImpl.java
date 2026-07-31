@@ -32,7 +32,7 @@ public class MemberServiceImpl implements MemberService {
         private final MemberContributionService memberContributionService;
         private final MemberDetailMapper memberDetailMapper;
         private final MemberContributionJoiningDateHistoryRepository joiningDateHistoryRepository;
-        private PersonIdentityRepository personIdentityRepository;
+        private final PersonIdentityRepository personIdentityRepository;
 
 
         @Override
@@ -91,13 +91,17 @@ public class MemberServiceImpl implements MemberService {
                 List<AgencyMemberDetail> results = memberDetails
                         .stream()
                         .map(m -> {
-                                PersonIdentity identity = personIdentityRepository.findById(m.getIdentityTypeId()).orElse(null);
+                                PersonIdentity identity = null;
+                                if (m.getIdentityTypeId() != null && m.getIdentityTypeId() > 0) {
+                                        identity = personIdentityRepository.findById(m.getIdentityTypeId()).orElse(null);
+                                }
+                                
                                 return AgencyMemberDetail
                                         .builder()
                                         .memberName(getFullName(m.getFirstName(), m.getMiddleName(), m.getLastName()))
                                         .nppfNumber(m.getNppfNumber())
-                                        .email(m.getEmail())
-                                        .contactNo(m.getContactNo().toString())
+                                        .email(m.getEmail() != null ? m.getEmail() : null)
+                                        .contactNo(m.getContactNo() != null ?m.getContactNo().toString() : null)
                                         .identityNumber(m.getIdentityNumber())
                                         .identityTypeName(identity != null ? identity.getName() : null)
                                         .build();

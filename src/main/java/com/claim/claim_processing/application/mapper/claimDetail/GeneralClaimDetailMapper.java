@@ -63,6 +63,9 @@ public class GeneralClaimDetailMapper {
     private final PartialWithdrawalDetailRepository partialWithdrawalDetailRepository;
     
     public GeneralClaimDetailResponse mapToResponse(ClaimDetail claimDetail) {
+        if (claimDetail == null) {
+            return null;
+        }
 
         List<ClaimBankDetail> bankDetails = claimBankDetailRepository.findByClaimDetail_Id(claimDetail.getId());
         ClaimDeductionDetail deductionDetail = claimDeductionDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
@@ -73,449 +76,404 @@ public class GeneralClaimDetailMapper {
         BeneficiarySettlementDetail beneficiarySettlementDetail = beneficiarySettlementDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
         LegalRecoveryDetail legalRecoveryDetail = legalRecoveryDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
 
-    return GeneralClaimDetailResponse.builder()
-            .id(claimDetail.getId())
-            .claimTypeId(claimDetail.getClaimType().getId())
-            .claimTypeName(claimDetail.getClaimType().getName())
-            .applicationNumber(claimDetail.getApplicationNumber())
-            .submissionChannelId(claimDetail.getSubmissionChannel().getId())
-            .submissionChannelName(claimDetail.getSubmissionChannel().getName())
-            .schemeTypeId(claimDetail.getSchemeType().getId())
-            .schemeTypeName(claimDetail.getSchemeType().getName())
-            .memberCategoryId(claimDetail.getMemberCategory().getCategoryId())
-            .memberCategoryName(claimDetail.getMemberCategory().getCategoryName())
-            .employmentType(claimDetail.getEmploymentType())
-            .memberCode(claimDetail.getMemberCode())
-            .nppfNumber(claimDetail.getNppfNumber())
-            .agencyCode(claimDetail.getAgencyCode())
-            .identityNumber(claimDetail.getIdentityNumber())
-            .officeId(claimDetail.getOfficeId())
-            .applicationDate(claimDetail.getApplicationDate())
-            .email(claimDetail.getEmail())
-            .contactNo(claimDetail.getContactNo())
-            .pfStartDate(claimDetail.getPfStartDate())
-            .pfEndDate(claimDetail.getPfEndDate())
-            .pensionStartDate(claimDetail.getPensionStartDate())
-            .pensionEndDate(claimDetail.getPensionEndDate())
-            
-            .isLoanApplied(claimDetail.getIsLoanApplied())
-            .isRentalApplied(claimDetail.getIsRentalApplied())
-            .onBehalfOfMember(claimDetail.getOnBehalfOfMember())
-            .initiatedBy(claimDetail.getInitiatedBy())
-            .remarks(claimDetail.getRemarks())
-            .isSpecialCase(claimDetail.getIsSpecialCase())
-            .isActive(claimDetail.getIsActive())
-            .currencyCode(claimDetail.getCurrencyCode())
-            .currentStageId(claimDetail.getCurrentStage() != null ? claimDetail.getCurrentStage().getId() : null)
-            .currentStageName(claimDetail.getCurrentStage() != null ? claimDetail.getCurrentStage().getName() : null)
-            .statusId(claimDetail.getStatus() != null ? claimDetail.getStatus().getStatusId() : null)
-            .statusName(claimDetail.getStatus() != null ? claimDetail.getStatus().getStatusName() : null)
-            .bankDetails(mapBankDetails(bankDetails))
-            .deductionDetail(mapDeductionDetail(deductionDetail))
-            .calculationSummary(mapCalculationSummary(calculationSummary))
-            .forfeitedComponents(mapForfeitedComponents(forfeitedComponents))
-            .normalClaimDetails(mapNormalClaimDetails(normalClaimDetail))
-            .beneficiarySettlementDetail(mapBeneficiarySettlementDetails(beneficiarySettlementDetail))
-            .partialWithdrawalDetails(mapPartialWithdrawalDetails(partialWithdrawalDetail))
-            .legalRecoveryDetail(mapLegalRecoveryDetails(legalRecoveryDetail))
-            .createdBy(claimDetail.getCreatedBy())
-            .createdAt(claimDetail.getCreatedAt() != null ? claimDetail.getCreatedAt().toLocalDateTime() : null)
-            .updatedBy(claimDetail.getUpdatedBy())
-            .updatedAt(claimDetail.getUpdatedAt() != null ? claimDetail.getUpdatedAt().toLocalDateTime() : null)
-            .build(); 
-}
-
-private LegalRecoveryResponseDto mapLegalRecoveryDetails(LegalRecoveryDetail entity) {
-    if (entity == null) return null;
-
-    return LegalRecoveryResponseDto.builder()
-            .id(entity.getId())
-
-            // ClaimApplication
-            .claimApplicationId(
-                    entity.getClaimApplication() != null
-                            ? entity.getClaimApplication().getId()
-                            : null
-            )
-            .claimApplicationNumber(
-                    entity.getClaimApplication() != null
-                            ? entity.getClaimApplication().getApplicationNumber()
-                            : null
-            )
-
-            // ClaimDetail
-            .claimDetailId(
-                    entity.getClaimDetail() != null
-                            ? entity.getClaimDetail().getId()
-                            : null
-            )
-
-            // PayeeType
-            .payeeTypeId(
-                    entity.getPayeeType() != null
-                            ? entity.getPayeeType().getId()
-                            : null
-            )
-            .payeeTypeName(
-                    entity.getPayeeType() != null
-                            ? entity.getPayeeType().getName()
-                            : null
-            )
-
-            // Basic fields
-            .judgementNumber(entity.getJudgementNumber())
-            .judgementDate(entity.getJudgementDate())
-            .dzongkhagId(entity.getDzongkhag().getDzongkhagId())
-            .dzongkhagName(entity.getDzongkhag().getDzongkhagName())
-            .convictedOrder(entity.getConvictedOrder())
-            .isConvicted(entity.getIsConvicted())
-            .payToMember(entity.getPayToMember())
-
-            // Audit fields
-            .createdBy(entity.getCreatedBy())
-            .createdAt(entity.getCreatedAt())
-            .updatedBy(entity.getUpdatedBy())
-            .updatedAt(entity.getUpdatedAt())
-
-            .build();
-}
-
-
-
-// Helper mapper methods for nested objects
-private List<ClaimBankResponseDto> mapBankDetails(List<ClaimBankDetail> bankDetails) {
-    if (bankDetails == null) {
-        return null;
+        return GeneralClaimDetailResponse.builder()
+                .id(claimDetail.getId())
+                .claimTypeId(claimDetail.getClaimType() != null ? claimDetail.getClaimType().getId() : null)
+                .claimTypeName(claimDetail.getClaimType() != null ? claimDetail.getClaimType().getName() : null)
+                .applicationNumber(claimDetail.getApplicationNumber() != null ? claimDetail.getApplicationNumber() : null)
+                .submissionChannelId(claimDetail.getSubmissionChannel() != null ? claimDetail.getSubmissionChannel().getId() : null)
+                .submissionChannelName(claimDetail.getSubmissionChannel() != null ? claimDetail.getSubmissionChannel().getName() : null)
+                .schemeTypeId(claimDetail.getSchemeType() != null ? claimDetail.getSchemeType().getId() : null)
+                .schemeTypeName(claimDetail.getSchemeType() != null ? claimDetail.getSchemeType().getName() : null)
+                .memberCategoryId(claimDetail.getMemberCategory() != null ? claimDetail.getMemberCategory().getCategoryId() : null)
+                .memberCategoryName(claimDetail.getMemberCategory() != null ? claimDetail.getMemberCategory().getCategoryName() : null)
+                .employmentType(claimDetail.getEmploymentType() != null ? claimDetail.getEmploymentType() : null)
+                .memberCode(claimDetail.getMemberCode() != null ? claimDetail.getMemberCode() : null)
+                .nppfNumber(claimDetail.getNppfNumber() != null ? claimDetail.getNppfNumber() : null)
+                .agencyCode(claimDetail.getAgencyCode() != null ? claimDetail.getAgencyCode() : null)
+                .identityNumber(claimDetail.getIdentityNumber() != null ? claimDetail.getIdentityNumber() : null)
+                .officeId(claimDetail.getOfficeId() != null ? claimDetail.getOfficeId() : null)
+                .applicationDate(claimDetail.getApplicationDate() != null ? claimDetail.getApplicationDate() : null)
+                .email(claimDetail.getEmail() != null ? claimDetail.getEmail() : null)
+                .contactNo(claimDetail.getContactNo() != null ? claimDetail.getContactNo() : null)
+                .pfStartDate(claimDetail.getPfStartDate() != null ? claimDetail.getPfStartDate() : null)
+                .pfEndDate(claimDetail.getPfEndDate() != null ? claimDetail.getPfEndDate() : null)
+                .pensionStartDate(claimDetail.getPensionStartDate() != null ? claimDetail.getPensionStartDate() : null)
+                .pensionEndDate(claimDetail.getPensionEndDate() != null ? claimDetail.getPensionEndDate() : null)
+                .isLoanApplied(claimDetail.getIsLoanApplied() != null ? claimDetail.getIsLoanApplied() : null)
+                .isRentalApplied(claimDetail.getIsRentalApplied() != null ? claimDetail.getIsRentalApplied() : null)
+                .onBehalfOfMember(claimDetail.getOnBehalfOfMember() != null ? claimDetail.getOnBehalfOfMember() : null)
+                .initiatedBy(claimDetail.getInitiatedBy() != null ? claimDetail.getInitiatedBy() : null)
+                .remarks(claimDetail.getRemarks() != null ? claimDetail.getRemarks() : null)
+                .isSpecialCase(claimDetail.getIsSpecialCase() != null ? claimDetail.getIsSpecialCase() : null)
+                .isActive(claimDetail.getIsActive() != null ? claimDetail.getIsActive() : null)
+                .currencyCode(claimDetail.getCurrencyCode() != null ? claimDetail.getCurrencyCode() : null)
+                .currentStageId(claimDetail.getCurrentStage() != null ? claimDetail.getCurrentStage().getId() : null)
+                .currentStageName(claimDetail.getCurrentStage() != null ? claimDetail.getCurrentStage().getName() : null)
+                .statusId(claimDetail.getStatus() != null ? claimDetail.getStatus().getStatusId() : null)
+                .statusName(claimDetail.getStatus() != null ? claimDetail.getStatus().getStatusName() : null)
+                .bankDetails(mapBankDetails(bankDetails))
+                .deductionDetail(mapDeductionDetail(deductionDetail))
+                .calculationSummary(mapCalculationSummary(calculationSummary))
+                .forfeitedComponents(mapForfeitedComponents(forfeitedComponents))
+                .normalClaimDetails(mapNormalClaimDetails(normalClaimDetail))
+                .beneficiarySettlementDetail(mapBeneficiarySettlementDetails(beneficiarySettlementDetail))
+                .partialWithdrawalDetails(mapPartialWithdrawalDetails(partialWithdrawalDetail))
+                .legalRecoveryDetail(mapLegalRecoveryDetails(legalRecoveryDetail))
+                .createdBy(claimDetail.getCreatedBy() != null ? claimDetail.getCreatedBy() : null)
+                .createdAt(claimDetail.getCreatedAt() != null ? claimDetail.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(claimDetail.getUpdatedBy() != null ? claimDetail.getUpdatedBy() : null)
+                .updatedAt(claimDetail.getUpdatedAt() != null ? claimDetail.getUpdatedAt().toLocalDateTime() : null)
+                .build(); 
     }
-    return bankDetails.stream()
-            .map(this::mapBankDetail)
-            .collect(Collectors.toList());
-}
 
-private ClaimBankResponseDto mapBankDetail(ClaimBankDetail source) {
-    if (source == null) {
-        return null;
-    }
-    return ClaimBankResponseDto.builder()
-            .id(source.getId())
-            .beneficiaryIdentifier(source.getBeneficiaryIdentifier())
-            .claimantTypeId(source.getClaimantType() != null ? source.getClaimantType().getId() : null)
-            .claimantTypeName(source.getClaimantType() != null ? source.getClaimantType().getName() : null)
-            .bankTypeId(source.getBankType() != null ? source.getBankType().getBankTypeId() : null)
-            .bankTypeName(source.getBankType() != null ? source.getBankType().getBankTypeName() : null)
-            .accountNumber(source.getAccountNumber())
-            .accountHolderName(source.getAccountHolderName())
-            .ifscOrRoutingCode(source.getIfscOrRoutingCode())
-            .isDefaultBank(source.getIsDefaultBank())
-            .verifiedBy(source.getVerifiedBy())
-            .verifiedAt(source.getVerifiedAt() != null
-        ? source.getVerifiedAt().toLocalDateTime()
-        : null)
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt() != null
-        ? source.getCreatedAt().toLocalDateTime()
-        : null)
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt() != null
-        ? source.getUpdatedAt().toLocalDateTime()
-        : null)
-            .build();
-}
+    private LegalRecoveryResponseDto mapLegalRecoveryDetails(LegalRecoveryDetail entity) {
+        if (entity == null) return null;
 
-private ClaimDeductionResponseDto mapDeductionDetail(ClaimDeductionDetail source) {
-    if (source == null) {
-        return null;
+        return LegalRecoveryResponseDto.builder()
+                .id(entity.getId())
+                .claimApplicationId(entity.getClaimApplication() != null ? entity.getClaimApplication().getId() : null)
+                .claimApplicationNumber(entity.getClaimApplication() != null ? entity.getClaimApplication().getApplicationNumber() : null)
+                .claimDetailId(entity.getClaimDetail() != null ? entity.getClaimDetail().getId() : null)
+                .payeeTypeId(entity.getPayeeType() != null ? entity.getPayeeType().getId() : null)
+                .payeeTypeName(entity.getPayeeType() != null ? entity.getPayeeType().getName() : null)
+                .judgementNumber(entity.getJudgementNumber() != null ? entity.getJudgementNumber() : null)
+                .judgementDate(entity.getJudgementDate() != null ? entity.getJudgementDate() : null)
+                .dzongkhagId(entity.getDzongkhag() != null ? entity.getDzongkhag().getDzongkhagId() : null)
+                .dzongkhagName(entity.getDzongkhag() != null ? entity.getDzongkhag().getDzongkhagName() : null)
+                .convictedOrder(entity.getConvictedOrder() != null ? entity.getConvictedOrder() : null)
+                .isConvicted(entity.getIsConvicted() != null ? entity.getIsConvicted() : null)
+                .payToMember(entity.getPayToMember() != null ? entity.getPayToMember() : null)
+                .createdBy(entity.getCreatedBy() != null ? entity.getCreatedBy() : null)
+                .createdAt(entity.getCreatedAt() != null ? entity.getCreatedAt() : null)
+                .updatedBy(entity.getUpdatedBy() != null ? entity.getUpdatedBy() : null)
+                .updatedAt(entity.getUpdatedAt() != null ? entity.getUpdatedAt() : null)
+                .build();
     }
-    List<ClaimDeductionItem> deductionItems = claimDeductionItemRepository.findByDeductionDetail_Id(source.getId());
-    return ClaimDeductionResponseDto.builder()
-            .id(source.getId())
-            .outstandingAmount(source.getOutstandingAmount())
-            .verifiedDeductedAmount(source.getVerifiedDeductedAmount())
-            .approvedDeductedAmount(source.getApprovedDeductedAmount())
-            .deductedAmount(source.getDeductedAmount())
-            .remarks(source.getRemarks())
-            .deductionItems(mapDeductionItems(deductionItems))
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
-            .build();
-}
 
-private List<ClaimDeductionItemResponseDto> mapDeductionItems(List<ClaimDeductionItem> deductionItems) {
-    if (deductionItems == null) {
-        return null;
+    // Helper mapper methods for nested objects
+    private List<ClaimBankResponseDto> mapBankDetails(List<ClaimBankDetail> bankDetails) {
+        if (bankDetails == null) {
+            return null;
+        }
+        return bankDetails.stream()
+                .map(this::mapBankDetail)
+                .collect(Collectors.toList());
     }
-    return deductionItems.stream()
-            .map(this::mapDeductionItem)
-            .collect(Collectors.toList());
-}
 
-private ClaimDeductionItemResponseDto mapDeductionItem(ClaimDeductionItem source) {
-    if (source == null) {
-        return null;
+    private ClaimBankResponseDto mapBankDetail(ClaimBankDetail source) {
+        if (source == null) {
+            return null;
+        }
+        return ClaimBankResponseDto.builder()
+                .id(source.getId())
+                .beneficiaryIdentifier(source.getBeneficiaryIdentifier() != null ? source.getBeneficiaryIdentifier() : null)
+                .claimantTypeId(source.getClaimantType() != null ? source.getClaimantType().getId() : null)
+                .claimantTypeName(source.getClaimantType() != null ? source.getClaimantType().getName() : null)
+                .bankTypeId(source.getBankType() != null ? source.getBankType().getBankTypeId() : null)
+                .bankTypeName(source.getBankType() != null ? source.getBankType().getBankTypeName() : null)
+                .accountNumber(source.getAccountNumber() != null ? source.getAccountNumber() : null)
+                .accountHolderName(source.getAccountHolderName() != null ? source.getAccountHolderName() : null)
+                .ifscOrRoutingCode(source.getIfscOrRoutingCode() != null ? source.getIfscOrRoutingCode() : null)
+                .isDefaultBank(source.getIsDefaultBank() != null ? source.getIsDefaultBank() : null)
+                .verifiedBy(source.getVerifiedBy() != null ? source.getVerifiedBy() : null)
+                .verifiedAt(source.getVerifiedAt() != null ? source.getVerifiedAt().toLocalDateTime() : null)
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
+                .build();
     }
-    return ClaimDeductionItemResponseDto.builder()
-            .id(source.getId())
-            .deductionCategory(source.getDeductionCategory())
-            .outstandingAmount(source.getOutstandingAmount())
-            .deductedAmount(source.getDeductedAmount())
-            .remainingAmount(source.getRemainingAmount())
-            .remarks(source.getRemarks())
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
-            .build();
-}
 
-private ClaimCalculationSummaryResponseDto mapCalculationSummary(ClaimCalculationSummary source) {
-    if (source == null) {
-        return null;
+    private ClaimDeductionResponseDto mapDeductionDetail(ClaimDeductionDetail source) {
+        if (source == null) {
+            return null;
+        }
+        List<ClaimDeductionItem> deductionItems = claimDeductionItemRepository.findByDeductionDetail_Id(source.getId());
+        return ClaimDeductionResponseDto.builder()
+                .id(source.getId())
+                .outstandingAmount(source.getOutstandingAmount() != null ? source.getOutstandingAmount() : null)
+                .verifiedDeductedAmount(source.getVerifiedDeductedAmount() != null ? source.getVerifiedDeductedAmount() : null)
+                .approvedDeductedAmount(source.getApprovedDeductedAmount() != null ? source.getApprovedDeductedAmount() : null)
+                .deductedAmount(source.getDeductedAmount() != null ? source.getDeductedAmount() : null)
+                .remarks(source.getRemarks() != null ? source.getRemarks() : null)
+                .deductionItems(mapDeductionItems(deductionItems))
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
+                .build();
     }
-    List<ClaimRuleEvaluation> ruleEvaluations = claimRuleEvaluationRepository.findByCalculationSummary_Id(source.getId());
-    return ClaimCalculationSummaryResponseDto.builder()
-            .id(source.getId())
-            .calculationEffectiveDate(source.getCalculationEffectiveDate())
-            .finalPayableAmount(source.getFinalPayableAmount())
-            .totalAmount(source.getTotalAmount())
-            .isPfEligible(source.getIsPfEligible())
-            .isPensionEligible(source.getIsPensionEligible())
-            .totalContributionMonth(source.getTotalContributionMonth())
-            .totalNonContributionMonth(source.getTotalNonContributionMonth())
-            .totalPfAmount(source.getTotalPfAmount())
-            .totalPensionAmount(source.getTotalPensionAmount())
-            .totalPfInterest(source.getTotalPfInterest())
-            .totalPensionInterest(source.getTotalPensionInterest())
-            .recommendedBenefitType(source.getRecommendedBenefitType())
-            
-            // ================================================================
-            // EXCESS SERVICE FIELDS
-            // ================================================================
-            .excessOpeningBalance(source.getExcessOpeningBalance())
-            .excessServiceAmount(source.getExcessServiceAmount())
-            .excessCutoffDate(source.getExcessCutoffDate())
-            .excessStartDate(source.getExcessStartDate())
-            .excessEndDate(source.getExcessEndDate())
-            .excessTotalContributions(source.getExcessTotalContributions())
-            .excessTotalInterest(source.getExcessTotalInterest())
-            .excessEolMonths(source.getExcessEolMonths())
-            
-            .ruleEvaluations(mapRuleEvaluations(ruleEvaluations))
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
-            .build();
-}
 
-private List<ClaimRuleEvaluationListDto> mapRuleEvaluations(List<ClaimRuleEvaluation> ruleEvaluations) {
-    if (ruleEvaluations == null) {
-        return null;
+    private List<ClaimDeductionItemResponseDto> mapDeductionItems(List<ClaimDeductionItem> deductionItems) {
+        if (deductionItems == null) {
+            return null;
+        }
+        return deductionItems.stream()
+                .map(this::mapDeductionItem)
+                .collect(Collectors.toList());
     }
-    return ruleEvaluations.stream()
-            .map(this::mapRuleEvaluation)
-            .collect(Collectors.toList());
-}
 
-private ClaimRuleEvaluationListDto mapRuleEvaluation(ClaimRuleEvaluation source) {
-    if (source == null) {
-        return null;
+    private ClaimDeductionItemResponseDto mapDeductionItem(ClaimDeductionItem source) {
+        if (source == null) {
+            return null;
+        }
+        return ClaimDeductionItemResponseDto.builder()
+                .id(source.getId())
+                .deductionCategory(source.getDeductionCategory() != null ? source.getDeductionCategory() : null)
+                .outstandingAmount(source.getOutstandingAmount() != null ? source.getOutstandingAmount() : null)
+                .deductedAmount(source.getDeductedAmount() != null ? source.getDeductedAmount() : null)
+                .remainingAmount(source.getRemainingAmount() != null ? source.getRemainingAmount() : null)
+                .remarks(source.getRemarks() != null ? source.getRemarks() : null)
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
+                .build();
     }
-    List<ClaimCalculationComponent> components = claimCalculationComponentRepository.findByRuleEvaluation_Id(source.getId());
-    return ClaimRuleEvaluationListDto.builder()
-            .id(source.getId())
-            .calculationSummaryId(source.getCalculationSummary().getId())
-            .subClaimCode(source.getSubRule().getSubClaimCode())
-            .subClaimType(source.getSubRule().getSubClaimType())
-            .subClaimDesc(source.getSubRule().getSubClaimDesc())
-            .ruleCode(source.getSubRule().getRuleType().getCode())
-            .isRuleApplied(source.getIsRuleApplied())
-            .evaluatedAt(source.getEvaluatedAt() != null ? source.getEvaluatedAt().toLocalDateTime() : null)
-            .remarks(source.getRemarks())
-            .components(mapCalculationComponents(components))
-            .build();
-}
 
-private List<ClaimCalculationComponentDto> mapCalculationComponents(List<ClaimCalculationComponent> components) {
-    if (components == null) {
-        return null;
+    private ClaimCalculationSummaryResponseDto mapCalculationSummary(ClaimCalculationSummary source) {
+        if (source == null) {
+            return null;
+        }
+        List<ClaimRuleEvaluation> ruleEvaluations = claimRuleEvaluationRepository.findByCalculationSummary_Id(source.getId());
+        return ClaimCalculationSummaryResponseDto.builder()
+                .id(source.getId())
+                .calculationEffectiveDate(source.getCalculationEffectiveDate() != null ? source.getCalculationEffectiveDate() : null)
+                .finalPayableAmount(source.getFinalPayableAmount() != null ? source.getFinalPayableAmount() : null)
+                .totalAmount(source.getTotalAmount() != null ? source.getTotalAmount() : null)
+                .isPfEligible(source.getIsPfEligible() != null ? source.getIsPfEligible() : null)
+                .isPensionEligible(source.getIsPensionEligible() != null ? source.getIsPensionEligible() : null)
+                .totalContributionMonth(source.getTotalContributionMonth() != null ? source.getTotalContributionMonth() : null)
+                .totalNonContributionMonth(source.getTotalNonContributionMonth() != null ? source.getTotalNonContributionMonth() : null)
+                .totalPfAmount(source.getTotalPfAmount() != null ? source.getTotalPfAmount() : null)
+                .totalPensionAmount(source.getTotalPensionAmount() != null ? source.getTotalPensionAmount() : null)
+                .totalPfInterest(source.getTotalPfInterest() != null ? source.getTotalPfInterest() : null)
+                .totalPensionInterest(source.getTotalPensionInterest() != null ? source.getTotalPensionInterest() : null)
+                .recommendedBenefitType(source.getRecommendedBenefitType() != null ? source.getRecommendedBenefitType() : null)
+                .excessOpeningBalance(source.getExcessOpeningBalance() != null ? source.getExcessOpeningBalance() : null)
+                .excessServiceAmount(source.getExcessServiceAmount() != null ? source.getExcessServiceAmount() : null)
+                .excessCutoffDate(source.getExcessCutoffDate() != null ? source.getExcessCutoffDate() : null)
+                .excessStartDate(source.getExcessStartDate() != null ? source.getExcessStartDate() : null)
+                .excessEndDate(source.getExcessEndDate() != null ? source.getExcessEndDate() : null)
+                .excessTotalContributions(source.getExcessTotalContributions() != null ? source.getExcessTotalContributions() : null)
+                .excessTotalInterest(source.getExcessTotalInterest() != null ? source.getExcessTotalInterest() : null)
+                .excessEolMonths(source.getExcessEolMonths() != null ? source.getExcessEolMonths() : null)
+                .ruleEvaluations(mapRuleEvaluations(ruleEvaluations))
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
+                .build();
     }
-    return components.stream()
-            .map(this::mapCalculationComponent)
-            .collect(Collectors.toList());
-}
 
-private ClaimCalculationComponentDto mapCalculationComponent(ClaimCalculationComponent source) {
-    if (source == null) {
-        return null;
+    private List<ClaimRuleEvaluationListDto> mapRuleEvaluations(List<ClaimRuleEvaluation> ruleEvaluations) {
+        if (ruleEvaluations == null) {
+            return null;
+        }
+        return ruleEvaluations.stream()
+                .map(this::mapRuleEvaluation)
+                .collect(Collectors.toList());
     }
-    return ClaimCalculationComponentDto.builder()
-            .id(source.getId())
-            .ruleEvaluationId(source.getRuleEvaluation().getId())
-            .componentCode(source.getComponentMaster().getCode())
-            .componentName(source.getComponentMaster().getName())
-            .amount(source.getAmount())
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
-            .build();
-}
 
-private List<ClaimForfeitedComponentResponseDto> mapForfeitedComponents(List<ClaimForfeitedComponent> sources) {
-    if (sources == null) {
-        return null;
+    private ClaimRuleEvaluationListDto mapRuleEvaluation(ClaimRuleEvaluation source) {
+        if (source == null) {
+            return null;
+        }
+        List<ClaimCalculationComponent> components = claimCalculationComponentRepository.findByRuleEvaluation_Id(source.getId());
+        return ClaimRuleEvaluationListDto.builder()
+                .id(source.getId())
+                .calculationSummaryId(source.getCalculationSummary() != null ? source.getCalculationSummary().getId() : null)
+                .subClaimCode(source.getSubRule() != null ? source.getSubRule().getSubClaimCode() : null)
+                .subClaimType(source.getSubRule() != null ? source.getSubRule().getSubClaimType() : null)
+                .subClaimDesc(source.getSubRule() != null ? source.getSubRule().getSubClaimDesc() : null)
+                .ruleCode(source.getSubRule() != null && source.getSubRule().getRuleType() != null ? source.getSubRule().getRuleType().getCode() : null)
+                .isRuleApplied(source.getIsRuleApplied() != null ? source.getIsRuleApplied() : null)
+                .evaluatedAt(source.getEvaluatedAt() != null ? source.getEvaluatedAt().toLocalDateTime() : null)
+                .remarks(source.getRemarks() != null ? source.getRemarks() : null)
+                .components(mapCalculationComponents(components))
+                .build();
     }
-    return sources.stream()
-            .map(this::mapForfeitedComponent)
-            .collect(Collectors.toList());
-}
 
-private ClaimForfeitedComponentResponseDto mapForfeitedComponent(ClaimForfeitedComponent source) {
-    if (source == null) {
-        return null;
+    private List<ClaimCalculationComponentDto> mapCalculationComponents(List<ClaimCalculationComponent> components) {
+        if (components == null) {
+            return null;
+        }
+        return components.stream()
+                .map(this::mapCalculationComponent)
+                .collect(Collectors.toList());
     }
-    return ClaimForfeitedComponentResponseDto.builder()
-            .id(source.getId())
-            .componentCode(source.getComponentCode())
-            .componentName(source.getComponentName())
-            .componentType(source.getComponentType())
-            .amount(source.getAmount())
-            .ruleCode(source.getRuleCode())
-            .subClaimCode(source.getSubClaimCode())
-            .reason(source.getReason())
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
-            .build();
-}
 
-private NormalClaimResponseDto mapNormalClaimDetails(NormalClaimDetail source) {
-    if (source == null) {
-        return null;
+    private ClaimCalculationComponentDto mapCalculationComponent(ClaimCalculationComponent source) {
+        if (source == null) {
+            return null;
+        }
+        return ClaimCalculationComponentDto.builder()
+                .id(source.getId())
+                .ruleEvaluationId(source.getRuleEvaluation() != null ? source.getRuleEvaluation().getId() : null)
+                .componentCode(source.getComponentMaster() != null ? source.getComponentMaster().getCode() : null)
+                .componentName(source.getComponentMaster() != null ? source.getComponentMaster().getName() : null)
+                .amount(source.getAmount() != null ? source.getAmount() : null)
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
+                .build();
     }
-    return NormalClaimResponseDto.builder()
-            .id(source.getId())
-            .cessationTypeId(source.getCessationType() != null ? source.getCessationType().getId() : null)
-            .cessationTypeName(source.getCessationType() != null ? source.getCessationType().getName() : null)
-            .payeeTypeId(source.getPayeeType() != null ? source.getPayeeType().getId() : null)
-            .payeeTypeName(source.getPayeeType() != null ? source.getPayeeType().getName() : null)
-            .terminationReasonTypeId(source.getTerminationReasonType() != null ? source.getTerminationReasonType().getId() : null)
-            .terminationReasonTypeName(source.getTerminationReasonType() != null ? source.getTerminationReasonType().getName() : null)
-            .cessationEffectiveDate(source.getCessationEffectiveDate())
-            .dateOfServiceJoining(source.getDateOfServiceJoining())
-            .terminatedBy(source.getTerminatedBy())
-            .terminationRemarks(source.getTerminationRemarks())
-            .relievingOrderNumber(source.getRelievingOrderNumber())
-            .relievingReferenceNumber(source.getRelievingReferenceNumber())
-            .lastPayMonth(source.getLastPayMonth())
-            .finalBasicSalary(source.getFinalBasicSalary())
-            .remarks(source.getRemarks())
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
-            .build();
-}
 
-private PartialWithdrawalResponseDto mapPartialWithdrawalDetails(PartialWithdrawalDetail source) {
-    if (source == null) {
-        return null;
+    private List<ClaimForfeitedComponentResponseDto> mapForfeitedComponents(List<ClaimForfeitedComponent> sources) {
+        if (sources == null) {
+            return null;
+        }
+        return sources.stream()
+                .map(this::mapForfeitedComponent)
+                .collect(Collectors.toList());
     }
-    return PartialWithdrawalResponseDto.builder()
-            .id(source.getId())
-            .payeeTypeId(source.getPayeeType() != null ? source.getPayeeType().getId() : null)
-            .payeeTypeName(source.getPayeeType() != null ? source.getPayeeType().getName() : null)
-            .withdrawalReasonId(source.getWithdrawalReason() != null ? source.getWithdrawalReason().getId() : null)
-            .withdrawalReasonName(source.getWithdrawalReason() != null ? source.getWithdrawalReason().getName() : null)
-            .actualWithdrawalAmount(source.getActualWithdrawalAmount())
-            .unemploymentStartDate(source.getUnemploymentStartDate())
-            .disabilityDate(source.getDisabilityDate())
-            .unemploymentCauseId(source.getUnemploymentCauseMaster() != null ? source.getUnemploymentCauseMaster().getId() : null)
-            .unemploymentCauseCode(source.getUnemploymentCauseMaster() != null ? source.getUnemploymentCauseMaster().getCode() : null)
-            .unemploymentCauseName(source.getUnemploymentCauseMaster() != null ? source.getUnemploymentCauseMaster().getName() : null)
-            .incidentDate(source.getIncidentDate())
-            .placeOfIncident(source.getPlaceOfIncident())
-            .businessTypeId(source.getBusinessType() != null ? source.getBusinessType().getId() : null)
-            .businessTypeName(source.getBusinessType() != null ? source.getBusinessType().getName() : null)
-            .businessName(source.getBusinessName())
-            .proposedInvestmentAmount(source.getProposedInvestmentAmount())
-            .housePurchaseType(source.getHousePurchaseType())
-            .propertyLocation(source.getPropertyLocation())
-            .estimatedCost(source.getEstimatedCost())
-            .description(source.getDescription())
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
-            .build();
-}
 
-private BeneficiarySettlementResponseDto mapBeneficiarySettlementDetails(BeneficiarySettlementDetail source) {
-    if (source == null) {
-        return null;
+    private ClaimForfeitedComponentResponseDto mapForfeitedComponent(ClaimForfeitedComponent source) {
+        if (source == null) {
+            return null;
+        }
+        return ClaimForfeitedComponentResponseDto.builder()
+                .id(source.getId())
+                .componentCode(source.getComponentCode() != null ? source.getComponentCode() : null)
+                .componentName(source.getComponentName() != null ? source.getComponentName() : null)
+                .componentType(source.getComponentType() != null ? source.getComponentType() : null)
+                .amount(source.getAmount() != null ? source.getAmount() : null)
+                .ruleCode(source.getRuleCode() != null ? source.getRuleCode() : null)
+                .subClaimCode(source.getSubClaimCode() != null ? source.getSubClaimCode() : null)
+                .reason(source.getReason() != null ? source.getReason() : null)
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
+                .build();
     }
-    List<BeneficiaryClaimantDetail> claimantDetails = beneficiaryClaimantDetailRepository.findByBeneficiarySettlementDetail_Id(source.getId());
-    return BeneficiarySettlementResponseDto.builder()
-            .id(source.getId())
-            .beneficiaryClaimantDetails(mapBeneficiaryClaimants(claimantDetails))
-            .cessationTypeId(source.getCessationType().getId())
-            .cessationTypeName(source.getCessationType().getName())
-            .dateOfDeath(source.getDateOfDeath())
-            .lastContributionDate(source.getLastContributionDate())
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
-            .build();
-}
 
-private List<BeneficiaryClaimantResponseDto> mapBeneficiaryClaimants(List<BeneficiaryClaimantDetail> sources) {
-    if (sources == null) {
-        return null;
+    private NormalClaimResponseDto mapNormalClaimDetails(NormalClaimDetail source) {
+        if (source == null) {
+            return null;
+        }
+        return NormalClaimResponseDto.builder()
+                .id(source.getId())
+                .cessationTypeId(source.getCessationType() != null ? source.getCessationType().getId() : null)
+                .cessationTypeName(source.getCessationType() != null ? source.getCessationType().getName() : null)
+                .payeeTypeId(source.getPayeeType() != null ? source.getPayeeType().getId() : null)
+                .payeeTypeName(source.getPayeeType() != null ? source.getPayeeType().getName() : null)
+                .terminationReasonTypeId(source.getTerminationReasonType() != null ? source.getTerminationReasonType().getId() : null)
+                .terminationReasonTypeName(source.getTerminationReasonType() != null ? source.getTerminationReasonType().getName() : null)
+                .cessationEffectiveDate(source.getCessationEffectiveDate() != null ? source.getCessationEffectiveDate() : null)
+                .dateOfServiceJoining(source.getDateOfServiceJoining() != null ? source.getDateOfServiceJoining() : null)
+                .terminatedBy(source.getTerminatedBy() != null ? source.getTerminatedBy() : null)
+                .terminationRemarks(source.getTerminationRemarks() != null ? source.getTerminationRemarks() : null)
+                .relievingOrderNumber(source.getRelievingOrderNumber() != null ? source.getRelievingOrderNumber() : null)
+                .relievingReferenceNumber(source.getRelievingReferenceNumber() != null ? source.getRelievingReferenceNumber() : null)
+                .lastPayMonth(source.getLastPayMonth() != null ? source.getLastPayMonth() : null)
+                .finalBasicSalary(source.getFinalBasicSalary() != null ? source.getFinalBasicSalary() : null)
+                .remarks(source.getRemarks() != null ? source.getRemarks() : null)
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
+                .build();
     }
-    return sources.stream()
-            .map(this::mapBeneficiaryClaimant)
-            .collect(Collectors.toList());
-}
 
-private BeneficiaryClaimantResponseDto mapBeneficiaryClaimant(BeneficiaryClaimantDetail source) {
-    if (source == null) {
-        return null;
+    private PartialWithdrawalResponseDto mapPartialWithdrawalDetails(PartialWithdrawalDetail source) {
+        if (source == null) {
+            return null;
+        }
+        return PartialWithdrawalResponseDto.builder()
+                .id(source.getId())
+                .payeeTypeId(source.getPayeeType() != null ? source.getPayeeType().getId() : null)
+                .payeeTypeName(source.getPayeeType() != null ? source.getPayeeType().getName() : null)
+                .withdrawalReasonId(source.getWithdrawalReason() != null ? source.getWithdrawalReason().getId() : null)
+                .withdrawalReasonName(source.getWithdrawalReason() != null ? source.getWithdrawalReason().getName() : null)
+                .actualWithdrawalAmount(source.getActualWithdrawalAmount() != null ? source.getActualWithdrawalAmount() : null)
+                .unemploymentStartDate(source.getUnemploymentStartDate() != null ? source.getUnemploymentStartDate() : null)
+                .disabilityDate(source.getDisabilityDate() != null ? source.getDisabilityDate() : null)
+                .unemploymentCauseId(source.getUnemploymentCauseMaster() != null ? source.getUnemploymentCauseMaster().getId() : null)
+                .unemploymentCauseCode(source.getUnemploymentCauseMaster() != null ? source.getUnemploymentCauseMaster().getCode() : null)
+                .unemploymentCauseName(source.getUnemploymentCauseMaster() != null ? source.getUnemploymentCauseMaster().getName() : null)
+                .incidentDate(source.getIncidentDate() != null ? source.getIncidentDate() : null)
+                .placeOfIncident(source.getPlaceOfIncident() != null ? source.getPlaceOfIncident() : null)
+                .businessTypeId(source.getBusinessType() != null ? source.getBusinessType().getId() : null)
+                .businessTypeName(source.getBusinessType() != null ? source.getBusinessType().getName() : null)
+                .businessName(source.getBusinessName() != null ? source.getBusinessName() : null)
+                .proposedInvestmentAmount(source.getProposedInvestmentAmount() != null ? source.getProposedInvestmentAmount() : null)
+                .housePurchaseType(source.getHousePurchaseType() != null ? source.getHousePurchaseType() : null)
+                .propertyLocation(source.getPropertyLocation() != null ? source.getPropertyLocation() : null)
+                .estimatedCost(source.getEstimatedCost() != null ? source.getEstimatedCost() : null)
+                .description(source.getDescription() != null ? source.getDescription() : null)
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
+                .build();
     }
-    return BeneficiaryClaimantResponseDto.builder()
-            .id(source.getId())
-            .beneficiarySettlementDetailId(source.getBeneficiarySettlementDetail() != null ? source.getBeneficiarySettlementDetail().getId() : null)
-            .nomineeId(source.getNominee() != null ? source.getNominee().getId() : null)
-            .nomineeFirstName(source.getNominee() != null ? source.getNominee().getFirstName() : null)
-            .nomineeMiddleName(source.getNominee() != null ? source.getNominee().getMiddleName() : null)
-            .nomineeLastName(source.getNominee() != null ? source.getNominee().getLastName() : null)
-            .dependentId(source.getDependent() != null ? source.getDependent().getId() : null)
-            .dependentFirstName(source.getDependent() != null ? source.getDependent().getFirstName() : null)
-            .dependentMiddleName(source.getDependent() != null ? source.getDependent().getMiddleName() : null)
-            .dependentLastName(source.getDependent() != null ? source.getDependent().getLastName() : null)
-            .claimantTypeId(source.getClaimantType() != null ? source.getClaimantType().getId() : null)
-            .claimantTypeName(source.getClaimantType() != null ? source.getClaimantType().getName() : null)
-            .payeeTypeId(source.getPayeeType() != null ? source.getPayeeType().getId() : null)
-            .payeeTypeName(source.getPayeeType() != null ? source.getPayeeType().getName() : null)
-            .relationshipTypeId(source.getRelationshipType() != null ? source.getRelationshipType().getRelationTypeId() : null)
-            .relationshipTypeName(source.getRelationshipType() != null ? source.getRelationshipType().getRelationTypeName() : null)
-            .beneficiaryIdentifier(source.getBeneficiaryIdentifier())
-            .beneficiaryName(source.getBeneficiaryName())
-            .dateOfBirth(source.getDateOfBirth())
-            .beneficiarySharePercentage(source.getBeneficiarySharePercentage())
-            .isMemberFamily(source.getIsMemberFamily())
-            .isMinor(source.getIsMinor())
-            .guardianName(source.getGuardianName())
-            .guardianIdentifier(source.getGuardianIdentifier()) 
-            .benefitAmount(source.getBenefitAmount())
-            .remarks(source.getRemarks())
-            .createdBy(source.getCreatedBy())
-            .createdAt(source.getCreatedAt())
-            .updatedBy(source.getUpdatedBy())
-            .updatedAt(source.getUpdatedAt())
-            .build();
-}
+
+    private BeneficiarySettlementResponseDto mapBeneficiarySettlementDetails(BeneficiarySettlementDetail source) {
+        if (source == null) {
+            return null;
+        }
+        List<BeneficiaryClaimantDetail> claimantDetails = beneficiaryClaimantDetailRepository.findByBeneficiarySettlementDetail_Id(source.getId());
+        return BeneficiarySettlementResponseDto.builder()
+                .id(source.getId())
+                .beneficiaryClaimantDetails(mapBeneficiaryClaimants(claimantDetails))
+                .cessationTypeId(source.getCessationType() != null ? source.getCessationType().getId() : null)
+                .cessationTypeName(source.getCessationType() != null ? source.getCessationType().getName() : null)
+                .dateOfDeath(source.getDateOfDeath() != null ? source.getDateOfDeath() : null)
+                .lastContributionDate(source.getLastContributionDate() != null ? source.getLastContributionDate() : null)
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt().toLocalDateTime() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt().toLocalDateTime() : null)
+                .build();
+    }
+
+    private List<BeneficiaryClaimantResponseDto> mapBeneficiaryClaimants(List<BeneficiaryClaimantDetail> sources) {
+        if (sources == null) {
+            return null;
+        }
+        return sources.stream()
+                .map(this::mapBeneficiaryClaimant)
+                .collect(Collectors.toList());
+    }
+
+    private BeneficiaryClaimantResponseDto mapBeneficiaryClaimant(BeneficiaryClaimantDetail source) {
+        if (source == null) {
+            return null;
+        }
+        return BeneficiaryClaimantResponseDto.builder()
+                .id(source.getId())
+                .beneficiarySettlementDetailId(source.getBeneficiarySettlementDetail() != null ? source.getBeneficiarySettlementDetail().getId() : null)
+                .nomineeId(source.getNominee() != null ? source.getNominee().getId() : null)
+                .nomineeFirstName(source.getNominee() != null ? source.getNominee().getFirstName() : null)
+                .nomineeMiddleName(source.getNominee() != null ? source.getNominee().getMiddleName() : null)
+                .nomineeLastName(source.getNominee() != null ? source.getNominee().getLastName() : null)
+                .dependentId(source.getDependent() != null ? source.getDependent().getId() : null)
+                .dependentFirstName(source.getDependent() != null ? source.getDependent().getFirstName() : null)
+                .dependentMiddleName(source.getDependent() != null ? source.getDependent().getMiddleName() : null)
+                .dependentLastName(source.getDependent() != null ? source.getDependent().getLastName() : null)
+                .claimantTypeId(source.getClaimantType() != null ? source.getClaimantType().getId() : null)
+                .claimantTypeName(source.getClaimantType() != null ? source.getClaimantType().getName() : null)
+                .payeeTypeId(source.getPayeeType() != null ? source.getPayeeType().getId() : null)
+                .payeeTypeName(source.getPayeeType() != null ? source.getPayeeType().getName() : null)
+                .relationshipTypeId(source.getRelationshipType() != null ? source.getRelationshipType().getRelationTypeId() : null)
+                .relationshipTypeName(source.getRelationshipType() != null ? source.getRelationshipType().getRelationTypeName() : null)
+                .beneficiaryIdentifier(source.getBeneficiaryIdentifier() != null ? source.getBeneficiaryIdentifier() : null)
+                .beneficiaryName(source.getBeneficiaryName() != null ? source.getBeneficiaryName() : null)
+                .dateOfBirth(source.getDateOfBirth() != null ? source.getDateOfBirth() : null)
+                .beneficiarySharePercentage(source.getBeneficiarySharePercentage() != null ? source.getBeneficiarySharePercentage() : null)
+                .isMemberFamily(source.getIsMemberFamily() != null ? source.getIsMemberFamily() : null)
+                .isMinor(source.getIsMinor() != null ? source.getIsMinor() : null)
+                .guardianName(source.getGuardianName() != null ? source.getGuardianName() : null)
+                .guardianIdentifier(source.getGuardianIdentifier() != null ? source.getGuardianIdentifier() : null)
+                .benefitAmount(source.getBenefitAmount() != null ? source.getBenefitAmount() : null)
+                .remarks(source.getRemarks() != null ? source.getRemarks() : null)
+                .createdBy(source.getCreatedBy() != null ? source.getCreatedBy() : null)
+                .createdAt(source.getCreatedAt() != null ? source.getCreatedAt() : null)
+                .updatedBy(source.getUpdatedBy() != null ? source.getUpdatedBy() : null)
+                .updatedAt(source.getUpdatedAt() != null ? source.getUpdatedAt() : null)
+                .build();
+    }
 }

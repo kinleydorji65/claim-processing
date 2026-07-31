@@ -8,7 +8,9 @@ import com.claim.claim_processing.application.repository.application.ClaimApplic
 import com.claim.claim_processing.application.repository.detail.LegalRecoveryDetailRepository;
 import com.claim.claim_processing.application.service.detail.LegalRecoveryService;
 import com.claim.claim_processing.common.entities.common.PayeeTypeMaster;
+import com.claim.claim_processing.common.entities.others.Dzongkhag;
 import com.claim.claim_processing.common.repository.common.PayeeTypeRepository;
+import com.claim.claim_processing.common.repository.others.DzongkhagRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
     private final ClaimApplicationRepository claimApplicationRepository;
     private final PayeeTypeRepository payeeTypeRepository;
     private final LegalRecoveryMapper legalRecoveryMapper;
+    private final DzongkhagRepository dzongkhagRepository;
 
     @Override
     public LegalRecoveryDetail create(LegalRecoveryDetailRequest request, ClaimApplication claimApplication) {
@@ -37,7 +40,10 @@ public class LegalRecoveryServiceImpl implements LegalRecoveryService {
         }
 
         LegalRecoveryDetail entity = legalRecoveryMapper.toEntity(request);
-
+        if (request.getDzongkhagId() > 0) {
+            Dzongkhag dzongkhag = dzongkhagRepository.findById(request.getDzongkhagId()).orElse(null);
+            entity.setDzongkhag(dzongkhag);
+        }
         entity.setClaimApplication(claimApplication);
         entity.setPayeeType(getPayeeType(request.getPayeeTypeId()));
         LegalRecoveryDetail saved = legalRecoveryRepository.saveAndFlush(entity);

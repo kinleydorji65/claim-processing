@@ -22,7 +22,6 @@ import com.claim.claim_processing.application.service.application.ClaimApplicati
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.claim.claim_processing.common.entities.contribution.ComponentMaster;
 import com.claim.claim_processing.common.repository.contribution.ComponentMasterRepository;
-import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.rule.ruleProcessing.entities.rule.SubClaimMapping;
 import com.claim.claim_processing.rule.ruleProcessing.repositories.rule.SubClaimMappingRepository;
 
@@ -40,33 +39,72 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
     private final ComponentMasterRepository componentMasterRepository;
     private final ClaimApplicationCalculationComponentRepository calculationComponentRepository;
 
-    @Override
-    @Transactional
-    public ClaimApplicationCalculationSummary initialCreate(ClaimApplication claimApplication,
-                            ClaimApplicationOtherRequestDto otherRequest) {
-        ClaimApplicationCalculationSummary claimCalculationSummary = ClaimApplicationCalculationSummary
-                        .builder()
-                        .totalAmount(otherRequest.getTotalAmount())
-                        .isPfEligible(otherRequest.getPfIsEligible() != null &&
-                                        otherRequest.getPfIsEligible().toString().equals("ELIGIBLE")
-                                        ? "Y"
-                                        : "N")
-                        .isPensionEligible(otherRequest.getPensionIsEligible() != null &&
-                                        otherRequest.getPensionIsEligible().toString().equals("ELIGIBLE")
-                                        ? "Y"
-                                        : "N")
-                        .totalContributionMonth(otherRequest.getTotalContributionMonths())
-                        .recommendedBenefitType(otherRequest.getRecommendedBenefitType())
-                        .totalNonContributionMonth(otherRequest.getTotalNonContributionMonths())
-                        .totalPfAmount(otherRequest.getTotalPfAmount())
-                        .totalPensionAmount(otherRequest.getTotalPensionAmount())
-                        .totalPfInterest(otherRequest.getTotalPfInterest())
-                        .totalPensionInterest(otherRequest.getTotalPensionInterest())
-                        .createdBy(claimApplication.getCreatedBy())
-                        .build();
-        claimCalculationSummary.setClaimApplication(claimApplication);
-        return calculationSummaryRepository.saveAndFlush(claimCalculationSummary);
+    // ==================== HELPER METHODS ====================
+    
+    private BigDecimal safeBigDecimal(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
+    
+    private Integer safeInteger(Integer value) {
+        return value != null ? value : 0;
+    }
+    
+    private String safeString(String value, String defaultValue) {
+        return value != null && !value.isEmpty() ? value : defaultValue;
+    }
+    
+    private String safeString(String value) {
+        return value != null ? value : null;
+    }
+
+    // ==================== CREATE METHODS ====================
+
+    @Override
+@Transactional
+public ClaimApplicationCalculationSummary initialCreate(ClaimApplication claimApplication,
+                        ClaimApplicationOtherRequestDto otherRequest) {
+    
+    if (otherRequest == null) {
+        log.warn("OtherRequest is null, creating empty summary");
+        return null;
+    }
+    
+    // 🔥 FIX: Check for null values
+    String pfEligible = "N";
+    if (otherRequest.getPfIsEligible() != null && 
+        "ELIGIBLE".equals(otherRequest.getPfIsEligible().toString())) {
+        pfEligible = "Y";
+    }
+    
+    String pensionEligible = "N";
+    if (otherRequest.getPensionIsEligible() != null && 
+        "ELIGIBLE".equals(otherRequest.getPensionIsEligible().toString())) {
+        pensionEligible = "Y";
+    }
+    
+    ClaimApplicationCalculationSummary claimCalculationSummary = ClaimApplicationCalculationSummary
+                    .builder()
+                    .totalAmount(safeBigDecimal(otherRequest.getTotalAmount()))
+                    .isPfEligible(pfEligible)
+                    .isPensionEligible(pensionEligible)
+                    .totalContributionMonth(safeInteger(otherRequest.getTotalContributionMonths()))
+                    .recommendedBenefitType(safeString(otherRequest.getRecommendedBenefitType()))
+                    .totalNonContributionMonth(safeInteger(otherRequest.getTotalNonContributionMonths()))
+                    .totalPfAmount(safeBigDecimal(otherRequest.getTotalPfAmount()))
+                    .totalPensionAmount(safeBigDecimal(otherRequest.getTotalPensionAmount()))
+                    .totalPfInterest(safeBigDecimal(otherRequest.getTotalPfInterest()))
+                    .totalPensionInterest(safeBigDecimal(otherRequest.getTotalPensionInterest()))
+                    .excessOpeningBalance(BigDecimal.ZERO)
+                    .excessServiceAmount(BigDecimal.ZERO)
+                    .excessTotalContributions(BigDecimal.ZERO)
+                    .excessTotalInterest(BigDecimal.ZERO)
+                    .excessEolMonths(0)
+                    .createdBy(safeString(claimApplication.getCreatedBy(), "SYSTEM"))
+                    .build();
+    
+    claimCalculationSummary.setClaimApplication(claimApplication);
+    return calculationSummaryRepository.saveAndFlush(claimCalculationSummary);
+}
 
     @Override
     @Transactional
@@ -75,223 +113,63 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
         
         log.info("Creating/updating calculation summary for claim application: {}", claimApplication.getId());
         
+        // NULL CHECK - Return empty summary if request is null
+        if (request == null) {
+            log.warn("Request is null, creating empty summary");
+            return null;
+        }
+        
         // 1. Get or create the summary
         ClaimApplicationCalculationSummary claimCalculationSummary = calculationSummaryRepository
                         .findByClaimApplication_Id(claimApplication.getId()).orElse(null);
         
         if (claimCalculationSummary == null) {
-            claimCalculationSummary = ClaimApplicationCalculationSummary
-                            .builder()
-                            .calculationEffectiveDate(request.getCalculationEffectiveDate())
-                            .finalPayableAmount(request.getFinalPayableAmount())
-                            .totalAmount(request.getTotalAmount())
-                            .isPfEligible(request.getIsPfEligible())
-                            .isPensionEligible(request.getIsPensionEligible())
-                            .totalContributionMonth(request.getTotalContributionMonth())
-                            .totalNonContributionMonth(request.getTotalNonContributionMonth())
-                            .totalPfAmount(request.getTotalPfAmount())
-                            .totalPensionAmount(request.getTotalPensionAmount())
-                            .totalPfInterest(request.getTotalPfInterest())
-                            .totalPensionInterest(request.getTotalPensionInterest())
-                            .recommendedBenefitType(request.getRecommendedBenefitType())
-                            .createdBy(request.getCreatedBy())
-
-                            .excessOpeningBalance(request.getExcessOpeningBalance() != null ? 
-                                request.getExcessOpeningBalance() : BigDecimal.ZERO)
-                            .excessServiceAmount(request.getExcessServiceAmount() != null ? 
-                                request.getExcessServiceAmount() : BigDecimal.ZERO)
-                            .excessCutoffDate(request.getExcessCutoffDate())
-                            .excessStartDate(request.getExcessStartDate())
-                            .excessEndDate(request.getExcessEndDate())
-                            .excessTotalContributions(request.getExcessTotalContributions() != null ? 
-                                request.getExcessTotalContributions() : BigDecimal.ZERO)
-                            .excessTotalInterest(request.getExcessTotalInterest() != null ? 
-                                request.getExcessTotalInterest() : BigDecimal.ZERO)
-                            .excessEolMonths(request.getExcessEolMonths() != null ? 
-                                request.getExcessEolMonths() : 0)
-                            .build();
+            // CREATE NEW
+            claimCalculationSummary = ClaimApplicationCalculationSummary.builder()
+                    .calculationEffectiveDate(request.getCalculationEffectiveDate())
+                    .finalPayableAmount(safeBigDecimal(request.getFinalPayableAmount()))
+                    .totalAmount(safeBigDecimal(request.getTotalAmount()))
+                    .isPfEligible(safeString(request.getIsPfEligible(), "N"))
+                    .isPensionEligible(safeString(request.getIsPensionEligible(), "N"))
+                    .totalContributionMonth(safeInteger(request.getTotalContributionMonth()))
+                    .totalNonContributionMonth(safeInteger(request.getTotalNonContributionMonth()))
+                    .totalPfAmount(safeBigDecimal(request.getTotalPfAmount()))
+                    .totalPensionAmount(safeBigDecimal(request.getTotalPensionAmount()))
+                    .totalPfInterest(safeBigDecimal(request.getTotalPfInterest()))
+                    .totalPensionInterest(safeBigDecimal(request.getTotalPensionInterest()))
+                    .recommendedBenefitType(safeString(request.getRecommendedBenefitType()))
+                    .createdBy(safeString(request.getCreatedBy(), "SYSTEM"))
+                    .excessOpeningBalance(safeBigDecimal(request.getExcessOpeningBalance()))
+                    .excessServiceAmount(safeBigDecimal(request.getExcessServiceAmount()))
+                    .excessCutoffDate(request.getExcessCutoffDate())
+                    .excessStartDate(request.getExcessStartDate())
+                    .excessEndDate(request.getExcessEndDate())
+                    .excessTotalContributions(safeBigDecimal(request.getExcessTotalContributions()))
+                    .excessTotalInterest(safeBigDecimal(request.getExcessTotalInterest()))
+                    .excessEolMonths(safeInteger(request.getExcessEolMonths()))
+                    .claimApplication(claimApplication)
+                    .build();
             claimCalculationSummary.setClaimApplication(claimApplication);
         } else {
-            // Update existing summary
-            claimCalculationSummary.setFinalPayableAmount(request.getFinalPayableAmount());
-            claimCalculationSummary.setCalculationEffectiveDate(request.getCalculationEffectiveDate());
-            claimCalculationSummary.setTotalAmount(request.getTotalAmount());
-            claimCalculationSummary.setIsPfEligible(request.getIsPfEligible());
-            claimCalculationSummary.setIsPensionEligible(request.getIsPensionEligible());
-            claimCalculationSummary.setTotalContributionMonth(request.getTotalContributionMonth());
-            claimCalculationSummary.setTotalNonContributionMonth(request.getTotalNonContributionMonth());
-            claimCalculationSummary.setTotalPfAmount(request.getTotalPfAmount());
-            claimCalculationSummary.setTotalPensionAmount(request.getTotalPensionAmount());
-            claimCalculationSummary.setTotalPfInterest(request.getTotalPfInterest());
-            claimCalculationSummary.setTotalPensionInterest(request.getTotalPensionInterest());
-            claimCalculationSummary.setRecommendedBenefitType(request.getRecommendedBenefitType());
-            claimCalculationSummary.setUpdatedBy(request.getCreatedBy());
-
-            claimCalculationSummary.setExcessOpeningBalance(request.getExcessOpeningBalance());
-            claimCalculationSummary.setExcessServiceAmount(request.getExcessServiceAmount());
-            claimCalculationSummary.setExcessCutoffDate(request.getExcessCutoffDate());
-            claimCalculationSummary.setExcessStartDate(request.getExcessStartDate());
-            claimCalculationSummary.setExcessEndDate(request.getExcessEndDate());
-            claimCalculationSummary.setExcessTotalContributions(request.getExcessTotalContributions());
-            claimCalculationSummary.setExcessTotalInterest(request.getExcessTotalInterest());
-            claimCalculationSummary.setExcessEolMonths(request.getExcessEolMonths());
+            // UPDATE EXISTING
+            updateExistingSummary(claimCalculationSummary, request);
+            claimCalculationSummary.setClaimApplication(claimApplication);
         }
 
         // 2. Save the summary first
         claimCalculationSummary = calculationSummaryRepository.saveAndFlush(claimCalculationSummary);
         log.info("Saved calculation summary with ID: {}", claimCalculationSummary.getId());
 
-        // 3. Process rule evaluations
+        // 3. Process rule evaluations - WITH NULL CHECK
         if (request.getRuleEvaluations() != null && !request.getRuleEvaluations().isEmpty()) {
             storeClaimApplicationRuleEvaluation(claimCalculationSummary, request.getRuleEvaluations());
         }
-        
+
+        claimApplication.setCalculationSummary(claimCalculationSummary);        
         return claimCalculationSummary;
     }
 
-    @Transactional
-private void storeClaimApplicationRuleEvaluation(
-                ClaimApplicationCalculationSummary claimCalculationSummary,
-                List<ClaimApplicationRuleEvaluationRequestDto> requests) {
-
-    log.info("Processing {} rule evaluations for summary ID: {}", 
-            requests.size(), claimCalculationSummary.getId());
-
-    for (ClaimApplicationRuleEvaluationRequestDto request : requests) {
-        
-        SubClaimMapping subRule = subClaimMappingRepository
-                        .findBySubClaimCodeIgnoreCase(request.getSubRuleCode())
-                        .orElse(null);
-        
-        ClaimApplicationRuleEvaluation ruleEvaluation = claimApplicationRuleEvaluationRepository
-            .findById(request.getRuleEvaluationId())
-            .orElse(null);
-        
-        if (ruleEvaluation == null) {
-            // CREATE NEW
-            ruleEvaluation = ClaimApplicationRuleEvaluation.builder()
-                        .calculationSummary(claimCalculationSummary)
-                        .subRule(subRule)
-                        .subRuleCode(request.getSubRuleCode())
-                        .isRuleApplied(claimCalculationSummary.getClaimApplication().getIsSpecialCase()
-                                        .equals(ActivityEnum.Y) ? ActivityEnum.N : ActivityEnum.Y)
-                        .resultMessage(request.getResultMessage())
-                        .remarks(request.getRemarks())
-                        .evaluatedBy(request.getEvaluatedBy() != null ? 
-                                request.getEvaluatedBy() : claimCalculationSummary.getCreatedBy())
-                        .evaluatedAt(request.getEvaluatedAt() != null ? 
-                                request.getEvaluatedAt() : new Timestamp(System.currentTimeMillis()))
-                        .createdBy(claimCalculationSummary.getCreatedBy())
-                        .build();
-
-            // Build components and set them (new collection is fine for new entity)
-            if (request.getComponents() != null && !request.getComponents().isEmpty()) {
-                List<ClaimApplicationCalculationComponent> components = 
-                        buildComponentsForRuleEvaluation(ruleEvaluation, request.getComponents());
-                // For new entity, setting the collection is fine
-                ruleEvaluation.setComponents(components);
-            }
-            claimApplicationRuleEvaluationRepository.saveAndFlush(ruleEvaluation);
-            
-        } else {
-            // UPDATE EXISTING - MODIFY THE COLLECTION, DON'T REPLACE IT
-            
-            // Update basic fields
-            ruleEvaluation.setCalculationSummary(claimCalculationSummary);
-            ruleEvaluation.setSubRule(subRule);
-            ruleEvaluation.setSubRuleCode(request.getSubRuleCode());
-            ruleEvaluation.setIsRuleApplied(claimCalculationSummary.getClaimApplication().getIsSpecialCase()
-                            .equals(ActivityEnum.Y) ? ActivityEnum.N : ActivityEnum.Y);
-            ruleEvaluation.setResultMessage(request.getResultMessage());
-            ruleEvaluation.setRemarks(request.getRemarks());
-            ruleEvaluation.setEvaluatedBy(request.getEvaluatedBy() != null ? 
-                    request.getEvaluatedBy() : claimCalculationSummary.getCreatedBy());
-            ruleEvaluation.setEvaluatedAt(request.getEvaluatedAt() != null ? 
-                    request.getEvaluatedAt() : new Timestamp(System.currentTimeMillis()));
-            ruleEvaluation.setUpdatedBy(claimCalculationSummary.getCreatedBy());
-
-            // Handle components - MODIFY existing collection
-            if (request.getComponents() != null && !request.getComponents().isEmpty()) {
-                // Build new components list
-                List<ClaimApplicationCalculationComponent> newComponents = 
-                        buildComponentsForRuleEvaluation(ruleEvaluation, request.getComponents());
-                
-                // Use the helper method or modify the existing collection directly
-                // OPTION 1: Use the helper method from the entity
-                // ruleEvaluation.clearComponents();  // You'd need to add this method
-                // ruleEvaluation.addAllComponents(newComponents);  // You'd need to add this method
-                
-                // OPTION 2: Modify the existing collection directly (RECOMMENDED)
-                ruleEvaluation.getComponents().clear();      // Clear existing - this marks them for deletion
-                ruleEvaluation.getComponents().addAll(newComponents);  // Add new ones
-                
-                // IMPORTANT: Ensure each component has the ruleEvaluation set
-                // Your buildComponentsForRuleEvaluation already sets this, but we'll double-check
-                for (ClaimApplicationCalculationComponent comp : newComponents) {
-                    comp.setRuleEvaluation(ruleEvaluation);
-                }
-                
-            } else {
-                // If no components in request, clear existing
-                ruleEvaluation.getComponents().clear();
-            }
-            
-            claimApplicationRuleEvaluationRepository.saveAndFlush(ruleEvaluation);
-        }
-    }
-}
-
-    @Transactional
-    private List<ClaimApplicationCalculationComponent> buildComponentsForRuleEvaluation(
-                    ClaimApplicationRuleEvaluation ruleEvaluation,
-                    List<ClaimApplicationCalculationComponentRequestDto> componentRequests) {
-
-        List<ClaimApplicationCalculationComponent> components = new ArrayList<>();
-
-        for (ClaimApplicationCalculationComponentRequestDto componentRequest : componentRequests) {
-            // Get component master by code
-            ComponentMaster componentMaster = componentMasterRepository
-                            .findByCode(componentRequest.getComponentCode())
-                            .orElseThrow(() -> ClaimException.notFound(
-                                    "Component not found with code: " + componentRequest.getComponentCode()));
-
-            // Check if component already exists (for updates)
-            ClaimApplicationCalculationComponent component = null;
-            
-            if (componentRequest.getCalculationComponentId() != null && 
-                componentRequest.getCalculationComponentId() > 0) {
-                component = calculationComponentRepository
-                        .findById(componentRequest.getCalculationComponentId())
-                        .orElse(null);
-            }
-
-            if (component == null) {
-                // Create new component with BOTH componentCode and componentMaster
-                component = ClaimApplicationCalculationComponent.builder()
-                                .componentCode(componentRequest.getComponentCode())  // Set the code directly
-                                .componentMaster(componentMaster)                    // Set the master entity
-                                .amount(componentRequest.getAmount())
-                                .notes(componentRequest.getNotes())
-                                .ruleEvaluation(ruleEvaluation)
-                                .isDeduction(ActivityEnum.N)
-                                .isActive(ActivityEnum.Y)
-                                .createdBy(ruleEvaluation.getCreatedBy())
-                                .build();
-            } else {
-                // Update existing component with BOTH fields
-                component.setComponentCode(componentRequest.getComponentCode());  // Update the code
-                component.setComponentMaster(componentMaster);                    // Update the master
-                component.setAmount(componentRequest.getAmount());
-                component.setNotes(componentRequest.getNotes());
-                component.setRuleEvaluation(ruleEvaluation);
-                component.setUpdatedBy(ruleEvaluation.getCreatedBy());
-            }
-
-            components.add(component);
-        }
-
-        return components;
-    }
+    // ==================== UPDATE METHODS ====================
 
     @Override
     @Transactional
@@ -300,85 +178,283 @@ private void storeClaimApplicationRuleEvaluation(
 
         log.info("Patching calculation summary with ID: {}", calculationId);
 
+        if (request == null) {
+            throw new IllegalArgumentException("Request cannot be null");
+        }
+
         ClaimApplicationCalculationSummary claimCalculationSummary = calculationSummaryRepository
                         .findById(calculationId)
                         .orElseThrow(() -> new RuntimeException(
                                         "Calculation summary not found with id: " + calculationId));
 
-        if (request.getFinalPayableAmount() != null) {
-        claimCalculationSummary.setFinalPayableAmount(request.getFinalPayableAmount());
-    }
-    if (request.getTotalAmount() != null) {
-        claimCalculationSummary.setTotalAmount(request.getTotalAmount());
-    }
-    if (request.getIsPfEligible() != null) {
-        claimCalculationSummary.setIsPfEligible(request.getIsPfEligible());
-    }
-    if (request.getIsPensionEligible() != null) {
-        claimCalculationSummary.setIsPensionEligible(request.getIsPensionEligible());
-    }
-    if (request.getTotalContributionMonth() != null) {
-        claimCalculationSummary.setTotalContributionMonth(request.getTotalContributionMonth());
-    }
-    if (request.getTotalNonContributionMonth() != null) {
-        claimCalculationSummary.setTotalNonContributionMonth(request.getTotalNonContributionMonth());
-    }
-    if (request.getTotalPfAmount() != null) {
-        claimCalculationSummary.setTotalPfAmount(request.getTotalPfAmount());
-    }
-    if (request.getTotalPensionAmount() != null) {
-        claimCalculationSummary.setTotalPensionAmount(request.getTotalPensionAmount());
-    }
-    if (request.getTotalPfInterest() != null) {
-        claimCalculationSummary.setTotalPfInterest(request.getTotalPfInterest());
-    }
-    if (request.getTotalPensionInterest() != null) {
-        claimCalculationSummary.setTotalPensionInterest(request.getTotalPensionInterest());
-    }
-    if (request.getRecommendedBenefitType() != null) {
-        claimCalculationSummary.setRecommendedBenefitType(request.getRecommendedBenefitType());
-    }
-    
-    // ================================================================
-    // EXCESS SERVICE FIELDS WITH NULL SAFETY
-    // ================================================================
-    
-    if (request.getExcessOpeningBalance() != null) {
-        claimCalculationSummary.setExcessOpeningBalance(request.getExcessOpeningBalance());
-    }
-    if (request.getExcessServiceAmount() != null) {
-        claimCalculationSummary.setExcessServiceAmount(request.getExcessServiceAmount());
-    }
-    if (request.getExcessCutoffDate() != null) {
-        claimCalculationSummary.setExcessCutoffDate(request.getExcessCutoffDate());
-    }
-    if (request.getExcessStartDate() != null) {
-        claimCalculationSummary.setExcessStartDate(request.getExcessStartDate());
-    }
-    if (request.getExcessEndDate() != null) {
-        claimCalculationSummary.setExcessEndDate(request.getExcessEndDate());
-    }
-    if (request.getExcessTotalContributions() != null) {
-        claimCalculationSummary.setExcessTotalContributions(request.getExcessTotalContributions());
-    }
-    if (request.getExcessTotalInterest() != null) {
-        claimCalculationSummary.setExcessTotalInterest(request.getExcessTotalInterest());
-    }
-    if (request.getExcessEolMonths() != null) {
-        claimCalculationSummary.setExcessEolMonths(request.getExcessEolMonths());
-    }
-        
-        claimCalculationSummary.setUpdatedBy(request.getCreatedBy());
+        // Update only non-null fields
+        updateExistingSummary(claimCalculationSummary, request);
+        claimCalculationSummary.setUpdatedBy(safeString(request.getCreatedBy(), "SYSTEM"));
 
         // If rule evaluations are provided, update them
         if (request.getRuleEvaluations() != null && !request.getRuleEvaluations().isEmpty()) {
             // Clear existing rule evaluations
-            claimCalculationSummary.getRuleEvaluations().clear();
-            
+            if (claimCalculationSummary.getRuleEvaluations() != null) {
+                claimCalculationSummary.getRuleEvaluations().clear();
+            }
             // Add new rule evaluations
             storeClaimApplicationRuleEvaluation(claimCalculationSummary, request.getRuleEvaluations());
         }
 
         return calculationSummaryRepository.save(claimCalculationSummary);
+    }
+
+    private void updateExistingSummary(ClaimApplicationCalculationSummary summary, 
+            ClaimApplicationCalculationSummaryRequest request) {
+        
+        if (request == null) return;
+        
+        // Update only non-null fields
+        if (request.getCalculationEffectiveDate() != null) {
+            summary.setCalculationEffectiveDate(request.getCalculationEffectiveDate());
+        }
+        if (request.getFinalPayableAmount() != null) {
+            summary.setFinalPayableAmount(request.getFinalPayableAmount());
+        }
+        if (request.getTotalAmount() != null) {
+            summary.setTotalAmount(request.getTotalAmount());
+        }
+        if (request.getIsPfEligible() != null) {
+            summary.setIsPfEligible(request.getIsPfEligible());
+        }
+        if (request.getIsPensionEligible() != null) {
+            summary.setIsPensionEligible(request.getIsPensionEligible());
+        }
+        if (request.getTotalContributionMonth() != null) {
+            summary.setTotalContributionMonth(request.getTotalContributionMonth());
+        }
+        if (request.getTotalNonContributionMonth() != null) {
+            summary.setTotalNonContributionMonth(request.getTotalNonContributionMonth());
+        }
+        if (request.getTotalPfAmount() != null) {
+            summary.setTotalPfAmount(request.getTotalPfAmount());
+        }
+        if (request.getTotalPensionAmount() != null) {
+            summary.setTotalPensionAmount(request.getTotalPensionAmount());
+        }
+        if (request.getTotalPfInterest() != null) {
+            summary.setTotalPfInterest(request.getTotalPfInterest());
+        }
+        if (request.getTotalPensionInterest() != null) {
+            summary.setTotalPensionInterest(request.getTotalPensionInterest());
+        }
+        if (request.getRecommendedBenefitType() != null) {
+            summary.setRecommendedBenefitType(request.getRecommendedBenefitType());
+        }
+        if (request.getExcessOpeningBalance() != null) {
+            summary.setExcessOpeningBalance(request.getExcessOpeningBalance());
+        }
+        if (request.getExcessServiceAmount() != null) {
+            summary.setExcessServiceAmount(request.getExcessServiceAmount());
+        }
+        if (request.getExcessCutoffDate() != null) {
+            summary.setExcessCutoffDate(request.getExcessCutoffDate());
+        }
+        if (request.getExcessStartDate() != null) {
+            summary.setExcessStartDate(request.getExcessStartDate());
+        }
+        if (request.getExcessEndDate() != null) {
+            summary.setExcessEndDate(request.getExcessEndDate());
+        }
+        if (request.getExcessTotalContributions() != null) {
+            summary.setExcessTotalContributions(request.getExcessTotalContributions());
+        }
+        if (request.getExcessTotalInterest() != null) {
+            summary.setExcessTotalInterest(request.getExcessTotalInterest());
+        }
+        if (request.getExcessEolMonths() != null) {
+            summary.setExcessEolMonths(request.getExcessEolMonths());
+        }
+    }
+
+@Transactional
+private void storeClaimApplicationRuleEvaluation(
+        ClaimApplicationCalculationSummary claimCalculationSummary,
+        List<ClaimApplicationRuleEvaluationRequestDto> requests) {
+
+    if (claimCalculationSummary == null || requests == null || requests.isEmpty()) {
+        log.warn("Cannot store rule evaluations: summary or requests is null/empty");
+        return;
+    }
+
+    log.info("Processing {} rule evaluations for summary ID: {}", 
+            requests.size(), claimCalculationSummary.getId());
+
+    for (ClaimApplicationRuleEvaluationRequestDto request : requests) {
+        if (request == null) {
+            log.warn("Skipping null rule evaluation request");
+            continue;
+        }
+
+        // Get sub rule
+        SubClaimMapping subRule = null;
+        if (request.getSubRuleCode() != null) {
+            subRule = subClaimMappingRepository
+                    .findBySubClaimCodeIgnoreCase(request.getSubRuleCode())
+                    .orElse(null);
+            if (subRule == null) {
+                log.warn("SubRule not found for code: {}", request.getSubRuleCode());
+            }
+        }
+
+        // Get existing or create new
+        ClaimApplicationRuleEvaluation ruleEvaluation = null;
+        if (request.getRuleEvaluationId() != null && request.getRuleEvaluationId() > 0) {
+            ruleEvaluation = claimApplicationRuleEvaluationRepository
+                    .findById(request.getRuleEvaluationId())
+                    .orElse(null);
+        }
+
+        if (ruleEvaluation == null) {
+            // CREATE NEW
+            // 🔥 FIX: Check for null before calling getIsSpecialCase()
+            ActivityEnum isSpecialCase = ActivityEnum.N; // default value
+            
+            if (claimCalculationSummary.getClaimApplication() != null && 
+                claimCalculationSummary.getClaimApplication().getIsSpecialCase() != null) {
+                isSpecialCase = claimCalculationSummary.getClaimApplication().getIsSpecialCase();
+            }
+            
+            ActivityEnum isRuleApplied = isSpecialCase.equals(ActivityEnum.Y) ? ActivityEnum.N : ActivityEnum.Y;
+
+            ruleEvaluation = ClaimApplicationRuleEvaluation.builder()
+                    .calculationSummary(claimCalculationSummary)
+                    .subRule(subRule)
+                    .subRuleCode(safeString(request.getSubRuleCode()))
+                    .isRuleApplied(isRuleApplied)
+                    .resultMessage(safeString(request.getResultMessage()))
+                    .remarks(safeString(request.getRemarks()))
+                    .evaluatedBy(safeString(request.getEvaluatedBy(), 
+                            claimCalculationSummary.getCreatedBy() != null ? 
+                            claimCalculationSummary.getCreatedBy() : "SYSTEM"))
+                    .evaluatedAt(request.getEvaluatedAt() != null ? 
+                            request.getEvaluatedAt() : new Timestamp(System.currentTimeMillis()))
+                    .createdBy(safeString(claimCalculationSummary.getCreatedBy(), "SYSTEM"))
+                    .build();
+
+            // Build components
+            if (request.getComponents() != null && !request.getComponents().isEmpty()) {
+                List<ClaimApplicationCalculationComponent> components = 
+                        buildComponentsForRuleEvaluation(ruleEvaluation, request.getComponents());
+                ruleEvaluation.setComponents(components);
+            }
+            claimApplicationRuleEvaluationRepository.saveAndFlush(ruleEvaluation);
+
+        } else {
+            // UPDATE EXISTING
+            ruleEvaluation.setCalculationSummary(claimCalculationSummary);
+            ruleEvaluation.setSubRule(subRule);
+            ruleEvaluation.setSubRuleCode(safeString(request.getSubRuleCode()));
+            
+            // 🔥 FIX: Check for null before calling getIsSpecialCase()
+            ActivityEnum isSpecialCase = ActivityEnum.N; // default value
+            
+            if (claimCalculationSummary.getClaimApplication() != null && 
+                claimCalculationSummary.getClaimApplication().getIsSpecialCase() != null) {
+                isSpecialCase = claimCalculationSummary.getClaimApplication().getIsSpecialCase();
+            }
+            
+            ActivityEnum isRuleApplied = isSpecialCase.equals(ActivityEnum.Y) ? ActivityEnum.N : ActivityEnum.Y;
+            ruleEvaluation.setIsRuleApplied(isRuleApplied);
+            
+            ruleEvaluation.setResultMessage(safeString(request.getResultMessage()));
+            ruleEvaluation.setRemarks(safeString(request.getRemarks()));
+            ruleEvaluation.setEvaluatedBy(safeString(request.getEvaluatedBy(), 
+                    claimCalculationSummary.getCreatedBy() != null ? 
+                    claimCalculationSummary.getCreatedBy() : "SYSTEM"));
+            ruleEvaluation.setEvaluatedAt(request.getEvaluatedAt() != null ? 
+                    request.getEvaluatedAt() : new Timestamp(System.currentTimeMillis()));
+            ruleEvaluation.setUpdatedBy(safeString(claimCalculationSummary.getCreatedBy(), "SYSTEM"));
+
+            // Handle components
+            if (request.getComponents() != null && !request.getComponents().isEmpty()) {
+                List<ClaimApplicationCalculationComponent> newComponents = 
+                        buildComponentsForRuleEvaluation(ruleEvaluation, request.getComponents());
+                
+                // Clear existing and add new
+                if (ruleEvaluation.getComponents() != null) {
+                    ruleEvaluation.getComponents().clear();
+                    ruleEvaluation.getComponents().addAll(newComponents);
+                } else {
+                    ruleEvaluation.setComponents(newComponents);
+                }
+            } else {
+                // Clear components if none in request
+                if (ruleEvaluation.getComponents() != null) {
+                    ruleEvaluation.getComponents().clear();
+                }
+            }
+
+            claimApplicationRuleEvaluationRepository.saveAndFlush(ruleEvaluation);
+        }
+    }
+}
+    @Transactional
+    private List<ClaimApplicationCalculationComponent> buildComponentsForRuleEvaluation(
+            ClaimApplicationRuleEvaluation ruleEvaluation,
+            List<ClaimApplicationCalculationComponentRequestDto> componentRequests) {
+
+        if (ruleEvaluation == null || componentRequests == null || componentRequests.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<ClaimApplicationCalculationComponent> components = new ArrayList<>();
+
+        for (ClaimApplicationCalculationComponentRequestDto componentRequest : componentRequests) {
+            if (componentRequest == null) {
+                continue;
+            }
+
+            // Get component master by code
+            ComponentMaster componentMaster = null;
+            if (componentRequest.getComponentCode() != null) {
+                componentMaster = componentMasterRepository
+                        .findByCode(componentRequest.getComponentCode())
+                        .orElse(null);
+                if (componentMaster == null) {
+                    log.warn("Component not found with code: {}", componentRequest.getComponentCode());
+                }
+            }
+
+            // Check if component already exists (for updates)
+            ClaimApplicationCalculationComponent component = null;
+            if (componentRequest.getCalculationComponentId() != null && 
+                componentRequest.getCalculationComponentId() > 0) {
+                component = calculationComponentRepository
+                        .findById(componentRequest.getCalculationComponentId())
+                        .orElse(null);
+            }
+
+            if (component == null) {
+                // CREATE NEW
+                component = ClaimApplicationCalculationComponent.builder()
+                        .componentCode(safeString(componentRequest.getComponentCode()))
+                        .componentMaster(componentMaster)
+                        .amount(safeBigDecimal(componentRequest.getAmount()))
+                        .notes(safeString(componentRequest.getNotes()))
+                        .ruleEvaluation(ruleEvaluation)
+                        .isDeduction(ActivityEnum.N)
+                        .isActive(ActivityEnum.Y)
+                        .createdBy(safeString(ruleEvaluation.getCreatedBy(), "SYSTEM"))
+                        .build();
+            } else {
+                // UPDATE EXISTING
+                component.setComponentCode(safeString(componentRequest.getComponentCode()));
+                component.setComponentMaster(componentMaster);
+                component.setAmount(safeBigDecimal(componentRequest.getAmount()));
+                component.setNotes(safeString(componentRequest.getNotes()));
+                component.setRuleEvaluation(ruleEvaluation);
+                component.setUpdatedBy(safeString(ruleEvaluation.getCreatedBy(), "SYSTEM"));
+            }
+
+            components.add(component);
+        }
+
+        return components;
     }
 }

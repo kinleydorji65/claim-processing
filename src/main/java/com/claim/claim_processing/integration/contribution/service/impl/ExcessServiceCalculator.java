@@ -116,26 +116,26 @@ public class ExcessServiceCalculator {
             int cutoffYear = currentDate.getYear();
             LocalDate cutoffYearStart = LocalDate.of(cutoffYear, 1, 1);
             LocalDate cutoffYearEnd = LocalDate.of(cutoffYear, 12, 31);
-            
-            log.info("Cutoff Year: {}, Cutoff Year Start: {}, Cutoff Year End: {}", 
+
+            log.info("Cutoff Year: {}, Cutoff Year Start: {}, Cutoff Year End: {}",
                     cutoffYear, cutoffYearStart, cutoffYearEnd);
-            
+
             int eolMonthsBeforeCutoffYear = getEOLMonthsBeforeDate(eolPeriods, cutoffYearStart);
             log.info("EOL Months Before Cutoff Year (before {}): {}", cutoffYearStart, eolMonthsBeforeCutoffYear);
-            
+
             int eolMonthsDuringCutoffYear = getEOLMonthsInDateRange(eolPeriods, cutoffYearStart, cutoffYearEnd);
-            log.info("EOL Months During Cutoff Year ({}): {} (NOT deducted from cutoff)", 
+            log.info("EOL Months During Cutoff Year ({}): {} (NOT deducted from cutoff)",
                     cutoffYear, eolMonthsDuringCutoffYear);
-            
+
             int eolMonthsAfterCutoffYear = getEOLMonthsAfterDate(eolPeriods, cutoffYearEnd);
             log.info("EOL Months After Cutoff Year: {}", eolMonthsAfterCutoffYear);
-            
+
             int additionalMonthsForEOL = eolMonthsBeforeCutoffYear;
             int totalMonthsNeeded = (cutoffYears * 12) + additionalMonthsForEOL;
-            
+
             log.info("Cutoff Years: {} months, EOL Before Cutoff: {} months, Total Months Needed: {}",
                     (cutoffYears * 12), additionalMonthsForEOL, totalMonthsNeeded);
-            
+
             LocalDate cutoffServiceDate = startDate.plusMonths(totalMonthsNeeded);
             log.info("Cutoff Service Date (with EOL adjustment): {}", cutoffServiceDate);
             log.info("Original Cutoff (without EOL): {}", startDate.plusYears(cutoffYears));
@@ -143,7 +143,7 @@ public class ExcessServiceCalculator {
             // ========== 10. CHECK IF ELIGIBLE FOR EXCESS SERVICE ==========
             if (currentDate.isBefore(cutoffServiceDate)) {
                 long monthsShort = calculateTotalMonths(currentDate, cutoffServiceDate);
-                
+
                 return ExcessServiceResultDto.builder()
                         .isEligible(false)
                         .cutoffServiceDate(cutoffServiceDate)
@@ -154,7 +154,8 @@ public class ExcessServiceCalculator {
                         .eolMonthsAfterCutoffYear(eolMonthsAfterCutoffYear)
                         .monthsShort(monthsShort)
                         .status("NOT_ELIGIBLE")
-                        .message(String.format("Member has not crossed the cutoff service date. Need %d more months of service", 
+                        .message(String.format(
+                                "Member has not crossed the cutoff service date. Need %d more months of service",
                                 monthsShort))
                         .build();
             }
@@ -188,10 +189,10 @@ public class ExcessServiceCalculator {
 
             // ========== 14. INITIALIZE OPENING BALANCES ==========
             // Component-wise opening balances start at ZERO
-            BigDecimal openingPmcPrincipal = BigDecimal.ZERO;  // P_MC Principal
-            BigDecimal openingPecPrincipal = BigDecimal.ZERO;  // P_EC Principal
-            BigDecimal openingPmcInterest = BigDecimal.ZERO;   // P_IMC (Interest on P_MC)
-            BigDecimal openingPecInterest = BigDecimal.ZERO;   // P_IEC (Interest on P_EC)
+            BigDecimal openingPmcPrincipal = BigDecimal.ZERO; // P_MC Principal
+            BigDecimal openingPecPrincipal = BigDecimal.ZERO; // P_EC Principal
+            BigDecimal openingPmcInterest = BigDecimal.ZERO; // P_IMC (Interest on P_MC)
+            BigDecimal openingPecInterest = BigDecimal.ZERO; // P_IEC (Interest on P_EC)
 
             List<ExcessYearDetailDto> yearDetails = new ArrayList<>();
             List<ExcessMonthlyDetailDto> allMonthlyDetails = new ArrayList<>();
@@ -201,298 +202,298 @@ public class ExcessServiceCalculator {
             int totalEOLMonthsInExcess = 0;
 
             // ========== 15. PROCESS EACH YEAR ==========
-// ========== 15. PROCESS EACH YEAR ==========
-for (String year : accountingYears) {
-    YearType yearType = getYearType(year);
+            // ========== 15. PROCESS EACH YEAR ==========
+            for (String year : accountingYears) {
+                YearType yearType = getYearType(year);
 
-    log.info("Processing Year: {}, Type: {}", year, yearType);
+                log.info("Processing Year: {}, Type: {}", year, yearType);
 
-    // ================================================================
-    // ✅ GET ARR CONFIGURATION WITH ENHANCED FALLBACK LOGIC
-    // ================================================================
-    ArrConfiguration arrConfig = getArrConfigurationWithFallback(year);
-    
-    if (arrConfig == null) {
-        log.warn("ARR configuration not found for year: {}, skipping", year);
-        continue;
-    }
+                // ================================================================
+                // ✅ GET ARR CONFIGURATION WITH ENHANCED FALLBACK LOGIC
+                // ================================================================
+                ArrConfiguration arrConfig = getArrConfigurationWithFallback(year);
 
-    BigDecimal rate = arrConfig.getArrRate() != null ? arrConfig.getArrRate() : BigDecimal.ZERO;
-    int yearBasis = arrConfig.getYearBasis();
+                if (arrConfig == null) {
+                    log.warn("ARR configuration not found for year: {}, skipping", year);
+                    continue;
+                }
 
-    log.info("Year: {}, Rate: {}%, Year Basis: {} days",
-            year, rate.multiply(HUNDRED), yearBasis);
+                BigDecimal rate = arrConfig.getArrRate() != null ? arrConfig.getArrRate() : BigDecimal.ZERO;
+                int yearBasis = arrConfig.getYearBasis();
 
-    // Get year start and end dates
-    LocalDate yearStartDate = getYearStartDate(year, yearType);
-    LocalDate yearEndDate = getYearEndDate(year, yearType);
-    
-    log.info("Year Start: {}, Year End: {}", yearStartDate, yearEndDate);
+                log.info("Year: {}, Rate: {}%, Year Basis: {} days",
+                        year, rate.multiply(HUNDRED), yearBasis);
 
-    // ========== CALCULATE DAYS FOR OPENING BALANCE INTEREST ==========
-    int daysForOpening;
-    if (yearDetails.isEmpty()) {
-        // First year of excess - from excessStart to yearEnd
-        LocalDate effectiveStart = excessStart.isAfter(yearStartDate) ? excessStart : yearStartDate;
-        daysForOpening = (int) ChronoUnit.DAYS.between(effectiveStart, yearEndDate) + 1;
-        log.info("First year - days for opening balance interest: {} (from {} to {})", 
-                daysForOpening, effectiveStart, yearEndDate);
-    } else {
-        // Subsequent years - full year
-        daysForOpening = calculateDaysForIOB(year, yearType);
-        log.info("Subsequent year - days for opening balance interest: {} (full year)", daysForOpening);
-    }
-    
-    // Ensure daysForOpening is not negative
-    if (daysForOpening < 0) {
-        daysForOpening = 0;
-    }
+                // Get year start and end dates
+                LocalDate yearStartDate = getYearStartDate(year, yearType);
+                LocalDate yearEndDate = getYearEndDate(year, yearType);
 
-    // ========== GET MONTHS FOR THIS YEAR WITHIN EXCESS PERIOD ==========
-    List<YearMonth> monthsInYear = getMonthsInYear(year, yearType);
+                log.info("Year Start: {}, Year End: {}", yearStartDate, yearEndDate);
 
-    List<YearMonth> filteredMonths = monthsInYear.stream()
-            .filter(ym -> {
-                LocalDate monthStart = ym.atDay(1);
-                LocalDate monthEnd = ym.atEndOfMonth();
-                return !monthEnd.isBefore(excessStart) && !monthStart.isAfter(excessEnd);
-            })
-            .collect(Collectors.toList());
+                // ========== CALCULATE DAYS FOR OPENING BALANCE INTEREST ==========
+                int daysForOpening;
+                if (yearDetails.isEmpty()) {
+                    // First year of excess - from excessStart to yearEnd
+                    LocalDate effectiveStart = excessStart.isAfter(yearStartDate) ? excessStart : yearStartDate;
+                    daysForOpening = (int) ChronoUnit.DAYS.between(effectiveStart, yearEndDate) + 1;
+                    log.info("First year - days for opening balance interest: {} (from {} to {})",
+                            daysForOpening, effectiveStart, yearEndDate);
+                } else {
+                    // Subsequent years - full year
+                    daysForOpening = calculateDaysForIOB(year, yearType);
+                    log.info("Subsequent year - days for opening balance interest: {} (full year)", daysForOpening);
+                }
 
-    log.info("Months in excess period for year {}: {}", year, filteredMonths.size());
+                // Ensure daysForOpening is not negative
+                if (daysForOpening < 0) {
+                    daysForOpening = 0;
+                }
 
-    // ================================================================
-    // PROCESS EACH MONTH
-    // ================================================================
-    List<ExcessMonthlyDetailDto> monthlyDetails = new ArrayList<>();
-    
-    // Yearly accumulators
-    BigDecimal yearlyPmc = BigDecimal.ZERO;
-    BigDecimal yearlyPec = BigDecimal.ZERO;
-    BigDecimal yearlyPimc = BigDecimal.ZERO;
-    BigDecimal yearlyPiec = BigDecimal.ZERO;
+                // ========== GET MONTHS FOR THIS YEAR WITHIN EXCESS PERIOD ==========
+                List<YearMonth> monthsInYear = getMonthsInYear(year, yearType);
 
-    int eolMonthsInYear = 0;
+                List<YearMonth> filteredMonths = monthsInYear.stream()
+                        .filter(ym -> {
+                            LocalDate monthStart = ym.atDay(1);
+                            LocalDate monthEnd = ym.atEndOfMonth();
+                            return !monthEnd.isBefore(excessStart) && !monthStart.isAfter(excessEnd);
+                        })
+                        .collect(Collectors.toList());
 
-    for (YearMonth yearMonth : filteredMonths) {
-        String monthKey = getMonthYearKey(yearMonth.atDay(1));
+                log.info("Months in excess period for year {}: {}", year, filteredMonths.size());
 
-        ContributionBifurcationDetail detail = contributionMap.get(monthKey);
+                // ================================================================
+                // PROCESS EACH MONTH
+                // ================================================================
+                List<ExcessMonthlyDetailDto> monthlyDetails = new ArrayList<>();
 
-        BigDecimal pmc = BigDecimal.ZERO;
-        BigDecimal pec = BigDecimal.ZERO;
-        BigDecimal pimc = BigDecimal.ZERO;
-        BigDecimal piec = BigDecimal.ZERO;
-        int days = 0;
-        LocalDate invoiceDate = null;
+                // Yearly accumulators
+                BigDecimal yearlyPmc = BigDecimal.ZERO;
+                BigDecimal yearlyPec = BigDecimal.ZERO;
+                BigDecimal yearlyPimc = BigDecimal.ZERO;
+                BigDecimal yearlyPiec = BigDecimal.ZERO;
 
-        log.info("Processing Month: {}, MonthKey: {}, Has Contribution: {}",
-                yearMonth, monthKey, detail != null);
+                int eolMonthsInYear = 0;
 
-        if (detail != null) {
-            pmc = n(detail.getPensionMc());
-            pec = n(detail.getPensionEc());
+                for (YearMonth yearMonth : filteredMonths) {
+                    String monthKey = getMonthYearKey(yearMonth.atDay(1));
 
-            invoiceDate = detail.getCreatedAt().toLocalDate();
+                    ContributionBifurcationDetail detail = contributionMap.get(monthKey);
 
-            log.info("  Invoice Date: {}", invoiceDate);
-            log.info("  Year End Date: {}", yearEndDate);
+                    BigDecimal pmc = BigDecimal.ZERO;
+                    BigDecimal pec = BigDecimal.ZERO;
+                    BigDecimal pimc = BigDecimal.ZERO;
+                    BigDecimal piec = BigDecimal.ZERO;
+                    int days = 0;
+                    LocalDate invoiceDate = null;
 
-            // Calculate days from invoice date to year end date
-            days = (int) ChronoUnit.DAYS.between(invoiceDate, yearEndDate);
+                    log.info("Processing Month: {}, MonthKey: {}, Has Contribution: {}",
+                            yearMonth, monthKey, detail != null);
 
-            log.info("  Days between invoice date and year end: {}", days);
+                    if (detail != null) {
+                        pmc = n(detail.getPensionMc());
+                        pec = n(detail.getPensionEc());
 
-            if (days < 0) {
-                log.warn("  Negative days detected! Setting to 0");
-                days = 0;
+                        invoiceDate = detail.getCreatedAt().toLocalDate();
+
+                        log.info("  Invoice Date: {}", invoiceDate);
+                        log.info("  Year End Date: {}", yearEndDate);
+
+                        // Calculate days from invoice date to year end date
+                        days = (int) ChronoUnit.DAYS.between(invoiceDate, yearEndDate);
+
+                        log.info("  Days between invoice date and year end: {}", days);
+
+                        if (days < 0) {
+                            log.warn("  Negative days detected! Setting to 0");
+                            days = 0;
+                        }
+
+                        // Calculate interest for PMC and PEC separately
+                        BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
+                        BigDecimal factor = BigDecimal.valueOf(days)
+                                .divide(BigDecimal.valueOf(yearBasis), 10, RM);
+
+                        pimc = pmc
+                                .multiply(rateFactor)
+                                .multiply(factor)
+                                .setScale(2, RM);
+
+                        piec = pec
+                                .multiply(rateFactor)
+                                .multiply(factor)
+                                .setScale(2, RM);
+
+                        // Accumulate yearly totals
+                        yearlyPmc = yearlyPmc.add(pmc);
+                        yearlyPec = yearlyPec.add(pec);
+                        yearlyPimc = yearlyPimc.add(pimc);
+                        yearlyPiec = yearlyPiec.add(piec);
+
+                        log.info("  Final: Days={}, PMC={}, PEC={}, PIMC={}, PIEC={}",
+                                days, pmc, pec, pimc, piec);
+
+                    } else {
+                        eolMonthsInYear++;
+                        log.info("  Month {}: EOL Month", yearMonth);
+                    }
+
+                    // Build monthly detail
+                    ExcessMonthlyDetailDto monthlyDetail = ExcessMonthlyDetailDto.builder()
+                            .dueMonth(String.valueOf(yearMonth.getMonthValue()))
+                            .invoiceDate(invoiceDate != null ? invoiceDate : yearMonth.atDay(1))
+                            .pmc(pmc)
+                            .pec(pec)
+                            .pimc(pimc)
+                            .piec(piec)
+                            .days(days)
+                            .interestRate(rate)
+                            .yearBasis(yearBasis)
+                            .build();
+
+                    monthlyDetails.add(monthlyDetail);
+                    allMonthlyDetails.add(monthlyDetail);
+                }
+
+                // ================================================================
+                // CALCULATE YEAR SUMMARY WITH COMPONENT-WISE OPENING BALANCES
+                // ================================================================
+
+                // Rate factor for interest calculations
+                BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
+                BigDecimal daysFactor = BigDecimal.valueOf(daysForOpening)
+                        .divide(BigDecimal.valueOf(yearBasis), 10, RM);
+
+                // Interest on Opening Balances (Component-wise)
+                BigDecimal interestOnPmcOpening = openingPmcPrincipal
+                        .multiply(rateFactor)
+                        .multiply(daysFactor)
+                        .setScale(2, RM);
+
+                BigDecimal interestOnPecOpening = openingPecPrincipal
+                        .multiply(rateFactor)
+                        .multiply(daysFactor)
+                        .setScale(2, RM);
+
+                BigDecimal interestOnPimcOpening = openingPmcInterest
+                        .multiply(rateFactor)
+                        .multiply(daysFactor)
+                        .setScale(2, RM);
+
+                BigDecimal interestOnPiecOpening = openingPecInterest
+                        .multiply(rateFactor)
+                        .multiply(daysFactor)
+                        .setScale(2, RM);
+
+                // During The Year totals (already accumulated from monthly processing)
+                BigDecimal duringTheYearPmc = yearlyPmc;
+                BigDecimal duringTheYearPec = yearlyPec;
+                BigDecimal duringTheYearPimc = yearlyPimc;
+                BigDecimal duringTheYearPiec = yearlyPiec;
+
+                // Closing Balances (Component-wise)
+                BigDecimal closingPmcBalance = openingPmcPrincipal
+                        .add(interestOnPmcOpening)
+                        .add(duringTheYearPmc);
+
+                BigDecimal closingPecBalance = openingPecPrincipal
+                        .add(interestOnPecOpening)
+                        .add(duringTheYearPec);
+
+                BigDecimal closingPimcBalance = openingPmcInterest
+                        .add(interestOnPimcOpening)
+                        .add(duringTheYearPimc);
+
+                BigDecimal closingPiecBalance = openingPecInterest
+                        .add(interestOnPiecOpening)
+                        .add(duringTheYearPiec);
+
+                // Total yearly contributions and interest
+                BigDecimal yearlyContributions = yearlyPmc.add(yearlyPec);
+                BigDecimal yearlyInterest = yearlyPimc.add(yearlyPiec);
+
+                log.info("========== Year {} Summary ==========", year);
+                log.info("Opening Balances:");
+                log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
+                        openingPmcPrincipal, openingPecPrincipal, openingPmcInterest, openingPecInterest);
+                log.info("Interest on Opening ({} days):", daysForOpening);
+                log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
+                        interestOnPmcOpening, interestOnPecOpening, interestOnPimcOpening, interestOnPiecOpening);
+                log.info("During The Year:");
+                log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
+                        duringTheYearPmc, duringTheYearPec, duringTheYearPimc, duringTheYearPiec);
+                log.info("Closing Balances:");
+                log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
+                        closingPmcBalance, closingPecBalance, closingPimcBalance, closingPiecBalance);
+
+                // ================================================================
+                // BUILD YEAR DETAIL DTO
+                // ================================================================
+
+                ExcessYearDetailDto yearDetail = ExcessYearDetailDto.builder()
+                        .accountingYear(year)
+                        .yearType(yearType.name())
+
+                        // Opening balances
+                        .openingPmcBalance(openingPmcPrincipal)
+                        .openingPecBalance(openingPecPrincipal)
+                        .openingPimcBalance(openingPmcInterest)
+                        .openingPiecBalance(openingPecInterest)
+
+                        // Interest on opening
+                        .interestOnPmcOpening(interestOnPmcOpening)
+                        .interestOnPecOpening(interestOnPecOpening)
+                        .interestOnPimcOpening(interestOnPimcOpening)
+                        .interestOnPiecOpening(interestOnPiecOpening)
+
+                        // During the year
+                        .duringTheYearPmc(duringTheYearPmc)
+                        .duringTheYearPec(duringTheYearPec)
+                        .duringTheYearPimc(duringTheYearPimc)
+                        .duringTheYearPiec(duringTheYearPiec)
+
+                        // Closing balances
+                        .closingPmcBalance(closingPmcBalance)
+                        .closingPecBalance(closingPecBalance)
+                        .closingPimcBalance(closingPimcBalance)
+                        .closingPiecBalance(closingPiecBalance)
+
+                        // Interest rates
+                        .interestPmcRate(rate)
+                        .interestPecRate(rate)
+                        .interestPimcRate(rate)
+                        .interestPiecRate(rate)
+
+                        // Calculation details
+                        .interestDate(yearStartDate)
+                        .yearBasis(yearBasis)
+                        .daysInYear(daysForOpening)
+
+                        // EOL
+                        .eolMonthsInYear(eolMonthsInYear)
+
+                        // Yearly totals
+                        .yearlyContributions(yearlyContributions)
+                        .yearlyInterest(yearlyInterest)
+
+                        // Monthly details
+                        .monthlyDetails(monthlyDetails)
+                        .build();
+
+                yearDetails.add(yearDetail);
+
+                // ================================================================
+                // UPDATE OPENING BALANCES FOR NEXT YEAR (Component-wise)
+                // ================================================================
+                openingPmcPrincipal = closingPmcBalance;
+                openingPecPrincipal = closingPecBalance;
+                openingPmcInterest = closingPimcBalance;
+                openingPecInterest = closingPiecBalance;
+
+                grandTotalContributions = grandTotalContributions.add(yearlyContributions);
+                grandTotalInterest = grandTotalInterest.add(yearlyInterest);
+                totalEOLMonthsInExcess += eolMonthsInYear;
             }
-
-            // Calculate interest for PMC and PEC separately
-            BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
-            BigDecimal factor = BigDecimal.valueOf(days)
-                    .divide(BigDecimal.valueOf(yearBasis), 10, RM);
-
-            pimc = pmc
-                    .multiply(rateFactor)
-                    .multiply(factor)
-                    .setScale(2, RM);
-
-            piec = pec
-                    .multiply(rateFactor)
-                    .multiply(factor)
-                    .setScale(2, RM);
-
-            // Accumulate yearly totals
-            yearlyPmc = yearlyPmc.add(pmc);
-            yearlyPec = yearlyPec.add(pec);
-            yearlyPimc = yearlyPimc.add(pimc);
-            yearlyPiec = yearlyPiec.add(piec);
-
-            log.info("  Final: Days={}, PMC={}, PEC={}, PIMC={}, PIEC={}",
-                    days, pmc, pec, pimc, piec);
-
-        } else {
-            eolMonthsInYear++;
-            log.info("  Month {}: EOL Month", yearMonth);
-        }
-
-        // Build monthly detail
-        ExcessMonthlyDetailDto monthlyDetail = ExcessMonthlyDetailDto.builder()
-                .dueMonth(String.valueOf(yearMonth.getMonthValue()))
-                .invoiceDate(invoiceDate != null ? invoiceDate : yearMonth.atDay(1))
-                .pmc(pmc)
-                .pec(pec)
-                .pimc(pimc)
-                .piec(piec)
-                .days(days)
-                .interestRate(rate)
-                .yearBasis(yearBasis)
-                .build();
-
-        monthlyDetails.add(monthlyDetail);
-        allMonthlyDetails.add(monthlyDetail);
-    }
-
-    // ================================================================
-    // CALCULATE YEAR SUMMARY WITH COMPONENT-WISE OPENING BALANCES
-    // ================================================================
-    
-    // Rate factor for interest calculations
-    BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
-    BigDecimal daysFactor = BigDecimal.valueOf(daysForOpening)
-            .divide(BigDecimal.valueOf(yearBasis), 10, RM);
-
-    // Interest on Opening Balances (Component-wise)
-    BigDecimal interestOnPmcOpening = openingPmcPrincipal
-            .multiply(rateFactor)
-            .multiply(daysFactor)
-            .setScale(2, RM);
-
-    BigDecimal interestOnPecOpening = openingPecPrincipal
-            .multiply(rateFactor)
-            .multiply(daysFactor)
-            .setScale(2, RM);
-
-    BigDecimal interestOnPimcOpening = openingPmcInterest
-            .multiply(rateFactor)
-            .multiply(daysFactor)
-            .setScale(2, RM);
-
-    BigDecimal interestOnPiecOpening = openingPecInterest
-            .multiply(rateFactor)
-            .multiply(daysFactor)
-            .setScale(2, RM);
-
-    // During The Year totals (already accumulated from monthly processing)
-    BigDecimal duringTheYearPmc = yearlyPmc;
-    BigDecimal duringTheYearPec = yearlyPec;
-    BigDecimal duringTheYearPimc = yearlyPimc;
-    BigDecimal duringTheYearPiec = yearlyPiec;
-
-    // Closing Balances (Component-wise)
-    BigDecimal closingPmcBalance = openingPmcPrincipal
-            .add(interestOnPmcOpening)
-            .add(duringTheYearPmc);
-
-    BigDecimal closingPecBalance = openingPecPrincipal
-            .add(interestOnPecOpening)
-            .add(duringTheYearPec);
-
-    BigDecimal closingPimcBalance = openingPmcInterest
-            .add(interestOnPimcOpening)
-            .add(duringTheYearPimc);
-
-    BigDecimal closingPiecBalance = openingPecInterest
-            .add(interestOnPiecOpening)
-            .add(duringTheYearPiec);
-
-    // Total yearly contributions and interest
-    BigDecimal yearlyContributions = yearlyPmc.add(yearlyPec);
-    BigDecimal yearlyInterest = yearlyPimc.add(yearlyPiec);
-
-    log.info("========== Year {} Summary ==========", year);
-    log.info("Opening Balances:");
-    log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}", 
-            openingPmcPrincipal, openingPecPrincipal, openingPmcInterest, openingPecInterest);
-    log.info("Interest on Opening ({} days):", daysForOpening);
-    log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}", 
-            interestOnPmcOpening, interestOnPecOpening, interestOnPimcOpening, interestOnPiecOpening);
-    log.info("During The Year:");
-    log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}", 
-            duringTheYearPmc, duringTheYearPec, duringTheYearPimc, duringTheYearPiec);
-    log.info("Closing Balances:");
-    log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}", 
-            closingPmcBalance, closingPecBalance, closingPimcBalance, closingPiecBalance);
-
-    // ================================================================
-    // BUILD YEAR DETAIL DTO
-    // ================================================================
-
-    ExcessYearDetailDto yearDetail = ExcessYearDetailDto.builder()
-            .accountingYear(year)
-            .yearType(yearType.name())
-
-            // Opening balances
-            .openingPmcBalance(openingPmcPrincipal)
-            .openingPecBalance(openingPecPrincipal)
-            .openingPimcBalance(openingPmcInterest)
-            .openingPiecBalance(openingPecInterest)
-
-            // Interest on opening
-            .interestOnPmcOpening(interestOnPmcOpening)
-            .interestOnPecOpening(interestOnPecOpening)
-            .interestOnPimcOpening(interestOnPimcOpening)
-            .interestOnPiecOpening(interestOnPiecOpening)
-
-            // During the year
-            .duringTheYearPmc(duringTheYearPmc)
-            .duringTheYearPec(duringTheYearPec)
-            .duringTheYearPimc(duringTheYearPimc)
-            .duringTheYearPiec(duringTheYearPiec)
-
-            // Closing balances
-            .closingPmcBalance(closingPmcBalance)
-            .closingPecBalance(closingPecBalance)
-            .closingPimcBalance(closingPimcBalance)
-            .closingPiecBalance(closingPiecBalance)
-
-            // Interest rates
-            .interestPmcRate(rate)
-            .interestPecRate(rate)
-            .interestPimcRate(rate)
-            .interestPiecRate(rate)
-
-            // Calculation details
-            .interestDate(yearStartDate)
-            .yearBasis(yearBasis)
-            .daysInYear(daysForOpening)
-
-            // EOL
-            .eolMonthsInYear(eolMonthsInYear)
-
-            // Yearly totals
-            .yearlyContributions(yearlyContributions)
-            .yearlyInterest(yearlyInterest)
-
-            // Monthly details
-            .monthlyDetails(monthlyDetails)
-            .build();
-
-    yearDetails.add(yearDetail);
-
-    // ================================================================
-    // UPDATE OPENING BALANCES FOR NEXT YEAR (Component-wise)
-    // ================================================================
-    openingPmcPrincipal = closingPmcBalance;
-    openingPecPrincipal = closingPecBalance;
-    openingPmcInterest = closingPimcBalance;
-    openingPecInterest = closingPiecBalance;
-
-    grandTotalContributions = grandTotalContributions.add(yearlyContributions);
-    grandTotalInterest = grandTotalInterest.add(yearlyInterest);
-    totalEOLMonthsInExcess += eolMonthsInYear;
-}
             // ========== 16. FINAL TOTAL ==========
             BigDecimal totalExcessAmount = grandTotalContributions.add(grandTotalInterest);
             totalExcessAmount = totalExcessAmount.setScale(2, RM);
@@ -505,7 +506,7 @@ for (String year : accountingYears) {
             log.info("Total Years Processed: {}", yearDetails.size());
             if (lastYear != null) {
                 log.info("Final Closing Balances - PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
-                        lastYear.getClosingPmcBalance(), 
+                        lastYear.getClosingPmcBalance(),
                         lastYear.getClosingPecBalance(),
                         lastYear.getClosingPimcBalance(),
                         lastYear.getClosingPiecBalance());
@@ -539,128 +540,127 @@ for (String year : accountingYears) {
         }
     }
 
-
     /**
- * Get ARR configuration with enhanced fallback logic.
- * Tries multiple formats and fallback options.
- */
-private ArrConfiguration getArrConfigurationWithFallback(String accountingYear) {
-    if (accountingYear == null || accountingYear.isBlank()) {
-        return null;
-    }
-
-    log.debug("Looking for ARR configuration for year: {}", accountingYear);
-
-    try {
-        // ================================================================
-        // 1. TRY EXACT MATCH FIRST
-        // ================================================================
-        Optional<ArrConfiguration> arrOpt = arrRepo.findByAccountingYear(accountingYear);
-        if (arrOpt.isPresent()) {
-            log.debug("✅ Found exact ARR configuration for year: {}", accountingYear);
-            return arrOpt.get();
+     * Get ARR configuration with enhanced fallback logic.
+     * Tries multiple formats and fallback options.
+     */
+    private ArrConfiguration getArrConfigurationWithFallback(String accountingYear) {
+        if (accountingYear == null || accountingYear.isBlank()) {
+            return null;
         }
 
-        log.warn("No exact ARR configuration found for year: {}, trying fallback options", accountingYear);
+        log.debug("Looking for ARR configuration for year: {}", accountingYear);
 
-        // ================================================================
-        // 2. TRY DIFFERENT FORMATS
-        // ================================================================
-        
-        // If it's in format "YYYY-YYYY", try "YYYY"
-        if (accountingYear.contains("-")) {
-            String[] parts = accountingYear.split("-");
-            String yearOnly = parts[0];
-            
-            Optional<ArrConfiguration> yearOnlyOpt = arrRepo.findByAccountingYear(yearOnly);
-            if (yearOnlyOpt.isPresent()) {
-                log.info("✅ Found ARR configuration using year only: {}", yearOnly);
-                return yearOnlyOpt.get();
-            }
-        }
-        
-        // If it's in format "YYYY", try "YYYY-YYYY"
-        if (!accountingYear.contains("-")) {
-            String yearRange = accountingYear + "-" + accountingYear;
-            Optional<ArrConfiguration> yearRangeOpt = arrRepo.findByAccountingYear(yearRange);
-            if (yearRangeOpt.isPresent()) {
-                log.info("✅ Found ARR configuration using year range: {}", yearRange);
-                return yearRangeOpt.get();
-            }
-        }
-
-        // ================================================================
-        // 3. TRY PREVIOUS YEARS (UP TO 5 YEARS BACK)
-        // ================================================================
         try {
-            int year = Integer.parseInt(accountingYear.split("-")[0]);
-            
-            for (int i = 1; i <= 5; i++) {
-                int previousYear = year - i;
-                String previousYearStr = String.valueOf(previousYear);
-                String previousYearRange = previousYearStr + "-" + previousYearStr;
-                
-                // Try "YYYY" format
-                Optional<ArrConfiguration> prevOpt = arrRepo.findByAccountingYear(previousYearStr);
-                if (prevOpt.isPresent()) {
-                    log.info("✅ Using ARR config from previous year: {} ({} years back)", 
-                            previousYearStr, i);
-                    return prevOpt.get();
-                }
-                
-                // Try "YYYY-YYYY" format
-                Optional<ArrConfiguration> prevRangeOpt = arrRepo.findByAccountingYear(previousYearRange);
-                if (prevRangeOpt.isPresent()) {
-                    log.info("✅ Using ARR config from previous year range: {} ({} years back)", 
-                            previousYearRange, i);
-                    return prevRangeOpt.get();
+            // ================================================================
+            // 1. TRY EXACT MATCH FIRST
+            // ================================================================
+            Optional<ArrConfiguration> arrOpt = arrRepo.findByAccountingYear(accountingYear);
+            if (arrOpt.isPresent()) {
+                log.debug("✅ Found exact ARR configuration for year: {}", accountingYear);
+                return arrOpt.get();
+            }
+
+            log.warn("No exact ARR configuration found for year: {}, trying fallback options", accountingYear);
+
+            // ================================================================
+            // 2. TRY DIFFERENT FORMATS
+            // ================================================================
+
+            // If it's in format "YYYY-YYYY", try "YYYY"
+            if (accountingYear.contains("-")) {
+                String[] parts = accountingYear.split("-");
+                String yearOnly = parts[0];
+
+                Optional<ArrConfiguration> yearOnlyOpt = arrRepo.findByAccountingYear(yearOnly);
+                if (yearOnlyOpt.isPresent()) {
+                    log.info("✅ Found ARR configuration using year only: {}", yearOnly);
+                    return yearOnlyOpt.get();
                 }
             }
-        } catch (Exception e) {
-            log.warn("Could not parse year from: {}", accountingYear);
-        }
 
-        // ================================================================
-        // 4. GET THE LATEST AVAILABLE ARR CONFIGURATION
-        // ================================================================
-        List<ArrConfiguration> allArr = arrRepo.findAll();
-        if (!allArr.isEmpty()) {
-            // Sort by year descending (latest first)
-            allArr.sort((a, b) -> {
-                String yearA = a.getAccountingYear();
-                String yearB = b.getAccountingYear();
-                try {
-                    int aYear = Integer.parseInt(yearA.replace("-", ""));
-                    int bYear = Integer.parseInt(yearB.replace("-", ""));
-                    return Integer.compare(bYear, aYear);
-                } catch (Exception e) {
-                    return b.getAccountingYear().compareTo(a.getAccountingYear());
+            // If it's in format "YYYY", try "YYYY-YYYY"
+            if (!accountingYear.contains("-")) {
+                String yearRange = accountingYear + "-" + accountingYear;
+                Optional<ArrConfiguration> yearRangeOpt = arrRepo.findByAccountingYear(yearRange);
+                if (yearRangeOpt.isPresent()) {
+                    log.info("✅ Found ARR configuration using year range: {}", yearRange);
+                    return yearRangeOpt.get();
                 }
-            });
-            
-            ArrConfiguration latest = allArr.get(0);
-            log.info("✅ Using latest available ARR config from year: {}", latest.getAccountingYear());
-            return latest;
+            }
+
+            // ================================================================
+            // 3. TRY PREVIOUS YEARS (UP TO 5 YEARS BACK)
+            // ================================================================
+            try {
+                int year = Integer.parseInt(accountingYear.split("-")[0]);
+
+                for (int i = 1; i <= 5; i++) {
+                    int previousYear = year - i;
+                    String previousYearStr = String.valueOf(previousYear);
+                    String previousYearRange = previousYearStr + "-" + previousYearStr;
+
+                    // Try "YYYY" format
+                    Optional<ArrConfiguration> prevOpt = arrRepo.findByAccountingYear(previousYearStr);
+                    if (prevOpt.isPresent()) {
+                        log.info("✅ Using ARR config from previous year: {} ({} years back)",
+                                previousYearStr, i);
+                        return prevOpt.get();
+                    }
+
+                    // Try "YYYY-YYYY" format
+                    Optional<ArrConfiguration> prevRangeOpt = arrRepo.findByAccountingYear(previousYearRange);
+                    if (prevRangeOpt.isPresent()) {
+                        log.info("✅ Using ARR config from previous year range: {} ({} years back)",
+                                previousYearRange, i);
+                        return prevRangeOpt.get();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not parse year from: {}", accountingYear);
+            }
+
+            // ================================================================
+            // 4. GET THE LATEST AVAILABLE ARR CONFIGURATION
+            // ================================================================
+            List<ArrConfiguration> allArr = arrRepo.findAll();
+            if (!allArr.isEmpty()) {
+                // Sort by year descending (latest first)
+                allArr.sort((a, b) -> {
+                    String yearA = a.getAccountingYear();
+                    String yearB = b.getAccountingYear();
+                    try {
+                        int aYear = Integer.parseInt(yearA.replace("-", ""));
+                        int bYear = Integer.parseInt(yearB.replace("-", ""));
+                        return Integer.compare(bYear, aYear);
+                    } catch (Exception e) {
+                        return b.getAccountingYear().compareTo(a.getAccountingYear());
+                    }
+                });
+
+                ArrConfiguration latest = allArr.get(0);
+                log.info("✅ Using latest available ARR config from year: {}", latest.getAccountingYear());
+                return latest;
+            }
+
+            // ================================================================
+            // 5. USE DEFAULT VALUES
+            // ================================================================
+            log.warn("❌ No ARR configuration found in database, using default values");
+            return null;
+
+        } catch (Exception e) {
+            log.error("Error getting ARR config for {}: {}", accountingYear, e.getMessage());
+            return null;
         }
-
-        // ================================================================
-        // 5. USE DEFAULT VALUES
-        // ================================================================
-        log.warn("❌ No ARR configuration found in database, using default values");
-        return null;
-
-    } catch (Exception e) {
-        log.error("Error getting ARR config for {}: {}", accountingYear, e.getMessage());
-        return null;
     }
-}
     // ========== EOL HELPER METHODS ==========
 
     private List<EOLPeriodDTO> getEOLPeriodsBeforeDate(List<EOLPeriodDTO> eolPeriods, LocalDate date) {
         if (eolPeriods.isEmpty() || date == null) {
             return Collections.emptyList();
         }
-        
+
         return eolPeriods.stream()
                 .filter(period -> {
                     LocalDate periodEndDate = LocalDate.parse(period.getEndDate());
@@ -673,12 +673,12 @@ private ArrConfiguration getArrConfigurationWithFallback(String accountingYear) 
         if (eolPeriods.isEmpty() || start == null || end == null) {
             return Collections.emptyList();
         }
-        
+
         return eolPeriods.stream()
                 .filter(period -> {
                     LocalDate periodStart = LocalDate.parse(period.getStartDate());
                     LocalDate periodEnd = LocalDate.parse(period.getEndDate());
-                    return (periodStart.isAfter(start) || periodStart.isEqual(start)) 
+                    return (periodStart.isAfter(start) || periodStart.isEqual(start))
                             && (periodEnd.isBefore(end) || periodEnd.isEqual(end));
                 })
                 .collect(Collectors.toList());
@@ -688,7 +688,7 @@ private ArrConfiguration getArrConfigurationWithFallback(String accountingYear) 
         if (eolPeriods.isEmpty() || date == null) {
             return Collections.emptyList();
         }
-        
+
         return eolPeriods.stream()
                 .filter(period -> {
                     LocalDate periodStartDate = LocalDate.parse(period.getStartDate());
@@ -721,7 +721,7 @@ private ArrConfiguration getArrConfigurationWithFallback(String accountingYear) 
         }
         YearMonth startMonth = YearMonth.from(startDate);
         YearMonth endMonth = YearMonth.from(endDate);
-        return (endMonth.getYear() - startMonth.getYear()) * 12L 
+        return (endMonth.getYear() - startMonth.getYear()) * 12L
                 + (endMonth.getMonthValue() - startMonth.getMonthValue());
     }
 
