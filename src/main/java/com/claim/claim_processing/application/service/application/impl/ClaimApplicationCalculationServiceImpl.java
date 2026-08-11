@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationCalculationService {
-    
+
     private final ClaimApplicationCalculationSummaryRepository calculationSummaryRepository;
     private final SubClaimMappingRepository subClaimMappingRepository;
     private final ClaimApplicationRuleEvaluationRepository claimApplicationRuleEvaluationRepository;
@@ -40,19 +40,19 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
     private final ClaimApplicationCalculationComponentRepository calculationComponentRepository;
 
     // ==================== HELPER METHODS ====================
-    
+
     private BigDecimal safeBigDecimal(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
     }
-    
+
     private Integer safeInteger(Integer value) {
         return value != null ? value : 0;
     }
-    
+
     private String safeString(String value, String defaultValue) {
         return value != null && !value.isEmpty() ? value : defaultValue;
     }
-    
+
     private String safeString(String value) {
         return value != null ? value : null;
     }
@@ -60,69 +60,69 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
     // ==================== CREATE METHODS ====================
 
     @Override
-@Transactional
-public ClaimApplicationCalculationSummary initialCreate(ClaimApplication claimApplication,
-                        ClaimApplicationOtherRequestDto otherRequest) {
-    
-    if (otherRequest == null) {
-        log.warn("OtherRequest is null, creating empty summary");
-        return null;
+    @Transactional
+    public ClaimApplicationCalculationSummary initialCreate(ClaimApplication claimApplication,
+            ClaimApplicationOtherRequestDto otherRequest) {
+
+        if (otherRequest == null) {
+            log.warn("OtherRequest is null, creating empty summary");
+            return null;
+        }
+
+        // 🔥 FIX: Check for null values
+        String pfEligible = "N";
+        if (otherRequest.getPfIsEligible() != null &&
+                "ELIGIBLE".equals(otherRequest.getPfIsEligible().toString())) {
+            pfEligible = "Y";
+        }
+
+        String pensionEligible = "N";
+        if (otherRequest.getPensionIsEligible() != null &&
+                "ELIGIBLE".equals(otherRequest.getPensionIsEligible().toString())) {
+            pensionEligible = "Y";
+        }
+
+        ClaimApplicationCalculationSummary claimCalculationSummary = ClaimApplicationCalculationSummary
+                .builder()
+                .totalAmount(safeBigDecimal(otherRequest.getTotalAmount()))
+                .isPfEligible(pfEligible)
+                .isPensionEligible(pensionEligible)
+                .totalContributionMonth(safeInteger(otherRequest.getTotalContributionMonths()))
+                .recommendedBenefitType(safeString(otherRequest.getRecommendedBenefitType()))
+                .totalNonContributionMonth(safeInteger(otherRequest.getTotalNonContributionMonths()))
+                .totalPfAmount(safeBigDecimal(otherRequest.getTotalPfAmount()))
+                .totalPensionAmount(safeBigDecimal(otherRequest.getTotalPensionAmount()))
+                .totalPfInterest(safeBigDecimal(otherRequest.getTotalPfInterest()))
+                .totalPensionInterest(safeBigDecimal(otherRequest.getTotalPensionInterest()))
+                .excessOpeningBalance(BigDecimal.ZERO)
+                .excessServiceAmount(BigDecimal.ZERO)
+                .excessTotalContributions(BigDecimal.ZERO)
+                .excessTotalInterest(BigDecimal.ZERO)
+                .excessEolMonths(0)
+                .createdBy(safeString(claimApplication.getCreatedBy(), "SYSTEM"))
+                .build();
+
+        claimCalculationSummary.setClaimApplication(claimApplication);
+        return calculationSummaryRepository.saveAndFlush(claimCalculationSummary);
     }
-    
-    // 🔥 FIX: Check for null values
-    String pfEligible = "N";
-    if (otherRequest.getPfIsEligible() != null && 
-        "ELIGIBLE".equals(otherRequest.getPfIsEligible().toString())) {
-        pfEligible = "Y";
-    }
-    
-    String pensionEligible = "N";
-    if (otherRequest.getPensionIsEligible() != null && 
-        "ELIGIBLE".equals(otherRequest.getPensionIsEligible().toString())) {
-        pensionEligible = "Y";
-    }
-    
-    ClaimApplicationCalculationSummary claimCalculationSummary = ClaimApplicationCalculationSummary
-                    .builder()
-                    .totalAmount(safeBigDecimal(otherRequest.getTotalAmount()))
-                    .isPfEligible(pfEligible)
-                    .isPensionEligible(pensionEligible)
-                    .totalContributionMonth(safeInteger(otherRequest.getTotalContributionMonths()))
-                    .recommendedBenefitType(safeString(otherRequest.getRecommendedBenefitType()))
-                    .totalNonContributionMonth(safeInteger(otherRequest.getTotalNonContributionMonths()))
-                    .totalPfAmount(safeBigDecimal(otherRequest.getTotalPfAmount()))
-                    .totalPensionAmount(safeBigDecimal(otherRequest.getTotalPensionAmount()))
-                    .totalPfInterest(safeBigDecimal(otherRequest.getTotalPfInterest()))
-                    .totalPensionInterest(safeBigDecimal(otherRequest.getTotalPensionInterest()))
-                    .excessOpeningBalance(BigDecimal.ZERO)
-                    .excessServiceAmount(BigDecimal.ZERO)
-                    .excessTotalContributions(BigDecimal.ZERO)
-                    .excessTotalInterest(BigDecimal.ZERO)
-                    .excessEolMonths(0)
-                    .createdBy(safeString(claimApplication.getCreatedBy(), "SYSTEM"))
-                    .build();
-    
-    claimCalculationSummary.setClaimApplication(claimApplication);
-    return calculationSummaryRepository.saveAndFlush(claimCalculationSummary);
-}
 
     @Override
     @Transactional
     public ClaimApplicationCalculationSummary createForCalculation(ClaimApplication claimApplication,
-                    ClaimApplicationCalculationSummaryRequest request) {
-        
+            ClaimApplicationCalculationSummaryRequest request) {
+
         log.info("Creating/updating calculation summary for claim application: {}", claimApplication.getId());
-        
+
         // NULL CHECK - Return empty summary if request is null
         if (request == null) {
             log.warn("Request is null, creating empty summary");
             return null;
         }
-        
+
         // 1. Get or create the summary
         ClaimApplicationCalculationSummary claimCalculationSummary = calculationSummaryRepository
-                        .findByClaimApplication_Id(claimApplication.getId()).orElse(null);
-        
+                .findByClaimApplication_Id(claimApplication.getId()).orElse(null);
+
         if (claimCalculationSummary == null) {
             // CREATE NEW
             claimCalculationSummary = ClaimApplicationCalculationSummary.builder()
@@ -165,7 +165,7 @@ public ClaimApplicationCalculationSummary initialCreate(ClaimApplication claimAp
             storeClaimApplicationRuleEvaluation(claimCalculationSummary, request.getRuleEvaluations());
         }
 
-        claimApplication.setCalculationSummary(claimCalculationSummary);        
+        claimApplication.setCalculationSummary(claimCalculationSummary);
         return claimCalculationSummary;
     }
 
@@ -174,7 +174,7 @@ public ClaimApplicationCalculationSummary initialCreate(ClaimApplication claimAp
     @Override
     @Transactional
     public ClaimApplicationCalculationSummary patch(long calculationId,
-                    ClaimApplicationCalculationSummaryRequest request) {
+            ClaimApplicationCalculationSummaryRequest request) {
 
         log.info("Patching calculation summary with ID: {}", calculationId);
 
@@ -183,9 +183,9 @@ public ClaimApplicationCalculationSummary initialCreate(ClaimApplication claimAp
         }
 
         ClaimApplicationCalculationSummary claimCalculationSummary = calculationSummaryRepository
-                        .findById(calculationId)
-                        .orElseThrow(() -> new RuntimeException(
-                                        "Calculation summary not found with id: " + calculationId));
+                .findById(calculationId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Calculation summary not found with id: " + calculationId));
 
         // Update only non-null fields
         updateExistingSummary(claimCalculationSummary, request);
@@ -204,11 +204,12 @@ public ClaimApplicationCalculationSummary initialCreate(ClaimApplication claimAp
         return calculationSummaryRepository.save(claimCalculationSummary);
     }
 
-    private void updateExistingSummary(ClaimApplicationCalculationSummary summary, 
+    private void updateExistingSummary(ClaimApplicationCalculationSummary summary,
             ClaimApplicationCalculationSummaryRequest request) {
-        
-        if (request == null) return;
-        
+
+        if (request == null)
+            return;
+
         // Update only non-null fields
         if (request.getCalculationEffectiveDate() != null) {
             summary.setCalculationEffectiveDate(request.getCalculationEffectiveDate());
@@ -272,128 +273,129 @@ public ClaimApplicationCalculationSummary initialCreate(ClaimApplication claimAp
         }
     }
 
-@Transactional
-private void storeClaimApplicationRuleEvaluation(
-        ClaimApplicationCalculationSummary claimCalculationSummary,
-        List<ClaimApplicationRuleEvaluationRequestDto> requests) {
+    @Transactional
+    private void storeClaimApplicationRuleEvaluation(
+            ClaimApplicationCalculationSummary claimCalculationSummary,
+            List<ClaimApplicationRuleEvaluationRequestDto> requests) {
 
-    if (claimCalculationSummary == null || requests == null || requests.isEmpty()) {
-        log.warn("Cannot store rule evaluations: summary or requests is null/empty");
-        return;
-    }
-
-    log.info("Processing {} rule evaluations for summary ID: {}", 
-            requests.size(), claimCalculationSummary.getId());
-
-    for (ClaimApplicationRuleEvaluationRequestDto request : requests) {
-        if (request == null) {
-            log.warn("Skipping null rule evaluation request");
-            continue;
+        if (claimCalculationSummary == null || requests == null || requests.isEmpty()) {
+            log.warn("Cannot store rule evaluations: summary or requests is null/empty");
+            return;
         }
 
-        // Get sub rule
-        SubClaimMapping subRule = null;
-        if (request.getSubRuleCode() != null) {
-            subRule = subClaimMappingRepository
-                    .findBySubClaimCodeIgnoreCase(request.getSubRuleCode())
-                    .orElse(null);
-            if (subRule == null) {
-                log.warn("SubRule not found for code: {}", request.getSubRuleCode());
+        log.info("Processing {} rule evaluations for summary ID: {}",
+                requests.size(), claimCalculationSummary.getId());
+
+        for (ClaimApplicationRuleEvaluationRequestDto request : requests) {
+            if (request == null) {
+                log.warn("Skipping null rule evaluation request");
+                continue;
             }
-        }
 
-        // Get existing or create new
-        ClaimApplicationRuleEvaluation ruleEvaluation = null;
-        if (request.getRuleEvaluationId() != null && request.getRuleEvaluationId() > 0) {
-            ruleEvaluation = claimApplicationRuleEvaluationRepository
-                    .findById(request.getRuleEvaluationId())
-                    .orElse(null);
-        }
-
-        if (ruleEvaluation == null) {
-            // CREATE NEW
-            // 🔥 FIX: Check for null before calling getIsSpecialCase()
-            ActivityEnum isSpecialCase = ActivityEnum.N; // default value
-            
-            if (claimCalculationSummary.getClaimApplication() != null && 
-                claimCalculationSummary.getClaimApplication().getIsSpecialCase() != null) {
-                isSpecialCase = claimCalculationSummary.getClaimApplication().getIsSpecialCase();
-            }
-            
-            ActivityEnum isRuleApplied = isSpecialCase.equals(ActivityEnum.Y) ? ActivityEnum.N : ActivityEnum.Y;
-
-            ruleEvaluation = ClaimApplicationRuleEvaluation.builder()
-                    .calculationSummary(claimCalculationSummary)
-                    .subRule(subRule)
-                    .subRuleCode(safeString(request.getSubRuleCode()))
-                    .isRuleApplied(isRuleApplied)
-                    .resultMessage(safeString(request.getResultMessage()))
-                    .remarks(safeString(request.getRemarks()))
-                    .evaluatedBy(safeString(request.getEvaluatedBy(), 
-                            claimCalculationSummary.getCreatedBy() != null ? 
-                            claimCalculationSummary.getCreatedBy() : "SYSTEM"))
-                    .evaluatedAt(request.getEvaluatedAt() != null ? 
-                            request.getEvaluatedAt() : new Timestamp(System.currentTimeMillis()))
-                    .createdBy(safeString(claimCalculationSummary.getCreatedBy(), "SYSTEM"))
-                    .build();
-
-            // Build components
-            if (request.getComponents() != null && !request.getComponents().isEmpty()) {
-                List<ClaimApplicationCalculationComponent> components = 
-                        buildComponentsForRuleEvaluation(ruleEvaluation, request.getComponents());
-                ruleEvaluation.setComponents(components);
-            }
-            claimApplicationRuleEvaluationRepository.saveAndFlush(ruleEvaluation);
-
-        } else {
-            // UPDATE EXISTING
-            ruleEvaluation.setCalculationSummary(claimCalculationSummary);
-            ruleEvaluation.setSubRule(subRule);
-            ruleEvaluation.setSubRuleCode(safeString(request.getSubRuleCode()));
-            
-            // 🔥 FIX: Check for null before calling getIsSpecialCase()
-            ActivityEnum isSpecialCase = ActivityEnum.N; // default value
-            
-            if (claimCalculationSummary.getClaimApplication() != null && 
-                claimCalculationSummary.getClaimApplication().getIsSpecialCase() != null) {
-                isSpecialCase = claimCalculationSummary.getClaimApplication().getIsSpecialCase();
-            }
-            
-            ActivityEnum isRuleApplied = isSpecialCase.equals(ActivityEnum.Y) ? ActivityEnum.N : ActivityEnum.Y;
-            ruleEvaluation.setIsRuleApplied(isRuleApplied);
-            
-            ruleEvaluation.setResultMessage(safeString(request.getResultMessage()));
-            ruleEvaluation.setRemarks(safeString(request.getRemarks()));
-            ruleEvaluation.setEvaluatedBy(safeString(request.getEvaluatedBy(), 
-                    claimCalculationSummary.getCreatedBy() != null ? 
-                    claimCalculationSummary.getCreatedBy() : "SYSTEM"));
-            ruleEvaluation.setEvaluatedAt(request.getEvaluatedAt() != null ? 
-                    request.getEvaluatedAt() : new Timestamp(System.currentTimeMillis()));
-            ruleEvaluation.setUpdatedBy(safeString(claimCalculationSummary.getCreatedBy(), "SYSTEM"));
-
-            // Handle components
-            if (request.getComponents() != null && !request.getComponents().isEmpty()) {
-                List<ClaimApplicationCalculationComponent> newComponents = 
-                        buildComponentsForRuleEvaluation(ruleEvaluation, request.getComponents());
-                
-                // Clear existing and add new
-                if (ruleEvaluation.getComponents() != null) {
-                    ruleEvaluation.getComponents().clear();
-                    ruleEvaluation.getComponents().addAll(newComponents);
-                } else {
-                    ruleEvaluation.setComponents(newComponents);
+            // Get sub rule
+            SubClaimMapping subRule = null;
+            if (request.getSubRuleCode() != null) {
+                subRule = subClaimMappingRepository
+                        .findBySubClaimCodeIgnoreCase(request.getSubRuleCode())
+                        .orElse(null);
+                if (subRule == null) {
+                    log.warn("SubRule not found for code: {}", request.getSubRuleCode());
                 }
+            }
+
+            // Get existing or create new
+            ClaimApplicationRuleEvaluation ruleEvaluation = null;
+            if (request.getRuleEvaluationId() != null && request.getRuleEvaluationId() > 0) {
+                ruleEvaluation = claimApplicationRuleEvaluationRepository
+                        .findById(request.getRuleEvaluationId())
+                        .orElse(null);
+            }
+
+            if (ruleEvaluation == null) {
+                // CREATE NEW
+                // 🔥 FIX: Check for null before calling getIsSpecialCase()
+                ActivityEnum isSpecialCase = ActivityEnum.N; // default value
+
+                if (claimCalculationSummary.getClaimApplication() != null &&
+                        claimCalculationSummary.getClaimApplication().getIsSpecialCase() != null) {
+                    isSpecialCase = claimCalculationSummary.getClaimApplication().getIsSpecialCase();
+                }
+
+                ActivityEnum isRuleApplied = isSpecialCase.equals(ActivityEnum.Y) ? ActivityEnum.N : ActivityEnum.Y;
+
+                ruleEvaluation = ClaimApplicationRuleEvaluation.builder()
+                        .calculationSummary(claimCalculationSummary)
+                        .subRule(subRule)
+                        .subRuleCode(safeString(request.getSubRuleCode()))
+                        .isRuleApplied(isRuleApplied)
+                        .resultMessage(safeString(request.getResultMessage()))
+                        .remarks(safeString(request.getRemarks()))
+                        .evaluatedBy(safeString(request.getEvaluatedBy(),
+                                claimCalculationSummary.getCreatedBy() != null ? claimCalculationSummary.getCreatedBy()
+                                        : "SYSTEM"))
+                        .evaluatedAt(request.getEvaluatedAt() != null ? request.getEvaluatedAt()
+                                : new Timestamp(System.currentTimeMillis()))
+                        .createdBy(safeString(claimCalculationSummary.getCreatedBy(), "SYSTEM"))
+                        .build();
+
+                // Build components
+                if (request.getComponents() != null && !request.getComponents().isEmpty()) {
+                    List<ClaimApplicationCalculationComponent> components = buildComponentsForRuleEvaluation(
+                            ruleEvaluation, request.getComponents());
+                    ruleEvaluation.setComponents(components);
+                }
+                claimApplicationRuleEvaluationRepository.saveAndFlush(ruleEvaluation);
+
             } else {
-                // Clear components if none in request
-                if (ruleEvaluation.getComponents() != null) {
-                    ruleEvaluation.getComponents().clear();
-                }
-            }
+                // UPDATE EXISTING
+                ruleEvaluation.setCalculationSummary(claimCalculationSummary);
+                ruleEvaluation.setSubRule(subRule);
+                ruleEvaluation.setSubRuleCode(safeString(request.getSubRuleCode()));
 
-            claimApplicationRuleEvaluationRepository.saveAndFlush(ruleEvaluation);
+                // 🔥 FIX: Check for null before calling getIsSpecialCase()
+                ActivityEnum isSpecialCase = ActivityEnum.N; // default value
+
+                if (claimCalculationSummary.getClaimApplication() != null &&
+                        claimCalculationSummary.getClaimApplication().getIsSpecialCase() != null) {
+                    isSpecialCase = claimCalculationSummary.getClaimApplication().getIsSpecialCase();
+                }
+
+                ActivityEnum isRuleApplied = isSpecialCase.equals(ActivityEnum.Y) ? ActivityEnum.N : ActivityEnum.Y;
+                ruleEvaluation.setIsRuleApplied(isRuleApplied);
+
+                ruleEvaluation.setResultMessage(safeString(request.getResultMessage()));
+                ruleEvaluation.setRemarks(safeString(request.getRemarks()));
+                ruleEvaluation.setEvaluatedBy(safeString(request.getEvaluatedBy(),
+                        claimCalculationSummary.getCreatedBy() != null ? claimCalculationSummary.getCreatedBy()
+                                : "SYSTEM"));
+                ruleEvaluation.setEvaluatedAt(request.getEvaluatedAt() != null ? request.getEvaluatedAt()
+                        : new Timestamp(System.currentTimeMillis()));
+                ruleEvaluation.setUpdatedBy(safeString(claimCalculationSummary.getCreatedBy(), "SYSTEM"));
+
+                // Handle components
+                if (request.getComponents() != null && !request.getComponents().isEmpty()) {
+                    List<ClaimApplicationCalculationComponent> newComponents = buildComponentsForRuleEvaluation(
+                            ruleEvaluation, request.getComponents());
+
+                    // Clear existing and add new
+                    if (ruleEvaluation.getComponents() != null) {
+                        ruleEvaluation.getComponents().clear();
+                        ruleEvaluation.getComponents().addAll(newComponents);
+                    } else {
+                        ruleEvaluation.setComponents(newComponents);
+                    }
+                } else {
+                    // Clear components if none in request
+                    if (ruleEvaluation.getComponents() != null) {
+                        ruleEvaluation.getComponents().clear();
+                    }
+                }
+
+                claimApplicationRuleEvaluationRepository.saveAndFlush(ruleEvaluation);
+            }
         }
     }
-}
+
     @Transactional
     private List<ClaimApplicationCalculationComponent> buildComponentsForRuleEvaluation(
             ClaimApplicationRuleEvaluation ruleEvaluation,
@@ -423,8 +425,8 @@ private void storeClaimApplicationRuleEvaluation(
 
             // Check if component already exists (for updates)
             ClaimApplicationCalculationComponent component = null;
-            if (componentRequest.getCalculationComponentId() != null && 
-                componentRequest.getCalculationComponentId() > 0) {
+            if (componentRequest.getCalculationComponentId() != null &&
+                    componentRequest.getCalculationComponentId() > 0) {
                 component = calculationComponentRepository
                         .findById(componentRequest.getCalculationComponentId())
                         .orElse(null);
@@ -457,4 +459,6 @@ private void storeClaimApplicationRuleEvaluation(
 
         return components;
     }
+
+ 
 }

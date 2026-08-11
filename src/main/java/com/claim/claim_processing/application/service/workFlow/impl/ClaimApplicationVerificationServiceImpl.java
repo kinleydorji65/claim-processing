@@ -99,7 +99,7 @@ public class ClaimApplicationVerificationServiceImpl
         public ApiResponseDTO<List<ClaimApplicationVerificationResponseDto>> getVerifiedClaim() {
 
                 List<ClaimApplicationVerification> verifications = verificationRepository
-                                .findByStatus_StatusIdNotIn(List.of(42L, 21L, 1L, 2L, 4L, 5L, 7L, 8L, 61L, 63L));
+                                .findByStatus_StatusIdNotIn(List.of(1L, 2L, 3L, 4L, 5L, 7L, 8L, 21L, 42L, 61L, 63L));
                 if (verifications == null || verifications.isEmpty()) {
                         return ApiResponseDTO.success(null);
                 }
@@ -110,92 +110,108 @@ public class ClaimApplicationVerificationServiceImpl
         }
 
         @Override
-@Transactional
-public ApiResponseDTO<GeneralClaimResponse> verify(
-        String applicationNumber,
-        GeneralClaimApplicationVerifierRequestDTO request) {
-        
-    ClaimApplicationVerificationRequestDto verificationDto = request.getVerifierRequest();
-    ClaimApplication claimApplication = getClaimApplication(applicationNumber);
-    claimApplication.setUpdatedBy(verificationDto.getVerifiedBy());
-    claimApplication.setStatus(statusRepository.findById(41L)
-            .orElseThrow(() -> ClaimException.notFound("Status not found with id: " + 41L)));
-    claimApplicationRepository.save(claimApplication);
+        @Transactional
+        public ApiResponseDTO<GeneralClaimResponse> verify(
+                        String applicationNumber,
+                        GeneralClaimApplicationVerifierRequestDTO request) {
 
-    // 1. Save Verification
-    ClaimApplicationVerification verification = verificationRepository
-            .findByClaimApplication_ApplicationNumber(applicationNumber)
-            .orElse(new ClaimApplicationVerification());
+                ClaimApplicationVerificationRequestDto verificationDto = request.getVerifierRequest();
+                ClaimApplication claimApplication = getClaimApplication(applicationNumber);
+                claimApplication.setUpdatedBy(verificationDto.getVerifiedBy());
+                claimApplication.setStatus(statusRepository.findById(41L)
+                                .orElseThrow(() -> ClaimException.notFound("Status not found with id: " + 41L)));
+                claimApplicationRepository.save(claimApplication);
 
-    applyRequest(verification);
+                // ✅ FIX: Properly handle existing verification
+                ClaimApplicationVerification verification = verificationRepository
+                                .findByClaimApplication_ApplicationNumber(applicationNumber)
+                                .orElseGet(() -> {
+                                        // Only create new if doesn't exist
+                                        ClaimApplicationVerification newVerification = new ClaimApplicationVerification();
+                                        newVerification.setClaimApplication(claimApplication);
+                                        newVerification.setCreatedBy(verificationDto.getVerifiedBy());
+                                        return newVerification;
+                                });
 
-    if (verificationDto.getVerifiedBy() == null || verificationDto.getVerifiedBy().isBlank()) {
-        throw ClaimException.badRequest("Verified By is required");
-    }
-    verification.setClaimApplication(claimApplication);
-    verification.setRejectedBy(verificationDto.getVerifiedBy());
-    verification.setVerifiedAt(new Timestamp(System.currentTimeMillis()));
-    verification.setUpdatedBy(verificationDto.getVerifiedBy());
+                // ✅ Update existing fields (don't create new)
+                if (verificationDto.getVerifiedBy() == null || verificationDto.getVerifiedBy().isBlank()) {
+                        throw ClaimException.badRequest("Verified By is required");
+                }
 
-    ClaimApplicationVerification saved = verificationRepository.save(verification);
+                // Update status
+                StatusMaster verificationStatus = statusRepository.findById(41L)
+                                .orElseThrow(() -> ClaimException.notFound("Status not found with id: " + 41L));
+                verification.setStatus(verificationStatus);
 
-    // 2. Save Workflow
-    String reason = verificationDto.getRemarks() != null ? verificationDto.getRemarks()
-            : verificationDto.getRemarks();
-    Map<String, Long> workflowStage = resolveFromStageAndToStageAndAction(claimApplication.getId(),
-            41L);
-    ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto.builder()
-            .fromStageId(workflowStage.get("fromStage"))
-            .toStageId(workflowStage.get("toStage"))
-            .fromStatusId(workflowStage.get("fromStatus"))
-            .toStatusId(workflowStage.get("toStatus"))
-            .actionId(2L) // Assuming 2L is the action ID for verification
-            .reason(reason)
-            .actionBy(verificationDto.getVerifiedBy())
-            .build();
+                // Update other fields
+                verification.setRejectedBy(verificationDto.getVerifiedBy());
+                verification.setVerifiedAt(new Timestamp(System.currentTimeMillis()));
+                verification.setUpdatedBy(verificationDto.getVerifiedBy());
+                if (verificationDto.getRemarks() != null) {
+                        verification.setRemarks(verificationDto.getRemarks());
+                }
 
-    workflowService.create(claimApplication, workflowRequest);
+                // ✅ This will UPDATE if id exists, INSERT if new
+                ClaimApplicationVerification saved = verificationRepository.save(verification);
 
-    // 3. Save Calculation Summary (ELIGIBLE components)
-    if (request.getCalculationSummary() != null) {
-        calculationService.createForCalculation(claimApplication, request.getCalculationSummary());
-    }
+                // 2. Save Workflow
+                String reason = verificationDto.getRemarks() != null ? verificationDto.getRemarks()
+                                : verificationDto.getRemarks();
+                Map<String, Long> workflowStage = resolveFromStageAndToStageAndAction(claimApplication.getId(),
+                                41L);
+                ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto.builder()
+                                .fromStageId(workflowStage.get("fromStage"))
+                                .toStageId(workflowStage.get("toStage"))
+                                .fromStatusId(workflowStage.get("fromStatus"))
+                                .toStatusId(workflowStage.get("toStatus"))
+                                .actionId(2L) // Assuming 2L is the action ID for verification
+                                .reason(reason)
+                                .actionBy(verificationDto.getVerifiedBy())
+                                .build();
 
-    // ✅ 4. Save DEDUCTION DETAIL (LOAN, RENTAL, TAX, etc.)
-    if (request.getCalculationSummary() != null && 
-        request.getCalculationSummary().getDeductionDetail() != null) {
-        
-        // Set the claim application and createdBy if not set
-        ClaimApplicationDeductionRequestDto deductionRequest = request.getCalculationSummary().getDeductionDetail();
-        
-        // If createdBy is null, use the verifiedBy
-        if (deductionRequest.getCreatedBy() == null) {
-            deductionRequest.setCreatedBy(verificationDto.getVerifiedBy());
+                workflowService.create(claimApplication, workflowRequest);
+
+                // 3. Save Calculation Summary (ELIGIBLE components)
+                if (request.getCalculationSummary() != null) {
+                        calculationService.createForCalculation(claimApplication, request.getCalculationSummary());
+                }
+
+                // ✅ 4. Save DEDUCTION DETAIL (LOAN, RENTAL, TAX, etc.)
+                if (request.getCalculationSummary() != null &&
+                                request.getCalculationSummary().getDeductionDetail() != null) {
+
+                        // Set the claim application and createdBy if not set
+                        ClaimApplicationDeductionRequestDto deductionRequest = request.getCalculationSummary()
+                                        .getDeductionDetail();
+
+                        // If createdBy is null, use the verifiedBy
+                        if (deductionRequest.getCreatedBy() == null) {
+                                deductionRequest.setCreatedBy(verificationDto.getVerifiedBy());
+                        }
+
+                        // Save deduction details
+                        claimApplicationDeductionDetailService.saveCalculationDeductions(claimApplication,
+                                        deductionRequest);
+                }
+
+                // ✅ 5. Save FORFEITED COMPONENTS (if any)
+                if (request.getCalculationSummary() != null &&
+                                request.getCalculationSummary().getForFeitedComponents() != null &&
+                                !request.getCalculationSummary().getForFeitedComponents().isEmpty()) {
+
+                        // You need to implement this service
+                        claimApplicationForfeitedComponentService.saveForfeitedComponents(
+                                        claimApplication,
+                                        request.getCalculationSummary().getForFeitedComponents());
+                }
+
+                ClaimApplicationVerification claimVerification = verificationRepository
+                                .findByClaimApplication_ApplicationNumber(claimApplication.getApplicationNumber())
+                                .orElse(null);
+
+                GeneralClaimResponse response = buildGeneralClaimResponse(claimApplication, claimVerification);
+                return ApiResponseDTO.success(response);
         }
-        
-        // Save deduction details
-        claimApplicationDeductionDetailService.saveCalculationDeductions(claimApplication, deductionRequest);
-    }
-
-    // ✅ 5. Save FORFEITED COMPONENTS (if any)
-    if (request.getCalculationSummary() != null && 
-        request.getCalculationSummary().getForFeitedComponents() != null && 
-        !request.getCalculationSummary().getForFeitedComponents().isEmpty()) {
-        
-        // You need to implement this service
-        claimApplicationForfeitedComponentService.saveForfeitedComponents(
-            claimApplication, 
-            request.getCalculationSummary().getForFeitedComponents()
-        );
-    }
-
-    ClaimApplicationVerification claimVerification = verificationRepository
-            .findByClaimApplication_ApplicationNumber(claimApplication.getApplicationNumber())
-            .orElse(null);
-    
-    GeneralClaimResponse response = buildGeneralClaimResponse(claimApplication, claimVerification);
-    return ApiResponseDTO.success(response);
-}
 
         private GeneralClaimResponse buildGeneralClaimResponse(
                         ClaimApplication claimApplication, ClaimApplicationVerification claimVerification) {

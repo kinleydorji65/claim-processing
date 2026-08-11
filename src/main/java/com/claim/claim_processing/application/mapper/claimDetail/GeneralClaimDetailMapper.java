@@ -18,6 +18,8 @@ import com.claim.claim_processing.application.DTO.response.detail.BeneficiarySet
 import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.PartialWithdrawalResponseDto;
+import com.claim.claim_processing.application.DTO.response.detail.WrongRemitanceResponseDTO;
+import com.claim.claim_processing.application.DTO.response.detail.WrongRemitanceResponseDTO.WrongRemittanceForfeitedResponseDTO;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimBankDetail;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimCalculationComponent;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimCalculationSummary;
@@ -31,6 +33,8 @@ import com.claim.claim_processing.application.entity.detail.BeneficiarySettlemen
 import com.claim.claim_processing.application.entity.detail.LegalRecoveryDetail;
 import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 import com.claim.claim_processing.application.entity.detail.PartialWithdrawalDetail;
+import com.claim.claim_processing.application.entity.detail.WrongRemitance;
+import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.WrongRemitanceResponseMapper;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimBankDetailRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimCalculationComponentRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimCalculationSummaryRepository;
@@ -43,6 +47,7 @@ import com.claim.claim_processing.application.repository.detail.BeneficiarySettl
 import com.claim.claim_processing.application.repository.detail.LegalRecoveryDetailRepository;
 import com.claim.claim_processing.application.repository.detail.NormalClaimDetailRepository;
 import com.claim.claim_processing.application.repository.detail.PartialWithdrawalDetailRepository;
+import com.claim.claim_processing.application.repository.detail.WrongRemitanceRepository;
 
 import lombok.AllArgsConstructor;
 
@@ -61,6 +66,8 @@ public class GeneralClaimDetailMapper {
     private final LegalRecoveryDetailRepository legalRecoveryDetailRepository;
     private final NormalClaimDetailRepository normalClaimDetailRepository;
     private final PartialWithdrawalDetailRepository partialWithdrawalDetailRepository;
+    private final WrongRemitanceRepository wrongRemitanceRepository;
+    private final WrongRemitanceResponseMapper wrongRemitanceMapper;
     
     public GeneralClaimDetailResponse mapToResponse(ClaimDetail claimDetail) {
         if (claimDetail == null) {
@@ -75,6 +82,7 @@ public class GeneralClaimDetailMapper {
         PartialWithdrawalDetail partialWithdrawalDetail = partialWithdrawalDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
         BeneficiarySettlementDetail beneficiarySettlementDetail = beneficiarySettlementDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
         LegalRecoveryDetail legalRecoveryDetail = legalRecoveryDetailRepository.findByClaimDetail_Id(claimDetail.getId()).orElse(null);
+        List<WrongRemitance> wrongRemitances = wrongRemitanceRepository.findByClaimDetail_Id(claimDetail.getId());
 
         return GeneralClaimDetailResponse.builder()
                 .id(claimDetail.getId())
@@ -120,11 +128,16 @@ public class GeneralClaimDetailMapper {
                 .beneficiarySettlementDetail(mapBeneficiarySettlementDetails(beneficiarySettlementDetail))
                 .partialWithdrawalDetails(mapPartialWithdrawalDetails(partialWithdrawalDetail))
                 .legalRecoveryDetail(mapLegalRecoveryDetails(legalRecoveryDetail))
+                .wrongRemitances(wrongRemitances != null ? mapWrongRemitance(wrongRemitances) : null)
                 .createdBy(claimDetail.getCreatedBy() != null ? claimDetail.getCreatedBy() : null)
                 .createdAt(claimDetail.getCreatedAt() != null ? claimDetail.getCreatedAt().toLocalDateTime() : null)
                 .updatedBy(claimDetail.getUpdatedBy() != null ? claimDetail.getUpdatedBy() : null)
                 .updatedAt(claimDetail.getUpdatedAt() != null ? claimDetail.getUpdatedAt().toLocalDateTime() : null)
                 .build(); 
+    }
+
+    private List<WrongRemitanceResponseDTO> mapWrongRemitance(List<WrongRemitance> requests){
+        return requests.stream().map(wrongRemitanceMapper::toResponse).toList();
     }
 
     private LegalRecoveryResponseDto mapLegalRecoveryDetails(LegalRecoveryDetail entity) {

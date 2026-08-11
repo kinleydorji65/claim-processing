@@ -9,6 +9,8 @@ import com.claim.claim_processing.application.repository.application.ClaimApplic
 import com.claim.claim_processing.application.repository.application.ClaimApplicationDeductionItemRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationDeductionDetailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,6 +19,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ClaimApplicationDeductionDetailServiceImpl
         implements ClaimApplicationDeductionDetailService {
 
@@ -24,58 +27,139 @@ public class ClaimApplicationDeductionDetailServiceImpl
     private final ClaimApplicationDeductionItemRepository claimApplicationDeductionItemRepository;
 
     @Override
-    public ClaimApplicationDeductionDetail saveCalculationDeductions(
-            ClaimApplication claimApplication,
-            ClaimApplicationDeductionRequestDto request) {
+public ClaimApplicationDeductionDetail saveCalculationDeductions(
+        ClaimApplication claimApplication,
+        ClaimApplicationDeductionRequestDto request) {
 
-        if (claimApplication == null) {
-            throw new RuntimeException("Claim application is required.");
-        }
-
-        if (request == null) {
-            throw new RuntimeException("Calculation response is required.");
-        }
-         BigDecimal legalLoanAdjustment = BigDecimal.valueOf(0.0);
-        if(claimApplication.getClaimType().getId() == 5L) {
-            legalLoanAdjustment = claimApplication.getCalculationSummary().getFinalPayableAmount();
-        }
-        ClaimApplicationDeductionDetail deductionDetail = deductionDetailRepository
-                .findById(request.getDeductionDetailId()).orElse(null);
-        if (deductionDetail == null) {
-            deductionDetail = ClaimApplicationDeductionDetail.builder()
-                    .outstandingAmount(request.getOutstandingAmount()) // ✅ No semicolon
-                    .verifiedDeductedAmount(request.getVerifiedDeductedAmount()) // ✅ No semicolon
-                    .approvedDeductedAmount(request.getApprovedDeductedAmount()) // ✅ No semicolon
-                    .deductedAmount((request.getDeductedAmount() != null && request.getDeductedAmount().compareTo(BigDecimal.ZERO) > 0) ? request.getDeductedAmount() : legalLoanAdjustment) // ✅ No semicolon
-                    .remarks(request.getRemarks()) // ✅ No semicolon
-                    .claimApplication(claimApplication)
-                    .createdBy(request.getCreatedBy()) // ✅ No semicolon
-                    .build();
-        } else {
-            deductionDetail.setOutstandingAmount(request.getOutstandingAmount());
-            deductionDetail.setVerifiedDeductedAmount(request.getVerifiedDeductedAmount());
-            deductionDetail.setApprovedDeductedAmount(request.getApprovedDeductedAmount());
-            deductionDetail.setDeductedAmount(request.getDeductedAmount());
-            deductionDetail.setRemarks(request.getRemarks());
-            deductionDetail.setCreatedBy(request.getCreatedBy());
-            deductionDetail.setClaimApplication(claimApplication);
-        }
-        deductionDetailRepository.saveAndFlush(deductionDetail);
-        if (request.getDeductionItems() == null && claimApplication.getClaimType().getId() == 5L) {
-            request.setDeductionItems(
-                List.of(DeductionItemDto
-                    .builder()
-                    .deductionCategory("LOAN")
-                    .deductedAmount(legalLoanAdjustment)
-                    .outstandingAmount(BigDecimal.valueOf(0.0))
-                    .remainingAmount(BigDecimal.valueOf(0.0))
-                    .build())
-                );
-        }
-        addDeductionItems(deductionDetail, request.getDeductionItems());
-
-        return deductionDetail;
+    if (claimApplication == null) {
+        throw new RuntimeException("Claim application is required.");
     }
+
+    if (request == null) {
+        throw new RuntimeException("Calculation response is required.");
+    }
+
+    // if (claimApplication.getClaimType() != null && claimApplication.getClaimType().getId() == 5L) {
+    //     // For Legal Recovery, the loan amount is the deduction
+    //     legalLoanAdjustment = claimApplication.getCalculationSummary().getFinalPayableAmount();
+    //     deductionAmount = legalLoanAdjustment;
+        
+    //     // ✅ Create deduction items for the loan
+    //     if (request.getDeductionItems() == null) {
+    //         request.setDeductionItems(new ArrayList<>());
+    //     }
+        
+    //     // Add loan deduction item
+    //     DeductionItemDto loanItem = DeductionItemDto.builder()
+    //             .deductionCategory("LOAN")
+    //             .deductedAmount(legalLoanAdjustment)
+    //             .outstandingAmount(legalLoanAdjustment)
+    //             .remainingAmount(BigDecimal.ZERO)
+    //             .remarks("Legal Recovery Loan Deduction")
+    //             .createdBy(request.getCreatedBy())
+    //             .build();
+    //     request.getDeductionItems().add(loanItem);
+        
+    //     // Set the deducted amount
+    //     request.setDeductedAmount(legalLoanAdjustment);
+        
+    //     log.info("Legal Recovery - Loan Amount: {}", legalLoanAdjustment);
+    // }
+
+    // ✅ FIX: First check if a deduction detail already exists for this claim application
+    ClaimApplicationDeductionDetail deductionDetail = null;
+    
+    // Check if claim application already has a deduction detail
+    if (claimApplication.getDeductionDetail() != null) {
+        // Use the existing one from the claim application
+        deductionDetail = claimApplication.getDeductionDetail();
+        log.debug("Found existing deduction detail for claim application: {}", claimApplication.getId());
+    } else if (request.getDeductionDetailId() != null) {
+        // Try to find by ID if provided
+        deductionDetail = deductionDetailRepository.findById(request.getDeductionDetailId()).orElse(null);
+        if (deductionDetail != null) {
+            log.debug("Found deduction detail by ID: {}", request.getDeductionDetailId());
+        }
+    }
+    
+    // If still null, check by claim application ID (safety check)
+    if (deductionDetail == null) {
+        deductionDetail = deductionDetailRepository
+            .findByClaimApplication_Id(claimApplication.getId())
+            .orElse(null);
+        if (deductionDetail != null) {
+            log.debug("Found deduction detail by claim application ID: {}", claimApplication.getId());
+        }
+    }
+
+    if (deductionDetail == null) {
+        // ✅ CREATE NEW only if no existing record found
+        log.info("Creating new deduction detail for claim application: {}", claimApplication.getId());
+        deductionDetail = ClaimApplicationDeductionDetail.builder()
+                .outstandingAmount(request.getOutstandingAmount())
+                .verifiedDeductedAmount(request.getVerifiedDeductedAmount())
+                .approvedDeductedAmount(request.getApprovedDeductedAmount())
+                .deductedAmount((request.getDeductedAmount() != null && 
+                    request.getDeductedAmount().compareTo(BigDecimal.ZERO) > 0) ? 
+                    request.getDeductedAmount() : BigDecimal.valueOf(0.0))
+                .remarks(request.getRemarks())
+                .claimApplication(claimApplication)
+                .createdBy(request.getCreatedBy())
+                .build();
+    } else {
+        // ✅ UPDATE existing
+        log.info("Updating existing deduction detail: {} for claim application: {}", 
+            deductionDetail.getId(), claimApplication.getId());
+        
+        if (request.getOutstandingAmount() != null) {
+            deductionDetail.setOutstandingAmount(request.getOutstandingAmount());
+        }
+        if (request.getVerifiedDeductedAmount() != null) {
+            deductionDetail.setVerifiedDeductedAmount(request.getVerifiedDeductedAmount());
+        }
+        if (request.getApprovedDeductedAmount() != null) {
+            deductionDetail.setApprovedDeductedAmount(request.getApprovedDeductedAmount());
+        }
+        if (request.getDeductedAmount() != null && request.getDeductedAmount().compareTo(BigDecimal.ZERO) > 0) {
+            deductionDetail.setDeductedAmount(request.getDeductedAmount());
+        } else if (claimApplication.getClaimType() != null && claimApplication.getClaimType().getId() == 5L) {
+            deductionDetail.setDeductedAmount(claimApplication.getCalculationSummary().getFinalPayableAmount());
+        }
+        if (request.getRemarks() != null) {
+            deductionDetail.setRemarks(request.getRemarks());
+        }
+        if (request.getCreatedBy() != null) {
+            deductionDetail.setUpdatedBy(request.getCreatedBy());
+        }
+        // Ensure claim application is set
+        deductionDetail.setClaimApplication(claimApplication);
+    }
+    
+    // Save the deduction detail
+    deductionDetail = deductionDetailRepository.saveAndFlush(deductionDetail);
+    
+    // ✅ Update the claim application's reference
+    claimApplication.setDeductionDetail(deductionDetail);
+    
+    // Handle deduction items
+    if (request.getDeductionItems() == null && 
+        claimApplication.getClaimType() != null && 
+        claimApplication.getClaimType().getId() == 5L) {
+        // request.setDeductionItems(
+        //     List.of(DeductionItemDto.builder()
+        //         .deductionCategory("LOAN")
+        //         .deductedAmount(legalLoanAdjustment)
+        //         .outstandingAmount(BigDecimal.valueOf(0.0))
+        //         .remainingAmount(BigDecimal.valueOf(0.0))
+        //         .build())
+        // );
+    }
+    
+    // Add/update deduction items
+    addDeductionItems(deductionDetail, request.getDeductionItems());
+
+    return deductionDetail;
+}
 
     private void addDeductionItems(ClaimApplicationDeductionDetail deductionDetail,
         List<DeductionItemDto> items) {

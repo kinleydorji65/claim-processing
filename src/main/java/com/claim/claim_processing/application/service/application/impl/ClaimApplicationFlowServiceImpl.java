@@ -1,5 +1,6 @@
 package com.claim.claim_processing.application.service.application.impl;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationCalculationSummaryRequest;
 import com.claim.claim_processing.application.DTO.request.application.GeneralClaimCreateRequest;
 import com.claim.claim_processing.application.DTO.request.application.GeneralClaimPatchRequest;
+import com.claim.claim_processing.application.DTO.request.detail.WrongRemitanceRequestDTO;
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationVerificationRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationWorkflowRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.GeneralClaimApplicationVerifierRequestDTO;
@@ -29,6 +31,7 @@ import com.claim.claim_processing.application.entity.detail.BeneficiarySettlemen
 import com.claim.claim_processing.application.entity.detail.LegalRecoveryDetail;
 import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 import com.claim.claim_processing.application.entity.detail.PartialWithdrawalDetail;
+import com.claim.claim_processing.application.entity.detail.WrongRemitance;
 import com.claim.claim_processing.application.mapper.application.GeneralClaimResponseBuilderMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.BeneficiarySettlementResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.ClaimApplicationBankResponseMapper;
@@ -38,6 +41,7 @@ import com.claim.claim_processing.application.mapper.claimApplicationOtherRespon
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.LegalRecoveryResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.NormalClaimResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.PartialWithdrawalResponseMapper;
+import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.WrongRemitanceResponseMapper;
 import com.claim.claim_processing.application.service.application.ClaimApplicationBankDetailService;
 import com.claim.claim_processing.application.service.application.ClaimApplicationCalculationService;
 import com.claim.claim_processing.application.service.application.ClaimApplicationDeductionDetailService;
@@ -48,6 +52,7 @@ import com.claim.claim_processing.application.service.detail.BeneficiarySettleme
 import com.claim.claim_processing.application.service.detail.LegalRecoveryService;
 import com.claim.claim_processing.application.service.detail.NormalClaimService;
 import com.claim.claim_processing.application.service.detail.PartialWithdrawalService;
+import com.claim.claim_processing.application.service.detail.WrongRemitanceService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationApprovalService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationVerificationService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationWorkflowService;
@@ -71,11 +76,11 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
         private final ClaimApplicationVerificationService claimApplicationVerificationService;
 
         private final NormalClaimService normalClaimService;
+        private final WrongRemitanceService wrongRemitanceService;
         private final PartialWithdrawalService partialWithdrawalService;
         private final BeneficiarySettlementDetailService beneficiarySettlementDetailService;
         private final ClaimApplicationApprovalService claimApplicationApprovalService;
 
-        private final BenefitCalculationService benefitCalculationService;
         private final LegalRecoveryService legalRecoveryService;
 
         private final GeneralClaimResponseBuilderMapper generalClaimResponseBuilderMapper;
@@ -87,6 +92,7 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
         private final NormalClaimResponseMapper normalClaimResponseMapper;
         private final PartialWithdrawalResponseMapper partialWithdrawalResponseMapper;
         private final LegalRecoveryResponseMapper legalRecoveryResponseMapper;
+        private final WrongRemitanceResponseMapper wrongRemitanceResponseMapper;
 
         @Override
         @Transactional
@@ -108,6 +114,7 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 ClaimApplicationCalculationSummary calculationEntity = null;
                 ClaimApplicationDeductionDetail deductionEntity = null;
                 List<ClaimApplicationForfeitedComponent> forfeitedComponents = new ArrayList<>();
+                List<WrongRemitance> wrongRemitances = new ArrayList<>();
 
                 // 3. Create Normal Claim
                 if (request.getNormalClaim() != null) {
@@ -118,6 +125,10 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 if (request.getPartialWithdrawal() != null) {
                         partialWithdrawalDetail = partialWithdrawalService.create(claimApplication,
                                         request.getPartialWithdrawal());
+                }
+
+                if (request.getWrongRemitances() != null) {
+                        wrongRemitances = wrongRemitanceService.create(claimApplication, request.getWrongRemitances());
                 }
 
                 // 5. Create Beneficiary Settlement
@@ -132,26 +143,26 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         legalRecoveryDetail = legalRecoveryService.create(request.getLegalRecovery(), claimApplication);
                 }
 
-                // 7. Create Bank Details
+                // 8. Create Bank Details
                 if (request.getBankDetails() != null && !request.getBankDetails().isEmpty()) {
                         bankDetailEntities = claimApplicationBankDetailService.create(claimApplication,
                                         request.getBankDetails());
                 }
 
-                // 8. Create Initial Calculation Summary (if Other request exists)
+                // 9. Create Initial Calculation Summary (if Other request exists)
                 if (request.getClaimApplicationOther() != null) {
                         calculationEntity = claimApplicationCalculationService.initialCreate(
                                         claimApplication,
                                         request.getClaimApplicationOther());
                 }
 
-                // 9. Create/Update Calculation Summary with full details
+                // 10. Create/Update Calculation Summary with full details
                 if (request.getCalculationSummary() != null) {
                         calculationEntity = claimApplicationCalculationService.createForCalculation(
                                         claimApplication,
                                         request.getCalculationSummary());
 
-                        // 9a. Save Forfeited Components
+                        // 10a. Save Forfeited Components
                         if (request.getCalculationSummary().getForFeitedComponents() != null
                                         && !request.getCalculationSummary().getForFeitedComponents().isEmpty()) {
                                 forfeitedComponents = claimApplicationForfeitedComponentService.saveForfeitedComponents(
@@ -159,7 +170,7 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                                 request.getCalculationSummary().getForFeitedComponents());
                         }
 
-                        // 9b. Save Deduction Detail
+                        // 10b. Save Deduction Detail
                         if (request.getCalculationSummary().getDeductionDetail() != null) {
                                 deductionEntity = claimApplicationDeductionDetailService.saveCalculationDeductions(
                                                 claimApplication,
@@ -167,7 +178,7 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         }
                 }
 
-                // 10. Create Workflow
+                // 11. Create Workflow
                 ClaimApplicationWorkflowRequestDto workflowRequest = ClaimApplicationWorkflowRequestDto.builder()
                                 .fromStageId(request.getClaimApplication().getFromStageId())
                                 .toStageId(request.getClaimApplication().getToStageId())
@@ -180,11 +191,11 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 List<ClaimApplicationWorkflowResponseDto> workflowDetails = claimApplicationWorkflowService
                                 .create(claimApplication, workflowRequest);
 
-                // 11. Build Response with Null Safety
+                // 12. Build Response with Null Safety
                 GeneralClaimResponse response = generalClaimResponseBuilderMapper.toResponse(claimApplication);
                 response.setWorkflowDetails(workflowDetails);
 
-                // 11a. Set Bank Details (with null safety)
+                // 12a. Set Bank Details (with null safety)
                 if (bankDetailEntities != null && !bankDetailEntities.isEmpty()) {
                         response.setBankDetails(
                                         bankDetailEntities.stream()
@@ -192,48 +203,54 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                                         .toList());
                 }
 
-                // 11b. Set Calculation Summary (ONLY ONCE - with null safety)
+                // 12b. Set Calculation Summary (with null safety)
                 if (calculationEntity != null) {
                         response.setCalculationSummary(
                                         claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
                 }
 
-                // 11c. Set Normal Claim Details (with null safety)
+                // 12c. Set Normal Claim Details (with null safety)
                 if (normalClaimDetail != null) {
                         response.setNormalClaimDetails(
                                         normalClaimResponseMapper.toResponse(normalClaimDetail));
                 }
 
-                // 11d. Set Partial Withdrawal Details (with null safety)
+                // 12d. Set Partial Withdrawal Details (with null safety)
                 if (partialWithdrawalDetail != null) {
                         response.setPartialWithdrawalDetails(
                                         partialWithdrawalResponseMapper.toResponse(partialWithdrawalDetail));
                 }
 
-                // 11e. Set Beneficiary Settlement Details (with null safety)
+                // 12e. Set Beneficiary Settlement Details (with null safety)
                 if (beneficiarySettlementDetail != null) {
                         response.setBeneficiarySettlementDetails(
                                         beneficiarySettlementResponseMapper.toResponse(beneficiarySettlementDetail));
                 }
 
-                // 11f. Set Legal Recovery Detail (with null safety)
+                // 12f. Set Legal Recovery Detail (with null safety)
                 if (legalRecoveryDetail != null) {
                         response.setLegalRecoveryDetail(
                                         legalRecoveryResponseMapper.toResponse(legalRecoveryDetail));
                 }
 
-                // 11g. Set Deduction Detail (with null safety)
+                // 12h. Set Deduction Detail (with null safety)
                 if (deductionEntity != null) {
                         response.setDeductionDetail(
                                         claimApplicationDeductionResponseMapper.toResponse(deductionEntity));
                 }
 
-                // 11h. Set Forfeited Components (with null safety)
+                // 12i. Set Forfeited Components (with null safety)
                 if (forfeitedComponents != null && !forfeitedComponents.isEmpty()) {
                         response.setForfeitedComponents(
                                         forfeitedComponents.stream()
                                                         .map(claimApplicationForfeitedComponentResponseMapper::toResponse)
                                                         .toList());
+                }
+
+                if (wrongRemitances != null) {
+                        response.setWrongRemitanceResponseDTOs(wrongRemitances.stream()
+                                        .map(wrongRemitanceResponseMapper::toResponse)
+                                        .toList());
                 }
 
                 return ApiResponseDTO.success(response);
@@ -248,6 +265,7 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 ClaimApplicationCalculationSummary calculationEntity = null;
                 ClaimApplicationDeductionDetail deductionEntity = null;
                 List<ClaimApplicationForfeitedComponent> forfeitedComponents = new ArrayList<>();
+                List<WrongRemitance> wrongRemitances = null;
 
                 if (request != null) {
                         calculationEntity = claimApplicationCalculationService.createForCalculation(
@@ -263,12 +281,15 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         deductionEntity = claimApplicationDeductionDetailService.saveCalculationDeductions(
                                         claimApplication,
                                         request.getDeductionDetail());
-
                 }
                 List<ClaimApplicationWorkflowResponseDto> workflowDetails = claimApplicationWorkflowService
                                 .getByApplicationNumber(claimApplication.getApplicationNumber());
                 List<ClaimApplicationBankDetail> bankDetailEntities = claimApplicationBankDetailService
                                 .getByApplicationNumber(claimApplication.getApplicationNumber());
+
+                if (request.getWrongRemitanceRequestDTOs() != null) {
+                        wrongRemitances = wrongRemitanceService.create(claimApplication, request.getWrongRemitanceRequestDTOs());
+                }
                 GeneralClaimResponse response = generalClaimResponseBuilderMapper.toResponse(claimApplication);
                 response.setWorkflowDetails(workflowDetails);
 
@@ -277,6 +298,9 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                                 .map(claimApplicationBankResponseMapper::toResponse)
                                                 .toList());
 
+                response.setWrongRemitanceResponseDTOs(claimApplication.getWrongRemitances().stream()
+                                .map(wrongRemitanceResponseMapper::toResponse).toList());
+                
                 response.setCalculationSummary(
                                 claimApplicationCalculationSummaryResponseMapper.toResponse(calculationEntity));
 
@@ -301,7 +325,13 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                 forfeitedComponents.stream()
                                                 .map(claimApplicationForfeitedComponentResponseMapper::toResponse)
                                                 .toList());
-                return null;
+
+                if (wrongRemitances != null) {
+                        response.setWrongRemitanceResponseDTOs(wrongRemitances.stream()
+                                        .map(wrongRemitanceResponseMapper::toResponse).toList());
+                }
+
+                return ApiResponseDTO.success(response);
         }
 
         @Override
@@ -323,11 +353,16 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 ClaimApplicationCalculationSummary calculationSummary = null;
                 ClaimApplicationDeductionDetail deductionDetail = null;
                 List<ClaimApplicationForfeitedComponent> forfeitedComponents = new ArrayList<>();
+                List<WrongRemitance> wrongRemitances = new ArrayList<>();
 
                 if (request.getNormalClaim() != null) {
                         normalClaimDetail = normalClaimService.update(
                                         claimApplication,
                                         request.getNormalClaim());
+                }
+
+                if (request.getWrongRemitanceRequestDTOs() != null) {
+                        wrongRemitances = wrongRemitanceService.update(claimApplication, request.getWrongRemitanceRequestDTOs());
                 }
 
                 if (request.getPartialWithdrawal() != null) {
@@ -347,11 +382,6 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                         request.getClaimApplicationBankDetail());
                 }
 
-                // if (request.getClaimApplicationCalculation() != null) {
-                // calculationSummary = claimApplicationCalculationService.patch(
-                // request.getClaimApplicationCalculation());
-                // }
-
                 if (request.getClaimApplicationDeduction() != null) {
                         deductionDetail = claimApplicationDeductionDetailService.patchDeductionDetail(
                                         request.getClaimApplicationDeduction());
@@ -362,10 +392,12 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                         forfeitedComponents = claimApplicationForfeitedComponentService.patchForfeitedComponent(
                                         request.getClaimApplicationForfeitedComponent());
                 }
+
                 if (request.getClaimApplication().getSubmissionChannelId() != null
                                 && request.getClaimApplication().getSubmissionChannelId() > 0
                                 && request.getClaimApplication().getSubmissionChannelId() == 2L) {
-                        GeneralClaimApplicationVerifierRequestDTO requestForVerifier = GeneralClaimApplicationVerifierRequestDTO.builder()
+                        GeneralClaimApplicationVerifierRequestDTO requestForVerifier = GeneralClaimApplicationVerifierRequestDTO
+                                        .builder()
                                         .verifierRequest(
                                                         ClaimApplicationVerificationRequestDto
                                                                         .builder()
@@ -427,7 +459,9 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
         public ApiResponseDTO<List<GeneralClaimResponse>> getAll() {
 
                 List<ClaimApplication> claimApplications = claimApplicationService.getAll();
-
+                if (claimApplications == null) {
+                        return ApiResponseDTO.success("No claim detail found for the verifier", null);
+                }
                 List<GeneralClaimResponse> responses = claimApplications.stream()
                                 .map(this::buildGeneralClaimResponse)
                                 .toList();
@@ -491,6 +525,7 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                                                 .stream()
                                                                 .map(claimApplicationForfeitedComponentResponseMapper::toResponse)
                                                                 .toList());
+
                 response.setWorkflowDetails(
                                 claimApplicationWorkflowService.getByApplicationId(claimApplication.getId()) != null
                                                 ? claimApplicationWorkflowService

@@ -26,6 +26,12 @@ public class MemberDetail {
     @Column(name = "STATUS")
     private String status;
 
+    @Column(name = "REGISTRATION_TYPE")
+    private String registrationType;
+
+    @Column(name = "CHANNEL_SELECTION")
+    private String channelSelection;
+
     @Column(name = "MEMBER_TYPE_ID")
     private Long memberTypeId;
 
@@ -35,11 +41,24 @@ public class MemberDetail {
     @Column(name = "EMPLOYER_TYPE")
     private String employerType;
 
+    @Column(name = "AGENCY_TYPE_ID")
+    private Long agencyTypeId;
+
+    @Column(name = "TITLE_OF_COURTESY_ID")
+    private Long titleOfCourtesyId;
+
     @Column(name = "AGENCY_CATEGORY_ID")
     private String agencyCategoryId;
 
     @Column(name = "IDENTITY_TYPE_ID")
     private Long identityTypeId;
+
+    @Column(name = "REJECT_IDS")
+    private String rejectIds;
+
+    @Column(name = "IS_PRIMARY_MEMBER", nullable = false)
+    @Builder.Default
+    private Long isPrimaryMember = 0L;
 
     @Column(name = "MEMBER_CATEGORY", nullable = true)
     private String memberCategory;
@@ -50,11 +69,30 @@ public class MemberDetail {
     @Column(name = "FIRST_NAME")
     private String firstName;
 
+    @Column(name = "NATIONALITY_ID")
+    private Long nationalityId;
+
     @Column(name = "MIDDLE_NAME")
     private String middleName;
 
     @Column(name = "LAST_NAME")
     private String lastName;
+    
+    @Column(name = "IS_KYC_APPROVED")
+    @Builder.Default
+    private String isKycApproved = "NO";
+
+    @Column(name = "DATE_OF_BIRTH")
+    private Date dateOfBirth;
+
+    @Column(name = "AGE")
+    private String age;
+
+    @Column(name = "GENDER")
+    private String gender;
+
+    @Column(name = "MARITAL_STATUS_ID")
+    private Long maritalStatusId;
 
     @Column(name = "CONTACT_NO")
     private Long contactNo;
@@ -71,8 +109,26 @@ public class MemberDetail {
     @Column(name = "NPPF_NUMBER")
     private String nppfNumber;
 
+    @Column(name = "APPROVED_BY")
+    private String approvedBy;
+
+    @Column(name = "APPROVED_AT")
+    private Date approvedAt;
+
     @Column(name = "EFFECTIVE_FROM")
     private Date effectiveFrom;
+
+    @Column(name = "RETIREMENT_DATE")
+    private Date retirementDate;
+
+    @Column(name = "REMARKS")
+    private String remarks;
+
+    @Column(name = "CREATED_BY")
+    private String createdBy;
+
+    @Column(name = "UPDATED_BY")
+    private String updatedBy;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     @JsonManagedReference

@@ -19,8 +19,9 @@ public interface ContributionBifurcationDetailRepository
 
   List<ContributionBifurcationDetail> findByBifId(Long bifId);
 
-  List<ContributionBifurcationDetail> findByCidAndNppfNumberOrderByCreatedAtAsc(String cid, String nppfNumber);
-
+List<ContributionBifurcationDetail> findByCidAndNppfNumberAndPostingStatusOrderByCreatedAtAsc(
+    String cid, String nppfNumber, String postingStatus
+);
   List<ContributionBifurcationDetail> findByNppfNumberOrderByCreatedAtAsc(String nppfNumber);
 
   List<ContributionBifurcationDetail> findByCidAndNppfNumber(String cid, String nppfNumber);

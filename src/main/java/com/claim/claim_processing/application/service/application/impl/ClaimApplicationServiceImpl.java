@@ -5,6 +5,7 @@ import com.claim.claim_processing.application.entity.application.ClaimApplicatio
 import com.claim.claim_processing.application.mapper.application.ClaimApplicationMapper;
 import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationService;
+import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.entities.claim.ClaimTypeMaster;
 import com.claim.claim_processing.common.entities.common.*;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
@@ -60,64 +61,69 @@ public class ClaimApplicationServiceImpl implements ClaimApplicationService {
     @Override
     public ClaimApplication create(ClaimApplicationRequestDto request) {
         try {
-        validateCreateRequest(request);
+            validateCreateRequest(request);
 
-        ClaimApplication entity = claimApplicationMapper.toEntity(request);
-        entity.setIdentityNumber(request.getIdentityNumber());
-        resolveAndSetForeignKeys(entity, request);
-        entity.setApplicationNumber(
-                masterCodeGenClient.generateCode(applicationCodeType, claimPrefix));
-        entity.setApplicationDate(
-                request.getApplicationDate() != null
-                        ? request.getApplicationDate()
-                        : LocalDate.now());
+            ClaimApplication entity = claimApplicationMapper.toEntity(request);
+            entity.setIdentityNumber(request.getIdentityNumber());
+            resolveAndSetForeignKeys(entity, request);
+            entity.setApplicationNumber(
+                    masterCodeGenClient.generateCode(applicationCodeType, claimPrefix));
+            entity.setApplicationDate(
+                    request.getApplicationDate() != null
+                            ? request.getApplicationDate()
+                            : LocalDate.now());
 
-        applyCreateDefaults(entity, request);
+            applyCreateDefaults(entity, request);
 
-        ClaimApplication saved = claimApplicationRepository.saveAndFlush(entity);
+            ClaimApplication saved = claimApplicationRepository.saveAndFlush(entity);
 
-        return saved;
+            return saved;
         } catch (Exception e) {
-    // This will show you EXACTLY what's wrong
-    log.error("=== SAVE FAILED ===");
-    log.error("Exception Type: {}", e.getClass().getName());
-    log.error("Message: {}", e.getMessage());
-    
-    // Get the root cause (most important!)
-    Throwable rootCause = getRootCause(e);
-    log.error("Root Cause: {}", rootCause.getMessage());
-    
-    // If it's a constraint violation, get details
-    if (e instanceof DataIntegrityViolationException) {
-        DataIntegrityViolationException dive = (DataIntegrityViolationException) e;
-        log.error("SQL Error Code: {}", dive.getMostSpecificCause() instanceof SQLException ? 
-            ((SQLException) dive.getMostSpecificCause()).getErrorCode() : "N/A");
-        log.error("SQL State: {}", dive.getMostSpecificCause() instanceof SQLException ? 
-            ((SQLException) dive.getMostSpecificCause()).getSQLState() : "N/A");
-    }
-    
-    // Print full stack trace
-    e.printStackTrace();
-    throw new RuntimeException("Failed to save claim: " + rootCause.getMessage(), e);
-}
+            // This will show you EXACTLY what's wrong
+            log.error("=== SAVE FAILED ===");
+            log.error("Exception Type: {}", e.getClass().getName());
+            log.error("Message: {}", e.getMessage());
+
+            // Get the root cause (most important!)
+            Throwable rootCause = getRootCause(e);
+            log.error("Root Cause: {}", rootCause.getMessage());
+
+            // If it's a constraint violation, get details
+            if (e instanceof DataIntegrityViolationException) {
+                DataIntegrityViolationException dive = (DataIntegrityViolationException) e;
+                log.error("SQL Error Code: {}",
+                        dive.getMostSpecificCause() instanceof SQLException
+                                ? ((SQLException) dive.getMostSpecificCause()).getErrorCode()
+                                : "N/A");
+                log.error("SQL State: {}",
+                        dive.getMostSpecificCause() instanceof SQLException
+                                ? ((SQLException) dive.getMostSpecificCause()).getSQLState()
+                                : "N/A");
+            }
+
+            // Print full stack trace
+            e.printStackTrace();
+            throw new RuntimeException("Failed to save claim: " + rootCause.getMessage(), e);
+        }
     }
 
     private Throwable getRootCause(Throwable e) {
-    Throwable cause = e;
-    while (cause.getCause() != null && cause.getCause() != cause) {
-        cause = cause.getCause();
+        Throwable cause = e;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause;
     }
-    return cause;
-}
 
-@Override
-@Transactional(readOnly = true)
-public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiatedBy, ActivityEnum isSpecialCase, Pageable pageable) {
-    log.info("Fetching claims for initiated by: {}, isSpecialCase: {}, page: {}, size: {}", 
-            initiatedBy, isSpecialCase, pageable.getPageNumber(), pageable.getPageSize());
-    
-    return claimApplicationRepository.findByInitiatedByAndIsSpecialCase(initiatedBy, isSpecialCase, pageable);
-}
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiatedBy, ActivityEnum isSpecialCase,
+            Pageable pageable) {
+        log.info("Fetching claims for initiated by: {}, isSpecialCase: {}, page: {}, size: {}",
+                initiatedBy, isSpecialCase, pageable.getPageNumber(), pageable.getPageSize());
+
+        return claimApplicationRepository.findByInitiatedByAndIsSpecialCase(initiatedBy, isSpecialCase, pageable);
+    }
 
     @Override
     public ClaimApplication update(ClaimApplicationRequestDto request) {
@@ -170,7 +176,7 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
             return m;
         }).toString();
         if (response.isEmpty()) {
-            throw ClaimException.notFound("No claim applications found");
+            return null;
         }
 
         return response;
@@ -182,7 +188,7 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
             String memberCode) {
 
         List<ClaimApplication> response = claimApplicationRepository.findByMemberCode(memberCode);
-                response.stream().map(m -> {
+        response.stream().map(m -> {
             m.getIsSpecialCase().toString().equals("N");
             return m;
         }).toString();
@@ -200,7 +206,7 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
             String nppfNumber) {
 
         List<ClaimApplication> response = claimApplicationRepository.findByNppfNumber(nppfNumber);
-                response.stream().map(m -> {
+        response.stream().map(m -> {
             m.getIsSpecialCase().toString().equals("N");
             return m;
         }).toString();
@@ -218,12 +224,14 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
             throw ClaimException.badRequest("Claim type is required");
         }
 
-        if (request.getMemberCode() == null || request.getMemberCode().isBlank()) {
-            throw ClaimException.badRequest("Member code is required");
-        }
+        if (request.getClaimTypeId() != 4L) {
+            if (request.getMemberCode() == null || request.getMemberCode().isBlank()) {
+                throw ClaimException.badRequest("Member code is required");
+            }
 
-        if (request.getNppfNumber() == null || request.getNppfNumber().isBlank()) {
-            throw ClaimException.badRequest("NPPF number is required");
+            if (request.getNppfNumber() == null || request.getNppfNumber().isBlank()) {
+                throw ClaimException.badRequest("NPPF number is required");
+            }
         }
 
         if (request.getInitiatedBy() == null || request.getInitiatedBy().isBlank()) {
@@ -276,14 +284,16 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
 
     @Override
     public List<ClaimApplication> getByAgencyCodeAndClaimTypeId(String agencyCode, Long claimTypeId) {
-        List<ClaimApplication> response = claimApplicationRepository.findByAgencyCodeAndClaimType_Id(agencyCode, claimTypeId);
+        List<ClaimApplication> response = claimApplicationRepository.findByAgencyCodeAndClaimType_Id(agencyCode,
+                claimTypeId);
         response.stream().map(m -> {
             m.getIsSpecialCase().toString().equals("N");
             return m;
         }).toString();
         if (response.isEmpty()) {
             throw ClaimException.notFound(
-                    "No claim applications found for agency code: " + agencyCode + " and claim type ID: " + claimTypeId);
+                    "No claim applications found for agency code: " + agencyCode + " and claim type ID: "
+                            + claimTypeId);
         }
 
         return response;
@@ -291,13 +301,15 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
 
     @Override
     public List<ClaimApplication> getByUserCodeAndStatusId(String userCode, Long statusId) {
-        List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository.findByUserCode(userCode);
+        List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository
+                .findByUserCode(userCode);
 
         if (userMappings.isEmpty()) {
             return null;
         }
         List<ClaimApplication> claimApplication = userMappings.stream()
-                .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndStatus_StatusId(mapping.getAgencyCode(), statusId).stream())
+                .flatMap(mapping -> claimApplicationRepository
+                        .findByAgencyCodeAndStatus_StatusId(mapping.getAgencyCode(), statusId).stream())
                 .toList();
         claimApplication.stream().map(m -> {
             m.getIsSpecialCase().toString().equals("N");
@@ -320,7 +332,7 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
         }
 
         return response;
-     }
+    }
 
     private void resolveAndSetForeignKeys(ClaimApplication entity, ClaimApplicationRequestDto request) {
         if (request.getClaimTypeId() != null && request.getClaimTypeId() > 0) {
@@ -444,14 +456,16 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
     }
 
     @Override
-    public List<ClaimApplication> getLegalRecoveryWithUserCode(String userCode){
-        List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository.findByUserCode(userCode);
+    public List<ClaimApplication> getLegalRecoveryWithUserCode(String userCode) {
+        List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository
+                .findByUserCode(userCode);
 
         if (userMappings.isEmpty()) {
             return null;
         }
         List<ClaimApplication> claimApplication = userMappings.stream()
-                .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndClaimType_Id(mapping.getAgencyCode(), 5L).stream())
+                .flatMap(mapping -> claimApplicationRepository
+                        .findByAgencyCodeAndClaimType_Id(mapping.getAgencyCode(), 5L).stream())
                 .toList();
         claimApplication.stream().map(m -> {
             m.getIsSpecialCase().toString().equals("N");
@@ -462,14 +476,17 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
 
     @Override
     public List<ClaimApplication> getByUserCodeAndSpecialClaim(String userCode) {
-        List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository.findByUserCode(userCode);
-        userMappings.forEach(mapping -> System.out.println("User Mapping: " + mapping.getUserCode() + ", Agency Code: " + mapping.getAgencyCode()));
+        List<UserRegistrateredAgencyMapping> userMappings = userRegistrateredAgencyMappingRepository
+                .findByUserCode(userCode);
+        userMappings.forEach(mapping -> System.out
+                .println("User Mapping: " + mapping.getUserCode() + ", Agency Code: " + mapping.getAgencyCode()));
 
         if (userMappings.isEmpty()) {
             return null;
         }
         List<ClaimApplication> claimApplication = userMappings.stream()
-                .flatMap(mapping -> claimApplicationRepository.findByAgencyCodeAndIsSpecialCase(mapping.getAgencyCode(), ActivityEnum.Y).stream())
+                .flatMap(mapping -> claimApplicationRepository
+                        .findByAgencyCodeAndIsSpecialCase(mapping.getAgencyCode(), ActivityEnum.Y).stream())
                 .toList();
 
         return claimApplication;
@@ -488,7 +505,8 @@ public Page<ClaimApplication> findByInitiatedByAndIsSpecialCase(String initiated
 
     @Override
     public List<ClaimApplication> getAllSpecialCaseWithClaimedBy(String claimedBy) {
-        List<ClaimApplication> response = claimApplicationRepository.findByIsSpecialCaseAndClaimedBy(ActivityEnum.Y, claimedBy);
+        List<ClaimApplication> response = claimApplicationRepository.findByIsSpecialCaseAndClaimedBy(ActivityEnum.Y,
+                claimedBy);
 
         if (response.isEmpty()) {
             return null;

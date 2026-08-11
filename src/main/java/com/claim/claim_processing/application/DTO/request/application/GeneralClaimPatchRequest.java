@@ -5,6 +5,7 @@ import java.util.List;
 import com.claim.claim_processing.application.DTO.request.detail.BeneficiarySettlementDetailRequestDto;
 import com.claim.claim_processing.application.DTO.request.detail.NormalClaimRequestDto;
 import com.claim.claim_processing.application.DTO.request.detail.PartialWithdrawalRequestDto;
+import com.claim.claim_processing.application.DTO.request.detail.WrongRemitanceRequestDTO;
 
 import lombok.*;
 
@@ -22,5 +23,6 @@ public class GeneralClaimPatchRequest {
     private NormalClaimRequestDto normalClaim;
     private PartialWithdrawalRequestDto partialWithdrawal;
     private BeneficiarySettlementDetailRequestDto beneficiarySettlementDetail;
+    private List<WrongRemitanceRequestDTO> wrongRemitanceRequestDTOs;
 
 }

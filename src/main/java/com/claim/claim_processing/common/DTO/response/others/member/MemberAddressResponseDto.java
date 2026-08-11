@@ -24,6 +24,7 @@ public class MemberAddressResponseDto {
     // -------------------------------
     private Long currentCountryId;
     private String currentCountryName;
+    private String householdNumber;
 
     private Long currentDzongkhagId;
     private String currentDzongkhagName;

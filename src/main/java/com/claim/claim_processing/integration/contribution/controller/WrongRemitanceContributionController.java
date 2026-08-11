@@ -49,7 +49,7 @@ public class WrongRemitanceContributionController {
      * POST /api/wrong-remitance/contributions/recalculate/NPPF12345?year=2024
      * Body: ["MARCH", "APRIL"]
      */
-    @PostMapping("/recalculate/{nppfNumber}")
+    @PostMapping("/recalculate")
     public ResponseEntity<?> recalculateWrongRemitance(
             @RequestBody RecalculateMemberRequestDTO recalculateMemberRequestDTO) {
         

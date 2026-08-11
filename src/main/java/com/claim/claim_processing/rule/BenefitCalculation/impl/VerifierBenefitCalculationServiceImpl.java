@@ -511,11 +511,6 @@ private BigDecimal calculateComponentTotal(List<ComponentBalanceDTO> components)
             .filter(Objects::nonNull)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 }
-
-    // ============================================================
-    // HELPER METHODS FOR DEDUCTION
-    // ============================================================
-
     /**
      * Inner class for deduction result
      */
@@ -1226,7 +1221,7 @@ private BigDecimal calculateFinalPayable(
                         ComponentBalanceDTO.builder()
                                 .subRuleCode(matchedRule.getSubClaimCode())
                                 .code(componentCode)
-                                .name(componentCode)
+                                .name(getComponentName(componentCode))
                                 .type(calculationType)
                                 .amount(amount)
                                 .build());
@@ -1234,6 +1229,39 @@ private BigDecimal calculateFinalPayable(
         }
 
         return results;
+    }
+
+    private String getComponentName(String code) {
+        if (code == null)
+            return null;
+
+        Map<String, String> nameMap = new HashMap<>();
+
+        // Principal components
+        nameMap.put("PF_MC", "Employer's Contribution to PF");
+        nameMap.put("PF_EC", "Member's Contribution to PF");
+        nameMap.put("P_EC", "Employer's Pension Contribution");
+        nameMap.put("GC", "Government Contribution to PF");
+        nameMap.put("VC", "Voluntary Contribution to PF");
+
+        // Interest components - FIXED with correct codes
+        nameMap.put("PF_IMC", "Interest on Employer's PF Contribution");
+        nameMap.put("PF_IEC", "Interest on Member's PF Contribution");
+        nameMap.put("P_IEC", "Interest on Employer's Pension");
+        nameMap.put("IGC", "Interest on Government PF Contribution");
+        nameMap.put("IVC", "Interest on Voluntary PF Contribution");
+
+        // Alternative/legacy codes
+        nameMap.put("PF_GC", "Government Contribution to PF");
+        nameMap.put("PF_IGC", "Interest on Government PF Contribution");
+        nameMap.put("P_MC", "Member's Pension Contribution");
+        nameMap.put("P_IMC", "Interest on Member's Pension");
+        nameMap.put("PC_MC", "Member's Pension Contribution");
+        nameMap.put("PC_EC", "Employer's Pension Contribution");
+        nameMap.put("PC_IMC", "Interest on Member's Pension");
+        nameMap.put("PC_IEC", "Interest on Employer's Pension");
+
+        return nameMap.getOrDefault(code, code);
     }
 
     private List<String> resolveExpressionComponentCodes(
@@ -1313,7 +1341,7 @@ private BigDecimal calculateFinalPayable(
             result.add(
                     ComponentBalanceDTO.builder()
                             .code(normalizedCode)
-                            .name(normalizedCode)
+                            .name(getComponentName(normalizedCode))
                             .type(resolveComponentType(normalizedCode))
                             .amount(amount)
                             .build());

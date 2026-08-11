@@ -10,10 +10,12 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.claim.claim_processing.common.DTO.response.others.member.MemberAddressResponseDto;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberBankResponseDto;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberDetailResponseDto;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberFamilyResponseDto;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberNomineeResponseDto;
+import com.claim.claim_processing.common.entities.others.member.MemberAddress;
 import com.claim.claim_processing.common.entities.others.member.MemberBank;
 import com.claim.claim_processing.common.entities.others.member.MemberDetail;
 import com.claim.claim_processing.common.entities.others.member.MemberFamily;
@@ -24,6 +26,7 @@ import com.claim.claim_processing.common.repository.others.EmploymentTypeReposit
 import com.claim.claim_processing.common.repository.others.PersonIdentityRepository;
 import com.claim.claim_processing.common.repository.others.RelationTypeRepository;
 import com.claim.claim_processing.exceptions.ClaimException;
+import com.claim.claim_processing.integration.client.MasterDataClient;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = org.mapstruct.ReportingPolicy.IGNORE)
 public abstract class MemberDetailMapper {
@@ -37,7 +40,10 @@ public abstract class MemberDetailMapper {
     protected RelationTypeRepository relationTypeRepository;
     @Autowired
     protected AgencyCategoryRepository agencyCategoryRepository;
+    @Autowired
+    protected MasterDataClient masterDataClient;
 
+    
     @Mapping(target = "memberName", ignore = true) // We'll set this in @AfterMapping
     @Mapping(target = "identityNumber", source = "identityNumber")
     @Mapping(target = "memberStatus", source = "status")
@@ -75,6 +81,7 @@ public abstract class MemberDetailMapper {
         responseDto.setMemberBanks(toMemberBankResponseList(memberDetail.getMemberBanks()));
         responseDto.setMemberNominees(toMemberNomineeResponseList(memberDetail.getMemberNominees()));
         responseDto.setMemberFamilies(toMemberFamilyResponseList(memberDetail.getMemberFamilies()));
+        responseDto.setMemberAddress(toMemberAddress(memberDetail.getAddress()));
         responseDto.setSchemeTypeId(responseDto.getEmploymentTypeName().equals("Regular") ? 1L : 3L);
         responseDto.setAgencyCode(
                 memberDetail.getAgencyDetail() != null ? memberDetail.getAgencyDetail().getAgencyCode() : null);
@@ -132,6 +139,92 @@ public abstract class MemberDetailMapper {
                         .sharePercentage(nominee.getSharePercentage())
                         .build())
                 .toList();
+    }
+
+    private MemberAddressResponseDto toMemberAddress(MemberAddress address) {
+        if (address == null)
+            return null;
+
+        return MemberAddressResponseDto.builder()
+                        .id(address.getId())
+                .currentCountryId(address.getCurrentCountryId())
+                .permanentCountryId(address.getPermanentCountryId())
+                .permanentCountryName(getCountryName(address.getPermanentCountryId()))
+                .currentCountryName(getCountryName(address.getCurrentCountryId()))
+                .nationalityId(address.getNationalityId())
+                .nationalityName(getNationalityName(address.getNationalityId()))
+                .permanentDzongkhagId(address.getPermanentDzongkhagId())
+                .permanentDzongkhagName(getDzongkhagName(address.getPermanentDzongkhagId()))
+                .permanentGewogId(address.getPermanentGewogId())
+                .permanentGewogName(getGewogName(address.getPermanentGewogId()))
+                .permanentVillageId(address.getPermanentVillageId())
+                .permanentVillageName(getVillageName(address.getPermanentVillageId()))
+                .currentDzongkhagId(address.getCurrentDzongkhagId())
+                .currentDzongkhagName(getDzongkhagName(address.getCurrentDzongkhagId()))
+                .currentGewogId(address.getCurrentGewogId())
+                .currentGewogName(getGewogName(address.getCurrentGewogId()))
+                .currentVillageId(address.getCurrentVillageId())
+                .currentVillageName(getVillageName(address.getCurrentVillageId()))
+                .thramNumber(address.getThramNumber())
+                .houseNumber(address.getHouseNumber())
+                .householdNumber(address.getHouseholdNumber())
+                .streetName(address.getStreetName())
+                .currentDistrict(address.getCurrentDistrict())
+                .permanentDistrict(address.getPermanentDistrict())
+                .currentState(address.getCurrentState())
+                .permanentState(address.getPermanentState())
+                .currentCity(address.getCurrentCity())
+                .permanentCity(address.getPermanentCity())
+                .buildingNo(address.getBuildingNo())
+                .floorNo(address.getFloorNo())
+                        .build();
+    }
+
+    private String getDzongkhagName(Long dzongkhagId) {
+        if (dzongkhagId == null || dzongkhagId <= 0) return null;
+        try {
+            return masterDataClient.getDzongkhagById(dzongkhagId).getDzongkhagName();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String getGewogName(Long gewogId) {
+        if (gewogId == null || gewogId <= 0) return null;
+        try {
+            return masterDataClient.getGewogById(gewogId).getGewogName();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String getVillageName(Long villageId) {
+        if (villageId == null || villageId <= 0) return null;
+        try {
+            return masterDataClient.getVillageById(villageId).getVillageName();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String getCountryName(Long countryId) {
+        if (countryId == null || countryId <= 0)
+            return null;
+        try {
+            return masterDataClient.getCountryById(countryId).getCountryName();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String getNationalityName(Long nationalityId) {
+        if (nationalityId == null || nationalityId <= 0)
+            return null;
+        try {
+            return masterDataClient.getNationalityById(nationalityId).getNationalityName();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private List<MemberFamilyResponseDto> toMemberFamilyResponseList(List<MemberFamily> families) {

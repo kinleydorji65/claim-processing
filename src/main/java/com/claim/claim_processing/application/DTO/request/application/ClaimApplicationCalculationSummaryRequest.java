@@ -5,6 +5,8 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.claim.claim_processing.application.DTO.request.detail.WrongRemitanceRequestDTO;
+
 import lombok.*;
 
 @Data
@@ -41,4 +43,5 @@ public class ClaimApplicationCalculationSummaryRequest {
     private List<ClaimApplicationRuleEvaluationRequestDto> ruleEvaluations;
     private List<ClaimApplicationForfeitedComponentRequestDto> forFeitedComponents;
     private ClaimApplicationDeductionRequestDto deductionDetail;
+    private List<WrongRemitanceRequestDTO> wrongRemitanceRequestDTOs;
 }

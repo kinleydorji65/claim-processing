@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "COA_ACCOUNT_MAPPING", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "COA_ACCOUNT_MAPPING", schema = "PPFMS_Master_SERVICE_SCHEMA")
 @Data
 @Builder
 @NoArgsConstructor

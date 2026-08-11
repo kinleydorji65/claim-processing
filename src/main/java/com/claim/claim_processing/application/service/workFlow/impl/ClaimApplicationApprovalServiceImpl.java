@@ -31,6 +31,7 @@ import com.claim.claim_processing.application.service.application.ClaimApplicati
 import com.claim.claim_processing.application.service.application.ClaimApplicationDeductionDetailService;
 import com.claim.claim_processing.application.service.application.ClaimApplicationForfeitedComponentService;
 import com.claim.claim_processing.application.service.application.ClaimLedgerService;
+import com.claim.claim_processing.application.service.application.WrongRemittanceLedgerService;
 import com.claim.claim_processing.application.service.claimDetail.ClaimDetailService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationApprovalService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationWorkflowService;
@@ -90,7 +91,7 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
         private final ClaimLedgerService claimLedgerService;
 
         private final ReserveAccountService reserveAccountService;
-        private final PensionService pensionService;
+        private final WrongRemittanceLedgerService wrongRemittanceLedgerService;
         private final PensionServiceClient pensionServiceClient;
         private final ClaimApplicationCalculationComponentRepository calculationComponentRepository;
         private final DocumentMasterService documentMasterService;
@@ -221,9 +222,15 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                         claimDetailResponse = claimDetailService.create(response);
 
                         // ✅ 4. Create ledger entries (this will use the saved data)
-                        AccountingEventResponseDto accountingEventResponse = claimLedgerService.createLedgerEntries(
+                        AccountingEventResponseDto accountingEventResponse = null;
+                
+                        if(response.getClaimTypeId() == 4L) {
+                                accountingEventResponse = wrongRemittanceLedgerService.createLedgerEntriesForWrongRemittance(claimDetailResponse, approvalRequest.getApprovedBy());
+                        } else {
+                                accountingEventResponse = claimLedgerService.createLedgerEntries(
                                         claimDetailResponse,
                                         approvalRequest.getApprovedBy());
+                        }
                         claimDetailResponse.setAccountingEventDetail(accountingEventResponse);
 
                         if (claimApplication.getIsSpecialCase().toString().equals("N")) {

@@ -3,12 +3,16 @@ package com.claim.claim_processing.integration.contribution.service.impl;
 import com.claim.claim_processing.common.DTO.response.others.member.MemberDetailResponseDto;
 import com.claim.claim_processing.common.entities.others.CutoffServiceMaster;
 import com.claim.claim_processing.common.repository.others.CutoffServiceMasterRepository;
+import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.entity.ArrConfiguration;
 import com.claim.claim_processing.integration.contribution.entity.ContributionBifurcationDetail;
+import com.claim.claim_processing.integration.contribution.entity.ContributionBifurcationHeader;
 import com.claim.claim_processing.integration.contribution.repository.ArrConfigurationRepository;
 import com.claim.claim_processing.integration.contribution.repository.ContributionBifurcationDetailRepository;
+import com.claim.claim_processing.integration.contribution.repository.ContributionBifurcationHeaderRepository;
 import com.claim.claim_processing.integration.contribution.dto.ExcessServiceResultDto;
 import com.claim.claim_processing.integration.contribution.dto.ExcessYearDetailDto;
+import com.claim.claim_processing.integration.contribution.dto.CategoryInfoDto;
 import com.claim.claim_processing.integration.contribution.dto.EOLPeriodDTO;
 import com.claim.claim_processing.integration.contribution.dto.ExcessMonthlyDetailDto;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +34,7 @@ import java.util.stream.Collectors;
 public class ExcessServiceCalculator {
 
     private final ContributionBifurcationDetailRepository contributionDetailRepo;
+    private final ContributionBifurcationHeaderRepository contributionHeaderRepo;
     private final CutoffServiceMasterRepository cutoffServiceMasterRepository;
     private final ArrConfigurationRepository arrRepo;
 
@@ -37,13 +42,97 @@ public class ExcessServiceCalculator {
     private static final RoundingMode RM = RoundingMode.HALF_UP;
     private static final int TRANSITION_YEAR = 2022;
 
+    // ================================================================
+    // SECURITY FORCES CUTOFF DATE - July 1, 2024
+    // ================================================================
+    private static final LocalDate SECURITY_FORCES_CUTOFF_DATE = LocalDate.of(2024, 7, 1);
+
+    // ================================================================
+    // CATEGORY CONSTANTS
+    // ================================================================
+    private static final String CATEGORY_CIVIL = "01";
+    private static final String CATEGORY_SECURITY_FORCES = "03";
+    private static final String CATEGORY_PENSION_INELIGIBLE = "04";
+
     private static final DateTimeFormatter MONTH_YEAR_FORMATTER = DateTimeFormatter.ofPattern("MMM yyyy");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    // Month name to number mapping
+    private static final Map<String, Integer> MONTH_NAME_TO_NUMBER = new HashMap<>();
+    static {
+        MONTH_NAME_TO_NUMBER.put("JANUARY", 1);
+        MONTH_NAME_TO_NUMBER.put("FEBRUARY", 2);
+        MONTH_NAME_TO_NUMBER.put("MARCH", 3);
+        MONTH_NAME_TO_NUMBER.put("APRIL", 4);
+        MONTH_NAME_TO_NUMBER.put("MAY", 5);
+        MONTH_NAME_TO_NUMBER.put("JUNE", 6);
+        MONTH_NAME_TO_NUMBER.put("JULY", 7);
+        MONTH_NAME_TO_NUMBER.put("AUGUST", 8);
+        MONTH_NAME_TO_NUMBER.put("SEPTEMBER", 9);
+        MONTH_NAME_TO_NUMBER.put("OCTOBER", 10);
+        MONTH_NAME_TO_NUMBER.put("NOVEMBER", 11);
+        MONTH_NAME_TO_NUMBER.put("DECEMBER", 12);
+    }
 
     public enum YearType {
         ACCOUNTING_YEAR,
         TRANSITION_YEAR,
         CALENDAR_YEAR
+    }
+
+    // ================================================================
+    // CATEGORY TYPE ENUM
+    // ================================================================
+    public enum CategoryType {
+        CIVIL,
+        SECURITY_FORCES,
+        PENSION_INELIGIBLE
+    }
+
+    // ================================================================
+    // CATEGORY DETECTION METHODS
+    // ================================================================
+
+    private CategoryType getCategoryType(String categoryId) {
+        if (categoryId == null) {
+            return CategoryType.PENSION_INELIGIBLE;
+        }
+
+        String trimmedId = categoryId.trim();
+
+        if (CATEGORY_PENSION_INELIGIBLE.equals(trimmedId)) {
+            return CategoryType.PENSION_INELIGIBLE;
+        } else if (CATEGORY_SECURITY_FORCES.equals(trimmedId)) {
+            return CategoryType.SECURITY_FORCES;
+        } else {
+            return CategoryType.CIVIL;
+        }
+    }
+
+    private boolean isSecurityForces(String categoryId) {
+        if (categoryId == null) {
+            return false;
+        }
+        return CATEGORY_SECURITY_FORCES.equals(categoryId.trim());
+    }
+
+    private String getCategoryDisplayName(String categoryId) {
+        if (categoryId == null) {
+            return "Unknown";
+        }
+
+        String trimmedId = categoryId.trim();
+
+        switch (trimmedId) {
+            case CATEGORY_CIVIL:
+                return "Civil";
+            case CATEGORY_SECURITY_FORCES:
+                return "Security Forces (Armed Forces/Police/Royal Body Guard)";
+            case CATEGORY_PENSION_INELIGIBLE:
+                return "Pension Ineligible";
+            default:
+                return "Unknown (" + trimmedId + ")";
+        }
     }
 
     // ========== MAIN METHOD ==========
@@ -55,47 +144,67 @@ public class ExcessServiceCalculator {
                 memberDetail != null ? memberDetail.getNppfNumber() : "null");
 
         try {
-            // ========== 1. VALIDATE INPUT ==========
             if (memberDetail == null) {
-                return buildErrorResult("NO_MEMBER_DETAIL", "Member details not found");
+                return null;
             }
 
-            // ========== 2. CHECK PENSION ELIGIBILITY ==========
-            if (!isPensionEligible(memberDetail.getMemberCategoryId())) {
-                return buildErrorResult("NOT_PENSION_ELIGIBLE",
-                        "Member is not pension-eligible (Private sector)");
+            String categoryId = memberDetail.getMemberCategoryId();
+            CategoryType categoryType = getCategoryType(categoryId);
+            String categoryDisplayName = getCategoryDisplayName(categoryId);
+
+            log.info("========================================");
+            log.info("Category ID: {}", categoryId);
+            log.info("Category Type: {}", categoryType);
+            log.info("Category Display Name: {}", categoryDisplayName);
+            log.info("========================================");
+
+            // Check pension eligibility
+            if (categoryType == CategoryType.PENSION_INELIGIBLE) {
+                log.info("Member is not pension eligible (Category: {})", categoryDisplayName);
+                return null;
             }
 
-            // ========== 3. GET START DATE ==========
             LocalDate startDate = getStartDate(memberDetail);
             if (startDate == null) {
-                return buildErrorResult("NO_START_DATE", "Member start date not found");
+                return null;
             }
 
-            // ========== 4. Set Current DATE ==========
             LocalDate currentDate = LocalDate.now();
 
-            // ========== 5. GET CUTOFF CONFIGURATION ==========
-            CutoffServiceMaster config = getActiveCutoffConfig();
+            CutoffServiceMaster config = getActiveCutoffConfig(categoryId);
             if (config == null) {
-                return buildErrorResult("NO_CUTOFF_CONFIG", "Cutoff service configuration not found");
+                log.warn("No cutoff configuration found for category: {}", categoryId);
+                return null;
             }
 
             int cutoffYears = config.getNumberOfYears();
+            int cutoffMonths = cutoffYears * 12;
+            log.info("Cutoff Years: {}, Cutoff Months: {}", cutoffYears, cutoffMonths);
 
-            // ========== 6. GET ALL CONTRIBUTIONS ==========
             String cid = memberDetail.getIdentityNumber();
             String nppfNumber = memberDetail.getNppfNumber();
 
             List<ContributionBifurcationDetail> allContributions = contributionDetailRepo
-                    .findByCidAndNppfNumberOrderByCreatedAtAsc(cid, nppfNumber);
+                    .findByCidAndNppfNumberAndPostingStatusOrderByCreatedAtAsc(cid, nppfNumber, "POSTED");
 
             if (allContributions.isEmpty()) {
-                return buildErrorResult("NO_CONTRIBUTIONS", "No contributions found for member");
+                log.info("No contributions found for member");
+                return null;
             }
 
-            // ========== 7. CALCULATE EOL PERIODS ==========
-            List<EOLPeriodDTO> eolPeriods = calculateEOLPeriodsFromHistory(allContributions, startDate, currentDate);
+            // ========== GET HEADER INFO FOR ALL CONTRIBUTIONS ==========
+            Map<Long, ContributionHeaderInfo> headerInfoMap = getHeaderInfoForContributions(allContributions);
+            log.info("Found header info for {} contributions", headerInfoMap.size());
+
+            int allContributionInInt = allContributions.size();
+            if (allContributionInInt < cutoffMonths) {
+                log.info("Total contributions ({}) less than cutoff months ({}), no excess service",
+                        allContributionInInt, cutoffMonths);
+                return null;
+            }
+
+            // ========== CALCULATE EOL PERIODS ==========
+            List<EOLPeriodDTO> eolPeriods = calculateEOLPeriodsFromHistory(allContributions, headerInfoMap, startDate, currentDate);
             log.info("Total EOL periods found: {}", eolPeriods.size());
 
             if (!eolPeriods.isEmpty()) {
@@ -106,13 +215,11 @@ public class ExcessServiceCalculator {
                 log.info("No EOL periods found");
             }
 
-            // ========== 8. CALCULATE TOTAL EOL MONTHS ==========
             int totalEOLMonths = eolPeriods.stream()
                     .mapToInt(EOLPeriodDTO::getEolMonths)
                     .sum();
             log.info("Total EOL Months (all periods): {}", totalEOLMonths);
 
-            // ========== 9. CALCULATE CUTOFF SERVICE DATE WITH EOL CONSIDERATION ==========
             int cutoffYear = currentDate.getYear();
             LocalDate cutoffYearStart = LocalDate.of(cutoffYear, 1, 1);
             LocalDate cutoffYearEnd = LocalDate.of(cutoffYear, 12, 31);
@@ -121,54 +228,70 @@ public class ExcessServiceCalculator {
                     cutoffYear, cutoffYearStart, cutoffYearEnd);
 
             int eolMonthsBeforeCutoffYear = getEOLMonthsBeforeDate(eolPeriods, cutoffYearStart);
-            log.info("EOL Months Before Cutoff Year (before {}): {}", cutoffYearStart, eolMonthsBeforeCutoffYear);
-
             int eolMonthsDuringCutoffYear = getEOLMonthsInDateRange(eolPeriods, cutoffYearStart, cutoffYearEnd);
-            log.info("EOL Months During Cutoff Year ({}): {} (NOT deducted from cutoff)",
-                    cutoffYear, eolMonthsDuringCutoffYear);
-
             int eolMonthsAfterCutoffYear = getEOLMonthsAfterDate(eolPeriods, cutoffYearEnd);
-            log.info("EOL Months After Cutoff Year: {}", eolMonthsAfterCutoffYear);
 
             int additionalMonthsForEOL = eolMonthsBeforeCutoffYear;
             int totalMonthsNeeded = (cutoffYears * 12) + additionalMonthsForEOL;
 
-            log.info("Cutoff Years: {} months, EOL Before Cutoff: {} months, Total Months Needed: {}",
-                    (cutoffYears * 12), additionalMonthsForEOL, totalMonthsNeeded);
-
             LocalDate cutoffServiceDate = startDate.plusMonths(totalMonthsNeeded);
-            log.info("Cutoff Service Date (with EOL adjustment): {}", cutoffServiceDate);
-            log.info("Original Cutoff (without EOL): {}", startDate.plusYears(cutoffYears));
 
-            // ========== 10. CHECK IF ELIGIBLE FOR EXCESS SERVICE ==========
             if (currentDate.isBefore(cutoffServiceDate)) {
-                long monthsShort = calculateTotalMonths(currentDate, cutoffServiceDate);
-
-                return ExcessServiceResultDto.builder()
-                        .isEligible(false)
-                        .cutoffServiceDate(cutoffServiceDate)
-                        .cutoffYears(cutoffYears)
-                        .totalEOLMonths(totalEOLMonths)
-                        .eolMonthsBeforeCutoffYear(eolMonthsBeforeCutoffYear)
-                        .eolMonthsDuringCutoffYear(eolMonthsDuringCutoffYear)
-                        .eolMonthsAfterCutoffYear(eolMonthsAfterCutoffYear)
-                        .monthsShort(monthsShort)
-                        .status("NOT_ELIGIBLE")
-                        .message(String.format(
-                                "Member has not crossed the cutoff service date. Need %d more months of service",
-                                monthsShort))
-                        .build();
+                log.info("Current date {} is before cutoff service date {}, no excess service",
+                        currentDate, cutoffServiceDate);
+                return null;
             }
 
-            // ========== 11. EXCESS PERIOD ==========
             LocalDate excessStart = cutoffServiceDate.plusMonths(1);
             LocalDate excessEnd = currentDate;
 
             log.info("Excess period: {} to {}", excessStart, excessEnd);
 
-            // ========== 12. FILTER EXCESS CONTRIBUTIONS ==========
+            // ================================================================
+            // SECURITY FORCES SPECIAL HANDLING
+            // ================================================================
+            boolean isSecurityForcesCategory = isSecurityForces(categoryId);
+            
+            // Check if excess starts on or after July 1, 2024
+            boolean isExcessAfterCutoff = !excessStart.isBefore(SECURITY_FORCES_CUTOFF_DATE);
+            
+            // Security Forces should follow Civil rules ONLY IF excess starts BEFORE July 1, 2024
+            boolean followCivilRules = !isSecurityForcesCategory || !isExcessAfterCutoff;
+            
+            // Pension should be retained ONLY IF Security Forces AND excess starts ON or AFTER July 1, 2024
+            boolean pensionRetained = isSecurityForcesCategory && isExcessAfterCutoff;
+
+            String pensionRetainedReason;
+            if (pensionRetained) {
+                pensionRetainedReason = "Security Forces: Excess started ON or AFTER July 1, 2024. " +
+                        "Pension components MUST BE RETAINED (cannot be taken).";
+            } else if (isSecurityForcesCategory) {
+                pensionRetainedReason = "Security Forces: Excess started BEFORE July 1, 2024. " +
+                        "Following Civil rules - Pension components CAN be taken.";
+            } else {
+                pensionRetainedReason = "Civil category - Standard rules apply. Pension components CAN be taken.";
+            }
+
+            log.info("========================================");
+            log.info("=== SECURITY FORCES RULE CHECK ===");
+            log.info("Category: {} ({})", categoryDisplayName, categoryId);
+            log.info("Is Security Forces (Category 03): {}", isSecurityForcesCategory);
+            log.info("Excess Start Date: {}", excessStart);
+            log.info("Cutoff Date (July 1, 2024): {}", SECURITY_FORCES_CUTOFF_DATE);
+            log.info("Is Excess After Cutoff: {}", isExcessAfterCutoff);
+            log.info("Follow Civil Rules: {}", followCivilRules);
+            log.info("Pension Retained: {}", pensionRetained);
+            log.info("Reason: {}", pensionRetainedReason);
+            log.info("========================================");
+
+            // ========== FILTER EXCESS CONTRIBUTIONS ==========
             List<ContributionBifurcationDetail> excessContributions = allContributions.stream()
                     .filter(c -> {
+                        ContributionHeaderInfo headerInfo = headerInfoMap.get(c.getBifId());
+                        if (headerInfo != null) {
+                            LocalDate date = LocalDate.of(headerInfo.getYear(), headerInfo.getMonth(), 1);
+                            return !date.isBefore(excessStart) && !date.isAfter(excessEnd);
+                        }
                         LocalDate date = c.getCreatedAt().toLocalDate();
                         return !date.isBefore(excessStart) && !date.isAfter(excessEnd);
                     })
@@ -177,22 +300,28 @@ public class ExcessServiceCalculator {
 
             log.info("Found {} contributions in excess period", excessContributions.size());
 
+            // Create map using header info or fallback to created_at
             Map<String, ContributionBifurcationDetail> contributionMap = excessContributions.stream()
                     .collect(Collectors.toMap(
-                            c -> getMonthYearKey(c.getCreatedAt().toLocalDate()),
+                            c -> {
+                                ContributionHeaderInfo headerInfo = headerInfoMap.get(c.getBifId());
+                                if (headerInfo != null) {
+                                    return headerInfo.getYear() + "-" + String.format("%02d", headerInfo.getMonth());
+                                }
+                                return getMonthYearKey(c.getCreatedAt().toLocalDate());
+                            },
                             c -> c,
                             (existing, replacement) -> existing));
 
-            // ========== 13. GET ACCOUNTING YEARS IN EXCESS PERIOD ==========
+            // ========== GET ACCOUNTING YEARS IN EXCESS PERIOD ==========
             List<String> accountingYears = getAccountingYearsInPeriod(excessStart, excessEnd);
             log.info("Accounting Years in excess period: {}", accountingYears);
 
-            // ========== 14. INITIALIZE OPENING BALANCES ==========
-            // Component-wise opening balances start at ZERO
-            BigDecimal openingPmcPrincipal = BigDecimal.ZERO; // P_MC Principal
-            BigDecimal openingPecPrincipal = BigDecimal.ZERO; // P_EC Principal
-            BigDecimal openingPmcInterest = BigDecimal.ZERO; // P_IMC (Interest on P_MC)
-            BigDecimal openingPecInterest = BigDecimal.ZERO; // P_IEC (Interest on P_EC)
+            // ========== INITIALIZE OPENING BALANCES ==========
+            BigDecimal openingPmcPrincipal = BigDecimal.ZERO;
+            BigDecimal openingPecPrincipal = BigDecimal.ZERO;
+            BigDecimal openingPmcInterest = BigDecimal.ZERO;
+            BigDecimal openingPecInterest = BigDecimal.ZERO;
 
             List<ExcessYearDetailDto> yearDetails = new ArrayList<>();
             List<ExcessMonthlyDetailDto> allMonthlyDetails = new ArrayList<>();
@@ -201,16 +330,12 @@ public class ExcessServiceCalculator {
             BigDecimal grandTotalInterest = BigDecimal.ZERO;
             int totalEOLMonthsInExcess = 0;
 
-            // ========== 15. PROCESS EACH YEAR ==========
-            // ========== 15. PROCESS EACH YEAR ==========
+            // ========== PROCESS EACH YEAR ==========
             for (String year : accountingYears) {
                 YearType yearType = getYearType(year);
 
                 log.info("Processing Year: {}, Type: {}", year, yearType);
 
-                // ================================================================
-                // ✅ GET ARR CONFIGURATION WITH ENHANCED FALLBACK LOGIC
-                // ================================================================
                 ArrConfiguration arrConfig = getArrConfigurationWithFallback(year);
 
                 if (arrConfig == null) {
@@ -224,32 +349,26 @@ public class ExcessServiceCalculator {
                 log.info("Year: {}, Rate: {}%, Year Basis: {} days",
                         year, rate.multiply(HUNDRED), yearBasis);
 
-                // Get year start and end dates
                 LocalDate yearStartDate = getYearStartDate(year, yearType);
                 LocalDate yearEndDate = getYearEndDate(year, yearType);
 
                 log.info("Year Start: {}, Year End: {}", yearStartDate, yearEndDate);
 
-                // ========== CALCULATE DAYS FOR OPENING BALANCE INTEREST ==========
                 int daysForOpening;
                 if (yearDetails.isEmpty()) {
-                    // First year of excess - from excessStart to yearEnd
                     LocalDate effectiveStart = excessStart.isAfter(yearStartDate) ? excessStart : yearStartDate;
                     daysForOpening = (int) ChronoUnit.DAYS.between(effectiveStart, yearEndDate) + 1;
                     log.info("First year - days for opening balance interest: {} (from {} to {})",
                             daysForOpening, effectiveStart, yearEndDate);
                 } else {
-                    // Subsequent years - full year
                     daysForOpening = calculateDaysForIOB(year, yearType);
                     log.info("Subsequent year - days for opening balance interest: {} (full year)", daysForOpening);
                 }
 
-                // Ensure daysForOpening is not negative
                 if (daysForOpening < 0) {
                     daysForOpening = 0;
                 }
 
-                // ========== GET MONTHS FOR THIS YEAR WITHIN EXCESS PERIOD ==========
                 List<YearMonth> monthsInYear = getMonthsInYear(year, yearType);
 
                 List<YearMonth> filteredMonths = monthsInYear.stream()
@@ -262,12 +381,8 @@ public class ExcessServiceCalculator {
 
                 log.info("Months in excess period for year {}: {}", year, filteredMonths.size());
 
-                // ================================================================
-                // PROCESS EACH MONTH
-                // ================================================================
                 List<ExcessMonthlyDetailDto> monthlyDetails = new ArrayList<>();
 
-                // Yearly accumulators
                 BigDecimal yearlyPmc = BigDecimal.ZERO;
                 BigDecimal yearlyPec = BigDecimal.ZERO;
                 BigDecimal yearlyPimc = BigDecimal.ZERO;
@@ -276,7 +391,7 @@ public class ExcessServiceCalculator {
                 int eolMonthsInYear = 0;
 
                 for (YearMonth yearMonth : filteredMonths) {
-                    String monthKey = getMonthYearKey(yearMonth.atDay(1));
+                    String monthKey = yearMonth.getYear() + "-" + String.format("%02d", yearMonth.getMonthValue());
 
                     ContributionBifurcationDetail detail = contributionMap.get(monthKey);
 
@@ -287,58 +402,43 @@ public class ExcessServiceCalculator {
                     int days = 0;
                     LocalDate invoiceDate = null;
 
-                    log.info("Processing Month: {}, MonthKey: {}, Has Contribution: {}",
+                    log.debug("Processing Month: {}, MonthKey: {}, Has Contribution: {}",
                             yearMonth, monthKey, detail != null);
 
                     if (detail != null) {
                         pmc = n(detail.getPensionMc());
                         pec = n(detail.getPensionEc());
 
-                        invoiceDate = detail.getCreatedAt().toLocalDate();
+                        // Get invoice date from header or fallback
+                        ContributionHeaderInfo headerInfo = headerInfoMap.get(detail.getBifId());
+                        if (headerInfo != null) {
+                            invoiceDate = LocalDate.of(headerInfo.getYear(), headerInfo.getMonth(), 1);
+                        } else {
+                            invoiceDate = detail.getCreatedAt().toLocalDate();
+                        }
 
-                        log.info("  Invoice Date: {}", invoiceDate);
-                        log.info("  Year End Date: {}", yearEndDate);
-
-                        // Calculate days from invoice date to year end date
                         days = (int) ChronoUnit.DAYS.between(invoiceDate, yearEndDate);
 
-                        log.info("  Days between invoice date and year end: {}", days);
-
                         if (days < 0) {
-                            log.warn("  Negative days detected! Setting to 0");
                             days = 0;
                         }
 
-                        // Calculate interest for PMC and PEC separately
                         BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
                         BigDecimal factor = BigDecimal.valueOf(days)
                                 .divide(BigDecimal.valueOf(yearBasis), 10, RM);
 
-                        pimc = pmc
-                                .multiply(rateFactor)
-                                .multiply(factor)
-                                .setScale(2, RM);
+                        pimc = pmc.multiply(rateFactor).multiply(factor).setScale(2, RM);
+                        piec = pec.multiply(rateFactor).multiply(factor).setScale(2, RM);
 
-                        piec = pec
-                                .multiply(rateFactor)
-                                .multiply(factor)
-                                .setScale(2, RM);
-
-                        // Accumulate yearly totals
                         yearlyPmc = yearlyPmc.add(pmc);
                         yearlyPec = yearlyPec.add(pec);
                         yearlyPimc = yearlyPimc.add(pimc);
                         yearlyPiec = yearlyPiec.add(piec);
 
-                        log.info("  Final: Days={}, PMC={}, PEC={}, PIMC={}, PIEC={}",
-                                days, pmc, pec, pimc, piec);
-
                     } else {
                         eolMonthsInYear++;
-                        log.info("  Month {}: EOL Month", yearMonth);
                     }
 
-                    // Build monthly detail
                     ExcessMonthlyDetailDto monthlyDetail = ExcessMonthlyDetailDto.builder()
                             .dueMonth(String.valueOf(yearMonth.getMonthValue()))
                             .invoiceDate(invoiceDate != null ? invoiceDate : yearMonth.atDay(1))
@@ -356,59 +456,36 @@ public class ExcessServiceCalculator {
                 }
 
                 // ================================================================
-                // CALCULATE YEAR SUMMARY WITH COMPONENT-WISE OPENING BALANCES
+                // CALCULATE YEAR SUMMARY
                 // ================================================================
 
-                // Rate factor for interest calculations
                 BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
                 BigDecimal daysFactor = BigDecimal.valueOf(daysForOpening)
                         .divide(BigDecimal.valueOf(yearBasis), 10, RM);
 
-                // Interest on Opening Balances (Component-wise)
                 BigDecimal interestOnPmcOpening = openingPmcPrincipal
-                        .multiply(rateFactor)
-                        .multiply(daysFactor)
-                        .setScale(2, RM);
-
+                        .multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
                 BigDecimal interestOnPecOpening = openingPecPrincipal
-                        .multiply(rateFactor)
-                        .multiply(daysFactor)
-                        .setScale(2, RM);
-
+                        .multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
                 BigDecimal interestOnPimcOpening = openingPmcInterest
-                        .multiply(rateFactor)
-                        .multiply(daysFactor)
-                        .setScale(2, RM);
-
+                        .multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
                 BigDecimal interestOnPiecOpening = openingPecInterest
-                        .multiply(rateFactor)
-                        .multiply(daysFactor)
-                        .setScale(2, RM);
+                        .multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
 
-                // During The Year totals (already accumulated from monthly processing)
                 BigDecimal duringTheYearPmc = yearlyPmc;
                 BigDecimal duringTheYearPec = yearlyPec;
                 BigDecimal duringTheYearPimc = yearlyPimc;
                 BigDecimal duringTheYearPiec = yearlyPiec;
 
-                // Closing Balances (Component-wise)
                 BigDecimal closingPmcBalance = openingPmcPrincipal
-                        .add(interestOnPmcOpening)
-                        .add(duringTheYearPmc);
-
+                        .add(interestOnPmcOpening).add(duringTheYearPmc);
                 BigDecimal closingPecBalance = openingPecPrincipal
-                        .add(interestOnPecOpening)
-                        .add(duringTheYearPec);
-
+                        .add(interestOnPecOpening).add(duringTheYearPec);
                 BigDecimal closingPimcBalance = openingPmcInterest
-                        .add(interestOnPimcOpening)
-                        .add(duringTheYearPimc);
-
+                        .add(interestOnPimcOpening).add(duringTheYearPimc);
                 BigDecimal closingPiecBalance = openingPecInterest
-                        .add(interestOnPiecOpening)
-                        .add(duringTheYearPiec);
+                        .add(interestOnPiecOpening).add(duringTheYearPiec);
 
-                // Total yearly contributions and interest
                 BigDecimal yearlyContributions = yearlyPmc.add(yearlyPec);
                 BigDecimal yearlyInterest = yearlyPimc.add(yearlyPiec);
 
@@ -416,12 +493,6 @@ public class ExcessServiceCalculator {
                 log.info("Opening Balances:");
                 log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
                         openingPmcPrincipal, openingPecPrincipal, openingPmcInterest, openingPecInterest);
-                log.info("Interest on Opening ({} days):", daysForOpening);
-                log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
-                        interestOnPmcOpening, interestOnPecOpening, interestOnPimcOpening, interestOnPiecOpening);
-                log.info("During The Year:");
-                log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
-                        duringTheYearPmc, duringTheYearPec, duringTheYearPimc, duringTheYearPiec);
                 log.info("Closing Balances:");
                 log.info("  PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
                         closingPmcBalance, closingPecBalance, closingPimcBalance, closingPiecBalance);
@@ -433,58 +504,37 @@ public class ExcessServiceCalculator {
                 ExcessYearDetailDto yearDetail = ExcessYearDetailDto.builder()
                         .accountingYear(year)
                         .yearType(yearType.name())
-
-                        // Opening balances
                         .openingPmcBalance(openingPmcPrincipal)
                         .openingPecBalance(openingPecPrincipal)
                         .openingPimcBalance(openingPmcInterest)
                         .openingPiecBalance(openingPecInterest)
-
-                        // Interest on opening
                         .interestOnPmcOpening(interestOnPmcOpening)
                         .interestOnPecOpening(interestOnPecOpening)
                         .interestOnPimcOpening(interestOnPimcOpening)
                         .interestOnPiecOpening(interestOnPiecOpening)
-
-                        // During the year
                         .duringTheYearPmc(duringTheYearPmc)
                         .duringTheYearPec(duringTheYearPec)
                         .duringTheYearPimc(duringTheYearPimc)
                         .duringTheYearPiec(duringTheYearPiec)
-
-                        // Closing balances
                         .closingPmcBalance(closingPmcBalance)
                         .closingPecBalance(closingPecBalance)
                         .closingPimcBalance(closingPimcBalance)
                         .closingPiecBalance(closingPiecBalance)
-
-                        // Interest rates
                         .interestPmcRate(rate)
                         .interestPecRate(rate)
                         .interestPimcRate(rate)
                         .interestPiecRate(rate)
-
-                        // Calculation details
                         .interestDate(yearStartDate)
                         .yearBasis(yearBasis)
                         .daysInYear(daysForOpening)
-
-                        // EOL
                         .eolMonthsInYear(eolMonthsInYear)
-
-                        // Yearly totals
                         .yearlyContributions(yearlyContributions)
                         .yearlyInterest(yearlyInterest)
-
-                        // Monthly details
                         .monthlyDetails(monthlyDetails)
                         .build();
 
                 yearDetails.add(yearDetail);
 
-                // ================================================================
-                // UPDATE OPENING BALANCES FOR NEXT YEAR (Component-wise)
-                // ================================================================
                 openingPmcPrincipal = closingPmcBalance;
                 openingPecPrincipal = closingPecBalance;
                 openingPmcInterest = closingPimcBalance;
@@ -494,26 +544,35 @@ public class ExcessServiceCalculator {
                 grandTotalInterest = grandTotalInterest.add(yearlyInterest);
                 totalEOLMonthsInExcess += eolMonthsInYear;
             }
-            // ========== 16. FINAL TOTAL ==========
+
+            // ========== FINAL TOTAL ==========
             BigDecimal totalExcessAmount = grandTotalContributions.add(grandTotalInterest);
             totalExcessAmount = totalExcessAmount.setScale(2, RM);
 
-            // Get last year's closing balances for the main summary
             ExcessYearDetailDto lastYear = yearDetails.isEmpty() ? null : yearDetails.get(yearDetails.size() - 1);
 
             log.info("========== FINAL EXCESS SERVICE RESULT ==========");
             log.info("Total Excess Amount: {}", totalExcessAmount);
             log.info("Total Years Processed: {}", yearDetails.size());
-            if (lastYear != null) {
-                log.info("Final Closing Balances - PMC: {}, PEC: {}, PIMC: {}, PIEC: {}",
-                        lastYear.getClosingPmcBalance(),
-                        lastYear.getClosingPecBalance(),
-                        lastYear.getClosingPimcBalance(),
-                        lastYear.getClosingPiecBalance());
-            }
+            log.info("Pension Retained: {}", pensionRetained);
+            log.info("Reason: {}", pensionRetainedReason);
 
-            // ========== 17. BUILD RESPONSE ==========
-            ExcessServiceResultDto.ExcessServiceResultDtoBuilder builder = ExcessServiceResultDto.builder()
+            // ================================================================
+            // BUILD CATEGORY INFO
+            // ================================================================
+            CategoryInfoDto categoryInfo = CategoryInfoDto.builder()
+                    .categoryId(categoryId)
+                    .categoryType(categoryType.name())
+                    .displayName(categoryDisplayName)
+                    .isSecurityForces(isSecurityForcesCategory)
+                    .followCivilRules(followCivilRules)
+                    .pensionRetained(pensionRetained)
+                    .pensionRetainedReason(pensionRetainedReason)
+                    .cutoffDate(SECURITY_FORCES_CUTOFF_DATE)
+                    .build();
+
+            // ========== BUILD RESPONSE ==========
+            ExcessServiceResultDto result = ExcessServiceResultDto.builder()
                     .isEligible(true)
                     .totalExcessAmount(totalExcessAmount)
                     .cutoffServiceDate(cutoffServiceDate)
@@ -529,131 +588,67 @@ public class ExcessServiceCalculator {
                     .totalInterestInExcess(grandTotalInterest)
                     .yearDetails(yearDetails)
                     .monthlyDetails(allMonthlyDetails)
+                    .eolPeriods(eolPeriods)
+                    .calculationDate(LocalDate.now())
+                    .calculationMethod("STANDARD_WITH_EOL_ADJUSTMENT")
                     .status("CALCULATED")
-                    .message("Excess service calculated successfully as of " + excessEnd);
+                    .message("Excess service calculated successfully as of " + excessEnd)
+                    .categoryInfo(categoryInfo)
+                    .build();
 
-            return builder.build();
+            return result;
 
         } catch (Exception e) {
             log.error("Error calculating excess service: {}", e.getMessage(), e);
-            return buildErrorResult("ERROR", "Error calculating excess service: " + e.getMessage());
+            throw ClaimException.internalError("Server error occurred: " + e.getMessage());
         }
     }
 
-    /**
-     * Get ARR configuration with enhanced fallback logic.
-     * Tries multiple formats and fallback options.
-     */
-    private ArrConfiguration getArrConfigurationWithFallback(String accountingYear) {
-        if (accountingYear == null || accountingYear.isBlank()) {
-            return null;
+    // ========== GET HEADER INFO ==========
+    private Map<Long, ContributionHeaderInfo> getHeaderInfoForContributions(
+            List<ContributionBifurcationDetail> contributions) {
+
+        Map<Long, ContributionHeaderInfo> headerInfoMap = new HashMap<>();
+
+        Set<Long> bifIds = contributions.stream()
+                .map(ContributionBifurcationDetail::getBifId)
+                .filter(id -> id != null && id > 0)
+                .collect(Collectors.toSet());
+
+        if (!bifIds.isEmpty()) {
+            List<ContributionBifurcationHeader> headers = contributionHeaderRepo.findAllById(bifIds);
+
+            for (ContributionBifurcationHeader header : headers) {
+                if (header.getBifId() != null) {
+                    String monthName = header.getMonthName();
+                    String year = header.getYear();
+                    Integer monthNumber = MONTH_NAME_TO_NUMBER.get(monthName.toUpperCase());
+
+                    if (monthNumber != null && year != null) {
+                        headerInfoMap.put(header.getBifId(),
+                                new ContributionHeaderInfo(monthNumber, Integer.parseInt(year)));
+                    }
+                }
+            }
         }
 
-        log.debug("Looking for ARR configuration for year: {}", accountingYear);
-
-        try {
-            // ================================================================
-            // 1. TRY EXACT MATCH FIRST
-            // ================================================================
-            Optional<ArrConfiguration> arrOpt = arrRepo.findByAccountingYear(accountingYear);
-            if (arrOpt.isPresent()) {
-                log.debug("✅ Found exact ARR configuration for year: {}", accountingYear);
-                return arrOpt.get();
-            }
-
-            log.warn("No exact ARR configuration found for year: {}, trying fallback options", accountingYear);
-
-            // ================================================================
-            // 2. TRY DIFFERENT FORMATS
-            // ================================================================
-
-            // If it's in format "YYYY-YYYY", try "YYYY"
-            if (accountingYear.contains("-")) {
-                String[] parts = accountingYear.split("-");
-                String yearOnly = parts[0];
-
-                Optional<ArrConfiguration> yearOnlyOpt = arrRepo.findByAccountingYear(yearOnly);
-                if (yearOnlyOpt.isPresent()) {
-                    log.info("✅ Found ARR configuration using year only: {}", yearOnly);
-                    return yearOnlyOpt.get();
-                }
-            }
-
-            // If it's in format "YYYY", try "YYYY-YYYY"
-            if (!accountingYear.contains("-")) {
-                String yearRange = accountingYear + "-" + accountingYear;
-                Optional<ArrConfiguration> yearRangeOpt = arrRepo.findByAccountingYear(yearRange);
-                if (yearRangeOpt.isPresent()) {
-                    log.info("✅ Found ARR configuration using year range: {}", yearRange);
-                    return yearRangeOpt.get();
-                }
-            }
-
-            // ================================================================
-            // 3. TRY PREVIOUS YEARS (UP TO 5 YEARS BACK)
-            // ================================================================
-            try {
-                int year = Integer.parseInt(accountingYear.split("-")[0]);
-
-                for (int i = 1; i <= 5; i++) {
-                    int previousYear = year - i;
-                    String previousYearStr = String.valueOf(previousYear);
-                    String previousYearRange = previousYearStr + "-" + previousYearStr;
-
-                    // Try "YYYY" format
-                    Optional<ArrConfiguration> prevOpt = arrRepo.findByAccountingYear(previousYearStr);
-                    if (prevOpt.isPresent()) {
-                        log.info("✅ Using ARR config from previous year: {} ({} years back)",
-                                previousYearStr, i);
-                        return prevOpt.get();
-                    }
-
-                    // Try "YYYY-YYYY" format
-                    Optional<ArrConfiguration> prevRangeOpt = arrRepo.findByAccountingYear(previousYearRange);
-                    if (prevRangeOpt.isPresent()) {
-                        log.info("✅ Using ARR config from previous year range: {} ({} years back)",
-                                previousYearRange, i);
-                        return prevRangeOpt.get();
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Could not parse year from: {}", accountingYear);
-            }
-
-            // ================================================================
-            // 4. GET THE LATEST AVAILABLE ARR CONFIGURATION
-            // ================================================================
-            List<ArrConfiguration> allArr = arrRepo.findAll();
-            if (!allArr.isEmpty()) {
-                // Sort by year descending (latest first)
-                allArr.sort((a, b) -> {
-                    String yearA = a.getAccountingYear();
-                    String yearB = b.getAccountingYear();
-                    try {
-                        int aYear = Integer.parseInt(yearA.replace("-", ""));
-                        int bYear = Integer.parseInt(yearB.replace("-", ""));
-                        return Integer.compare(bYear, aYear);
-                    } catch (Exception e) {
-                        return b.getAccountingYear().compareTo(a.getAccountingYear());
-                    }
-                });
-
-                ArrConfiguration latest = allArr.get(0);
-                log.info("✅ Using latest available ARR config from year: {}", latest.getAccountingYear());
-                return latest;
-            }
-
-            // ================================================================
-            // 5. USE DEFAULT VALUES
-            // ================================================================
-            log.warn("❌ No ARR configuration found in database, using default values");
-            return null;
-
-        } catch (Exception e) {
-            log.error("Error getting ARR config for {}: {}", accountingYear, e.getMessage());
-            return null;
-        }
+        return headerInfoMap;
     }
+
+    // ========== INNER CLASS FOR HEADER INFO ==========
+    private static class ContributionHeaderInfo {
+        private final int month;
+        private final int year;
+
+        public ContributionHeaderInfo(int month, int year) {
+            this.month = month;
+            this.year = year;
+        }
+
+        public int getMonth() { return month; }
+        public int getYear() { return year; }
+    }
+
     // ========== EOL HELPER METHODS ==========
 
     private List<EOLPeriodDTO> getEOLPeriodsBeforeDate(List<EOLPeriodDTO> eolPeriods, LocalDate date) {
@@ -715,16 +710,6 @@ public class ExcessServiceCalculator {
                 .sum();
     }
 
-    private long calculateTotalMonths(LocalDate startDate, LocalDate endDate) {
-        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
-            return 0;
-        }
-        YearMonth startMonth = YearMonth.from(startDate);
-        YearMonth endMonth = YearMonth.from(endDate);
-        return (endMonth.getYear() - startMonth.getYear()) * 12L
-                + (endMonth.getMonthValue() - startMonth.getMonthValue());
-    }
-
     // ========== HELPER METHODS ==========
 
     private boolean isPensionEligible(String memberCategoryId) {
@@ -741,15 +726,17 @@ public class ExcessServiceCalculator {
         return null;
     }
 
-    private CutoffServiceMaster getActiveCutoffConfig() {
+    private CutoffServiceMaster getActiveCutoffConfig(String categoryId) {
         return cutoffServiceMasterRepository.findAll().stream()
                 .filter(config -> "Y".equals(config.getStatus()))
+                .filter(config -> categoryId != null && categoryId.equals(config.getCategory().getCategoryId()))
                 .findFirst()
                 .orElse(null);
     }
 
     public List<EOLPeriodDTO> calculateEOLPeriodsFromHistory(
             List<ContributionBifurcationDetail> allContributions,
+            Map<Long, ContributionHeaderInfo> headerInfoMap,
             LocalDate startDate,
             LocalDate endDate) {
 
@@ -759,15 +746,29 @@ public class ExcessServiceCalculator {
             return eolPeriods;
         }
 
+        // ✅ Use header info for contribution months
         Set<String> contributionMonths = allContributions.stream()
                 .filter(c -> c.getCreatedAt() != null)
-                .map(c -> c.getCreatedAt().toLocalDate().getYear() + "-" +
-                        String.format("%02d", c.getCreatedAt().toLocalDate().getMonthValue()))
+                .map(c -> {
+                    ContributionHeaderInfo headerInfo = headerInfoMap.get(c.getBifId());
+                    if (headerInfo != null) {
+                        return headerInfo.getYear() + "-" + String.format("%02d", headerInfo.getMonth());
+                    }
+                    LocalDate date = c.getCreatedAt().toLocalDate();
+                    return date.getYear() + "-" + String.format("%02d", date.getMonthValue());
+                })
                 .collect(Collectors.toSet());
 
+        // Get transaction year from header or fallback
         int transactionYear = allContributions.stream()
                 .filter(c -> c.getCreatedAt() != null)
-                .map(c -> c.getCreatedAt().toLocalDate().getYear())
+                .map(c -> {
+                    ContributionHeaderInfo headerInfo = headerInfoMap.get(c.getBifId());
+                    if (headerInfo != null) {
+                        return headerInfo.getYear();
+                    }
+                    return c.getCreatedAt().toLocalDate().getYear();
+                })
                 .min(Integer::compareTo)
                 .orElse(2022);
 
@@ -1023,6 +1024,96 @@ public class ExcessServiceCalculator {
         }
     }
 
+    private ArrConfiguration getArrConfigurationWithFallback(String accountingYear) {
+        if (accountingYear == null || accountingYear.isBlank()) {
+            return null;
+        }
+
+        log.debug("Looking for ARR configuration for year: {}", accountingYear);
+
+        try {
+            Optional<ArrConfiguration> arrOpt = arrRepo.findByAccountingYear(accountingYear);
+            if (arrOpt.isPresent()) {
+                log.debug("✅ Found exact ARR configuration for year: {}", accountingYear);
+                return arrOpt.get();
+            }
+
+            log.warn("No exact ARR configuration found for year: {}, trying fallback options", accountingYear);
+
+            if (accountingYear.contains("-")) {
+                String[] parts = accountingYear.split("-");
+                String yearOnly = parts[0];
+
+                Optional<ArrConfiguration> yearOnlyOpt = arrRepo.findByAccountingYear(yearOnly);
+                if (yearOnlyOpt.isPresent()) {
+                    log.info("✅ Found ARR configuration using year only: {}", yearOnly);
+                    return yearOnlyOpt.get();
+                }
+            }
+
+            if (!accountingYear.contains("-")) {
+                String yearRange = accountingYear + "-" + accountingYear;
+                Optional<ArrConfiguration> yearRangeOpt = arrRepo.findByAccountingYear(yearRange);
+                if (yearRangeOpt.isPresent()) {
+                    log.info("✅ Found ARR configuration using year range: {}", yearRange);
+                    return yearRangeOpt.get();
+                }
+            }
+
+            try {
+                int year = Integer.parseInt(accountingYear.split("-")[0]);
+
+                for (int i = 1; i <= 5; i++) {
+                    int previousYear = year - i;
+                    String previousYearStr = String.valueOf(previousYear);
+                    String previousYearRange = previousYearStr + "-" + previousYearStr;
+
+                    Optional<ArrConfiguration> prevOpt = arrRepo.findByAccountingYear(previousYearStr);
+                    if (prevOpt.isPresent()) {
+                        log.info("✅ Using ARR config from previous year: {} ({} years back)",
+                                previousYearStr, i);
+                        return prevOpt.get();
+                    }
+
+                    Optional<ArrConfiguration> prevRangeOpt = arrRepo.findByAccountingYear(previousYearRange);
+                    if (prevRangeOpt.isPresent()) {
+                        log.info("✅ Using ARR config from previous year range: {} ({} years back)",
+                                previousYearRange, i);
+                        return prevRangeOpt.get();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not parse year from: {}", accountingYear);
+            }
+
+            List<ArrConfiguration> allArr = arrRepo.findAll();
+            if (!allArr.isEmpty()) {
+                allArr.sort((a, b) -> {
+                    String yearA = a.getAccountingYear();
+                    String yearB = b.getAccountingYear();
+                    try {
+                        int aYear = Integer.parseInt(yearA.replace("-", ""));
+                        int bYear = Integer.parseInt(yearB.replace("-", ""));
+                        return Integer.compare(bYear, aYear);
+                    } catch (Exception e) {
+                        return b.getAccountingYear().compareTo(a.getAccountingYear());
+                    }
+                });
+
+                ArrConfiguration latest = allArr.get(0);
+                log.info("✅ Using latest available ARR config from year: {}", latest.getAccountingYear());
+                return latest;
+            }
+
+            log.warn("❌ No ARR configuration found in database, using default values");
+            return null;
+
+        } catch (Exception e) {
+            log.error("Error getting ARR config for {}: {}", accountingYear, e.getMessage());
+            return null;
+        }
+    }
+
     private int calculateDaysForIOB(String accountingYear, YearType yearType) {
         try {
             int startYear;
@@ -1061,13 +1152,5 @@ public class ExcessServiceCalculator {
 
     private BigDecimal n(BigDecimal v) {
         return v == null ? BigDecimal.ZERO : v;
-    }
-
-    private ExcessServiceResultDto buildErrorResult(String status, String message) {
-        return ExcessServiceResultDto.builder()
-                .isEligible(false)
-                .status(status)
-                .message(message)
-                .build();
     }
 }

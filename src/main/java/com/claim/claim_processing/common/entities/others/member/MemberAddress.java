@@ -54,6 +54,9 @@ public class MemberAddress {
     @Column(name="HOUSE_NUMBER")
     private String houseNumber;
 
+    @Column(name="HOUSEHOLD_NUMBER")
+    private String householdNumber;
+
     @Column(name = "STREET_NAME")
     private String streetName;
 

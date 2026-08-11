@@ -20,7 +20,7 @@ public class ClaimApplicationDeductionDetail {
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
 
-        @ManyToOne(fetch = FetchType.LAZY)
+        @OneToOne(fetch = FetchType.LAZY) 
         @JoinColumn(name = "CLAIM_APPLICATION_ID", nullable = false)
         private ClaimApplication claimApplication;
 

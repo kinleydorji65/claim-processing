@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.claim.claim_processing.common.entities.others.agency.agencyRelated.AgencyCategory;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,6 +28,10 @@ public class CutoffServiceMaster {
 
     @Column(name = "number_of_years", nullable = false)
     private Integer numberOfYears;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CATEGORY_ID", nullable = false)
+    private AgencyCategory category;
 
     @Column(name = "status", nullable = false, length = 1)
     @Builder.Default

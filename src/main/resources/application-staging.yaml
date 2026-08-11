@@ -72,9 +72,10 @@ app:
       path: /images
     videos:
       path: /videos
+  currency-converter:
+    currency-url: https://api.exchangerate-api.com/v4/latest/
   master:
     base-url: http://10.15.15.20:8082
-    # base-url: http://localhost:8082
     endpoints:
       types: /api/master-data/codes/types
       generate: /api/master-data/codes/generate
@@ -92,6 +93,14 @@ logging:
     com.claim.claim_processing.rule.ruleProcessing.service.impl: DEBUG
     com.claim.claim_processing.application.service.workFlow.impl: DEBUG
     com.claim.claim_processing.application.service.application.impl: DEBUG
+
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: DEBUG
+    org.hibernate.engine.internal: TRACE
+    org.springframework.orm.jpa: DEBUG
+    org.springframework.transaction: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
     # org.hibernate.SQL: DEBUG
     # org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     # org.hibernate.engine.jdbc.spi.SqlExceptionHelper: DEBUG

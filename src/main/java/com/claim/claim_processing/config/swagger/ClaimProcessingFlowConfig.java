@@ -70,5 +70,38 @@ public class ClaimProcessingFlowConfig implements SwaggerConfig {
                 "Wrong Remitance Management"
         );
     }
+
+    @Bean
+    public GroupedOpenApi fullContributionManagementApi() {
+
+        return createGroupedApi(
+                "Full Contribution History Management",
+                "Full Contribution History APIs",
+                "/api/full-contribution-history/**",
+                "Full Contribution History Management"
+        );
+    }
+
+    @Bean
+    public GroupedOpenApi fullCurrencyManagementApi() {
+
+        return createGroupedApi(
+                "Currency Conversion Management",
+                "Currency Conversion APIs",
+                "/api/currency/**",
+                "Currency Conversion Management"
+        );
+    }
+
+    @Bean
+    public GroupedOpenApi visaDownloadManagementApi() {
+
+        return createGroupedApi(
+                "Visa Download Management",
+                "Visa Download APIs",
+                "/api/visa/download/**",
+                "Visa Download Management"
+        );
+    }
 }
 

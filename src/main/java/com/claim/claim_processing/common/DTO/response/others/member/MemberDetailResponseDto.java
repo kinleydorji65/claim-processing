@@ -41,4 +41,5 @@ public class MemberDetailResponseDto {
     private List<MemberBankResponseDto> memberBanks;
     private List<MemberNomineeResponseDto> memberNominees;
     private List<MemberFamilyResponseDto> memberFamilies;
+    private MemberAddressResponseDto memberAddress;
 }

@@ -9,6 +9,8 @@ import com.claim.claim_processing.application.DTO.response.detail.BeneficiarySet
 import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.PartialWithdrawalResponseDto;
+import com.claim.claim_processing.application.DTO.response.detail.WrongRemitanceResponseDTO;
+import com.claim.claim_processing.application.entity.detail.WrongRemitance;
 import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -79,6 +81,7 @@ public class GeneralClaimDetailResponse {
     private ClaimDeductionResponseDto deductionDetail;
     private ClaimCalculationSummaryResponseDto calculationSummary;
     private NormalClaimResponseDto normalClaimDetails;
+    private List<WrongRemitanceResponseDTO> wrongRemitances;
     private PartialWithdrawalResponseDto partialWithdrawalDetails;
     private LegalRecoveryResponseDto legalRecoveryDetail;
     private BeneficiarySettlementResponseDto beneficiarySettlementDetail;

@@ -9,6 +9,7 @@ import com.claim.claim_processing.application.DTO.response.detail.BeneficiarySet
 import com.claim.claim_processing.application.DTO.response.detail.LegalRecoveryResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.NormalClaimResponseDto;
 import com.claim.claim_processing.application.DTO.response.detail.PartialWithdrawalResponseDto;
+import com.claim.claim_processing.application.DTO.response.detail.WrongRemitanceResponseDTO;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationApprovalResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationWorkflowResponseDto;
@@ -87,6 +88,7 @@ public class GeneralClaimResponse {
     private LegalRecoveryResponseDto legalRecoveryDetail;
     private PartialWithdrawalResponseDto partialWithdrawalDetails;
     private BeneficiarySettlementResponseDto beneficiarySettlementDetails;
+    private List<WrongRemitanceResponseDTO> wrongRemitanceResponseDTOs;
     private List<ClaimApplicationForfeitedComponentResponseDto> forfeitedComponents;
     private ClaimApplicationVerificationResponseDto verificationDetail;
     private ClaimApplicationApprovalResponseDto approvalDetail;

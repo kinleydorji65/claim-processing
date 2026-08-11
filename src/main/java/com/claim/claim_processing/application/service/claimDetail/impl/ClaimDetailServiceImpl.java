@@ -3,6 +3,7 @@ package com.claim.claim_processing.application.service.claimDetail.impl;
 import com.claim.claim_processing.common.repository.common.CoaMainAccountRepository;
 import com.claim.claim_processing.common.repository.common.CoaSubAccountRepository;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,7 @@ import com.claim.claim_processing.application.entity.detail.BeneficiarySettlemen
 import com.claim.claim_processing.application.entity.detail.LegalRecoveryDetail;
 import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 import com.claim.claim_processing.application.entity.detail.PartialWithdrawalDetail;
+import com.claim.claim_processing.application.entity.detail.WrongRemitance;
 import com.claim.claim_processing.application.mapper.claimDetail.AllClaimDetailMapper;
 import com.claim.claim_processing.application.mapper.claimDetail.GeneralClaimDetailMapper;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimAccountingEventRepository;
@@ -67,6 +69,7 @@ import com.claim.claim_processing.application.repository.detail.BeneficiarySettl
 import com.claim.claim_processing.application.repository.detail.LegalRecoveryDetailRepository;
 import com.claim.claim_processing.application.repository.detail.NormalClaimDetailRepository;
 import com.claim.claim_processing.application.repository.detail.PartialWithdrawalDetailRepository;
+import com.claim.claim_processing.application.repository.detail.WrongRemitanceRepository;
 import com.claim.claim_processing.application.service.claimDetail.ClaimDetailService;
 import com.claim.claim_processing.common.DTO.response.ApiResponseDTO;
 import com.claim.claim_processing.common.DTO.response.common.StageResponseDto;
@@ -135,6 +138,7 @@ public class ClaimDetailServiceImpl implements ClaimDetailService {
     private final BankTypeRepository bankTypeRepository;
     private final ClaimAccountingEventRepository claimAccountingEventRepository;
     private final RelationTypeRepository relationTypeRepository;
+    private final WrongRemitanceRepository wrongRemitanceRepository;
 
     @Override
     @Transactional
@@ -160,6 +164,7 @@ public class ClaimDetailServiceImpl implements ClaimDetailService {
         savePartialWithdrawalDetail(requestResponse, claimDetail);
         saveBeneficiarySettlementDetail(requestResponse, claimDetail);
         saveLegalRecoveryDetail(requestResponse, claimDetail);
+        saveWrongRemitanceDetail(requestResponse, claimDetail);
         // 5. Return response
         GeneralClaimDetailResponse response = generalClaimDetailMapper.mapToResponse(claimDetail);
         log.info("Claim detail created successfully for application: {}", requestResponse.getApplicationNumber());
@@ -815,6 +820,23 @@ private List<ClaimDeductionItemResponseDto> mapDeductionItems(List<ClaimDeductio
         }
         return legalRecoveryDetail;
     }
+    private List<WrongRemitance> saveWrongRemitanceDetail(GeneralClaimResponse requestResponse, ClaimDetail claimDetail) {
+        // FIXED: Check if legalRecoveryDetails exists and has ID
+        List<WrongRemitance> wrongRemitance  = new ArrayList<>();
+        if (requestResponse.getWrongRemitanceResponseDTOs() != null) {
+            return null;
+        }
+        List<WrongRemitance> responses = requestResponse.getWrongRemitanceResponseDTOs()
+            .stream()
+            .map(m -> {
+                WrongRemitance wrongRemintance = wrongRemitanceRepository.findById(m.getId()).orElseThrow(() -> ClaimException.notFound("wrong remitance not found with id: " + m.getId()));
+                wrongRemintance.setClaimDetail(claimDetail);
+                wrongRemitanceRepository.save(wrongRemintance);
+                return wrongRemintance;
+            })
+            .toList();
+        return responses;
+    }
 
     private List<ClaimBankDetail> saveBankDetails(List<ClaimApplicationBankResponseDto> bankDetails,
             ClaimDetail claimDetail) {
@@ -1041,6 +1063,7 @@ private List<ClaimDeductionItemResponseDto> mapDeductionItems(List<ClaimDeductio
                 .map(componentResponse -> {
                     ClaimForfeitedComponent component = allClaimDetailMapper
                             .toForfeitedComponentEntity(componentResponse);
+                    component.setComponentType(componentResponse.getComponentType().equals("FORFEITED") ? componentResponse.getComponentType() : "FORFEITED");
                     component.setClaimDetail(claimDetail);
                     component.setAmount(componentResponse.getAmount());
                     return component;

@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "COA_SUB_ACCOUNT", schema = "PPFMS_CLAIMS_WORKFLOW_SERVICE_SCHEMA")
+@Table(name = "COA_SUB_ACCOUNT", schema = "PPFMS_Master_SERVICE_SCHEMA")
 @Data
 @Builder
 @NoArgsConstructor

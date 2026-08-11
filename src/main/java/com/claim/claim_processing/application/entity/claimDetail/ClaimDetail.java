@@ -168,6 +168,9 @@ public class ClaimDetail {
     @OneToOne(mappedBy = "claimDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private LegalRecoveryDetail legalRecoveryDetail;
 
+    @OneToMany(mappedBy = "claimDetail", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WrongRemitance> wrongRemitances;
+
     // // ---------- One-to-Many Common Child Tables ----------
 
     @OneToMany(mappedBy = "claimDetail", cascade = CascadeType.ALL, orphanRemoval = true)

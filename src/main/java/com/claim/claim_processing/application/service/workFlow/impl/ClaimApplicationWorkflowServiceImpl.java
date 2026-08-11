@@ -14,14 +14,18 @@ import com.claim.claim_processing.common.repository.common.*;
 import com.claim.claim_processing.common.repository.others.NppfOfficeRepository;
 import com.claim.claim_processing.common.repository.others.StatusMasterRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ClaimApplicationWorkflowServiceImpl implements ClaimApplicationWorkflowService {
 
     private final ClaimApplicationWorkflowRepository workflowRepository;
@@ -109,18 +113,44 @@ public class ClaimApplicationWorkflowServiceImpl implements ClaimApplicationWork
     @Override
     @Transactional(readOnly = true)
     public List<String> getVerifiedApplication() {
-        List<ClaimApplicationWorkflow> workflows;
-        workflows = workflowRepository.findWorkflowsByActionAndNotAction(2L, 3L);
+        try {
+            log.debug("Fetching verified applications");
+            
+            // ✅ Using JOIN FETCH - claim application is already loaded
+            List<ClaimApplicationWorkflow> workflows = workflowRepository
+                .findWorkflowsByActionAndNotAction(2L, 3L);
 
-        if (workflows.isEmpty()) {
-            workflows = workflowRepository.findWorkflowsByAction_Id(2L);
             if (workflows.isEmpty()) {
-                return List.of();
+                log.debug("No workflows found with action 2 and not 3, trying action 2 only");
+                workflows = workflowRepository.findWorkflowsByActionWithClaimApplication(2L);
+                if (workflows.isEmpty()) {
+                    log.debug("No workflows found with action 2");
+                    return List.of();
+                }
             }
+            
+            // ✅ Safely map - no lazy loading needed
+            return workflows.stream()
+                .map(workflow -> {
+                    try {
+                        if (workflow.getClaimApplication() == null) {
+                            log.warn("Workflow {} has null claim application", workflow.getId());
+                            return null;
+                        }
+                        return workflow.getClaimApplication().getApplicationNumber();
+                    } catch (Exception e) {
+                        log.error("Error getting application number for workflow: {}", workflow.getId(), e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .distinct() // Remove any duplicates
+                .collect(java.util.stream.Collectors.toList());
+                
+        } catch (Exception e) {
+            log.error("Error in getVerifiedApplication", e);
+            return List.of();
         }
-        return workflows.stream()
-                .map(workflow -> workflow.getClaimApplication().getApplicationNumber())
-                .toList();
     }
 
     private StageMaster getStage(Long stageId, String label) {

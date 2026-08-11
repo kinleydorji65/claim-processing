@@ -5,12 +5,13 @@ import com.claim.claim_processing.common.repository.others.CutoffServiceMasterRe
 import com.claim.claim_processing.exceptions.ClaimException;
 import com.claim.claim_processing.integration.contribution.dto.MemberContributionSummary;
 import com.claim.claim_processing.integration.contribution.dto.ExcessServiceResultDto;
-import com.claim.claim_processing.integration.contribution.dto.ExcessYearDetailDto;
 import com.claim.claim_processing.integration.contribution.entity.ArrConfiguration;
 import com.claim.claim_processing.integration.contribution.entity.ContributionBifurcationDetail;
+import com.claim.claim_processing.integration.contribution.entity.ContributionBifurcationHeader;
 import com.claim.claim_processing.integration.contribution.entity.MemberBalanceSnapshot;
 import com.claim.claim_processing.integration.contribution.repository.ArrConfigurationRepository;
 import com.claim.claim_processing.integration.contribution.repository.ContributionBifurcationDetailRepository;
+import com.claim.claim_processing.integration.contribution.repository.ContributionBifurcationHeaderRepository;
 import com.claim.claim_processing.integration.contribution.repository.MemberBalanceSnapshotRepository;
 import com.claim.claim_processing.integration.contribution.service.MemberContributionService;
 import lombok.Builder;
@@ -21,30 +22,75 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service Implementation for Member Contribution Management
+ * 
+ * ALL calculations are derived from Contribution Bifurcation Detail and Header tables ONLY.
+ * NO dependency on MemberBalanceSnapshot table.
+ * 
+ * This service handles all contribution-related calculations including:
+ * - Fetching and aggregating member contributions
+ * - Calculating PF (Provident Fund) and Pension balances
+ * - Computing interest on contributions using ARR (Annual Rate of Return)
+ * - Handling excess service months for pension calculations
+ * - Calculating contribution and non-contribution months
+ * 
+ * Key Concepts:
+ * - PF (Provident Fund): Employee and Employer contributions with interest
+ * - Pension: Member and Employer pension contributions with interest
+ * - GC (Government Contribution): Government contributions to PF
+ * - VC (Voluntary Contribution): Voluntary contributions by member
+ * - ARR (Annual Rate of Return): Interest rate applied to balances
+ * - Excess Service: Service months that should be excluded from pension
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MemberContributionServiceImpl implements MemberContributionService {
 
+    // ================================================================
+    // DEPENDENCY INJECTIONS
+    // ================================================================
+    
     private final MemberBalanceSnapshotRepository snapshotRepo;
     private final ContributionBifurcationDetailRepository contributionDetailRepo;
-    private final CutoffServiceMasterRepository cutoffServiceMasterRepository;
+    private final ContributionBifurcationHeaderRepository contributionHeaderRepo;
     private final ArrConfigurationRepository arrRepo;
-    
     private final ExcessServiceCalculator excessServiceCalculator;
 
+    // ================================================================
+    // CONSTANTS
+    // ================================================================
+    
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final RoundingMode RM = RoundingMode.HALF_UP;
     private static final int TRANSITION_YEAR = 2022;
 
+    private static final Map<String, Integer> MONTH_NAME_TO_NUMBER = new HashMap<>();
+    static {
+        MONTH_NAME_TO_NUMBER.put("JANUARY", 1);
+        MONTH_NAME_TO_NUMBER.put("FEBRUARY", 2);
+        MONTH_NAME_TO_NUMBER.put("MARCH", 3);
+        MONTH_NAME_TO_NUMBER.put("APRIL", 4);
+        MONTH_NAME_TO_NUMBER.put("MAY", 5);
+        MONTH_NAME_TO_NUMBER.put("JUNE", 6);
+        MONTH_NAME_TO_NUMBER.put("JULY", 7);
+        MONTH_NAME_TO_NUMBER.put("AUGUST", 8);
+        MONTH_NAME_TO_NUMBER.put("SEPTEMBER", 9);
+        MONTH_NAME_TO_NUMBER.put("OCTOBER", 10);
+        MONTH_NAME_TO_NUMBER.put("NOVEMBER", 11);
+        MONTH_NAME_TO_NUMBER.put("DECEMBER", 12);
+    }
+
     // ================================================================
-    // MAIN METHOD
+    // MAIN PUBLIC METHODS
     // ================================================================
 
     @Override
@@ -57,6 +103,11 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         return getContributionSummary(memberDetail, relieveDate, asOfDate);
     }
 
+    /**
+     * Get contribution summary for a member as of a specific date
+     * ALL calculations are derived from Contribution Bifurcation Detail and Header tables ONLY
+     * NO dependency on MemberBalanceSnapshot
+     */
     public MemberContributionSummary getContributionSummary(
             MemberDetailResponseDto memberDetail,
             LocalDate relieveDate,
@@ -70,10 +121,10 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             String nppfNumber = memberDetail.getNppfNumber();
 
             // ================================================================
-            // STEP 1: READ FROM CONTRIBUTION_BIFURCATION_DETAIL
+            // STEP 1: FETCH ALL POSTED CONTRIBUTIONS FROM BIFURCATION DETAIL
             // ================================================================
             List<ContributionBifurcationDetail> allContributions = contributionDetailRepo
-                    .findByCidAndNppfNumberOrderByCreatedAtAsc(cid, nppfNumber);
+                    .findByCidAndNppfNumberAndPostingStatusOrderByCreatedAtAsc(cid, nppfNumber, "POSTED");
 
             if (allContributions.isEmpty()) {
                 log.error("❌ No contributions found for member: {}", nppfNumber);
@@ -83,27 +134,24 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             log.info("✅ Found {} contribution records", allContributions.size());
 
             // ================================================================
-            // STEP 2: GET LAST CONTRIBUTION DATE
+            // STEP 2: GET HEADER INFO FROM BIFURCATION HEADER TABLE
             // ================================================================
-            LocalDate lastContributionDate = getLastContributionDate(allContributions);
+            Map<Long, ContributionHeaderInfo> headerInfoMap = getHeaderInfoForContributions(allContributions);
+            log.info("Found header info for {} contributions", headerInfoMap.size());
+
+            // ================================================================
+            // STEP 3: GET LAST CONTRIBUTION DATE
+            // ================================================================
+            LocalDate lastContributionDate = getLastContributionDate(allContributions, headerInfoMap);
             log.info("Last Contribution Date: {}", lastContributionDate);
 
             // ================================================================
-            // STEP 3: GET RATE AND YEAR BASIS
+            // STEP 4: GET INTEREST RATE AND YEAR BASIS
             // ================================================================
             String currentAccountingYear = getAccountingYearForDate(asOfDate);
             log.info("Current Accounting Year: {}", currentAccountingYear);
             
             ArrConfiguration arrConfig = getArrConfiguration(currentAccountingYear);
-
-            log.info("ARR Config found: {}", arrConfig != null ? "✅ YES" : "❌ NO");
-            if (arrConfig != null) {
-                log.info("  Rate: {}", arrConfig.getArrRate());
-                log.info("  Year Basis: {}", arrConfig.getYearBasis());
-                log.info("  Year Start: {}", arrConfig.getYearStartDate());
-                log.info("  Year End: {}", arrConfig.getYearEndDate());
-            }
-            
             BigDecimal rate = BigDecimal.ZERO;
             int yearBasis = 365;
 
@@ -115,83 +163,40 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                             arrConfig.getYearEndDate()) + 1;
                     yearBasis = (int) days;
                 }
-                log.info("Interest Rate for {}: {}%, Year Basis: {} ({} to {})", 
-                        currentAccountingYear, rate, yearBasis, 
-                        arrConfig.getYearStartDate(), arrConfig.getYearEndDate());
+                log.info("Interest Rate: {}%, Year Basis: {}", rate, yearBasis);
             } else {
-                log.warn("⚠️ No ARR configuration found for year: {}, using defaults", currentAccountingYear);
+                log.warn("⚠️ No ARR configuration found, using defaults");
                 rate = BigDecimal.valueOf(6.5);
                 yearBasis = 365;
             }
 
-            log.info("✅ Final Interest Rate: {}%, Year Basis: {}", rate, yearBasis);
+            // ================================================================
+            // STEP 5: CALCULATE PF OPENING BALANCES FROM CONTRIBUTIONS
+            // ================================================================
+            PfOpeningBalanceResult pfResult = calculatePfOpeningBalanceFromContributions(
+                allContributions, headerInfoMap, asOfDate.getYear(), rate, yearBasis);
+            
+            BigDecimal openingBalancePfEc = pfResult.getPfEc();
+            BigDecimal openingBalancePfMc = pfResult.getPfMc();
+            BigDecimal previousInterestPfEc = pfResult.getInterestPfEc();
+            BigDecimal previousInterestPfMc = pfResult.getInterestPfMc();
 
             // ================================================================
-            // STEP 4: GET PF OPENING BALANCES (FROM SNAPSHOT OR CALCULATE)
+            // STEP 6: CALCULATE GC & VC OPENING BALANCES FROM CONTRIBUTIONS
             // ================================================================
-            MemberBalanceSnapshot previousSnapshot = getPreviousYearSnapshot(cid, nppfNumber, asOfDate.getYear());
-
-            // PF Opening balances
-            BigDecimal openingBalancePfEc = BigDecimal.ZERO;
-            BigDecimal openingBalancePfMc = BigDecimal.ZERO;
-            BigDecimal previousInterestPfEc = BigDecimal.ZERO;
-            BigDecimal previousInterestPfMc = BigDecimal.ZERO;
-
-            // GC & VC Opening balances
-            BigDecimal openingBalanceGc = BigDecimal.ZERO;
-            BigDecimal openingBalanceVc = BigDecimal.ZERO;
-            BigDecimal previousInterestGc = BigDecimal.ZERO;
-            BigDecimal previousInterestVc = BigDecimal.ZERO;
-
-            boolean useSnapshot = false;
-
-            if (previousSnapshot != null) {
-                // Check if snapshot has meaningful PF data
-                BigDecimal snapshotTotal = n(previousSnapshot.getPfEc())
-                        .add(n(previousSnapshot.getPfMc()));
-                
-                if (snapshotTotal.compareTo(BigDecimal.ZERO) > 0) {
-                    log.info("Using previous years' data from snapshot: {}", previousSnapshot.getAccountingYear());
-                    useSnapshot = true;
-
-                    openingBalancePfEc = n(previousSnapshot.getPfEc());
-                    openingBalancePfMc = n(previousSnapshot.getPfMc());
-                    openingBalanceGc = n(previousSnapshot.getGc());
-                    openingBalanceVc = n(previousSnapshot.getVc());
-
-                    previousInterestPfEc = n(previousSnapshot.getInterestEc());
-                    previousInterestPfMc = n(previousSnapshot.getInterestMc());
-                    previousInterestGc = n(previousSnapshot.getInterestGc());
-                    previousInterestVc = n(previousSnapshot.getInterestVc());
-
-                    log.info("PF Opening Balance from snapshot - PF_EC: {}, PF_MC: {}, PF_IEC: {}, PF_IMC: {}",
-                            openingBalancePfEc, openingBalancePfMc, previousInterestPfEc, previousInterestPfMc);
-                    log.info("GC/VC Opening Balance from snapshot - GC: {}, VC: {}", openingBalanceGc, openingBalanceVc);
-                }
-            }
-
-            // ✅ If snapshot is not available or has zero balance, calculate from contributions
-            if (!useSnapshot) {
-                log.info("Snapshot has no PF data - calculating PF opening balance from historical contributions");
-                PfOpeningBalanceResult pfResult = calculatePfOpeningBalanceFromContributions(
-                    allContributions, asOfDate.getYear(), rate, yearBasis);
-                
-                openingBalancePfEc = pfResult.getPfEc();
-                openingBalancePfMc = pfResult.getPfMc();
-                previousInterestPfEc = pfResult.getInterestPfEc();
-                previousInterestPfMc = pfResult.getInterestPfMc();
-                
-                log.info("PF Opening Balance from calculation - PF_EC: {}, PF_MC: {}, PF_IEC: {}, PF_IMC: {}",
-                        openingBalancePfEc, openingBalancePfMc, previousInterestPfEc, previousInterestPfMc);
-            }
+            GcVcOpeningBalanceResult gcVcResult = calculateGcVcOpeningBalanceFromContributions(
+                allContributions, headerInfoMap, asOfDate.getYear(), rate, yearBasis);
+            
+            BigDecimal openingBalanceGc = gcVcResult.getGc();
+            BigDecimal openingBalanceVc = gcVcResult.getVc();
+            BigDecimal previousInterestGc = gcVcResult.getInterestGc();
+            BigDecimal previousInterestVc = gcVcResult.getInterestVc();
 
             // ================================================================
-            // STEP 5: CALCULATE CURRENT YEAR INTEREST ON OPENING BALANCE (PF, GC, VC)
+            // STEP 7: CALCULATE INTEREST ON OPENING BALANCES
             // ================================================================
             LocalDate yearStart = LocalDate.of(asOfDate.getYear(), 1, 1);
             long daysInCurrentYear = ChronoUnit.DAYS.between(yearStart, asOfDate);
-
-            log.info("Days in current year (Jan 1 to asOfDate): {}", daysInCurrentYear);
 
             BigDecimal interestOnOpeningPfEc = calculateInterestOnBalance(
                     openingBalancePfEc, rate, daysInCurrentYear, yearBasis);
@@ -202,130 +207,33 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             BigDecimal interestOnOpeningVc = calculateInterestOnBalance(
                     openingBalanceVc, rate, daysInCurrentYear, yearBasis);
 
-            log.info("Interest on Opening Balances for current year:");
-            log.info("  PF_EC: {}", interestOnOpeningPfEc);
-            log.info("  PF_MC: {}", interestOnOpeningPfMc);
-            log.info("  GC: {}", interestOnOpeningGc);
-            log.info("  VC: {}", interestOnOpeningVc);
-
             // ================================================================
-            // STEP 6: CALCULATE CURRENT YEAR CONTRIBUTIONS AND THEIR INTEREST
+            // STEP 8: CALCULATE CURRENT YEAR CONTRIBUTIONS
             // ================================================================
-            BigDecimal currentYearPfEc = BigDecimal.ZERO;
-            BigDecimal currentYearPfMc = BigDecimal.ZERO;
-            BigDecimal currentYearPensionEc = BigDecimal.ZERO;
-            BigDecimal currentYearPensionMc = BigDecimal.ZERO;
-            BigDecimal currentYearGc = BigDecimal.ZERO;
-            BigDecimal currentYearVc = BigDecimal.ZERO;
-
-            BigDecimal interestOnCurrentYearPfEc = BigDecimal.ZERO;
-            BigDecimal interestOnCurrentYearPfMc = BigDecimal.ZERO;
-            BigDecimal interestOnCurrentYearPensionEc = BigDecimal.ZERO;
-            BigDecimal interestOnCurrentYearPensionMc = BigDecimal.ZERO;
-            BigDecimal interestOnCurrentYearGc = BigDecimal.ZERO;
-            BigDecimal interestOnCurrentYearVc = BigDecimal.ZERO;
-
-            long daysForCurrentYearContributions = daysInCurrentYear;
-
-            log.info("=== Processing Current Year ({}) Contributions ===", asOfDate.getYear());
+            CurrentYearContributionResult currentYearResult = calculateCurrentYearContributions(
+                allContributions, headerInfoMap, asOfDate, rate, yearBasis);
             
-            int totalPosted = 0;
-            int totalCurrentYear = 0;
-            int totalSkipped = 0;
-
-            for (ContributionBifurcationDetail contrib : allContributions) {
-                String status = contrib.getPostingStatus();
-                if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
-                    totalSkipped++;
-                    continue;
-                }
-                totalPosted++;
-
-                LocalDate contribDate = contrib.getCreatedAt().toLocalDate();
-
-                if (contribDate.getYear() != asOfDate.getYear()) {
-                    continue;
-                }
-                totalCurrentYear++;
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Processing contribution for date: {}, ID: {}", contribDate, contrib.getId());
-                }
-
-                // PF_EC
-                BigDecimal pfEc = contrib.getPfEc() != null ? contrib.getPfEc() : BigDecimal.ZERO;
-                if (pfEc.compareTo(BigDecimal.ZERO) > 0) {
-                    currentYearPfEc = currentYearPfEc.add(pfEc);
-                    BigDecimal interest = calculateInterestOnBalance(pfEc, rate, daysForCurrentYearContributions, yearBasis);
-                    interestOnCurrentYearPfEc = interestOnCurrentYearPfEc.add(interest);
-                }
-
-                // PF_MC
-                BigDecimal pfMc = contrib.getPfMc() != null ? contrib.getPfMc() : BigDecimal.ZERO;
-                if (pfMc.compareTo(BigDecimal.ZERO) > 0) {
-                    currentYearPfMc = currentYearPfMc.add(pfMc);
-                    BigDecimal interest = calculateInterestOnBalance(pfMc, rate, daysForCurrentYearContributions, yearBasis);
-                    interestOnCurrentYearPfMc = interestOnCurrentYearPfMc.add(interest);
-                }
-
-                // PENSION_EC (P_EC)
-                BigDecimal pensionEc = contrib.getPensionEc() != null ? contrib.getPensionEc() : BigDecimal.ZERO;
-                if (pensionEc.compareTo(BigDecimal.ZERO) > 0) {
-                    currentYearPensionEc = currentYearPensionEc.add(pensionEc);
-                    BigDecimal interest = calculateInterestOnBalance(pensionEc, rate, daysForCurrentYearContributions, yearBasis);
-                    interestOnCurrentYearPensionEc = interestOnCurrentYearPensionEc.add(interest);
-                }
-
-                // PENSION_MC (P_MC)
-                BigDecimal pensionMc = contrib.getPensionMc() != null ? contrib.getPensionMc() : BigDecimal.ZERO;
-                if (pensionMc.compareTo(BigDecimal.ZERO) > 0) {
-                    currentYearPensionMc = currentYearPensionMc.add(pensionMc);
-                    BigDecimal interest = calculateInterestOnBalance(pensionMc, rate, daysForCurrentYearContributions, yearBasis);
-                    interestOnCurrentYearPensionMc = interestOnCurrentYearPensionMc.add(interest);
-                }
-
-                // GC
-                BigDecimal gc = contrib.getGc() != null ? contrib.getGc() : BigDecimal.ZERO;
-                if (gc.compareTo(BigDecimal.ZERO) > 0) {
-                    currentYearGc = currentYearGc.add(gc);
-                    BigDecimal interest = calculateInterestOnBalance(gc, rate, daysForCurrentYearContributions, yearBasis);
-                    interestOnCurrentYearGc = interestOnCurrentYearGc.add(interest);
-                }
-
-                // VC
-                BigDecimal vc = contrib.getVc() != null ? contrib.getVc() : BigDecimal.ZERO;
-                if (vc.compareTo(BigDecimal.ZERO) > 0) {
-                    currentYearVc = currentYearVc.add(vc);
-                    BigDecimal interest = calculateInterestOnBalance(vc, rate, daysForCurrentYearContributions, yearBasis);
-                    interestOnCurrentYearVc = interestOnCurrentYearVc.add(interest);
-                }
-            }
-
-            log.info("Total POSTED contributions: {}", totalPosted);
-            log.info("Total SKIPPED (not POSTED): {}", totalSkipped);
-            log.info("Total contributions for {}: {}", asOfDate.getYear(), totalCurrentYear);
-            log.info("Current Year PF_EC: {}", currentYearPfEc);
-            log.info("Current Year PF_MC: {}", currentYearPfMc);
-            log.info("Current Year P_EC: {}", currentYearPensionEc);
-            log.info("Current Year P_MC: {}", currentYearPensionMc);
-            log.info("Current Year GC: {}", currentYearGc);
-            log.info("Current Year VC: {}", currentYearVc);
-            log.info("Interest on Current Year PF_EC: {}", interestOnCurrentYearPfEc);
-            log.info("Interest on Current Year PF_MC: {}", interestOnCurrentYearPfMc);
-            log.info("Interest on Current Year P_EC: {}", interestOnCurrentYearPensionEc);
-            log.info("Interest on Current Year P_MC: {}", interestOnCurrentYearPensionMc);
-            log.info("Interest on Current Year GC: {}", interestOnCurrentYearGc);
-            log.info("Interest on Current Year VC: {}", interestOnCurrentYearVc);
+            BigDecimal currentYearPfEc = currentYearResult.getPfEc();
+            BigDecimal currentYearPfMc = currentYearResult.getPfMc();
+            BigDecimal currentYearPensionEc = currentYearResult.getPensionEc();
+            BigDecimal currentYearPensionMc = currentYearResult.getPensionMc();
+            BigDecimal currentYearGc = currentYearResult.getGc();
+            BigDecimal currentYearVc = currentYearResult.getVc();
+            BigDecimal interestOnCurrentYearPfEc = currentYearResult.getInterestPfEc();
+            BigDecimal interestOnCurrentYearPfMc = currentYearResult.getInterestPfMc();
+            BigDecimal interestOnCurrentYearPensionEc = currentYearResult.getInterestPensionEc();
+            BigDecimal interestOnCurrentYearPensionMc = currentYearResult.getInterestPensionMc();
+            BigDecimal interestOnCurrentYearGc = currentYearResult.getInterestGc();
+            BigDecimal interestOnCurrentYearVc = currentYearResult.getInterestVc();
 
             // ================================================================
-            // STEP 7: CHECK FOR EXCESS SERVICE AND CALCULATE PENSION OPENING BALANCE
+            // STEP 9: CHECK FOR EXCESS SERVICE
             // ================================================================
             ExcessServiceResultDto excessResult = null;
             List<YearMonth> monthsToExclude = new ArrayList<>();
             PensionRebuildResult rebuildResult = null;
             boolean hasExcessService = false;
 
-            // Pension opening balances - will be calculated differently based on excess service
             BigDecimal openingBalancePensionEc = BigDecimal.ZERO;
             BigDecimal openingBalancePensionMc = BigDecimal.ZERO;
             BigDecimal openingBalancePensionIec = BigDecimal.ZERO;
@@ -336,153 +244,70 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                 try {
                     excessResult = excessServiceCalculator.calculateExcessService(memberDetail);
                     if (excessResult != null && excessResult.isEligible()) {
-                        log.info("✅ Excess Service found: {}", excessResult.getTotalExcessAmount());
+                        log.info("✅ Excess Service found");
                         hasExcessService = true;
                         
                         LocalDate excessStartDate = excessResult.getExcessStartDate();
-                        log.info("Excess Start Date: {}", excessStartDate);
                         
-                        // ✅ CALCULATE OPENING BALANCE FROM ALL CONTRIBUTIONS BEFORE EXCESS PERIOD
                         OpeningBalanceResult openingResult = calculateOpeningBalanceFromAllContributions(
-                            allContributions,
-                            excessStartDate,
-                            rate,
-                            yearBasis,
-                            asOfDate
-                        );
+                            allContributions, headerInfoMap, excessStartDate, rate, yearBasis, asOfDate);
                         
                         openingBalancePensionEc = openingResult.getPensionEc();
                         openingBalancePensionMc = openingResult.getPensionMc();
                         openingBalancePensionIec = openingResult.getInterestPensionEc();
                         openingBalancePensionImc = openingResult.getInterestPensionMc();
                         
-                        log.info("=== Opening Balance BEFORE Excess Period ===");
-                        log.info("  PEC: {}", openingBalancePensionEc);
-                        log.info("  PMC: {}", openingBalancePensionMc);
-                        log.info("  PIEC: {}", openingBalancePensionIec);
-                        log.info("  PIMC: {}", openingBalancePensionImc);
-                        log.info("  Total Principal: {}", openingBalancePensionEc.add(openingBalancePensionMc));
-                        log.info("  Total Interest: {}", openingBalancePensionIec.add(openingBalancePensionImc));
-                        
                         monthsToExclude = getMonthsToExcludeForExcess(excessResult, asOfDate);
-                        log.info("Months to exclude from pension: {}", monthsToExclude.size());
                         
-                        // ONLY rebuild if there are months to exclude
                         if (!monthsToExclude.isEmpty()) {
                             rebuildResult = rebuildPensionWithoutExcess(
-                                allContributions,
-                                monthsToExclude,
-                                openingBalancePensionEc,
-                                openingBalancePensionMc,
-                                openingBalancePensionIec,
-                                openingBalancePensionImc,
-                                rate,
-                                yearBasis,
-                                asOfDate
-                            );
-                            
-                            log.info("=== Pension Rebuild Complete ===");
-                            log.info("Adjusted PEC: {}", rebuildResult.getAdjustedPensionEc());
-                            log.info("Adjusted PMC: {}", rebuildResult.getAdjustedPensionMc());
-                            log.info("Adjusted PIEC: {}", rebuildResult.getAdjustedPensionIec());
-                            log.info("Adjusted PIMC: {}", rebuildResult.getAdjustedPensionImc());
-                            log.info("Excluded Principal: {}", rebuildResult.getExcludedPrincipal());
-                            log.info("Excluded Interest: {}", rebuildResult.getExcludedInterest());
+                                allContributions, headerInfoMap, monthsToExclude,
+                                openingBalancePensionEc, openingBalancePensionMc,
+                                openingBalancePensionIec, openingBalancePensionImc,
+                                rate, yearBasis, asOfDate);
                         }
-                    } else {
-                        log.info("❌ No excess service for this member");
                     }
                 } catch (Exception e) {
                     log.error("❌ Error calculating excess service: {}", e.getMessage(), e);
                 }
-            } else {
-                log.info("❌ Excess service not applicable (relieveDate: {}, pensionEligible: {})", 
-                        relieveDate, isPensionEligible(memberDetail));
             }
 
-            // If no excess service, try snapshot first, then calculate from contributions
+            // If no excess service, calculate pension opening from contributions
             if (!hasExcessService) {
-                boolean pensionSnapshotUsed = false;
-                if (previousSnapshot != null) {
-                    BigDecimal snapshotPensionTotal = n(previousSnapshot.getPensionEc())
-                            .add(n(previousSnapshot.getInterestPension()));
-                    
-                    if (snapshotPensionTotal.compareTo(BigDecimal.ZERO) > 0) {
-                        log.info("Using snapshot for pension opening - PEC: {}, PMC: {}, PIEC: {}, PIMC: {}",
-                                previousSnapshot.getPensionEc(), 0, 
-                                previousSnapshot.getInterestPension(), previousSnapshot.getInterestPension());
-                        
-                        openingBalancePensionEc = n(previousSnapshot.getPensionEc());
-                        openingBalancePensionMc = n(BigDecimal.valueOf(0.0));
-                        openingBalancePensionIec = n(previousSnapshot.getInterestPension());
-                        openingBalancePensionImc = n(previousSnapshot.getInterestPension());
-                        pensionSnapshotUsed = true;
-                    }
-                }
+                LocalDate currentYearStart = LocalDate.of(asOfDate.getYear(), 1, 1);
+                OpeningBalanceResult pensionResult = calculateOpeningBalanceFromAllContributions(
+                    allContributions, headerInfoMap, currentYearStart, rate, yearBasis, asOfDate);
                 
-                // If no snapshot pension data, calculate from contributions
-                if (!pensionSnapshotUsed) {
-                    log.info("No snapshot pension data - calculating pension opening from contributions before current year");
-                    
-                    // Calculate pension opening from contributions BEFORE current year
-                    LocalDate currentYearStart = LocalDate.of(asOfDate.getYear(), 1, 1);
-                    OpeningBalanceResult pensionResult = calculateOpeningBalanceFromAllContributions(
-                        allContributions,
-                        currentYearStart,
-                        rate,
-                        yearBasis,
-                        asOfDate
-                    );
-                    
-                    openingBalancePensionEc = pensionResult.getPensionEc();
-                    openingBalancePensionMc = pensionResult.getPensionMc();
-                    openingBalancePensionIec = pensionResult.getInterestPensionEc();
-                    openingBalancePensionImc = pensionResult.getInterestPensionMc();
-                    
-                    log.info("Calculated pension opening from contributions - PEC: {}, PMC: {}, PIEC: {}, PIMC: {}",
-                            openingBalancePensionEc, openingBalancePensionMc, 
-                            openingBalancePensionIec, openingBalancePensionImc);
-                }
+                openingBalancePensionEc = pensionResult.getPensionEc();
+                openingBalancePensionMc = pensionResult.getPensionMc();
+                openingBalancePensionIec = pensionResult.getInterestPensionEc();
+                openingBalancePensionImc = pensionResult.getInterestPensionMc();
             }
 
             // ================================================================
-            // STEP 8: CALCULATE FINAL TOTALS
+            // STEP 10: CALCULATE FINAL TOTALS
             // ================================================================
             
-            // PF components - ALWAYS from snapshot or calculated
             BigDecimal finalPfEc = openingBalancePfEc.add(currentYearPfEc);
             BigDecimal finalPfMc = openingBalancePfMc.add(currentYearPfMc);
             
-            // Pension components - use adjusted values if excess exists
             BigDecimal finalPensionEc;
             BigDecimal finalPensionMc;
             BigDecimal finalInterestPensionEc;
             BigDecimal finalInterestPensionMc;
             
             if (hasExcessService && rebuildResult != null) {
-                // Use adjusted values (excess months excluded from opening balance)
                 finalPensionEc = rebuildResult.getAdjustedPensionEc();
                 finalPensionMc = rebuildResult.getAdjustedPensionMc();
                 finalInterestPensionEc = rebuildResult.getAdjustedPensionIec();
                 finalInterestPensionMc = rebuildResult.getAdjustedPensionImc();
-                log.info("✅ Using ADJUSTED pension values (excess excluded from opening balance)");
-            } else if (hasExcessService && rebuildResult == null) {
-                // Excess exists but no rebuild needed (no months to exclude)
-                finalPensionEc = openingBalancePensionEc.add(currentYearPensionEc);
-                finalPensionMc = openingBalancePensionMc.add(currentYearPensionMc);
-                finalInterestPensionEc = openingBalancePensionIec.add(interestOnCurrentYearPensionEc);
-                finalInterestPensionMc = openingBalancePensionImc.add(interestOnCurrentYearPensionMc);
-                log.info("✅ Using pension values (excess exists but no months to exclude)");
             } else {
-                // No excess service - use original values
                 finalPensionEc = openingBalancePensionEc.add(currentYearPensionEc);
                 finalPensionMc = openingBalancePensionMc.add(currentYearPensionMc);
                 finalInterestPensionEc = openingBalancePensionIec.add(interestOnCurrentYearPensionEc);
                 finalInterestPensionMc = openingBalancePensionImc.add(interestOnCurrentYearPensionMc);
-                log.info("✅ Using ORIGINAL pension values (no excess adjustment)");
             }
             
-            // GC & VC components - ALWAYS from snapshot or calculated
             BigDecimal finalGc = openingBalanceGc.add(currentYearGc);
             BigDecimal finalVc = openingBalanceVc.add(currentYearVc);
             
@@ -500,11 +325,11 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                     .add(interestOnCurrentYearVc);
 
             // ================================================================
-            // STEP 9: BUILD COMPONENT GROUPS
+            // STEP 11: BUILD COMPONENT GROUPS
             // ================================================================
             List<MemberContributionSummary.ComponentGroup> componentGroups = new ArrayList<>();
 
-            // PF Components (ALWAYS included)
+            // PF Components
             if (finalPfEc.compareTo(BigDecimal.ZERO) > 0) {
                 componentGroups.add(createComponentGroup("PF_EC", "Employee PF Contribution",
                         finalPfEc, BigDecimal.ZERO));
@@ -522,7 +347,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                         BigDecimal.ZERO, finalInterestPfMc));
             }
             
-            // Pension Components (ALWAYS included, but values may be adjusted)
+            // Pension Components
             if (finalPensionEc.compareTo(BigDecimal.ZERO) > 0) {
                 componentGroups.add(createComponentGroup("P_EC", "Employer Pension Contribution",
                         finalPensionEc, BigDecimal.ZERO));
@@ -540,7 +365,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                         BigDecimal.ZERO, finalInterestPensionMc));
             }
             
-            // GC & VC Components (ALWAYS included)
+            // GC & VC Components
             if (finalGc.compareTo(BigDecimal.ZERO) > 0) {
                 componentGroups.add(createComponentGroup("GC", "Government Contribution",
                         finalGc, BigDecimal.ZERO));
@@ -559,7 +384,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             }
 
             // ================================================================
-            // STEP 10: CALCULATE TOTALS
+            // STEP 12: CALCULATE TOTALS
             // ================================================================
             BigDecimal totalPrincipal = finalPfEc.add(finalPfMc)
                     .add(finalPensionEc).add(finalPensionMc)
@@ -571,24 +396,16 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                     
             BigDecimal totalBalance = totalPrincipal.add(totalInterest);
 
-            log.info("=== FINAL TOTALS ===");
-            log.info("Total Principal: {}", totalPrincipal);
-            log.info("Total Interest: {}", totalInterest);
-            log.info("Total Balance: {}", totalBalance);
-            if (hasExcessService) {
-                log.info("⚠️ Note: Pension values have been adjusted to exclude excess service");
-            }
-
             // ================================================================
-            // STEP 11: BUILD SUMMARY
+            // STEP 13: BUILD SUMMARY
             // ================================================================
             MemberContributionSummary.MemberContributionSummaryBuilder builder = MemberContributionSummary.builder()
                     .nppfNumber(nppfNumber)
                     .schemeTypeId(getSchemeTypeId(memberDetail))
-                    .totalContributionMonths(calculateContributionMonths(allContributions, asOfDate))
-                    .totalContributionYears(calculateContributionMonths(allContributions, asOfDate) / 12)
+                    .totalContributionMonths(calculateContributionMonths(allContributions, headerInfoMap, asOfDate))
+                    .totalContributionYears(calculateContributionMonths(allContributions, headerInfoMap, asOfDate) / 12)
                     .totalNonContributionMonths(
-                            calculateNonContributionMonths(memberDetail, relieveDate, allContributions))
+                            calculateNonContributionMonths(memberDetail, relieveDate, allContributions, headerInfoMap))
                     .contributionEndDate(lastContributionDate)
                     .totalPrincipalAmount(totalPrincipal)
                     .totalInterestAmount(totalInterest)
@@ -598,34 +415,26 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                     .currentAccountingYear(currentAccountingYear)
                     .rate(rate)
                     
-                    // ============================================================
-                    // PF OPENING BALANCES
-                    // ============================================================
-                    .openingPfMc(openingBalancePfMc)          // PF Member Contribution
-                    .openingPfEc(openingBalancePfEc)          // PF Employer Contribution
-                    .openingPfImc(previousInterestPfMc)       // PF Interest on Member Contribution
-                    .openingPfIec(previousInterestPfEc)       // PF Interest on Employer Contribution
+                    // PF Opening Balances (ALL from contributions)
+                    .openingPfMc(openingBalancePfMc)
+                    .openingPfEc(openingBalancePfEc)
+                    .openingPfImc(previousInterestPfMc)
+                    .openingPfIec(previousInterestPfEc)
                     
-                    // ============================================================
-                    // PENSION OPENING BALANCES
-                    // ============================================================
+                    // Pension Opening Balances (ALL from contributions)
                     .openingPMc(hasExcessService && rebuildResult != null 
                             ? rebuildResult.getAdjustedOpeningPmc() 
-                            : openingBalancePensionMc)        // P Member Contribution
-                    
+                            : openingBalancePensionMc)
                     .openingPEc(hasExcessService && rebuildResult != null 
                             ? rebuildResult.getAdjustedOpeningPec() 
-                            : openingBalancePensionEc)        // P Employer Contribution
-                    
+                            : openingBalancePensionEc)
                     .openingPImc(hasExcessService && rebuildResult != null 
                             ? rebuildResult.getAdjustedOpeningPimc() 
-                            : openingBalancePensionImc)       // P Interest on Member Contribution
-                    
+                            : openingBalancePensionImc)
                     .openingPIec(hasExcessService && rebuildResult != null 
                             ? rebuildResult.getAdjustedOpeningPiec() 
-                            : openingBalancePensionIec)       // P Interest on Employer Contribution
+                            : openingBalancePensionIec)
                     
-                    // Excess Service Result (if available)
                     .excessService(excessResult);
 
             return builder.build();
@@ -637,21 +446,78 @@ public class MemberContributionServiceImpl implements MemberContributionService 
     }
 
     // ================================================================
-    // CALCULATE PF OPENING BALANCE FROM CONTRIBUTIONS
+    // HELPER METHODS - HEADER INFO
+    // ================================================================
+
+    private Map<Long, ContributionHeaderInfo> getHeaderInfoForContributions(
+            List<ContributionBifurcationDetail> contributions) {
+
+        Map<Long, ContributionHeaderInfo> headerInfoMap = new HashMap<>();
+
+        Set<Long> bifIds = contributions.stream()
+                .map(ContributionBifurcationDetail::getBifId)
+                .filter(id -> id != null && id > 0)
+                .collect(Collectors.toSet());
+
+        if (!bifIds.isEmpty()) {
+            List<ContributionBifurcationHeader> headers = contributionHeaderRepo.findAllById(bifIds);
+
+            for (ContributionBifurcationHeader header : headers) {
+                if (header.getBifId() != null) {
+                    String monthName = header.getMonthName();
+                    String year = header.getYear();
+                    Integer monthNumber = MONTH_NAME_TO_NUMBER.get(monthName.toUpperCase());
+
+                    if (monthNumber != null && year != null) {
+                        headerInfoMap.put(header.getBifId(),
+                                new ContributionHeaderInfo(monthNumber, Integer.parseInt(year)));
+                    }
+                }
+            }
+        }
+
+        return headerInfoMap;
+    }
+
+    private LocalDate getContributionDate(
+            ContributionBifurcationDetail detail,
+            Map<Long, ContributionHeaderInfo> headerInfoMap) {
+
+        ContributionHeaderInfo headerInfo = headerInfoMap.get(detail.getBifId());
+        if (headerInfo != null) {
+            return LocalDate.of(headerInfo.getYear(), headerInfo.getMonth(), 1);
+        }
+        return detail.getCreatedAt().toLocalDate();
+    }
+
+    private String getMonthKey(
+            ContributionBifurcationDetail detail,
+            Map<Long, ContributionHeaderInfo> headerInfoMap) {
+
+        ContributionHeaderInfo headerInfo = headerInfoMap.get(detail.getBifId());
+        if (headerInfo != null) {
+            return headerInfo.getYear() + "-" + String.format("%02d", headerInfo.getMonth());
+        }
+        LocalDate date = detail.getCreatedAt().toLocalDate();
+        return date.getYear() + "-" + String.format("%02d", date.getMonthValue());
+    }
+
+    // ================================================================
+    // HELPER METHODS - OPENING BALANCE CALCULATIONS
     // ================================================================
 
     /**
-     * Calculate PF opening balances from all contributions BEFORE current year
+     * Calculate PF opening balances from contributions BEFORE current year
      */
     private PfOpeningBalanceResult calculatePfOpeningBalanceFromContributions(
             List<ContributionBifurcationDetail> allContributions,
+            Map<Long, ContributionHeaderInfo> headerInfoMap,
             int currentYear,
             BigDecimal rate,
             int yearBasis) {
         
         log.info("=== Calculating PF Opening Balance from Contributions ===");
         
-        // Filter contributions BEFORE current year
         List<ContributionBifurcationDetail> historicalContribs = allContributions.stream()
             .filter(c -> {
                 if (c.getCreatedAt() == null) return false;
@@ -659,14 +525,14 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                 if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
                     return false;
                 }
-                return c.getCreatedAt().toLocalDate().getYear() < currentYear;
+                LocalDate date = getContributionDate(c, headerInfoMap);
+                return date.getYear() < currentYear;
             })
-            .sorted(Comparator.comparing(c -> c.getCreatedAt().toLocalDate()))
+            .sorted(Comparator.comparing(c -> getContributionDate(c, headerInfoMap)))
             .collect(Collectors.toList());
         
         log.info("Found {} historical contributions before {}", historicalContribs.size(), currentYear);
         
-        // Initialize running balances
         BigDecimal runningPfEc = BigDecimal.ZERO;
         BigDecimal runningPfMc = BigDecimal.ZERO;
         BigDecimal runningPfIec = BigDecimal.ZERO;
@@ -675,9 +541,8 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
         
         for (ContributionBifurcationDetail contrib : historicalContribs) {
-            LocalDate contribDate = contrib.getCreatedAt().toLocalDate();
+            LocalDate contribDate = getContributionDate(contrib, headerInfoMap);
             
-            // Calculate days from contribution date to year end
             LocalDate yearEnd = getYearEndForDate(contribDate);
             long days = ChronoUnit.DAYS.between(contribDate, yearEnd);
             if (days < 0) days = 0;
@@ -685,30 +550,22 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             BigDecimal daysFactor = BigDecimal.valueOf(days)
                 .divide(BigDecimal.valueOf(yearBasis), 10, RM);
             
-            // Get PF contribution amounts
             BigDecimal pfEc = n(contrib.getPfEc());
             BigDecimal pfMc = n(contrib.getPfMc());
             
-            // Interest on existing balances
             BigDecimal interestOnRunningPfEc = runningPfEc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             BigDecimal interestOnRunningPfMc = runningPfMc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             BigDecimal interestOnRunningPfIec = runningPfIec.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             BigDecimal interestOnRunningPfImc = runningPfImc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             
-            // Interest on new contributions
             BigDecimal interestOnPfEc = pfEc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             BigDecimal interestOnPfMc = pfMc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             
-            // Update running balances
             runningPfEc = runningPfEc.add(interestOnRunningPfEc).add(pfEc);
             runningPfMc = runningPfMc.add(interestOnRunningPfMc).add(pfMc);
             runningPfIec = runningPfIec.add(interestOnRunningPfIec).add(interestOnPfEc);
             runningPfImc = runningPfImc.add(interestOnRunningPfImc).add(interestOnPfMc);
         }
-        
-        log.info("=== PF Opening Balance Complete ===");
-        log.info("  PF_EC: {}, PF_MC: {}, PF_IEC: {}, PF_IMC: {}",
-                runningPfEc, runningPfMc, runningPfIec, runningPfImc);
         
         return PfOpeningBalanceResult.builder()
             .pfEc(runningPfEc)
@@ -719,40 +576,100 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             .build();
     }
 
-    // ================================================================
-    // CALCULATE OPENING BALANCE FROM ALL CONTRIBUTIONS BEFORE EXCESS PERIOD
-    // ================================================================
-
     /**
-     * Calculate opening balance from all contributions before the excess period starts.
-     * This builds a running balance with compound interest from the beginning.
+     * Calculate GC and VC opening balances from contributions BEFORE current year
      */
-    private OpeningBalanceResult calculateOpeningBalanceFromAllContributions(
+    private GcVcOpeningBalanceResult calculateGcVcOpeningBalanceFromContributions(
             List<ContributionBifurcationDetail> allContributions,
-            LocalDate excessStartDate,
+            Map<Long, ContributionHeaderInfo> headerInfoMap,
+            int currentYear,
             BigDecimal rate,
-            int yearBasis,
-            LocalDate asOfDate) {
+            int yearBasis) {
         
-        log.info("=== Calculating Opening Balance from ALL Historical Contributions ===");
-        log.info("Excess starts from: {}", excessStartDate);
+        log.info("=== Calculating GC/VC Opening Balance from Contributions ===");
         
-        // Filter contributions BEFORE the excess period
-        List<ContributionBifurcationDetail> preExcessContribs = allContributions.stream()
+        List<ContributionBifurcationDetail> historicalContribs = allContributions.stream()
             .filter(c -> {
                 if (c.getCreatedAt() == null) return false;
                 String status = c.getPostingStatus();
                 if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
                     return false;
                 }
-                return c.getCreatedAt().toLocalDate().isBefore(excessStartDate);
+                LocalDate date = getContributionDate(c, headerInfoMap);
+                return date.getYear() < currentYear;
             })
-            .sorted(Comparator.comparing(c -> c.getCreatedAt().toLocalDate()))
+            .sorted(Comparator.comparing(c -> getContributionDate(c, headerInfoMap)))
             .collect(Collectors.toList());
         
-        log.info("Found {} contributions BEFORE excess period", preExcessContribs.size());
+        BigDecimal runningGc = BigDecimal.ZERO;
+        BigDecimal runningVc = BigDecimal.ZERO;
+        BigDecimal runningIgc = BigDecimal.ZERO;
+        BigDecimal runningIvc = BigDecimal.ZERO;
         
-        // Initialize running balances (start from ZERO)
+        BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
+        
+        for (ContributionBifurcationDetail contrib : historicalContribs) {
+            LocalDate contribDate = getContributionDate(contrib, headerInfoMap);
+            
+            LocalDate yearEnd = getYearEndForDate(contribDate);
+            long days = ChronoUnit.DAYS.between(contribDate, yearEnd);
+            if (days < 0) days = 0;
+            
+            BigDecimal daysFactor = BigDecimal.valueOf(days)
+                .divide(BigDecimal.valueOf(yearBasis), 10, RM);
+            
+            BigDecimal gc = n(contrib.getGc());
+            BigDecimal vc = n(contrib.getVc());
+            
+            BigDecimal interestOnRunningGc = runningGc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
+            BigDecimal interestOnRunningVc = runningVc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
+            BigDecimal interestOnRunningIgc = runningIgc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
+            BigDecimal interestOnRunningIvc = runningIvc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
+            
+            BigDecimal interestOnGc = gc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
+            BigDecimal interestOnVc = vc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
+            
+            runningGc = runningGc.add(interestOnRunningGc).add(gc);
+            runningVc = runningVc.add(interestOnRunningVc).add(vc);
+            runningIgc = runningIgc.add(interestOnRunningIgc).add(interestOnGc);
+            runningIvc = runningIvc.add(interestOnRunningIvc).add(interestOnVc);
+        }
+        
+        return GcVcOpeningBalanceResult.builder()
+            .gc(runningGc)
+            .vc(runningVc)
+            .interestGc(runningIgc)
+            .interestVc(runningIvc)
+            .contributionsProcessed(historicalContribs.size())
+            .build();
+    }
+
+    /**
+     * Calculate opening balance from all contributions before a cutoff date
+     */
+    private OpeningBalanceResult calculateOpeningBalanceFromAllContributions(
+            List<ContributionBifurcationDetail> allContributions,
+            Map<Long, ContributionHeaderInfo> headerInfoMap,
+            LocalDate cutoffDate,
+            BigDecimal rate,
+            int yearBasis,
+            LocalDate asOfDate) {
+        
+        log.info("=== Calculating Opening Balance BEFORE {}", cutoffDate);
+        
+        List<ContributionBifurcationDetail> preCutoffContribs = allContributions.stream()
+            .filter(c -> {
+                if (c.getCreatedAt() == null) return false;
+                String status = c.getPostingStatus();
+                if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
+                    return false;
+                }
+                LocalDate date = getContributionDate(c, headerInfoMap);
+                return date.isBefore(cutoffDate);
+            })
+            .sorted(Comparator.comparing(c -> getContributionDate(c, headerInfoMap)))
+            .collect(Collectors.toList());
+        
         BigDecimal runningPensionEc = BigDecimal.ZERO;
         BigDecimal runningPensionMc = BigDecimal.ZERO;
         BigDecimal runningPensionIec = BigDecimal.ZERO;
@@ -760,68 +677,143 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         
         BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
         
-        // Process each contribution with compound interest
-        for (ContributionBifurcationDetail contrib : preExcessContribs) {
-            LocalDate contribDate = contrib.getCreatedAt().toLocalDate();
+        for (ContributionBifurcationDetail contrib : preCutoffContribs) {
+            LocalDate contribDate = getContributionDate(contrib, headerInfoMap);
             
-            // Get contribution amounts
             BigDecimal pec = n(contrib.getPensionEc());
             BigDecimal pmc = n(contrib.getPensionMc());
             
-            // Calculate days from contribution date to excess start date
-            long days = ChronoUnit.DAYS.between(contribDate, excessStartDate);
+            long days = ChronoUnit.DAYS.between(contribDate, cutoffDate);
             if (days < 0) days = 0;
             
             BigDecimal daysFactor = BigDecimal.valueOf(days)
                 .divide(BigDecimal.valueOf(yearBasis), 10, RM);
             
-            // Calculate interest on existing balances (compound)
             BigDecimal interestOnRunningPec = runningPensionEc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             BigDecimal interestOnRunningPmc = runningPensionMc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             BigDecimal interestOnRunningIec = runningPensionIec.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             BigDecimal interestOnRunningImc = runningPensionImc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             
-            // Interest on new contributions
             BigDecimal interestOnPec = pec.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             BigDecimal interestOnPmc = pmc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
             
-            // Update running balances (add interest and new contributions)
             runningPensionEc = runningPensionEc.add(interestOnRunningPec).add(pec);
             runningPensionMc = runningPensionMc.add(interestOnRunningPmc).add(pmc);
             runningPensionIec = runningPensionIec.add(interestOnRunningIec).add(interestOnPec);
             runningPensionImc = runningPensionImc.add(interestOnRunningImc).add(interestOnPmc);
-            
-            if (log.isDebugEnabled()) {
-                log.debug("Contrib on {}: PEC={}, PMC={}, Running PEC={}, PMC={}",
-                        contribDate, pec, pmc, runningPensionEc, runningPensionMc);
-            }
         }
-        
-        log.info("=== Opening Balance BEFORE Excess Period ===");
-        log.info("  PEC: {}", runningPensionEc);
-        log.info("  PMC: {}", runningPensionMc);
-        log.info("  PIEC: {}", runningPensionIec);
-        log.info("  PIMC: {}", runningPensionImc);
-        log.info("  Total Principal: {}", runningPensionEc.add(runningPensionMc));
-        log.info("  Total Interest: {}", runningPensionIec.add(runningPensionImc));
         
         return OpeningBalanceResult.builder()
             .pensionEc(runningPensionEc)
             .pensionMc(runningPensionMc)
             .interestPensionEc(runningPensionIec)
             .interestPensionMc(runningPensionImc)
-            .contributionsProcessed(preExcessContribs.size())
+            .contributionsProcessed(preCutoffContribs.size())
             .build();
     }
 
     // ================================================================
-    // EXCESS SERVICE REBUILD METHODS
+    // HELPER METHODS - CURRENT YEAR CONTRIBUTIONS
     // ================================================================
 
-    /**
-     * Get all months that should be excluded from pension calculation
-     * ONLY called when excess service exists
-     */
+    private CurrentYearContributionResult calculateCurrentYearContributions(
+            List<ContributionBifurcationDetail> allContributions,
+            Map<Long, ContributionHeaderInfo> headerInfoMap,
+            LocalDate asOfDate,
+            BigDecimal rate,
+            int yearBasis) {
+        
+        BigDecimal currentYearPfEc = BigDecimal.ZERO;
+        BigDecimal currentYearPfMc = BigDecimal.ZERO;
+        BigDecimal currentYearPensionEc = BigDecimal.ZERO;
+        BigDecimal currentYearPensionMc = BigDecimal.ZERO;
+        BigDecimal currentYearGc = BigDecimal.ZERO;
+        BigDecimal currentYearVc = BigDecimal.ZERO;
+
+        BigDecimal interestOnCurrentYearPfEc = BigDecimal.ZERO;
+        BigDecimal interestOnCurrentYearPfMc = BigDecimal.ZERO;
+        BigDecimal interestOnCurrentYearPensionEc = BigDecimal.ZERO;
+        BigDecimal interestOnCurrentYearPensionMc = BigDecimal.ZERO;
+        BigDecimal interestOnCurrentYearGc = BigDecimal.ZERO;
+        BigDecimal interestOnCurrentYearVc = BigDecimal.ZERO;
+
+        long daysForCurrentYearContributions = ChronoUnit.DAYS.between(
+            LocalDate.of(asOfDate.getYear(), 1, 1), asOfDate);
+
+        for (ContributionBifurcationDetail contrib : allContributions) {
+            String status = contrib.getPostingStatus();
+            if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
+                continue;
+            }
+
+            LocalDate contribDate = getContributionDate(contrib, headerInfoMap);
+            if (contribDate.getYear() != asOfDate.getYear()) {
+                continue;
+            }
+
+            BigDecimal pfEc = n(contrib.getPfEc());
+            if (pfEc.compareTo(BigDecimal.ZERO) > 0) {
+                currentYearPfEc = currentYearPfEc.add(pfEc);
+                interestOnCurrentYearPfEc = interestOnCurrentYearPfEc.add(
+                    calculateInterestOnBalance(pfEc, rate, daysForCurrentYearContributions, yearBasis));
+            }
+
+            BigDecimal pfMc = n(contrib.getPfMc());
+            if (pfMc.compareTo(BigDecimal.ZERO) > 0) {
+                currentYearPfMc = currentYearPfMc.add(pfMc);
+                interestOnCurrentYearPfMc = interestOnCurrentYearPfMc.add(
+                    calculateInterestOnBalance(pfMc, rate, daysForCurrentYearContributions, yearBasis));
+            }
+
+            BigDecimal pensionEc = n(contrib.getPensionEc());
+            if (pensionEc.compareTo(BigDecimal.ZERO) > 0) {
+                currentYearPensionEc = currentYearPensionEc.add(pensionEc);
+                interestOnCurrentYearPensionEc = interestOnCurrentYearPensionEc.add(
+                    calculateInterestOnBalance(pensionEc, rate, daysForCurrentYearContributions, yearBasis));
+            }
+
+            BigDecimal pensionMc = n(contrib.getPensionMc());
+            if (pensionMc.compareTo(BigDecimal.ZERO) > 0) {
+                currentYearPensionMc = currentYearPensionMc.add(pensionMc);
+                interestOnCurrentYearPensionMc = interestOnCurrentYearPensionMc.add(
+                    calculateInterestOnBalance(pensionMc, rate, daysForCurrentYearContributions, yearBasis));
+            }
+
+            BigDecimal gc = n(contrib.getGc());
+            if (gc.compareTo(BigDecimal.ZERO) > 0) {
+                currentYearGc = currentYearGc.add(gc);
+                interestOnCurrentYearGc = interestOnCurrentYearGc.add(
+                    calculateInterestOnBalance(gc, rate, daysForCurrentYearContributions, yearBasis));
+            }
+
+            BigDecimal vc = n(contrib.getVc());
+            if (vc.compareTo(BigDecimal.ZERO) > 0) {
+                currentYearVc = currentYearVc.add(vc);
+                interestOnCurrentYearVc = interestOnCurrentYearVc.add(
+                    calculateInterestOnBalance(vc, rate, daysForCurrentYearContributions, yearBasis));
+            }
+        }
+
+        return CurrentYearContributionResult.builder()
+            .pfEc(currentYearPfEc)
+            .pfMc(currentYearPfMc)
+            .pensionEc(currentYearPensionEc)
+            .pensionMc(currentYearPensionMc)
+            .gc(currentYearGc)
+            .vc(currentYearVc)
+            .interestPfEc(interestOnCurrentYearPfEc)
+            .interestPfMc(interestOnCurrentYearPfMc)
+            .interestPensionEc(interestOnCurrentYearPensionEc)
+            .interestPensionMc(interestOnCurrentYearPensionMc)
+            .interestGc(interestOnCurrentYearGc)
+            .interestVc(interestOnCurrentYearVc)
+            .build();
+    }
+
+    // ================================================================
+    // HELPER METHODS - EXCESS SERVICE
+    // ================================================================
+
     private List<YearMonth> getMonthsToExcludeForExcess(
             ExcessServiceResultDto excessResult,
             LocalDate asOfDate) {
@@ -847,17 +839,12 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             current = current.plusMonths(1);
         }
         
-        log.debug("Months to exclude from pension: {}", monthsToExclude);
         return monthsToExclude;
     }
 
-    /**
-     * Rebuild pension components by EXCLUDING excess months from the opening balance.
-     * This starts from the opening balance (calculated from all contributions before excess)
-     * and subtracts what was in the excess months.
-     */
     private PensionRebuildResult rebuildPensionWithoutExcess(
             List<ContributionBifurcationDetail> allContributions,
+            Map<Long, ContributionHeaderInfo> headerInfoMap,
             List<YearMonth> monthsToExclude,
             BigDecimal openingPensionEc,
             BigDecimal openingPensionMc,
@@ -868,10 +855,6 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             LocalDate asOfDate) {
         
         log.info("=== Rebuilding Pension Components (Excess Service Detected) ===");
-        log.info("Months to exclude: {}", monthsToExclude.size());
-        log.info("Opening balances (BEFORE Excess):");
-        log.info("  PEC: {}, PMC: {}, PIEC: {}, PIMC: {}",
-                openingPensionEc, openingPensionMc, openingPensionIec, openingPensionImc);
         
         if (monthsToExclude.isEmpty()) {
             return PensionRebuildResult.builder()
@@ -885,18 +868,12 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                 .adjustedOpeningPimc(openingPensionImc)
                 .excludedPrincipal(BigDecimal.ZERO)
                 .excludedInterest(BigDecimal.ZERO)
-                .excludedPec(BigDecimal.ZERO)
-                .excludedPmc(BigDecimal.ZERO)
-                .excludedPiec(BigDecimal.ZERO)
-                .excludedPimc(BigDecimal.ZERO)
                 .build();
         }
         
         Set<YearMonth> excludeSet = new HashSet<>(monthsToExclude);
         
-        // ================================================================
-        // 1. Find contributions that are in the excess months (to exclude)
-        // ================================================================
+        // Find contributions in excess months
         List<ContributionBifurcationDetail> excludedContributions = allContributions.stream()
             .filter(c -> {
                 if (c.getCreatedAt() == null) return false;
@@ -904,16 +881,12 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                 if (status == null || !"POSTED".equals(status.trim().toUpperCase())) {
                     return false;
                 }
-                YearMonth ym = YearMonth.from(c.getCreatedAt().toLocalDate());
+                YearMonth ym = getYearMonthFromContribution(c, headerInfoMap);
                 return excludeSet.contains(ym);
             })
             .collect(Collectors.toList());
         
-        log.info("Found {} contributions to exclude (excess months)", excludedContributions.size());
-        
-        // ================================================================
-        // 2. Calculate total principal and interest to exclude
-        // ================================================================
+        // Calculate excluded amounts
         BigDecimal excludedPec = BigDecimal.ZERO;
         BigDecimal excludedPmc = BigDecimal.ZERO;
         BigDecimal excludedPiec = BigDecimal.ZERO;
@@ -922,52 +895,30 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         BigDecimal rateFactor = rate.divide(HUNDRED, 10, RM);
         
         for (ContributionBifurcationDetail excl : excludedContributions) {
-            LocalDate date = excl.getCreatedAt().toLocalDate();
+            LocalDate date = getContributionDate(excl, headerInfoMap);
             
-            // Get contribution amounts
             BigDecimal pec = n(excl.getPensionEc());
             BigDecimal pmc = n(excl.getPensionMc());
             
-            // Calculate interest that was earned on these contributions
-            // From contribution date to asOfDate
             long days = ChronoUnit.DAYS.between(date, asOfDate);
             if (days < 0) days = 0;
             
             BigDecimal daysFactor = BigDecimal.valueOf(days)
                 .divide(BigDecimal.valueOf(yearBasis), 10, RM);
             
-            BigDecimal interestPec = pec.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
-            BigDecimal interestPmc = pmc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM);
-            
             excludedPec = excludedPec.add(pec);
             excludedPmc = excludedPmc.add(pmc);
-            excludedPiec = excludedPiec.add(interestPec);
-            excludedPimc = excludedPimc.add(interestPmc);
+            excludedPiec = excludedPiec.add(pec.multiply(rateFactor).multiply(daysFactor).setScale(2, RM));
+            excludedPimc = excludedPimc.add(pmc.multiply(rateFactor).multiply(daysFactor).setScale(2, RM));
         }
         
-        log.info("Excluded amounts:");
-        log.info("  Principal - PEC: {}, PMC: {}", excludedPec, excludedPmc);
-        log.info("  Interest - PIEC: {}, PIMC: {}", excludedPiec, excludedPimc);
-        log.info("  Total Excluded Principal: {}", excludedPec.add(excludedPmc));
-        log.info("  Total Excluded Interest: {}", excludedPiec.add(excludedPimc));
-        
-        // ================================================================
-        // 3. Calculate adjusted opening balances (opening - excluded)
-        // ================================================================
+        // Calculate adjusted opening balances
         BigDecimal adjustedOpeningPec = openingPensionEc.subtract(excludedPec);
         BigDecimal adjustedOpeningPmc = openingPensionMc.subtract(excludedPmc);
         BigDecimal adjustedOpeningPiec = openingPensionIec.subtract(excludedPiec);
         BigDecimal adjustedOpeningPimc = openingPensionImc.subtract(excludedPimc);
         
-        log.info("Adjusted opening balances (after subtracting excess):");
-        log.info("  PEC: {} - {} = {}", openingPensionEc, excludedPec, adjustedOpeningPec);
-        log.info("  PMC: {} - {} = {}", openingPensionMc, excludedPmc, adjustedOpeningPmc);
-        log.info("  PIEC: {} - {} = {}", openingPensionIec, excludedPiec, adjustedOpeningPiec);
-        log.info("  PIMC: {} - {} = {}", openingPensionImc, excludedPimc, adjustedOpeningPimc);
-        
-        // ================================================================
-        // 4. Calculate interest on adjusted opening balances for current year
-        // ================================================================
+        // Calculate interest on adjusted opening balances
         LocalDate yearStart = LocalDate.of(asOfDate.getYear(), 1, 1);
         long daysInCurrentYear = ChronoUnit.DAYS.between(yearStart, asOfDate);
         if (daysInCurrentYear < 0) daysInCurrentYear = 0;
@@ -981,15 +932,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         BigDecimal interestOnAdjustedPimc = calculateInterestOnBalance(
             adjustedOpeningPimc, rate, daysInCurrentYear, yearBasis);
         
-        log.info("Interest on adjusted opening balances for current year:");
-        log.info("  PEC: {}", interestOnAdjustedPec);
-        log.info("  PMC: {}", interestOnAdjustedPmc);
-        log.info("  PIEC: {}", interestOnAdjustedPiec);
-        log.info("  PIMC: {}", interestOnAdjustedPimc);
-        
-        // ================================================================
-        // 5. Calculate current year contributions (excluding excess months)
-        // ================================================================
+        // Calculate current year contributions (excluding excess months)
         BigDecimal currentYearPec = BigDecimal.ZERO;
         BigDecimal currentYearPmc = BigDecimal.ZERO;
         BigDecimal currentYearInterestPec = BigDecimal.ZERO;
@@ -1001,15 +944,13 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                 continue;
             }
             
-            LocalDate date = contrib.getCreatedAt().toLocalDate();
+            LocalDate date = getContributionDate(contrib, headerInfoMap);
             YearMonth ym = YearMonth.from(date);
             
-            // Skip if in excess months
             if (excludeSet.contains(ym)) {
                 continue;
             }
             
-            // Only process current year contributions
             if (date.getYear() == asOfDate.getYear()) {
                 BigDecimal pec = n(contrib.getPensionEc());
                 BigDecimal pmc = n(contrib.getPensionMc());
@@ -1026,13 +967,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             }
         }
         
-        log.info("Current year contributions (excess excluded):");
-        log.info("  PEC: {}, PMC: {}", currentYearPec, currentYearPmc);
-        log.info("  Interest - PIEC: {}, PIMC: {}", currentYearInterestPec, currentYearInterestPmc);
-        
-        // ================================================================
-        // 6. Calculate FINAL adjusted values
-        // ================================================================
+        // Calculate final adjusted values
         BigDecimal adjustedPensionEc = adjustedOpeningPec
             .add(interestOnAdjustedPec)
             .add(currentYearPec);
@@ -1049,12 +984,6 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             .add(interestOnAdjustedPimc)
             .add(currentYearInterestPmc);
         
-        log.info("=== Rebuild Complete ===");
-        log.info("Adjusted - PEC: {}, PMC: {}, PIEC: {}, PIMC: {}",
-                adjustedPensionEc, adjustedPensionMc, adjustedPensionIec, adjustedPensionImc);
-        log.info("Total Excluded Principal: {}, Total Excluded Interest: {}",
-                excludedPec.add(excludedPmc), excludedPiec.add(excludedPimc));
-        
         return PensionRebuildResult.builder()
             .adjustedPensionEc(adjustedPensionEc)
             .adjustedPensionMc(adjustedPensionMc)
@@ -1066,15 +995,23 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             .adjustedOpeningPimc(adjustedOpeningPimc)
             .excludedPrincipal(excludedPec.add(excludedPmc))
             .excludedInterest(excludedPiec.add(excludedPimc))
-            .excludedPec(excludedPec)
-            .excludedPmc(excludedPmc)
-            .excludedPiec(excludedPiec)
-            .excludedPimc(excludedPimc)
             .build();
     }
 
+    private YearMonth getYearMonthFromContribution(
+            ContributionBifurcationDetail detail,
+            Map<Long, ContributionHeaderInfo> headerInfoMap) {
+
+        ContributionHeaderInfo headerInfo = headerInfoMap.get(detail.getBifId());
+        if (headerInfo != null) {
+            return YearMonth.of(headerInfo.getYear(), headerInfo.getMonth());
+        }
+        LocalDate date = detail.getCreatedAt().toLocalDate();
+        return YearMonth.from(date);
+    }
+
     // ================================================================
-    // HELPER METHODS
+    // HELPER METHODS - UTILITY
     // ================================================================
 
     private BigDecimal calculateInterestOnBalance(BigDecimal balance, BigDecimal rate, long days, int yearBasis) {
@@ -1083,13 +1020,15 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         }
 
         BigDecimal dailyRate = rate.divide(BigDecimal.valueOf(yearBasis), 10, RM);
-
         return balance.multiply(dailyRate)
                 .multiply(BigDecimal.valueOf(days))
                 .setScale(2, RM);
     }
 
-    private LocalDate getLastContributionDate(List<ContributionBifurcationDetail> allContributions) {
+    private LocalDate getLastContributionDate(
+            List<ContributionBifurcationDetail> allContributions,
+            Map<Long, ContributionHeaderInfo> headerInfoMap) {
+
         if (allContributions == null || allContributions.isEmpty()) {
             return LocalDate.now();
         }
@@ -1101,7 +1040,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                 continue;
             }
 
-            LocalDate contribDate = contrib.getCreatedAt().toLocalDate();
+            LocalDate contribDate = getContributionDate(contrib, headerInfoMap);
             if (lastDate == null || contribDate.isAfter(lastDate)) {
                 lastDate = contribDate;
             }
@@ -1115,53 +1054,42 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             return null;
         }
 
-        log.debug("Looking for ARR configuration for year: {}", accountingYear);
-
         Optional<ArrConfiguration> arrOpt = arrRepo.findByAccountingYear(accountingYear);
         if (arrOpt.isPresent()) {
-            log.debug("✅ Using ARR configuration for year: {}", accountingYear);
             return arrOpt.get();
         }
 
+        // Try without dash
         String yearWithoutDash = accountingYear.replace("-", "");
         List<ArrConfiguration> allArr = arrRepo.findAll();
         for (ArrConfiguration arr : allArr) {
             String arrYear = arr.getAccountingYear().replace("-", "");
             if (arrYear.equals(yearWithoutDash)) {
-                log.debug("✅ Using ARR configuration for year (without dash): {}", arr.getAccountingYear());
                 return arr;
             }
         }
 
-        log.warn("⚠️ ARR configuration not found for year: {}, trying fallback options", accountingYear);
-        
+        // Try previous years
         try {
             int year = Integer.parseInt(accountingYear.split("-")[0]);
-            log.debug("Parsed year: {}", year);
-            
             for (int i = 1; i <= 5; i++) {
                 String previousYearDash = (year - i) + "-" + (year - i);
-                log.debug("  Trying previous year: {}", previousYearDash);
-                
                 Optional<ArrConfiguration> prevArrOpt = arrRepo.findByAccountingYear(previousYearDash);
                 if (prevArrOpt.isPresent()) {
-                    log.debug("✅ Using ARR configuration from previous year: {} ({} years back)", previousYearDash, i);
                     return prevArrOpt.get();
                 }
             }
         } catch (Exception e) {
-            log.warn("Could not parse accounting year: {}", accountingYear);
+            // Ignore
         }
 
+        // Use latest available
         allArr = arrRepo.findAll();
         if (!allArr.isEmpty()) {
             allArr.sort((a, b) -> b.getAccountingYear().compareTo(a.getAccountingYear()));
-            ArrConfiguration latest = allArr.get(0);
-            log.debug("✅ Using latest available ARR configuration from year: {}", latest.getAccountingYear());
-            return latest;
+            return allArr.get(0);
         }
 
-        log.warn("❌ No ARR configuration found in database, using default values");
         return null;
     }
 
@@ -1189,6 +1117,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
 
     private int calculateContributionMonths(
             List<ContributionBifurcationDetail> allContributions,
+            Map<Long, ContributionHeaderInfo> headerInfoMap,
             LocalDate asOfDate) {
 
         int count = 0;
@@ -1198,7 +1127,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
                 continue;
             }
 
-            LocalDate date = contrib.getCreatedAt().toLocalDate();
+            LocalDate date = getContributionDate(contrib, headerInfoMap);
             if (!date.isAfter(asOfDate)) {
                 count++;
             }
@@ -1209,7 +1138,8 @@ public class MemberContributionServiceImpl implements MemberContributionService 
     private int calculateNonContributionMonths(
             MemberDetailResponseDto memberDetail,
             LocalDate relieveDate,
-            List<ContributionBifurcationDetail> allContributions) {
+            List<ContributionBifurcationDetail> allContributions,
+            Map<Long, ContributionHeaderInfo> headerInfoMap) {
 
         if (relieveDate == null || !isPensionEligible(memberDetail)) {
             return 0;
@@ -1220,7 +1150,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
             return 0;
         }
 
-        return calculateEOLMonthsFromHistory(allContributions, startDate, relieveDate);
+        return calculateEOLMonthsFromHistory(allContributions, headerInfoMap, startDate, relieveDate);
     }
 
     private boolean isPensionEligible(MemberDetailResponseDto memberDetail) {
@@ -1244,6 +1174,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
 
     private int calculateEOLMonthsFromHistory(
             List<ContributionBifurcationDetail> allContributions,
+            Map<Long, ContributionHeaderInfo> headerInfoMap,
             LocalDate startDate,
             LocalDate endDate) {
 
@@ -1252,8 +1183,7 @@ public class MemberContributionServiceImpl implements MemberContributionService 
 
         Set<String> contributionMonths = allContributions.stream()
                 .filter(c -> c.getCreatedAt() != null)
-                .map(c -> c.getCreatedAt().toLocalDate().getYear() + "-" +
-                        String.format("%02d", c.getCreatedAt().toLocalDate().getMonthValue()))
+                .map(c -> getMonthKey(c, headerInfoMap))
                 .collect(Collectors.toSet());
 
         YearMonth startMonth = YearMonth.from(startDate);
@@ -1272,42 +1202,6 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         return eolMonths;
     }
 
-    private MemberBalanceSnapshot getPreviousYearSnapshot(String cid, String nppfNumber, int currentYear) {
-        List<MemberBalanceSnapshot> snapshots = snapshotRepo
-                .findByCidAndNppfNumberOrderByAccountingYearDesc(cid, nppfNumber);
-
-        log.debug("========== DEBUG: getPreviousYearSnapshot ==========");
-        log.debug("Looking for year < {}", currentYear);
-        log.debug("Total snapshots found: {}", snapshots.size());
-        
-        if (snapshots.isEmpty()) {
-            log.debug("❌ No snapshots found!");
-            return null;
-        }
-
-        for (MemberBalanceSnapshot snapshot : snapshots) {
-            log.debug("  Snapshot year: {}, PF_EC: {}", snapshot.getAccountingYear(), snapshot.getPfEc());
-            if (snapshot.getAccountingYear() != null) {
-                try {
-                    int snapshotYear = Integer.parseInt(snapshot.getAccountingYear().trim());
-                    if (snapshotYear < currentYear) {
-                        log.debug("✅ Found snapshot for year: {}", snapshot.getAccountingYear());
-                        return snapshot;
-                    }
-                } catch (NumberFormatException e) {
-                    log.debug("  Could not parse year from: {}", snapshot.getAccountingYear());
-                }
-            }
-        }
-
-        log.debug("❌ No snapshot found for year < {}", currentYear);
-        log.debug("=====================================================");
-        return null;
-    }
-
-    /**
-     * Get year end date based on accounting year rules
-     */
     private LocalDate getYearEndForDate(LocalDate date) {
         int year = date.getYear();
         int month = date.getMonthValue();
@@ -1350,7 +1244,20 @@ public class MemberContributionServiceImpl implements MemberContributionService 
     // ================================================================
     // INNER CLASSES
     // ================================================================
-    
+
+    private static class ContributionHeaderInfo {
+        private final int month;
+        private final int year;
+
+        public ContributionHeaderInfo(int month, int year) {
+            this.month = month;
+            this.year = year;
+        }
+
+        public int getMonth() { return month; }
+        public int getYear() { return year; }
+    }
+
     @Builder
     @Data
     public static class PfOpeningBalanceResult {
@@ -1360,7 +1267,34 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         private BigDecimal interestPfMc;
         private int contributionsProcessed;
     }
-    
+
+    @Builder
+    @Data
+    public static class GcVcOpeningBalanceResult {
+        private BigDecimal gc;
+        private BigDecimal vc;
+        private BigDecimal interestGc;
+        private BigDecimal interestVc;
+        private int contributionsProcessed;
+    }
+
+    @Builder
+    @Data
+    public static class CurrentYearContributionResult {
+        private BigDecimal pfEc;
+        private BigDecimal pfMc;
+        private BigDecimal pensionEc;
+        private BigDecimal pensionMc;
+        private BigDecimal gc;
+        private BigDecimal vc;
+        private BigDecimal interestPfEc;
+        private BigDecimal interestPfMc;
+        private BigDecimal interestPensionEc;
+        private BigDecimal interestPensionMc;
+        private BigDecimal interestGc;
+        private BigDecimal interestVc;
+    }
+
     @Builder
     @Data
     public static class OpeningBalanceResult {
@@ -1370,28 +1304,19 @@ public class MemberContributionServiceImpl implements MemberContributionService 
         private BigDecimal interestPensionMc;
         private int contributionsProcessed;
     }
-    
+
     @Builder
     @Data
     public static class PensionRebuildResult {
-        // Adjusted values after excluding excess
         private BigDecimal adjustedPensionEc;
         private BigDecimal adjustedPensionMc;
         private BigDecimal adjustedPensionIec;
         private BigDecimal adjustedPensionImc;
-        
-        // Adjusted opening balances
         private BigDecimal adjustedOpeningPec;
         private BigDecimal adjustedOpeningPmc;
         private BigDecimal adjustedOpeningPiec;
         private BigDecimal adjustedOpeningPimc;
-        
-        // Excluded amounts
         private BigDecimal excludedPrincipal;
         private BigDecimal excludedInterest;
-        private BigDecimal excludedPec;
-        private BigDecimal excludedPmc;
-        private BigDecimal excludedPiec;
-        private BigDecimal excludedPimc;
     }
 }

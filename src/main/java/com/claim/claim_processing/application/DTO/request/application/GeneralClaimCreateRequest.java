@@ -6,6 +6,7 @@ import com.claim.claim_processing.application.DTO.request.detail.BeneficiarySett
 import com.claim.claim_processing.application.DTO.request.detail.LegalRecoveryDetailRequest;
 import com.claim.claim_processing.application.DTO.request.detail.NormalClaimRequestDto;
 import com.claim.claim_processing.application.DTO.request.detail.PartialWithdrawalRequestDto;
+import com.claim.claim_processing.application.DTO.request.detail.WrongRemitanceRequestDTO;
 
 import lombok.*;
 
@@ -19,6 +20,7 @@ public class GeneralClaimCreateRequest {
     private List<ClaimApplicationBankDetailRequestDto> bankDetails;
     private NormalClaimRequestDto normalClaim;
     private LegalRecoveryDetailRequest legalRecovery;
+    private List<WrongRemitanceRequestDTO> wrongRemitances;
     private PartialWithdrawalRequestDto partialWithdrawal;
     private BeneficiarySettlementDetailRequestDto beneficiarySettlement;
     private ClaimApplicationCalculationSummaryRequest calculationSummary;

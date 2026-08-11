@@ -174,6 +174,9 @@ public class ClaimApplication {
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private PartialWithdrawalDetail partialWithdrawalDetail;
 
+    @OneToMany(mappedBy = "claimApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WrongRemitance> wrongRemitances;
+
     @OneToOne(mappedBy = "claimApplication", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BeneficiarySettlementDetail beneficiarySettlementDetail;
 
