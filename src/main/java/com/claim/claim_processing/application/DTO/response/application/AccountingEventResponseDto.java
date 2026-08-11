@@ -46,24 +46,39 @@ public class AccountingEventResponseDto {
     private List<LedgerEntryResponseDto> ledgerEntries;
 
     @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public static class LedgerEntryResponseDto {
-    private Long id;
-    private Integer seqNo;
-    private String mainAccountCode;
-    private String mainAccountName;
-    private String subAccountCode;
-    private String subAccountName;
-    private String drcr;
-    private BigDecimal amount;
-    private String entryRole;
-    private String componentCode;
-    private String narration;
-    private String createdBy;
-    private LocalDateTime createdAt;
-}
-}
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LedgerEntryResponseDto {
+        private Long id;
+        private Integer seqNo;
+        private String mainAccountCode;
+        private String mainAccountName;
+        private String subAccountCode;
+        private String subAccountName;
+        private String drcr;
+        private BigDecimal amount;
+        private String entryRole;
+        private String componentCode;
+        private String narration;
+        private String createdBy;
+        private LocalDateTime createdAt;
+        private ClaimLedgerAdditionalDetailResponseDTO claimLedgerAdditional;
+    }
 
-
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ClaimLedgerAdditionalDetailResponseDTO {
+        private Long id;
+        private String accountNumber;
+        private String drcr;
+        private BigDecimal amount;
+        private Long ledgerId;
+        private String createdBy;
+        private LocalDateTime createdAt;
+        private String updatedBy;
+        private LocalDateTime updatedAt;
+    }
+}

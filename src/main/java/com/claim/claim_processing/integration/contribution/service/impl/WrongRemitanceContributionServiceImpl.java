@@ -52,7 +52,6 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
     private static final RoundingMode RM = RoundingMode.HALF_UP;
     private static final int TRANSITION_YEAR = 2022;
 
-    // Month name to number mapping
     private static final Map<String, Integer> MONTH_NAME_TO_NUMBER = new HashMap<>();
     static {
         MONTH_NAME_TO_NUMBER.put("JANUARY", 1);
@@ -82,12 +81,10 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
             List<WrongRemitanceInitionResponse> allResults = new ArrayList<>();
             
             for (String nppfNumber : nppfNumbers) {
-                // Get details with header info
                 List<ContributionBifurcationDetail> contributions = contributionBifurcationDetailRepository
                         .findAllDetailsForMemberForYear(nppfNumber, yearInt);
 
                 if (contributions != null && !contributions.isEmpty()) {
-                    // Get header info for these contributions
                     Map<Long, ContributionHeaderInfo> headerInfoMap = getHeaderInfoForContributions(contributions);
                     
                     log.info("Found {} contribution records for NPPF: {} in year: {}",
@@ -178,9 +175,11 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
             MemberDetailResponseDto memberDetail,
             boolean withInterest) {
 
-        log.info("=== START Wrong Remitance Recalculation ===");
+        log.info("===================================================");
+        log.info("=== START WRONG REMITANCE RECALCULATION ===");
         log.info("NPPF: {}, Target Year: {}, Selected IDs: {}, withInterest: {}",
                 nppfNumber, targetYear, selectedIds, withInterest);
+        log.info("===================================================");
 
         try {
             if (memberDetail == null) {
@@ -195,7 +194,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
             if (startDate == null) {
                 throw ClaimException.notFound("Member start date not found");
             }
-            log.info("Start Date: {}", startDate);
+            log.info("Member Start Date: {}", startDate);
 
             // ========== GET ALL CONTRIBUTIONS ==========
             List<ContributionBifurcationDetail> allContributions = contributionBifurcationDetailRepository
@@ -205,11 +204,26 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                 throw ClaimException.notFound("No contributions found for member");
             }
 
-            log.info("Found {} total contribution records", allContributions.size());
+            log.info("Found {} total contribution records for NPPF: {}", allContributions.size(), nppfNumber);
+
+            // Log all contributions
+            log.info("--- ALL CONTRIBUTIONS ---");
+            for (ContributionBifurcationDetail c : allContributions) {
+                log.info("ID: {}, BIF: {}, CreatedAt: {}, PF_MC: {}, PF_EC: {}, P_MC: {}, P_EC: {}",
+                        c.getId(), c.getBifId(), c.getCreatedAt(),
+                        c.getPfMc(), c.getPfEc(), c.getPensionMc(), c.getPensionEc());
+            }
 
             // ========== GET HEADER INFO FOR ALL CONTRIBUTIONS ==========
             Map<Long, ContributionHeaderInfo> headerInfoMap = getHeaderInfoForContributions(allContributions);
-            log.info("Found header info for {} contributions", headerInfoMap.size());
+            log.info("Header info map size: {}", headerInfoMap.size());
+
+            // Log header info
+            log.info("--- HEADER INFO ---");
+            for (Map.Entry<Long, ContributionHeaderInfo> entry : headerInfoMap.entrySet()) {
+                log.info("BIF: {} -> Year: {}, Month: {}",
+                        entry.getKey(), entry.getValue().getYear(), entry.getValue().getMonth());
+            }
 
             // ========== GET SELECTED CONTRIBUTIONS ==========
             List<ContributionBifurcationDetail> selectedContributions = allContributions.stream()
@@ -220,31 +234,25 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                 throw ClaimException.notFound("No contributions found for the selected IDs");
             }
 
+            log.info("Found {} selected contributions", selectedContributions.size());
+
             // Build selected month keys using header info
             Set<String> selectedMonthKeys = selectedContributions.stream()
                     .map(c -> {
                         ContributionHeaderInfo headerInfo = headerInfoMap.get(c.getBifId());
                         if (headerInfo != null) {
-                            return headerInfo.getYear() + "-" + String.format("%02d", headerInfo.getMonth());
+                            String key = headerInfo.getYear() + "-" + String.format("%02d", headerInfo.getMonth());
+                            log.info("Selected month key from header: {}", key);
+                            return key;
                         }
-                        // Fallback to created_at
                         LocalDate date = c.getCreatedAt().toLocalDate();
-                        return date.getYear() + "-" + String.format("%02d", date.getMonthValue());
+                        String key = date.getYear() + "-" + String.format("%02d", date.getMonthValue());
+                        log.info("Selected month key from createdAt (fallback): {}", key);
+                        return key;
                     })
                     .collect(Collectors.toSet());
 
-            List<String> selectedMonthNames = selectedContributions.stream()
-                    .map(c -> {
-                        ContributionHeaderInfo headerInfo = headerInfoMap.get(c.getBifId());
-                        if (headerInfo != null) {
-                            return getMonthName(headerInfo.getMonth());
-                        }
-                        return c.getCreatedAt().toLocalDate().getMonth().toString();
-                    })
-                    .distinct()
-                    .collect(Collectors.toList());
-
-            log.info("Selected {} contributions for months: {}", selectedContributions.size(), selectedMonthNames);
+            log.info("Selected month keys: {}", selectedMonthKeys);
 
             // ========== GET ACCOUNTING YEARS ==========
             List<String> accountingYears = getAccountingYearsFromStartToTarget(startDate, targetYear);
@@ -268,6 +276,8 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     .igc(BigDecimal.ZERO)
                     .build();
 
+            log.info("Initial opening balances: {}", openingBalances);
+
             // ========== PROCESS EACH ACCOUNTING YEAR ==========
             ComponentBalances closingBalances = openingBalances;
             OpeningBalanceDto targetYearOpening = null;
@@ -281,7 +291,13 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
             for (String accountingYear : accountingYears) {
                 YearType yearType = getYearType(accountingYear);
                 log.info("==========================================");
-                log.info("Processing Year: {}, Type: {}", accountingYear, yearType);
+                log.info("📅 PROCESSING YEAR: {}, Type: {}", accountingYear, yearType);
+                log.info("Opening balance BEFORE processing {}: PF_MC={}, PF_EC={}, P_MC={}, P_EC={}",
+                        accountingYear,
+                        openingBalances.getPfMc(),
+                        openingBalances.getPfEc(),
+                        openingBalances.getPMc(),
+                        openingBalances.getPEc());
 
                 ArrConfiguration arrConfig = getArrConfigurationWithFallback(accountingYear);
                 if (arrConfig == null) {
@@ -298,11 +314,14 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                 log.info("Year End Date: {}", yearEndDate);
 
                 List<YearMonth> monthsInYear = getMonthsInYear(accountingYear, yearType);
-                log.info("Months in year: {}", monthsInYear.size());
+                log.info("Months in year: {}", monthsInYear);
 
                 boolean isTargetYear = accountingYear.equals(targetYear);
+                log.info("Is Target Year: {}", isTargetYear);
                 
+                // CAPTURE OPENING BALANCE FOR TARGET YEAR
                 if (isTargetYear) {
+                    log.info("✅ CAPTURING OPENING BALANCE FOR TARGET YEAR: {}", targetYear);
                     targetYearOpening = OpeningBalanceDto.builder()
                             .year(targetYear)
                             .pfMc(openingBalances.getPfMc())
@@ -321,7 +340,12 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                             .igc(openingBalances.getIgc())
                             .build();
                     
-                    log.info("✅ OPENING BALANCE CAPTURED FOR TARGET YEAR {}:", targetYear);
+                    log.info("Target Year Opening Balance - PF_MC: {}, PF_EC: {}, P_MC: {}, P_EC: {}",
+                            targetYearOpening.getPfMc(),
+                            targetYearOpening.getPfEc(),
+                            targetYearOpening.getPMc(),
+                            targetYearOpening.getPEc());
+                    
                     targetYearFound = true;
                 }
 
@@ -332,6 +356,11 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     log.info("Days for opening balance interest (IOB): {}", daysForOpening);
                     
                     interestOnOpening = calculateInterestOnBalances(openingBalances, rate, daysForOpening, yearBasis);
+                    log.info("IOB calculated - PF_IMC: {}, PF_IEC: {}, P_IMC: {}, P_IEC: {}",
+                            interestOnOpening.getPfImc(),
+                            interestOnOpening.getPfIec(),
+                            interestOnOpening.getPImc(),
+                            interestOnOpening.getPIec());
                 } else {
                     interestOnOpening = ComponentBalances.builder()
                             .pfImc(BigDecimal.ZERO)
@@ -346,19 +375,29 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     log.info("⏭️ Skipping IOB for year {} (withInterest=false)", accountingYear);
                 }
 
+                // Add IOB to opening balances
                 ComponentBalances currentBalances = addBalances(openingBalances, interestOnOpening);
+                log.info("After adding IOB - PF_MC: {}, PF_IMC: {}, P_MC: {}, P_IMC: {}",
+                        currentBalances.getPfMc(),
+                        currentBalances.getPfImc(),
+                        currentBalances.getPMc(),
+                        currentBalances.getPImc());
 
+                // ===== PROCESS EACH MONTH IN THE YEAR =====
                 for (YearMonth yearMonth : monthsInYear) {
                     String monthName = yearMonth.getMonth().toString();
                     LocalDate monthStart = yearMonth.atDay(1);
                     
-                    // ✅ Find contribution using header info
-                    ContributionBifurcationDetail detail = findContributionForMonthFromHeader(
-                            allContributions, headerInfoMap, yearMonth);
-
                     String monthKey = yearMonth.getYear() + "-" + String.format("%02d", yearMonth.getMonthValue());
                     boolean isSelectedMonth = selectedMonthKeys.contains(monthKey);
                     boolean isTargetYearMonth = isTargetYear && isSelectedMonth;
+
+                    log.info("  📆 Month: {}, Key: {}, isSelected: {}, isTargetYearMonth: {}",
+                            monthName, monthKey, isSelectedMonth, isTargetYearMonth);
+
+                    // ===== FIND CONTRIBUTION FOR THIS MONTH =====
+                    ContributionBifurcationDetail detail = findContributionForMonthFromHeader(
+                            allContributions, headerInfoMap, yearMonth);
 
                     ComponentBalances monthContribution = ComponentBalances.builder()
                             .pfMc(BigDecimal.ZERO)
@@ -382,7 +421,11 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     String status = "EOL";
 
                     if (detail != null) {
-                        // Get invoice date from header if available
+                        log.info("    ✅ Found contribution for {} - ID: {}, PF_MC: {}, PF_EC: {}, P_MC: {}, P_EC: {}",
+                                monthName, detail.getId(),
+                                detail.getPfMc(), detail.getPfEc(),
+                                detail.getPensionMc(), detail.getPensionEc());
+
                         ContributionHeaderInfo headerInfo = headerInfoMap.get(detail.getBifId());
                         if (headerInfo != null) {
                             invoiceDate = LocalDate.of(headerInfo.getYear(), headerInfo.getMonth(), 1);
@@ -396,6 +439,12 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                         monthContribution.setPEc(n(detail.getPensionEc()));
                         monthContribution.setGc(n(detail.getGc()));
                         monthContribution.setVc(n(detail.getVc()));
+
+                        log.info("    Month contribution set - PF_MC: {}, PF_EC: {}, P_MC: {}, P_EC: {}",
+                                monthContribution.getPfMc(),
+                                monthContribution.getPfEc(),
+                                monthContribution.getPMc(),
+                                monthContribution.getPEc());
 
                         if (withInterest && isSelectedMonth) {
                             days = (int) ChronoUnit.DAYS.between(invoiceDate, currentDate);
@@ -413,19 +462,30 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                             
                             status = "CONTRIBUTION_WITH_INTEREST";
                             
-                            log.info("   📊 SELECTED MONTH WITH INTEREST: {}, Days to current date: {}", 
-                                    monthName, days);
+                            log.info("    📊 SELECTED MONTH WITH INTEREST: {}, Days: {}, Interest - PF_IMC: {}, P_IMC: {}",
+                                    monthName, days,
+                                    monthContribution.getPfImc(),
+                                    monthContribution.getPImc());
                         } else if (!withInterest && isSelectedMonth) {
                             status = "CONTRIBUTION_WITHOUT_INTEREST";
-                            log.info("   📋 SELECTED MONTH WITHOUT INTEREST: {}", monthName);
+                            log.info("    📋 SELECTED MONTH WITHOUT INTEREST: {}", monthName);
                         } else {
                             status = "CONTRIBUTION_NOT_SELECTED";
-                            log.info("   📋 NON-SELECTED MONTH: {}", monthName);
+                            log.info("    📋 NON-SELECTED MONTH: {}", monthName);
                         }
+                    } else {
+                        log.info("    ❌ No contribution found for {}", monthName);
                     }
 
+                    // Add month contribution to current balances
                     currentBalances = addBalances(currentBalances, monthContribution);
+                    log.info("    Current balances after adding month - PF_MC: {}, PF_EC: {}, P_MC: {}, P_EC: {}",
+                            currentBalances.getPfMc(),
+                            currentBalances.getPfEc(),
+                            currentBalances.getPMc(),
+                            currentBalances.getPEc());
 
+                    // If this is a selected month in target year, add to recalculated list
                     if (isTargetYearMonth) {
                         BigDecimal monthTotalContribution = calculateTotalContribution(monthContribution);
                         BigDecimal monthTotalInterest = calculateTotalInterest(monthContribution);
@@ -467,10 +527,19 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     }
                 }
 
+                // Update opening balances for next year
                 openingBalances = currentBalances;
                 closingBalances = currentBalances;
+                
+                log.info("Closing balance AFTER {}: PF_MC={}, PF_EC={}, P_MC={}, P_EC={}",
+                        accountingYear,
+                        closingBalances.getPfMc(),
+                        closingBalances.getPfEc(),
+                        closingBalances.getPMc(),
+                        closingBalances.getPEc());
             }
 
+            // If target year not found, use current closing balance
             if (!targetYearFound) {
                 log.warn("Target year {} not found in accounting years list!", targetYear);
                 targetYearOpening = OpeningBalanceDto.builder()
@@ -492,6 +561,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                         .build();
             }
 
+            // Build closing balance DTO
             ClosingBalanceDto closingBalanceDto = ClosingBalanceDto.builder()
                     .pfMc(closingBalances.getPfMc())
                     .pfEc(closingBalances.getPfEc())
@@ -509,9 +579,17 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     .igc(closingBalances.getIgc())
                     .build();
 
-            // ================================================================
-            // BUILD RESPONSE
-            // ================================================================
+            log.info("=== FINAL RESULTS ===");
+            log.info("Total Recalculated Contributions: {}", totalContributions);
+            log.info("Total Recalculated Interest: {}", totalInterest);
+            log.info("Total Recalculated Amount: {}", totalContributions.add(totalInterest));
+            log.info("Final Closing Balance - PF_MC: {}, PF_EC: {}, P_MC: {}, P_EC: {}",
+                    closingBalanceDto.getPfMc(),
+                    closingBalanceDto.getPfEc(),
+                    closingBalanceDto.getPMc(),
+                    closingBalanceDto.getPEc());
+
+            // Build response
             BigDecimal totalAmount = totalContributions.add(totalInterest);
 
             ArrConfiguration targetArrConfig = getArrConfigurationWithFallback(targetYear);
@@ -570,8 +648,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     .build();
 
             log.info("=== END Wrong Remitance Recalculation ===");
-            log.info("Total Years Processed: {}", accountingYears.size());
-            log.info("Total Recalculated Amount: {}", totalAmount);
+            log.info("===================================================");
 
             return response;
 
@@ -583,9 +660,6 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
 
     // ========== HELPER METHODS ==========
 
-    /**
-     * Get header info for a list of contributions
-     */
     private Map<Long, ContributionHeaderInfo> getHeaderInfoForContributions(
             List<ContributionBifurcationDetail> contributions) {
         
@@ -596,6 +670,8 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                 .filter(id -> id != null && id > 0)
                 .collect(Collectors.toSet());
 
+        log.info("Getting header info for {} BIF IDs", bifIds.size());
+
         if (!bifIds.isEmpty()) {
             List<ContributionBifurcationHeader> headers = contributionBifurcationHeaderRepository
                     .findAllById(bifIds);
@@ -604,46 +680,59 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                 if (header.getBifId() != null) {
                     String monthName = header.getMonthName();
                     String year = header.getYear();
+                    
+                    log.debug("Header: BIF={}, MonthName={}, Year={}", 
+                        header.getBifId(), monthName, year);
+                    
                     Integer monthNumber = MONTH_NAME_TO_NUMBER.get(monthName.toUpperCase());
                     
                     if (monthNumber != null && year != null) {
-                        headerInfoMap.put(header.getBifId(), 
-                                new ContributionHeaderInfo(monthNumber, Integer.parseInt(year)));
+                        try {
+                            headerInfoMap.put(header.getBifId(), 
+                                    new ContributionHeaderInfo(monthNumber, Integer.parseInt(year)));
+                            log.debug("✅ Mapped BIF {} to {}-{}", 
+                                header.getBifId(), year, monthNumber);
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid year format: {}", year);
+                        }
+                    } else {
+                        log.warn("Could not parse month/year: month={}, year={}", monthName, year);
                     }
                 }
             }
         }
         
+        log.info("Header info map size: {}", headerInfoMap.size());
         return headerInfoMap;
     }
 
-    /**
-     * Find contribution for a month using header info
-     */
     private ContributionBifurcationDetail findContributionForMonthFromHeader(
             List<ContributionBifurcationDetail> contributions,
             Map<Long, ContributionHeaderInfo> headerInfoMap,
             YearMonth yearMonth) {
 
-        return contributions.stream()
-                .filter(c -> {
-                    ContributionHeaderInfo headerInfo = headerInfoMap.get(c.getBifId());
-                    if (headerInfo != null) {
-                        return headerInfo.getYear() == yearMonth.getYear() &&
-                               headerInfo.getMonth() == yearMonth.getMonthValue();
-                    }
-                    // Fallback: use created_at
-                    LocalDate date = c.getCreatedAt().toLocalDate();
-                    return date.getYear() == yearMonth.getYear() &&
-                           date.getMonthValue() == yearMonth.getMonthValue();
-                })
-                .findFirst()
-                .orElse(null);
+        int targetYear = yearMonth.getYear();
+        int targetMonth = yearMonth.getMonthValue();
+        
+        log.debug("Looking for month: {}-{}", targetYear, targetMonth);
+        
+        // First try exact match using header info
+        for (ContributionBifurcationDetail c : contributions) {
+            ContributionHeaderInfo headerInfo = headerInfoMap.get(c.getBifId());
+            if (headerInfo != null) {
+                if (headerInfo.getYear() == targetYear && 
+                    headerInfo.getMonth() == targetMonth) {
+                    log.debug("✅ Found exact match for {}-{} with BIF: {}", 
+                        targetYear, targetMonth, c.getBifId());
+                    return c;
+                }
+            }
+        }
+        
+        log.debug("❌ No contribution found for {}-{}", targetYear, targetMonth);
+        return null;
     }
 
-    /**
-     * Convert to DTO with header info
-     */
     private WrongRemitanceInitionResponseDto convertToDto(
             ContributionBifurcationDetail entity,
             Map<Long, ContributionHeaderInfo> headerInfoMap) {
@@ -674,29 +763,11 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                 .build();
     }
 
-    /**
-     * Get month name from month number
-     */
     private String getMonthName(int month) {
         String[] monthNames = {"JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
                                "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"};
         return monthNames[month - 1];
     }
-
-    // ========== INNER CLASS FOR HEADER INFO ==========
-    private static class ContributionHeaderInfo {
-        private final int month;
-        private final int year;
-
-        public ContributionHeaderInfo(int month, int year) {
-            this.month = month;
-            this.year = year;
-        }
-
-        public int getMonth() { return month; }
-        public int getYear() { return year; }
-    }
-
 
     private ComponentBalances calculateInterestOnBalances(
             ComponentBalances balances,
@@ -752,6 +823,9 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                 .ivc(BigDecimal.ZERO)
                 .igc(BigDecimal.ZERO)
                 .build();
+
+        log.debug("Interest calculated - PF_IMC: {}, PF_IEC: {}, P_IMC: {}, P_IEC: {}",
+                result.getPfImc(), result.getPfIec(), result.getPImc(), result.getPIec());
 
         return result;
     }
@@ -836,7 +910,6 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
             return YearType.CALENDAR_YEAR;
         }
     }
-
 
     private LocalDate getYearEndDate(String accountingYear, YearType yearType) {
         try {
@@ -1052,5 +1125,19 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
         private BigDecimal vic;
         private BigDecimal ivc;
         private BigDecimal igc;
+    }
+
+    // ========== INNER CLASS FOR HEADER INFO ==========
+    private static class ContributionHeaderInfo {
+        private final int month;
+        private final int year;
+
+        public ContributionHeaderInfo(int month, int year) {
+            this.month = month;
+            this.year = year;
+        }
+
+        public int getMonth() { return month; }
+        public int getYear() { return year; }
     }
 }

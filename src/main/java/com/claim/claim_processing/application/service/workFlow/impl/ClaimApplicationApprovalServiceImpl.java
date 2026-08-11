@@ -14,6 +14,7 @@ import com.claim.claim_processing.application.entity.application.ClaimApplicatio
 import com.claim.claim_processing.application.entity.application.ClaimApplicationBankDetail;
 import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationComponent;
 import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
+import com.claim.claim_processing.application.entity.detail.WrongRemitance;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationApproval;
 import com.claim.claim_processing.application.repository.calculation.ClaimApplicationCalculationComponentRepository;
 import com.claim.claim_processing.application.mapper.application.GeneralClaimResponseBuilderMapper;
@@ -33,6 +34,7 @@ import com.claim.claim_processing.application.service.application.ClaimApplicati
 import com.claim.claim_processing.application.service.application.ClaimLedgerService;
 import com.claim.claim_processing.application.service.application.WrongRemittanceLedgerService;
 import com.claim.claim_processing.application.service.claimDetail.ClaimDetailService;
+import com.claim.claim_processing.application.service.detail.WrongRemitanceService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationApprovalService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationWorkflowService;
 import com.claim.claim_processing.common.DTO.request.claim.ReserveAccountRequestDto;
@@ -62,6 +64,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -95,6 +98,7 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
         private final PensionServiceClient pensionServiceClient;
         private final ClaimApplicationCalculationComponentRepository calculationComponentRepository;
         private final DocumentMasterService documentMasterService;
+        private final WrongRemitanceService wrongRemitanceService;
         private final ClaimApplicationCalculationService claimApplicationCalculationService;
 
         private final ClaimApplicationDeductionDetailService claimApplicationDeductionDetailService;
@@ -205,6 +209,11 @@ public class ClaimApplicationApprovalServiceImpl implements ClaimApplicationAppr
                                         claimApplication,
                                         request.getCalculationSummary().getForFeitedComponents());
                         log.info("Saved forfeited components for claim: {}", claimApplication.getApplicationNumber());
+                }
+                List<WrongRemitance> wrongRemitances = new ArrayList<>();
+
+                if (request.getWrongRemitanceRequestDTOs() != null) {
+                        wrongRemitances= wrongRemitanceService.update(claimApplication, request.getWrongRemitanceRequestDTOs());
                 }
 
                 // Build response

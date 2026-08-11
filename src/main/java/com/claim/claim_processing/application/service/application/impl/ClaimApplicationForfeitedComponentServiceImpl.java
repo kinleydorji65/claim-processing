@@ -68,8 +68,7 @@ public class ClaimApplicationForfeitedComponentServiceImpl
                         .componentName(component.getComponentName())
                         .componentType(component.getComponentType())
                         .amount(component.getAmount())
-                        .reason(component.getReason() != null ? 
-                                component.getReason() : "Forfeited from lapsed rule calculation")
+                        .reason(component.getComponentName() + " is forfeited due to lapsed rule calculation.")
                         .subClaimCode(component.getSubClaimCode())
                         .createdBy(component.getCreatedBy())
                         .build();

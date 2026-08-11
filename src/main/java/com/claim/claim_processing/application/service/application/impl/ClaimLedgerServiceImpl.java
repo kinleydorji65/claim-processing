@@ -1,6 +1,7 @@
 package com.claim.claim_processing.application.service.application.impl;
 
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto;
+import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto.ClaimLedgerAdditionalDetailResponseDTO;
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto.LedgerEntryResponseDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimCalculationComponentDto;
 import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimCalculationSummaryResponseDto;
@@ -11,9 +12,11 @@ import com.claim.claim_processing.application.DTO.response.claimDetail.ClaimRule
 import com.claim.claim_processing.application.DTO.response.claimDetail.GeneralClaimDetailResponse;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimAccountingEvent;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
+import com.claim.claim_processing.application.entity.claimDetail.ClaimLedgerAdditionalDetail;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimLedgerEntry;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimAccountingEventRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimDetailRepository;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimLedgerAdditionalDetailRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimLedgerEntryRepository;
 import com.claim.claim_processing.application.service.application.ClaimLedgerService;
 import com.claim.claim_processing.common.entities.common.CoaAccountMapping;
@@ -53,13 +56,14 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
     private final CoaSubAccountRepository coaSubAccountRepository;
     private final MemberDetailRepository memberDetailRepository;
     private final ClaimDetailRepository claimDetailRepository;
+    private final ClaimLedgerAdditionalDetailRepository additionalDetailRepository;
 
     private static final String EVENT_TYPE_CLAIM = "CLAIM";
     private static final String EVENT_TYPE_REFUND = "REFUND";
     private static final String EVENT_TYPE_LAPSE = "LAPSE";
     private static final String EVENT_TYPE_DEDUCTION = "DEDUCTION";
     private static final String STATUS_PENDING = "PENDING";
-    private static final String STATUS_POSTED = "POSTED";
+    private static final String STATUS_POSTED = "POSTING";
     private static final String EVENT_TYPE_PARTIAL_WITHDRAWAL = "PARTIAL_WITHDRAWAL";
     private static final String EVENT_TYPE_CONTRIBUTION_POSTING = "CONTRIBUTION_POSTING";
 
@@ -77,7 +81,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
     @Transactional
     public AccountingEventResponseDto createLedgerEntries(GeneralClaimDetailResponse claimResponse, String createdBy) {
         log.info("========== START: createLedgerEntries ==========");
-        log.info("Claim ID: {}, Status: {}, Agency: {}", 
+        log.info("Claim ID: {}, Status: {}, Agency: {}",
                 claimResponse.getId(), claimResponse.getStatusName(), claimResponse.getMemberCategoryId());
 
         String claimReference = "CLM-" + claimResponse.getId();
@@ -101,7 +105,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         String tranCode = isPartialWithdrawal
                 ? PARTIAL_TRAN_CODE_MAP.getOrDefault(agencyCategoryId, "PWP")
                 : TRAN_CODE_MAP.getOrDefault(agencyCategoryId, "RPFC");
-        log.info("Agency Category: {}, TRAN_CODE: {}, isPartialWithdrawal: {}", 
+        log.info("Agency Category: {}, TRAN_CODE: {}, isPartialWithdrawal: {}",
                 agencyCategoryId, tranCode, isPartialWithdrawal);
 
         // 4. Build detailed component amounts (NOT grouped!)
@@ -158,7 +162,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                     // Only add if amount > 0
                     if (scaledAmount.compareTo(BigDecimal.ZERO) > 0) {
                         componentAmountsForLedger.put(entry.getKey(), scaledAmount);
-                        log.info("Component: {} -> Original: {}, Scaled: {}", 
+                        log.info("Component: {} -> Original: {}, Scaled: {}",
                                 entry.getKey(), entry.getValue(), scaledAmount);
                     }
                 }
@@ -180,7 +184,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
             log.info("Lapse Amount (Forfeited): {}", lapseAmount);
 
             BigDecimal totalCredited = totalDeductions.add(finalPayable).add(totalForfeited);
-            log.info("Balance check: Total Eligible ({}) vs Deductions + Final Payable + Forfeited ({})", 
+            log.info("Balance check: Total Eligible ({}) vs Deductions + Final Payable + Forfeited ({})",
                     totalEligible, totalCredited);
             if (totalEligible.compareTo(totalCredited) != 0) {
                 log.warn("⚠️ Balance check FAILED! Difference: {}", totalEligible.subtract(totalCredited));
@@ -206,13 +210,13 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         }
 
         List<CoaAccountMapping> lapseMappings = coaAccountMappingRepository
-        .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
-                EVENT_TYPE_LAPSE, agencyCategoryId);
+                .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
+                        EVENT_TYPE_LAPSE, agencyCategoryId);
 
         log.info("LAPSE Mappings found: {}", lapseMappings.size());
         if (!lapseMappings.isEmpty()) {
-            log.info("First LAPSE Mapping: {}, MainAccount: {}", 
-                    lapseMappings.get(0).getComponentCode(), 
+            log.info("First LAPSE Mapping: {}, MainAccount: {}",
+                    lapseMappings.get(0).getComponentCode(),
                     lapseMappings.get(0).getMainAccountCode());
         }
 
@@ -220,7 +224,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                 .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
                         EVENT_TYPE_DEDUCTION, agencyCategoryId);
 
-        log.info("REFUND Mappings found: {}, DEDUCTION Mappings found: {}", 
+        log.info("REFUND Mappings found: {}, DEDUCTION Mappings found: {}",
                 refundMappings.size(), deductionMappings.size());
 
         // 13. DEBUG - Show what we have
@@ -230,7 +234,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         ClaimDetail claimDetail = claimDetailRepository.findById(claimResponse.getId())
                 .orElseThrow(() -> ClaimException.notFound("claim detail not found"));
         log.info("Claim Detail ID: {}", claimDetail.getId());
-        
+
         // 14. Create and SAVE Accounting Event
         ClaimAccountingEvent event = createAccountingEvent(claimResponse, tranCode, createdBy);
         event.setClaimDetail(claimDetail);
@@ -275,7 +279,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                     .createdAt(LocalDateTime.now())
                     .build();
             ledgerEntries.add(entry);
-            log.info("✅ DEBIT Entry: SEQ={}, Component={}, Amount={}, MainAccount={}, SubAccount={}", 
+            log.info("✅ DEBIT Entry: SEQ={}, Component={}, Amount={}, MainAccount={}, SubAccount={}",
                     seqNo, componentCode, amount, mapping.getMainAccountCode(), mapping.getSubAccountCode());
         }
 
@@ -320,7 +324,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                         .createdAt(LocalDateTime.now())
                         .build();
                 ledgerEntries.add(entry);
-                log.info("✅ CREDIT Entry: SEQ={}, Component={}, Amount={}, MainAccount={}, SubAccount={}", 
+                log.info("✅ CREDIT Entry: SEQ={}, Component={}, Amount={}, MainAccount={}, SubAccount={}",
                         seqNo, componentCode, amount, mapping.getMainAccountCode(), mapping.getSubAccountCode());
             }
 
@@ -360,7 +364,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                             .createdAt(LocalDateTime.now())
                             .build();
                     ledgerEntries.add(ledgerEntry);
-                    log.info("✅ CREDIT Entry (Default): SEQ={}, Component={}, Amount={}", 
+                    log.info("✅ CREDIT Entry (Default): SEQ={}, Component={}, Amount={}",
                             seqNo, deductionCode, amount);
                 } else {
                     log.warn("⚠️ No default mapping found for remaining deduction: {}", deductionCode);
@@ -375,20 +379,20 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
             log.info("Processing forfeited components for regular claim");
             log.info("forfeitedAmounts: {}", forfeitedAmounts);
             log.info("lapseMappings size: {}", lapseMappings != null ? lapseMappings.size() : 0);
-            
+
             // Get the LAPSE mapping from lapseMappings (NOT refundMappings)
             final CoaAccountMapping lapseMapping;
             if (lapseMappings != null && !lapseMappings.isEmpty()) {
                 lapseMapping = lapseMappings.get(0);
-                log.info("Found LAPSE mapping: {}, MainAccount: {}, SubAccount: {}", 
-                        lapseMapping.getComponentCode(), 
+                log.info("Found LAPSE mapping: {}, MainAccount: {}, SubAccount: {}",
+                        lapseMapping.getComponentCode(),
                         lapseMapping.getMainAccountCode(),
                         lapseMapping.getSubAccountCode());
             } else {
                 log.warn("⚠️ No LAPSE mappings found in database!");
                 lapseMapping = null;
             }
-            
+
             for (Map.Entry<String, BigDecimal> entry : forfeitedAmounts.entrySet()) {
                 String componentCode = entry.getKey();
                 BigDecimal amount = entry.getValue();
@@ -419,7 +423,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                             .createdAt(LocalDateTime.now())
                             .build();
                     ledgerEntries.add(ledgerEntry);
-                    log.info("✅ CREDIT Entry (LAPSE): SEQ={}, Component={}, Amount={}", 
+                    log.info("✅ CREDIT Entry (LAPSE): SEQ={}, Component={}, Amount={}",
                             seqNo, componentCode, amount);
                 } else {
                     log.warn("⚠️ No LAPSE mapping found for forfeited component: {}", componentCode);
@@ -429,16 +433,17 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
             log.info("Partial Withdrawal - Skipping forfeited components");
         }
 
-        // 15e. Final Payment Entry - Net payment to member (for both partial and regular)
+        // 15e. Final Payment Entry - Net payment to member (for both partial and
+        // regular)
         log.info("Processing final payment entry - Final Payable: {}", finalPayable);
-        
+
         if (finalPayable.compareTo(BigDecimal.ZERO) > 0) {
             CoaAccountMapping bankMapping = findMappingByComponent(refundMappings, "BANK");
-            
+
             // Check if bank details exist
-            boolean hasBankDetails = claimResponse.getBankDetails() != null && 
-                                     !claimResponse.getBankDetails().isEmpty();
-            
+            boolean hasBankDetails = claimResponse.getBankDetails() != null &&
+                    !claimResponse.getBankDetails().isEmpty();
+
             if (bankMapping != null && hasBankDetails) {
                 // ---------- BANK DETAILS EXIST - Normal BANK entry ----------
                 CoaSubAccount subAccount = coaSubAccountRepository
@@ -461,15 +466,16 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                         .build();
                 ledgerEntries.add(entry);
                 log.info("✅ BANK CREDIT Entry: SEQ={}, Amount={}", seqNo, finalPayable);
-                
+
             } else {
-                // ---------- NO BANK DETAILS OR NO BANK MAPPING - Use CONTRIBUTION_POSTING ----------
-                log.warn("⚠️ No bank details found for claim: {}. Using CONTRIBUTION_POSTING entry.", 
+                // ---------- NO BANK DETAILS OR NO BANK MAPPING - Use CONTRIBUTION_POSTING
+                // ----------
+                log.warn("⚠️ No bank details found for claim: {}. Using CONTRIBUTION_POSTING entry.",
                         claimResponse.getId());
-                
+
                 // Call the new function to handle no bank details
                 seqNo = createContributionPostingForNoBank(
-                        claimResponse, event, ledgerEntries, finalPayable, 
+                        claimResponse, event, ledgerEntries, finalPayable,
                         agencyCategoryId, seqNo, createdBy);
             }
         } else {
@@ -479,36 +485,61 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         log.info("Total ledger entries to save: {}", ledgerEntries.size());
 
         // 16. Save all ledger entries
+        // 16. Save all ledger entries
         List<ClaimLedgerEntry> savedEntries = ledgerEntryRepository.saveAll(ledgerEntries);
         log.info("{} ledger entries saved for claim: {}", savedEntries.size(), claimReference);
 
-        // 17. Calculate totals
-        BigDecimal totalDr = calculateTotal(savedEntries, "D");
-        BigDecimal totalCr = calculateTotal(savedEntries, "C");
-        log.info("=== LEDGER TOTALS ===");
-        log.info("Total DR: {}", totalDr);
-        log.info("Total CR: {}", totalCr);
+        // ========== SAVE ADDITIONAL DETAILS ==========
+        List<ClaimLedgerAdditionalDetail> additionalDetails = new ArrayList<>();
 
-        // Log all entries with their DR/CR
-        log.info("=== LEDGER ENTRIES SUMMARY ===");
-        for (ClaimLedgerEntry entry : savedEntries) {
-            log.info("SEQ: {}, Component: {}, DR/CR: {}, Amount: {}, MainAccount: {}, SubAccount: {}", 
-                    entry.getSeqNo(), entry.getComponentCode(), entry.getDrcr(), 
-                    entry.getAmount(), entry.getMainAccountCode(), entry.getSubAccountCode());
+        // Get bank account number from bank details (only 1 record)
+        String bankAccountNumber = null;
+        if (claimResponse.getBankDetails() != null && !claimResponse.getBankDetails().isEmpty()) {
+            bankAccountNumber = claimResponse.getBankDetails().get(0).getAccountNumber();
+            log.info("Bank Account Number found: {}", bankAccountNumber);
         }
 
+        for (ClaimLedgerEntry entry : savedEntries) {
+            String accountNumber = null;
+
+            // If this is a BANK entry, set the bank account number
+            if ("BANK".equals(entry.getEntryRole()) || "BANK".equals(entry.getComponentCode())) {
+                accountNumber = bankAccountNumber;
+                log.info("Setting bank account number: {} for BANK entry SEQ: {}", accountNumber, entry.getSeqNo());
+            } else {
+                // For non-BANK entries, use the sub account code
+                accountNumber = entry.getSubAccountCode();
+                log.info("Setting sub account code: {} for entry SEQ: {}, Component: {}",
+                        accountNumber, entry.getSeqNo(), entry.getComponentCode());
+            }
+
+            ClaimLedgerAdditionalDetail detail = ClaimLedgerAdditionalDetail.builder()
+                    .accountNumber(accountNumber)
+                    .drcr(entry.getDrcr())
+                    .amount(entry.getAmount())
+                    .ledgerEntry(entry)
+                    .createdBy(createdBy)
+                    .build();
+            additionalDetails.add(detail);
+        }
+        additionalDetailRepository.saveAll(additionalDetails);
+        log.info("{} additional details saved for claim: {}", additionalDetails.size(), claimReference);
+        // ========== END SAVE ADDITIONAL DETAILS ==========
+
+        BigDecimal totalDr = calculateTotal(savedEntries, "D");
+        BigDecimal totalCr = calculateTotal(savedEntries, "C");
         // 18. Validate balance
         if (totalDr.compareTo(totalCr) != 0) {
-            log.error("❌❌❌ LEDGER NOT BALANCED! DR: {}, CR: {}, Difference: {}", 
+            log.error("❌❌❌ LEDGER NOT BALANCED! DR: {}, CR: {}, Difference: {}",
                     totalDr, totalCr, totalDr.subtract(totalCr));
-            
+
             // Log detailed breakdown of what's missing
             log.error("=== LEDGER IMBALANCE DIAGNOSIS ===");
             log.error("Component Amounts For Ledger: {}", componentAmountsForLedger);
             log.error("Deduction Amounts: {}", deductionAmounts);
             log.error("Final Payable: {}", finalPayable);
             log.error("Forfeited Amounts: {}", forfeitedAmounts);
-            
+
             debugComponentAmounts(componentAmountsForLedger, refundMappings, deductionAmounts, finalPayable,
                     lapseAmount, forfeitedAmounts);
             throw new RuntimeException(
@@ -532,249 +563,254 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
     }
 
     /**
-     * NEW FUNCTION: Create CONTRIBUTION_POSTING entries when bank details are not available
-     * This will credit the final payable amount to the appropriate component accounts
+     * NEW FUNCTION: Create CONTRIBUTION_POSTING entries when bank details are not
+     * available
+     * This will credit the final payable amount to the appropriate component
+     * accounts
      */
     private int createContributionPostingForNoBank(GeneralClaimDetailResponse claimResponse,
-                                                    ClaimAccountingEvent event,
-                                                    List<ClaimLedgerEntry> ledgerEntries,
-                                                    BigDecimal finalPayable,
-                                                    String agencyCategoryId,
-                                                    int seqNo,
-                                                    String createdBy) {
-        
-    log.info("========== Creating CONTRIBUTION_POSTING entries for No Bank ==========");
-    log.info("Final Payable Amount: {}", finalPayable);
-    log.info("Agency Category: {}", agencyCategoryId);
-    
-    // Get CONTRIBUTION_POSTING mappings for this agency
-    List<CoaAccountMapping> contributionMappings = coaAccountMappingRepository
-            .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
-                    EVENT_TYPE_CONTRIBUTION_POSTING, agencyCategoryId);
-    
-    log.info("CONTRIBUTION_POSTING mappings found: {}", contributionMappings.size());
-    
-    if (contributionMappings.isEmpty()) {
-        log.warn("⚠️ No CONTRIBUTION_POSTING mappings found for agency: {}. Using fallback BANK entry.", 
-                agencyCategoryId);
-        return createFallbackBankEntry(event, ledgerEntries, finalPayable, seqNo, createdBy);
-    }
-    
-    // Get the component amounts to distribute the final payable
-    Map<String, BigDecimal> componentAmounts = buildDetailedComponentAmounts(claimResponse);
-    BigDecimal totalComponents = calculateTotalAmount(componentAmounts);
-    
-    log.info("Total Component Amounts: {}, Final Payable: {}", totalComponents, finalPayable);
-    
-    // If total components is zero, use fallback
-    if (totalComponents.compareTo(BigDecimal.ZERO) <= 0) {
-        log.warn("⚠️ No component amounts found. Using fallback BANK entry.");
-        return createFallbackBankEntry(event, ledgerEntries, finalPayable, seqNo, createdBy);
-    }
-    
-    // Filter to only include components that have mappings and amounts
-    List<Map.Entry<String, BigDecimal>> activeComponents = new ArrayList<>();
-    for (Map.Entry<String, BigDecimal> entry : componentAmounts.entrySet()) {
-        if (entry.getValue().compareTo(BigDecimal.ZERO) <= 0) {
-            continue;
+            ClaimAccountingEvent event,
+            List<ClaimLedgerEntry> ledgerEntries,
+            BigDecimal finalPayable,
+            String agencyCategoryId,
+            int seqNo,
+            String createdBy) {
+
+        log.info("========== Creating CONTRIBUTION_POSTING entries for No Bank ==========");
+        log.info("Final Payable Amount: {}", finalPayable);
+        log.info("Agency Category: {}", agencyCategoryId);
+
+        // Get CONTRIBUTION_POSTING mappings for this agency
+        List<CoaAccountMapping> contributionMappings = coaAccountMappingRepository
+                .findByEventTypeAndAgencyCategoryIdAndIsActiveTrueOrderBySeqNoAsc(
+                        EVENT_TYPE_CONTRIBUTION_POSTING, agencyCategoryId);
+
+        log.info("CONTRIBUTION_POSTING mappings found: {}", contributionMappings.size());
+
+        if (contributionMappings.isEmpty()) {
+            log.warn("⚠️ No CONTRIBUTION_POSTING mappings found for agency: {}. Using fallback BANK entry.",
+                    agencyCategoryId);
+            return createFallbackBankEntry(event, ledgerEntries, finalPayable, seqNo, createdBy);
         }
-        // Check if mapping exists
-        boolean hasMapping = contributionMappings.stream()
-                .anyMatch(m -> entry.getKey().equals(m.getComponentCode()));
-        if (hasMapping) {
-            activeComponents.add(entry);
-        } else {
-            log.warn("⚠️ No CONTRIBUTION_POSTING mapping found for component: {}", entry.getKey());
+
+        // Get the component amounts to distribute the final payable
+        Map<String, BigDecimal> componentAmounts = buildDetailedComponentAmounts(claimResponse);
+        BigDecimal totalComponents = calculateTotalAmount(componentAmounts);
+
+        log.info("Total Component Amounts: {}, Final Payable: {}", totalComponents, finalPayable);
+
+        // If total components is zero, use fallback
+        if (totalComponents.compareTo(BigDecimal.ZERO) <= 0) {
+            log.warn("⚠️ No component amounts found. Using fallback BANK entry.");
+            return createFallbackBankEntry(event, ledgerEntries, finalPayable, seqNo, createdBy);
         }
-    }
-    
-    if (activeComponents.isEmpty()) {
-        log.warn("⚠️ No active components with mappings found. Using fallback BANK entry.");
-        return createFallbackBankEntry(event, ledgerEntries, finalPayable, seqNo, createdBy);
-    }
-    
-    // Calculate total of active component amounts
-    BigDecimal totalActiveAmounts = activeComponents.stream()
-            .map(Map.Entry::getValue)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    
-    log.info("Total Active Component Amounts: {}", totalActiveAmounts);
-    
-    // Calculate ratio to distribute final payable proportionally
-    BigDecimal ratio = finalPayable.divide(totalActiveAmounts, 10, java.math.RoundingMode.HALF_UP);
-    log.info("Distribution Ratio: {}", ratio);
-    
-    // Track total distributed amount
-    BigDecimal totalDistributed = BigDecimal.ZERO;
-    int currentSeqNo = seqNo;
-    List<ClaimLedgerEntry> createdEntries = new ArrayList<>();
-    
-    // Process each active component
-    for (Map.Entry<String, BigDecimal> entry : activeComponents) {
-        String componentCode = entry.getKey();
-        BigDecimal componentAmount = entry.getValue();
-        
-        // Find mapping for this component
-        CoaAccountMapping mapping = contributionMappings.stream()
-                .filter(m -> componentCode.equals(m.getComponentCode()))
-                .findFirst()
-                .orElse(null);
-        
-        if (mapping == null) {
-            continue;
+
+        // Filter to only include components that have mappings and amounts
+        List<Map.Entry<String, BigDecimal>> activeComponents = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> entry : componentAmounts.entrySet()) {
+            if (entry.getValue().compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            // Check if mapping exists
+            boolean hasMapping = contributionMappings.stream()
+                    .anyMatch(m -> entry.getKey().equals(m.getComponentCode()));
+            if (hasMapping) {
+                activeComponents.add(entry);
+            } else {
+                log.warn("⚠️ No CONTRIBUTION_POSTING mapping found for component: {}", entry.getKey());
+            }
         }
-        
-        // Calculate proportional amount with 2 decimal places
-        BigDecimal proportionalAmount = componentAmount.multiply(ratio)
-                .setScale(2, java.math.RoundingMode.HALF_UP);
-        
-        // Skip if amount is zero
-        if (proportionalAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            continue;
+
+        if (activeComponents.isEmpty()) {
+            log.warn("⚠️ No active components with mappings found. Using fallback BANK entry.");
+            return createFallbackBankEntry(event, ledgerEntries, finalPayable, seqNo, createdBy);
         }
-        
-        // Get sub-account
-        CoaSubAccount subAccount = null;
-        if (mapping.getSubAccountCode() != null) {
-            subAccount = coaSubAccountRepository
-                    .findBySubAccountCode(mapping.getSubAccountCode())
-                    .orElse(null);
-        }
-        
-        // Create CREDIT entry for this component
-        currentSeqNo++;
-        ClaimLedgerEntry ledgerEntry = ClaimLedgerEntry.builder()
-                .accountingEventId(event.getId())
-                .seqNo(currentSeqNo)
-                .mainAccountCode(mapping.getMainAccountCode())
-                .subAccountCode(mapping.getSubAccountCode())
-                .drcr("C") // CREDIT to component
-                .amount(proportionalAmount)
-                .entryRole("CONTRIBUTION_POSTING")
-                .componentCode(componentCode)
-                .narration("CONTRIBUTION_POSTING - No Bank Details - " + 
-                           (subAccount != null ? subAccount.getSubAccountName() : componentCode) +
-                           " - Amount: " + proportionalAmount)
-                .createdBy(createdBy)
-                .createdAt(LocalDateTime.now())
-                .build();
-        ledgerEntries.add(ledgerEntry);
-        createdEntries.add(ledgerEntry);
-        
-        log.info("✅ CONTRIBUTION_POSTING CREDIT Entry: SEQ={}, Component={}, Amount={}, MainAccount={}, SubAccount={}", 
-                currentSeqNo, componentCode, proportionalAmount, 
-                mapping.getMainAccountCode(), mapping.getSubAccountCode());
-        
-        totalDistributed = totalDistributed.add(proportionalAmount);
-    }
-    
-    // ============================================================
-    // FIX: Handle rounding adjustment properly
-    // ============================================================
-    BigDecimal difference = finalPayable.subtract(totalDistributed);
-    log.info("Total Distributed: {}, Final Payable: {}, Difference: {}", 
-            totalDistributed, finalPayable, difference);
-    
-    if (difference.compareTo(BigDecimal.ZERO) != 0) {
-        log.info("Applying rounding adjustment: {}", difference);
-        
-        if (!createdEntries.isEmpty()) {
-            // Get the last created entry
-            ClaimLedgerEntry lastEntry = createdEntries.get(createdEntries.size() - 1);
-            
-            // Calculate adjusted amount
-            BigDecimal adjustedAmount = lastEntry.getAmount().add(difference)
-                    .setScale(2, java.math.RoundingMode.HALF_UP);
-            
-            // Remove the old entry from ledgerEntries
-            ledgerEntries.remove(lastEntry);
-            
-            // Get mapping for this component
+
+        // Calculate total of active component amounts
+        BigDecimal totalActiveAmounts = activeComponents.stream()
+                .map(Map.Entry::getValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        log.info("Total Active Component Amounts: {}", totalActiveAmounts);
+
+        // Calculate ratio to distribute final payable proportionally
+        BigDecimal ratio = finalPayable.divide(totalActiveAmounts, 10, java.math.RoundingMode.HALF_UP);
+        log.info("Distribution Ratio: {}", ratio);
+
+        // Track total distributed amount
+        BigDecimal totalDistributed = BigDecimal.ZERO;
+        int currentSeqNo = seqNo;
+        List<ClaimLedgerEntry> createdEntries = new ArrayList<>();
+
+        // Process each active component
+        for (Map.Entry<String, BigDecimal> entry : activeComponents) {
+            String componentCode = entry.getKey();
+            BigDecimal componentAmount = entry.getValue();
+
+            // Find mapping for this component
             CoaAccountMapping mapping = contributionMappings.stream()
-                    .filter(m -> lastEntry.getComponentCode().equals(m.getComponentCode()))
+                    .filter(m -> componentCode.equals(m.getComponentCode()))
                     .findFirst()
                     .orElse(null);
-            
-            if (mapping != null) {
-                CoaSubAccount subAccount = null;
-                if (mapping.getSubAccountCode() != null) {
-                    subAccount = coaSubAccountRepository
-                            .findBySubAccountCode(mapping.getSubAccountCode())
-                            .orElse(null);
-                }
-                
-                // Create new entry with adjusted amount
-                ClaimLedgerEntry adjustedEntry = ClaimLedgerEntry.builder()
-                        .accountingEventId(event.getId())
-                        .seqNo(lastEntry.getSeqNo())
-                        .mainAccountCode(mapping.getMainAccountCode())
-                        .subAccountCode(mapping.getSubAccountCode())
-                        .drcr("C")
-                        .amount(adjustedAmount)
-                        .entryRole("CONTRIBUTION_POSTING")
-                        .componentCode(lastEntry.getComponentCode())
-                        .narration("CONTRIBUTION_POSTING - No Bank Details - " + 
-                                   (subAccount != null ? subAccount.getSubAccountName() : lastEntry.getComponentCode()) +
-                                   " (Adjusted) - Amount: " + adjustedAmount)
-                        .createdBy(createdBy)
-                        .createdAt(LocalDateTime.now())
-                        .build();
-                ledgerEntries.add(adjustedEntry);
-                
-                log.info("✅ Adjusted last entry: SEQ={}, Component={}, Old Amount={}, New Amount={}, Difference={}", 
-                        lastEntry.getSeqNo(), lastEntry.getComponentCode(), 
-                        lastEntry.getAmount(), adjustedAmount, difference);
-                
-                // Update totalDistributed
-                totalDistributed = totalDistributed.add(difference);
+
+            if (mapping == null) {
+                continue;
             }
-        } else {
-            // If no entries were created, add a single adjustment entry
-            CoaAccountMapping firstMapping = contributionMappings.stream()
-                    .filter(m -> !"BANK".equals(m.getComponentCode()) && !"EXCESS".equals(m.getComponentCode()))
-                    .findFirst()
-                    .orElse(null);
-            
-            if (firstMapping != null) {
-                currentSeqNo++;
-                ClaimLedgerEntry ledgerEntry = ClaimLedgerEntry.builder()
-                        .accountingEventId(event.getId())
-                        .seqNo(currentSeqNo)
-                        .mainAccountCode(firstMapping.getMainAccountCode())
-                        .subAccountCode(firstMapping.getSubAccountCode())
-                        .drcr("C")
-                        .amount(difference)
-                        .entryRole("CONTRIBUTION_POSTING")
-                        .componentCode(firstMapping.getComponentCode())
-                        .narration("CONTRIBUTION_POSTING - Rounding Adjustment - Amount: " + difference)
-                        .createdBy(createdBy)
-                        .createdAt(LocalDateTime.now())
-                        .build();
-                ledgerEntries.add(ledgerEntry);
-                log.info("✅ CONTRIBUTION_POSTING Rounding Entry: SEQ={}, Component={}, Amount={}", 
-                        currentSeqNo, firstMapping.getComponentCode(), difference);
+
+            // Calculate proportional amount with 2 decimal places
+            BigDecimal proportionalAmount = componentAmount.multiply(ratio)
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+
+            // Skip if amount is zero
+            if (proportionalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            // Get sub-account
+            CoaSubAccount subAccount = null;
+            if (mapping.getSubAccountCode() != null) {
+                subAccount = coaSubAccountRepository
+                        .findBySubAccountCode(mapping.getSubAccountCode())
+                        .orElse(null);
+            }
+
+            // Create CREDIT entry for this component
+            currentSeqNo++;
+            ClaimLedgerEntry ledgerEntry = ClaimLedgerEntry.builder()
+                    .accountingEventId(event.getId())
+                    .seqNo(currentSeqNo)
+                    .mainAccountCode(mapping.getMainAccountCode())
+                    .subAccountCode(mapping.getSubAccountCode())
+                    .drcr("C") // CREDIT to component
+                    .amount(proportionalAmount)
+                    .entryRole("CONTRIBUTION_POSTING")
+                    .componentCode(componentCode)
+                    .narration("CONTRIBUTION_POSTING - No Bank Details - " +
+                            (subAccount != null ? subAccount.getSubAccountName() : componentCode) +
+                            " - Amount: " + proportionalAmount)
+                    .createdBy(createdBy)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            ledgerEntries.add(ledgerEntry);
+            createdEntries.add(ledgerEntry);
+
+            log.info(
+                    "✅ CONTRIBUTION_POSTING CREDIT Entry: SEQ={}, Component={}, Amount={}, MainAccount={}, SubAccount={}",
+                    currentSeqNo, componentCode, proportionalAmount,
+                    mapping.getMainAccountCode(), mapping.getSubAccountCode());
+
+            totalDistributed = totalDistributed.add(proportionalAmount);
+        }
+
+        // ============================================================
+        // FIX: Handle rounding adjustment properly
+        // ============================================================
+        BigDecimal difference = finalPayable.subtract(totalDistributed);
+        log.info("Total Distributed: {}, Final Payable: {}, Difference: {}",
+                totalDistributed, finalPayable, difference);
+
+        if (difference.compareTo(BigDecimal.ZERO) != 0) {
+            log.info("Applying rounding adjustment: {}", difference);
+
+            if (!createdEntries.isEmpty()) {
+                // Get the last created entry
+                ClaimLedgerEntry lastEntry = createdEntries.get(createdEntries.size() - 1);
+
+                // Calculate adjusted amount
+                BigDecimal adjustedAmount = lastEntry.getAmount().add(difference)
+                        .setScale(2, java.math.RoundingMode.HALF_UP);
+
+                // Remove the old entry from ledgerEntries
+                ledgerEntries.remove(lastEntry);
+
+                // Get mapping for this component
+                CoaAccountMapping mapping = contributionMappings.stream()
+                        .filter(m -> lastEntry.getComponentCode().equals(m.getComponentCode()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (mapping != null) {
+                    CoaSubAccount subAccount = null;
+                    if (mapping.getSubAccountCode() != null) {
+                        subAccount = coaSubAccountRepository
+                                .findBySubAccountCode(mapping.getSubAccountCode())
+                                .orElse(null);
+                    }
+
+                    // Create new entry with adjusted amount
+                    ClaimLedgerEntry adjustedEntry = ClaimLedgerEntry.builder()
+                            .accountingEventId(event.getId())
+                            .seqNo(lastEntry.getSeqNo())
+                            .mainAccountCode(mapping.getMainAccountCode())
+                            .subAccountCode(mapping.getSubAccountCode())
+                            .drcr("C")
+                            .amount(adjustedAmount)
+                            .entryRole("CONTRIBUTION_POSTING")
+                            .componentCode(lastEntry.getComponentCode())
+                            .narration("CONTRIBUTION_POSTING - No Bank Details - " +
+                                    (subAccount != null ? subAccount.getSubAccountName() : lastEntry.getComponentCode())
+                                    +
+                                    " (Adjusted) - Amount: " + adjustedAmount)
+                            .createdBy(createdBy)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    ledgerEntries.add(adjustedEntry);
+
+                    log.info("✅ Adjusted last entry: SEQ={}, Component={}, Old Amount={}, New Amount={}, Difference={}",
+                            lastEntry.getSeqNo(), lastEntry.getComponentCode(),
+                            lastEntry.getAmount(), adjustedAmount, difference);
+
+                    // Update totalDistributed
+                    totalDistributed = totalDistributed.add(difference);
+                }
+            } else {
+                // If no entries were created, add a single adjustment entry
+                CoaAccountMapping firstMapping = contributionMappings.stream()
+                        .filter(m -> !"BANK".equals(m.getComponentCode()) && !"EXCESS".equals(m.getComponentCode()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (firstMapping != null) {
+                    currentSeqNo++;
+                    ClaimLedgerEntry ledgerEntry = ClaimLedgerEntry.builder()
+                            .accountingEventId(event.getId())
+                            .seqNo(currentSeqNo)
+                            .mainAccountCode(firstMapping.getMainAccountCode())
+                            .subAccountCode(firstMapping.getSubAccountCode())
+                            .drcr("C")
+                            .amount(difference)
+                            .entryRole("CONTRIBUTION_POSTING")
+                            .componentCode(firstMapping.getComponentCode())
+                            .narration("CONTRIBUTION_POSTING - Rounding Adjustment - Amount: " + difference)
+                            .createdBy(createdBy)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    ledgerEntries.add(ledgerEntry);
+                    log.info("✅ CONTRIBUTION_POSTING Rounding Entry: SEQ={}, Component={}, Amount={}",
+                            currentSeqNo, firstMapping.getComponentCode(), difference);
+                }
             }
         }
+
+        log.info("Final Total Distributed: {}, Final Payable: {}, Difference: {}",
+                totalDistributed, finalPayable, finalPayable.subtract(totalDistributed));
+
+        log.info("CONTRIBUTION_POSTING entries created for No Bank scenario");
+        return currentSeqNo;
     }
-    
-    log.info("Final Total Distributed: {}, Final Payable: {}, Difference: {}", 
-            totalDistributed, finalPayable, finalPayable.subtract(totalDistributed));
-    
-    log.info("CONTRIBUTION_POSTING entries created for No Bank scenario");
-    return currentSeqNo;
-}
 
     /**
-     * Fallback method to create a BANK entry when no CONTRIBUTION_POSTING mappings are found
+     * Fallback method to create a BANK entry when no CONTRIBUTION_POSTING mappings
+     * are found
      */
     private int createFallbackBankEntry(ClaimAccountingEvent event,
-                                         List<ClaimLedgerEntry> ledgerEntries,
-                                         BigDecimal finalPayable,
-                                         int seqNo,
-                                         String createdBy) {
-        
+            List<ClaimLedgerEntry> ledgerEntries,
+            BigDecimal finalPayable,
+            int seqNo,
+            String createdBy) {
+
         log.warn("⚠️ Using fallback BANK entry for amount: {}", finalPayable);
-        
+
         seqNo++;
         ClaimLedgerEntry entry = ClaimLedgerEntry.builder()
                 .accountingEventId(event.getId())
@@ -785,13 +821,14 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                 .amount(finalPayable)
                 .entryRole("BANK")
                 .componentCode("BANK")
-                .narration("BANK - Fallback (No bank details / No CONTRIBUTION_POSTING mapping) - Amount: " + finalPayable)
+                .narration(
+                        "BANK - Fallback (No bank details / No CONTRIBUTION_POSTING mapping) - Amount: " + finalPayable)
                 .createdBy(createdBy)
                 .createdAt(LocalDateTime.now())
                 .build();
         ledgerEntries.add(entry);
         log.info("✅ BANK Fallback Entry: SEQ={}, Amount={}", seqNo, finalPayable);
-        
+
         return seqNo;
     }
 
@@ -805,7 +842,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
             BigDecimal finalPayable,
             BigDecimal lapseAmount,
             Map<String, BigDecimal> forfeitedAmounts) {
-        
+
         log.info("========== DEBUG: COMPONENT AMOUNTS ==========");
         log.info("Component Amounts Map: {}", componentAmounts);
         log.info("Total Component Amounts: {}", calculateTotalAmount(componentAmounts));
@@ -884,7 +921,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         // 2. ADD FORFEITED COMPONENTS TO DEBIT FOR NORMAL CLAIMS ONLY
         if (!isPartialWithdrawal) {
             List<ClaimForfeitedComponentResponseDto> forfeitedComponents = claimResponse.getForfeitedComponents();
-            log.info("Processing forfeited components, count: {}", 
+            log.info("Processing forfeited components, count: {}",
                     forfeitedComponents != null ? forfeitedComponents.size() : 0);
 
             if (forfeitedComponents != null) {
@@ -916,7 +953,8 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
     }
 
     private String mapComponentToCoaCode(String componentCode) {
-        if (componentCode == null) return null;
+        if (componentCode == null)
+            return null;
 
         String cleanCode = componentCode.toUpperCase().trim();
         cleanCode = cleanCode.replace("_CUMULATIVE", "")
@@ -943,19 +981,19 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
             case "PC_EC":
                 log.debug("  ✅ Pension Employer mapped to: P_EC");
                 return "P_EC";
-                
+
             // Employer Pension Interest (P_IEC)
             case "P_IEC":
             case "PC_IEC":
                 log.debug("  ✅ Pension Employer Interest mapped to: P_IEC");
                 return "P_IEC";
-                
+
             // Member Pension (P_MC)
             case "P_MC":
             case "PC_MC":
                 log.debug("  ✅ Pension Member mapped to: P_MC");
                 return "P_MC";
-                
+
             // Member Pension Interest (P_IMC)
             case "P_IMC":
             case "PC_IMC":
@@ -1044,7 +1082,7 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
         }
 
         BigDecimal totalForfeited = BigDecimal.ZERO;
-        
+
         log.info("========== BUILDING FORFEITED AMOUNTS ==========");
         for (ClaimForfeitedComponentResponseDto forfeited : forfeitedComponents) {
             String componentCode = forfeited.getComponentCode();
@@ -1315,8 +1353,26 @@ public class ClaimLedgerServiceImpl implements ClaimLedgerService {
                         .narration(entry.getNarration())
                         .createdBy(entry.getCreatedBy())
                         .createdAt(entry.getCreatedAt())
+                        .claimLedgerAdditional(mapClaimLedgerAddition(entry.getAdditionalDetail()))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private ClaimLedgerAdditionalDetailResponseDTO mapClaimLedgerAddition(ClaimLedgerAdditionalDetail entity) {
+        if (entity == null) {
+            return null;
+        }
+        return ClaimLedgerAdditionalDetailResponseDTO
+            .builder()
+            .accountNumber(entity.getAccountNumber())
+            .amount(entity.getAmount())
+            .ledgerId(entity.getLedgerEntry().getId())
+            .drcr(entity.getDrcr())
+            .createdAt(entity.getCreatedAt())
+            .createdBy(entity.getCreatedBy())
+            .updatedBy(entity.getUpdatedBy())
+            .updatedAt(entity.getUpdatedAt())
+            .build();
     }
 
     private boolean isPartialWithdrawalClaim(GeneralClaimDetailResponse claimResponse) {

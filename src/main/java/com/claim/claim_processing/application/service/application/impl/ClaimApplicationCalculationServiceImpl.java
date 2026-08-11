@@ -82,27 +82,50 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
             pensionEligible = "Y";
         }
 
-        ClaimApplicationCalculationSummary claimCalculationSummary = ClaimApplicationCalculationSummary
-                .builder()
-                .totalAmount(safeBigDecimal(otherRequest.getTotalAmount()))
-                .isPfEligible(pfEligible)
-                .isPensionEligible(pensionEligible)
-                .totalContributionMonth(safeInteger(otherRequest.getTotalContributionMonths()))
-                .recommendedBenefitType(safeString(otherRequest.getRecommendedBenefitType()))
-                .totalNonContributionMonth(safeInteger(otherRequest.getTotalNonContributionMonths()))
-                .totalPfAmount(safeBigDecimal(otherRequest.getTotalPfAmount()))
-                .totalPensionAmount(safeBigDecimal(otherRequest.getTotalPensionAmount()))
-                .totalPfInterest(safeBigDecimal(otherRequest.getTotalPfInterest()))
-                .totalPensionInterest(safeBigDecimal(otherRequest.getTotalPensionInterest()))
-                .excessOpeningBalance(BigDecimal.ZERO)
-                .excessServiceAmount(BigDecimal.ZERO)
-                .excessTotalContributions(BigDecimal.ZERO)
-                .excessTotalInterest(BigDecimal.ZERO)
-                .excessEolMonths(0)
-                .createdBy(safeString(claimApplication.getCreatedBy(), "SYSTEM"))
-                .build();
+        ClaimApplicationCalculationSummary claimCalculationSummary = calculationSummaryRepository
+                .findByClaimApplication_Id(claimApplication.getId()).orElse(null);
+        if (claimCalculationSummary == null) {
+            claimCalculationSummary = ClaimApplicationCalculationSummary
+                    .builder()
+                    .totalAmount(safeBigDecimal(otherRequest.getTotalAmount()))
+                    .isPfEligible(pfEligible)
+                    .isPensionEligible(pensionEligible)
+                    .totalContributionMonth(safeInteger(otherRequest.getTotalContributionMonths()))
+                    .recommendedBenefitType(safeString(otherRequest.getRecommendedBenefitType()))
+                    .totalNonContributionMonth(safeInteger(otherRequest.getTotalNonContributionMonths()))
+                    .totalPfAmount(safeBigDecimal(otherRequest.getTotalPfAmount()))
+                    .totalPensionAmount(safeBigDecimal(otherRequest.getTotalPensionAmount()))
+                    .totalPfInterest(safeBigDecimal(otherRequest.getTotalPfInterest()))
+                    .totalPensionInterest(safeBigDecimal(otherRequest.getTotalPensionInterest()))
+                    .excessOpeningBalance(BigDecimal.ZERO)
+                    .excessServiceAmount(BigDecimal.ZERO)
+                    .excessTotalContributions(BigDecimal.ZERO)
+                    .excessTotalInterest(BigDecimal.ZERO)
+                    .excessEolMonths(0)
+                    .createdBy(safeString(claimApplication.getCreatedBy(), "SYSTEM"))
+                    .build();
 
-        claimCalculationSummary.setClaimApplication(claimApplication);
+            claimCalculationSummary.setClaimApplication(claimApplication);
+
+        } else {
+            claimCalculationSummary.setTotalAmount(safeBigDecimal(otherRequest.getTotalAmount()));
+            claimCalculationSummary.setIsPfEligible(pfEligible);
+            claimCalculationSummary.setIsPensionEligible(pensionEligible);
+            claimCalculationSummary.setTotalContributionMonth(safeInteger(otherRequest.getTotalContributionMonths()));
+            claimCalculationSummary.setRecommendedBenefitType(safeString(otherRequest.getRecommendedBenefitType()));
+            claimCalculationSummary
+                    .setTotalNonContributionMonth(safeInteger(otherRequest.getTotalNonContributionMonths()));
+            claimCalculationSummary.setTotalPfAmount(safeBigDecimal(otherRequest.getTotalPfAmount()));
+            claimCalculationSummary.setTotalPensionAmount(safeBigDecimal(otherRequest.getTotalPensionAmount()));
+            claimCalculationSummary.setTotalPfInterest(safeBigDecimal(otherRequest.getTotalPfInterest()));
+            claimCalculationSummary.setTotalPensionInterest(safeBigDecimal(otherRequest.getTotalPensionInterest()));
+            claimCalculationSummary.setExcessOpeningBalance(BigDecimal.ZERO);
+            claimCalculationSummary.setExcessServiceAmount(BigDecimal.ZERO);
+            claimCalculationSummary.setExcessTotalContributions(BigDecimal.ZERO);
+            claimCalculationSummary.setExcessTotalInterest(BigDecimal.ZERO);
+            claimCalculationSummary.setExcessEolMonths(0);
+            claimCalculationSummary.setCreatedBy(safeString(claimApplication.getCreatedBy(), "SYSTEM"));
+        }
         return calculationSummaryRepository.saveAndFlush(claimCalculationSummary);
     }
 
@@ -460,5 +483,4 @@ public class ClaimApplicationCalculationServiceImpl implements ClaimApplicationC
         return components;
     }
 
- 
 }

@@ -8,6 +8,7 @@ import com.claim.claim_processing.application.DTO.response.application.GeneralCl
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationVerificationResponseDto;
 import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplicationWorkflowResponseDto;
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
+import com.claim.claim_processing.application.entity.detail.WrongRemitance;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationVerification;
 import com.claim.claim_processing.application.mapper.application.GeneralClaimResponseBuilderMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.BeneficiarySettlementResponseMapper;
@@ -18,12 +19,14 @@ import com.claim.claim_processing.application.mapper.claimApplicationOtherRespon
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.LegalRecoveryResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.NormalClaimResponseMapper;
 import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.PartialWithdrawalResponseMapper;
+import com.claim.claim_processing.application.mapper.claimApplicationOtherResponse.WrongRemitanceResponseMapper;
 import com.claim.claim_processing.application.mapper.workFlow.ClaimApplicationVerificationMapper;
 import com.claim.claim_processing.application.repository.application.ClaimApplicationRepository;
 import com.claim.claim_processing.application.repository.workFlow.ClaimApplicationVerificationRepository;
 import com.claim.claim_processing.application.service.application.ClaimApplicationCalculationService;
 import com.claim.claim_processing.application.service.application.ClaimApplicationDeductionDetailService;
 import com.claim.claim_processing.application.service.application.ClaimApplicationForfeitedComponentService;
+import com.claim.claim_processing.application.service.detail.WrongRemitanceService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationApprovalService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationVerificationService;
 import com.claim.claim_processing.application.service.workFlow.ClaimApplicationWorkflowService;
@@ -37,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +73,9 @@ public class ClaimApplicationVerificationServiceImpl
         private final ClaimApplicationApprovalService claimApplicationApprovalService;
         private final ClaimApplicationDeductionDetailService claimApplicationDeductionDetailService;
         private final ClaimApplicationForfeitedComponentService claimApplicationForfeitedComponentService;
+        private final WrongRemitanceService wrongRemitanceService;
+
+        private final WrongRemitanceResponseMapper wrongRemitanceResponseMapper;
 
         @Override
         public ApiResponseDTO<ClaimApplicationVerificationResponseDto> patch(
@@ -122,6 +129,7 @@ public class ClaimApplicationVerificationServiceImpl
                                 .orElseThrow(() -> ClaimException.notFound("Status not found with id: " + 41L)));
                 claimApplicationRepository.save(claimApplication);
 
+                List<WrongRemitance> wrongRemitances = new ArrayList<>();
                 // ✅ FIX: Properly handle existing verification
                 ClaimApplicationVerification verification = verificationRepository
                                 .findByClaimApplication_ApplicationNumber(applicationNumber)
@@ -203,6 +211,10 @@ public class ClaimApplicationVerificationServiceImpl
                         claimApplicationForfeitedComponentService.saveForfeitedComponents(
                                         claimApplication,
                                         request.getCalculationSummary().getForFeitedComponents());
+                }
+
+                if (request.getWrongRemitanceRequestDTOs() != null) {
+                        wrongRemitances= wrongRemitanceService.create(claimApplication, request.getWrongRemitanceRequestDTOs());
                 }
 
                 ClaimApplicationVerification claimVerification = verificationRepository
@@ -293,6 +305,9 @@ public class ClaimApplicationVerificationServiceImpl
                                                 ? legalRecoveryResponseMapper.toResponse(
                                                                 claimApplication.getLegalRecoveryDetail())
                                                 : null);
+                response.setWrongRemitanceResponseDTOs(
+                        claimApplication.getWrongRemitances() != null ? wrongRemitanceResponseMapper.toResponseList(claimApplication.getWrongRemitances()) : null
+                );
                 return response;
         }
 

@@ -43,5 +43,4 @@ public class ClaimApplicationCalculationSummaryRequest {
     private List<ClaimApplicationRuleEvaluationRequestDto> ruleEvaluations;
     private List<ClaimApplicationForfeitedComponentRequestDto> forFeitedComponents;
     private ClaimApplicationDeductionRequestDto deductionDetail;
-    private List<WrongRemitanceRequestDTO> wrongRemitanceRequestDTOs;
 }

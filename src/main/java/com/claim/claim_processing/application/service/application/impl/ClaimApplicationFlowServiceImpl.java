@@ -287,9 +287,8 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                 List<ClaimApplicationBankDetail> bankDetailEntities = claimApplicationBankDetailService
                                 .getByApplicationNumber(claimApplication.getApplicationNumber());
 
-                if (request.getWrongRemitanceRequestDTOs() != null) {
-                        wrongRemitances = wrongRemitanceService.create(claimApplication, request.getWrongRemitanceRequestDTOs());
-                }
+                wrongRemitances = wrongRemitanceService.getByClaimApplication(claimApplication);
+                
                 GeneralClaimResponse response = generalClaimResponseBuilderMapper.toResponse(claimApplication);
                 response.setWorkflowDetails(workflowDetails);
 
@@ -562,6 +561,8 @@ public class ClaimApplicationFlowServiceImpl implements ClaimApplicationFlowServ
                                                 ? legalRecoveryResponseMapper.toResponse(
                                                                 claimApplication.getLegalRecoveryDetail())
                                                 : null);
+
+                response.setWrongRemitanceResponseDTOs(claimApplication.getWrongRemitances() != null ? wrongRemitanceResponseMapper.toResponseList(claimApplication.getWrongRemitances()) : null);
                 return response;
         }
 

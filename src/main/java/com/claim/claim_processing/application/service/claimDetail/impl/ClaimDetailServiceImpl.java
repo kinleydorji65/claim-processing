@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto;
+import com.claim.claim_processing.application.DTO.response.application.AccountingEventResponseDto.ClaimLedgerAdditionalDetailResponseDTO;
 import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationBankResponseDto;
 import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationDeductionItemResponseDto;
 import com.claim.claim_processing.application.DTO.response.application.ClaimApplicationDeductionResponseDto;
@@ -46,6 +47,7 @@ import com.claim.claim_processing.application.entity.claimDetail.ClaimDeductionD
 import com.claim.claim_processing.application.entity.claimDetail.ClaimDeductionItem;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimDetail;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimForfeitedComponent;
+import com.claim.claim_processing.application.entity.claimDetail.ClaimLedgerAdditionalDetail;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimLedgerEntry;
 import com.claim.claim_processing.application.entity.claimDetail.ClaimRuleEvaluation;
 import com.claim.claim_processing.application.entity.detail.BeneficiaryClaimantDetail;
@@ -64,6 +66,7 @@ import com.claim.claim_processing.application.repository.claimDetail.ClaimDeduct
 import com.claim.claim_processing.application.repository.claimDetail.ClaimDeductionItemRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimDetailRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimForfeitedComponentRepository;
+import com.claim.claim_processing.application.repository.claimDetail.ClaimLedgerAdditionalDetailRepository;
 import com.claim.claim_processing.application.repository.claimDetail.ClaimRuleEvaluationRepository;
 import com.claim.claim_processing.application.repository.detail.BeneficiarySettlementDetailRepository;
 import com.claim.claim_processing.application.repository.detail.LegalRecoveryDetailRepository;
@@ -688,10 +691,28 @@ private List<AccountingEventResponseDto.LedgerEntryResponseDto> mapLedgerEntries
                         .narration(entry.getNarration())
                         .createdBy(entry.getCreatedBy())
                         .createdAt(entry.getCreatedAt())
+                        .claimLedgerAdditional(mapClaimLedgerAddition(entry.getAdditionalDetail()))
                         .build();
             })
             .collect(Collectors.toList());
 }
+
+private ClaimLedgerAdditionalDetailResponseDTO mapClaimLedgerAddition(ClaimLedgerAdditionalDetail entity) {
+        if (entity == null) {
+            return null;
+        }
+        return ClaimLedgerAdditionalDetailResponseDTO
+            .builder()
+            .accountNumber(entity.getAccountNumber())
+            .amount(entity.getAmount())
+            .ledgerId(entity.getLedgerEntry().getId())
+            .drcr(entity.getDrcr())
+            .createdAt(entity.getCreatedAt())
+            .createdBy(entity.getCreatedBy())
+            .updatedBy(entity.getUpdatedBy())
+            .updatedAt(entity.getUpdatedAt())
+            .build();
+    }
 
 // ========== FORFEITED COMPONENTS MAPPING ==========
 
@@ -823,7 +844,7 @@ private List<ClaimDeductionItemResponseDto> mapDeductionItems(List<ClaimDeductio
     private List<WrongRemitance> saveWrongRemitanceDetail(GeneralClaimResponse requestResponse, ClaimDetail claimDetail) {
         // FIXED: Check if legalRecoveryDetails exists and has ID
         List<WrongRemitance> wrongRemitance  = new ArrayList<>();
-        if (requestResponse.getWrongRemitanceResponseDTOs() != null) {
+        if (requestResponse.getWrongRemitanceResponseDTOs() == null) {
             return null;
         }
         List<WrongRemitance> responses = requestResponse.getWrongRemitanceResponseDTOs()

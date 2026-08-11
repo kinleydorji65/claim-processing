@@ -53,6 +53,9 @@ public class ClaimLedgerEntry {
     @Column(name = "NARRATION")
     private String narration;
 
+    @OneToOne(mappedBy = "ledgerEntry", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private ClaimLedgerAdditionalDetail additionalDetail;
+
     @Column(name = "CREATED_BY")
     private String createdBy;
 
