@@ -11,8 +11,6 @@ import com.claim.claim_processing.application.entity.detail.WrongRemitance;
 
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -92,10 +90,70 @@ public class WrongRemitanceResponseMapper {
                 .createdAt(entity.getCreatedAt() != null ? entity.getCreatedAt().toLocalDateTime() : null)
                 .updatedBy(entity.getUpdatedBy())
                 .updatedAt(entity.getUpdatedAt() != null ? entity.getUpdatedAt().toLocalDateTime() : null)
+                // .recalculateMonths()
                 .wrongRemitanceForfeiteds(mapForfeitedMap(entity.getForfeitedComponents()))
                 .components(mapComponents(entity.getCalculationComponents()))
                 .build();
     }
+
+//     public List<WrongRemittanceRecalculatedMonthResponseDTO> mapRecalculateMonths(
+//             List<WrongRemittanceRecalculatedMonth> requests) {
+
+//         if (requests == null || requests.isEmpty()) {
+//             return new ArrayList<>();
+//         }
+
+//         return requests.stream()
+//                 .map(entity -> WrongRemittanceRecalculatedMonthResponseDTO.builder()
+//                         .id(entity.getId())
+//                         .wrongRemitanceId(entity.getWrongRemitance() != null ? 
+//                                 entity.getWrongRemitance().getId() : null)
+//                         .month(entity.getMonth())
+//                         .monthName(entity.getMonthName())
+//                         // .invoiceDate(entity.getInvoiceDate() != null ? 
+//                         //         entity.getInvoiceDate().toLocalDateTime() : null)
+//                         .daysForInterest(entity.getDaysForInterest())
+//                         .interestRate(entity.getInterestRate())
+//                         // PF Components
+//                         .pfMc(entity.getPfMc())
+//                         .pfEc(entity.getPfEc())
+//                         .pfImc(entity.getPfImc())
+//                         .pfIec(entity.getPfIec())
+//                         // Pension Components
+//                         .pMc(entity.getPMc())
+//                         .pEc(entity.getPEc())
+//                         .pImc(entity.getPImc())
+//                         .pIec(entity.getPIec())
+//                         // Gratuity Components
+//                         .gc(entity.getGc())
+//                         .gic(entity.getGic())
+//                         // Voluntary Components
+//                         .vc(entity.getVc())
+//                         .vic(entity.getVic())
+//                         // Interest on Voluntary & Gratuity
+//                         .ivc(entity.getIvc())
+//                         .igc(entity.getIgc())
+//                         // Totals
+//                         .totalContribution(entity.getTotalContribution())
+//                         .totalInterest(entity.getTotalInterest())
+//                         .totalAmount(entity.getTotalAmount())
+//                         .status(entity.getStatus())
+//                         // Audit
+//                         .createdAt(entity.getCreatedAt() != null ? 
+//                                 entity.getCreatedAt().toLocalDateTime() : null)
+//                         .createdBy(entity.getCreatedBy())
+//                         .updatedAt(entity.getUpdatedAt() != null ? 
+//                                 entity.getUpdatedAt().toLocalDateTime() : null)
+//                         .updatedBy(entity.getUpdatedBy())
+//                         .build()
+//                 )
+//                 .sorted((a, b) -> {
+//                     if (a.getMonth() == null || b.getMonth() == null) return 0;
+//                     return a.getMonth().compareTo(b.getMonth());
+//                 })
+//                 .collect(Collectors.toList());
+//     }
+// }
 
     public List<WrongRemitanceResponseDTO> toResponseList(List<WrongRemitance> entities) {
         if (entities == null || entities.isEmpty()) {
@@ -136,7 +194,7 @@ public class WrongRemitanceResponseMapper {
     private List<WrongRemittanceCalculationComponentResponseDTO> mapComponents(
             List<WrongRemittanceCalculationComponent> requests) {
 
-        if (requests != null) {
+        if (requests == null) {
             return null;
         }
         List<WrongRemittanceCalculationComponentResponseDTO> responses = requests

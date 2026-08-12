@@ -48,9 +48,14 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
     private final ArrConfigurationRepository arrRepo;
     private final MemberService memberService;
 
+    // ========== TRANSITION DATE CONFIGURATION ==========
+    // Transition date: June 30, 2022
+    // This is the date when the accounting system changed from financial year (Jul-Jun) 
+    // to calendar year (Jan-Dec)
+    private static final LocalDate TRANSITION_DATE = LocalDate.of(2022, 6, 30);
+
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final RoundingMode RM = RoundingMode.HALF_UP;
-    private static final int TRANSITION_YEAR = 2022;
 
     private static final Map<String, Integer> MONTH_NAME_TO_NUMBER = new HashMap<>();
     static {
@@ -63,9 +68,26 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
         MONTH_NAME_TO_NUMBER.put("JULY", 7);
         MONTH_NAME_TO_NUMBER.put("AUGUST", 8);
         MONTH_NAME_TO_NUMBER.put("SEPTEMBER", 9);
-        MONTH_NAME_TO_NUMBER.put("OCTOBER", 10);
+        MONTH_NAME_TO_NUMBER.put("OCTOBER", 11);
         MONTH_NAME_TO_NUMBER.put("NOVEMBER", 11);
         MONTH_NAME_TO_NUMBER.put("DECEMBER", 12);
+    }
+
+    // ========== GET TRANSITION DATE ==========
+    private LocalDate getTransitionDate() {
+        return TRANSITION_DATE;
+    }
+
+    private int getTransitionYear() {
+        return TRANSITION_DATE.getYear();
+    }
+
+    private boolean isBeforeTransition(LocalDate date) {
+        return date.isBefore(TRANSITION_DATE);
+    }
+
+    private boolean isOnOrAfterTransition(LocalDate date) {
+        return !date.isBefore(TRANSITION_DATE);
     }
 
     // ========== GET CONTRIBUTION DETAILS ==========
@@ -179,6 +201,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
         log.info("=== START WRONG REMITANCE RECALCULATION ===");
         log.info("NPPF: {}, Target Year: {}, Selected IDs: {}, withInterest: {}",
                 nppfNumber, targetYear, selectedIds, withInterest);
+        log.info("Transition Date: {}", TRANSITION_DATE);
         log.info("===================================================");
 
         try {
@@ -269,9 +292,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     .pImc(BigDecimal.ZERO)
                     .pIec(BigDecimal.ZERO)
                     .gc(BigDecimal.ZERO)
-                    .gic(BigDecimal.ZERO)
                     .vc(BigDecimal.ZERO)
-                    .vic(BigDecimal.ZERO)
                     .ivc(BigDecimal.ZERO)
                     .igc(BigDecimal.ZERO)
                     .build();
@@ -333,9 +354,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                             .pImc(openingBalances.getPImc())
                             .pIec(openingBalances.getPIec())
                             .gc(openingBalances.getGc())
-                            .gic(openingBalances.getGic())
                             .vc(openingBalances.getVc())
-                            .vic(openingBalances.getVic())
                             .ivc(openingBalances.getIvc())
                             .igc(openingBalances.getIgc())
                             .build();
@@ -367,8 +386,6 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                             .pfIec(BigDecimal.ZERO)
                             .pImc(BigDecimal.ZERO)
                             .pIec(BigDecimal.ZERO)
-                            .gic(BigDecimal.ZERO)
-                            .vic(BigDecimal.ZERO)
                             .ivc(BigDecimal.ZERO)
                             .igc(BigDecimal.ZERO)
                             .build();
@@ -409,9 +426,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                             .pImc(BigDecimal.ZERO)
                             .pIec(BigDecimal.ZERO)
                             .gc(BigDecimal.ZERO)
-                            .gic(BigDecimal.ZERO)
                             .vc(BigDecimal.ZERO)
-                            .vic(BigDecimal.ZERO)
                             .ivc(BigDecimal.ZERO)
                             .igc(BigDecimal.ZERO)
                             .build();
@@ -457,8 +472,8 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                             monthContribution.setPfIec(interestOnContributions.getPfIec());
                             monthContribution.setPImc(interestOnContributions.getPImc());
                             monthContribution.setPIec(interestOnContributions.getPIec());
-                            monthContribution.setGic(interestOnContributions.getGic());
-                            monthContribution.setVic(interestOnContributions.getVic());
+                            monthContribution.setIgc(interestOnContributions.getIgc());
+                            monthContribution.setIvc(interestOnContributions.getIvc());
                             
                             status = "CONTRIBUTION_WITH_INTEREST";
                             
@@ -506,9 +521,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                                 .pImc(monthContribution.getPImc())
                                 .pIec(monthContribution.getPIec())
                                 .gc(monthContribution.getGc())
-                                .gic(monthContribution.getGic())
                                 .vc(monthContribution.getVc())
-                                .vic(monthContribution.getVic())
                                 .ivc(monthContribution.getIvc())
                                 .igc(monthContribution.getIgc())
                                 .totalContribution(monthTotalContribution)
@@ -553,10 +566,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                         .pImc(closingBalances.getPImc())
                         .pIec(closingBalances.getPIec())
                         .gc(closingBalances.getGc())
-                        .gic(closingBalances.getGic())
                         .vc(closingBalances.getVc())
-                        .vic(closingBalances.getVic())
-                        .ivc(closingBalances.getIvc())
                         .igc(closingBalances.getIgc())
                         .build();
             }
@@ -572,9 +582,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     .pImc(closingBalances.getPImc())
                     .pIec(closingBalances.getPIec())
                     .gc(closingBalances.getGc())
-                    .gic(closingBalances.getGic())
                     .vc(closingBalances.getVc())
-                    .vic(closingBalances.getVic())
                     .ivc(closingBalances.getIvc())
                     .igc(closingBalances.getIgc())
                     .build();
@@ -602,36 +610,30 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                         .closingBalances(closingBalanceDto)
                         .build();
 
-            String firstYear = accountingYears.isEmpty() ? "N/A" : accountingYears.get(0);
-            String lastYear = accountingYears.isEmpty() ? "N/A" : accountingYears.get(accountingYears.size() - 1);
             String currentDateStr = LocalDate.now().toString();
+            int actualStartYear = startDate.getYear();
+
+            // ========== BUILD DETAILED MESSAGE ==========
+            StringBuilder messageBuilder = new StringBuilder();
             
-            String message;
+            // 1. Selected months info
+            messageBuilder.append(String.format(
+                "Recalculation completed for %d selected month(s) in year %s. ",
+                recalculatedMonths.size(), targetYear
+            ));
+            
+            // 2. Interest info
             if (withInterest) {
-                message = String.format(
-                        "Recalculation completed for %d selected months in year %s. " +
-                        "Opening balance included with interest (IOB). " +
-                        "Interest calculated for selected months up to current date (%s). " +
-                        "Processed %d years from %s to %s",
-                        recalculatedMonths.size(), 
-                        targetYear, 
-                        currentDateStr,
-                        accountingYears.size(),
-                        firstYear,
-                        lastYear
-                );
+                messageBuilder.append("Opening balance included with interest (IOB). ");
+                messageBuilder.append(String.format(
+                    "Interest calculated for selected months up to current date (%s). ",
+                    currentDateStr
+                ));
             } else {
-                message = String.format(
-                        "Recalculation completed for %d selected months in year %s. " +
-                        "Opening balance included without interest (withInterest=false). " +
-                        "Processed %d years from %s to %s",
-                        recalculatedMonths.size(), 
-                        targetYear,
-                        accountingYears.size(),
-                        firstYear,
-                        lastYear
-                );
+                messageBuilder.append("Opening balance included without interest (withInterest=false). ");
             }
+
+            String message = messageBuilder.toString();
 
             WrongRemitanceRecalculationResponse response = WrongRemitanceRecalculationResponse.builder()
                     .nppfNumber(nppfNumber)
@@ -657,8 +659,6 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
             throw ClaimException.internalError("Error recalculating: " + e.getMessage());
         }
     }
-
-    // ========== HELPER METHODS ==========
 
     private Map<Long, ContributionHeaderInfo> getHeaderInfoForContributions(
             List<ContributionBifurcationDetail> contributions) {
@@ -784,8 +784,6 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     .pfIec(BigDecimal.ZERO)
                     .pImc(BigDecimal.ZERO)
                     .pIec(BigDecimal.ZERO)
-                    .gic(BigDecimal.ZERO)
-                    .vic(BigDecimal.ZERO)
                     .ivc(BigDecimal.ZERO)
                     .igc(BigDecimal.ZERO)
                     .build();
@@ -812,16 +810,14 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                         .multiply(rateFactor)
                         .multiply(daysFactor)
                         .setScale(2, RM))
-                .gic(n(balances.getGc())
+                .ivc(n(balances.getGc())
                         .multiply(rateFactor)
                         .multiply(daysFactor)
                         .setScale(2, RM))
-                .vic(n(balances.getVc())
+                .igc(n(balances.getVc())
                         .multiply(rateFactor)
                         .multiply(daysFactor)
                         .setScale(2, RM))
-                .ivc(BigDecimal.ZERO)
-                .igc(BigDecimal.ZERO)
                 .build();
 
         log.debug("Interest calculated - PF_IMC: {}, PF_IEC: {}, P_IMC: {}, P_IEC: {}",
@@ -841,9 +837,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                 .pImc(n(a.getPImc()).add(n(b.getPImc())))
                 .pIec(n(a.getPIec()).add(n(b.getPIec())))
                 .gc(n(a.getGc()).add(n(b.getGc())))
-                .gic(n(a.getGic()).add(n(b.getGic())))
                 .vc(n(a.getVc()).add(n(b.getVc())))
-                .vic(n(a.getVic()).add(n(b.getVic())))
                 .ivc(n(a.getIvc()).add(n(b.getIvc())))
                 .igc(n(a.getIgc()).add(n(b.getIgc())))
                 .build();
@@ -864,9 +858,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
         return n(balances.getPfImc())
                 .add(n(balances.getPfIec()))
                 .add(n(balances.getPImc()))
-                .add(n(balances.getPIec()))
-                .add(n(balances.getGic()))
-                .add(n(balances.getVic()));
+                .add(n(balances.getPIec()));
     }
 
     private LocalDate getStartDate(MemberDetailResponseDto memberDetail) {
@@ -885,11 +877,15 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
         int targetYearInt = Integer.parseInt(targetYear);
 
         for (int year = startYear; year <= targetYearInt; year++) {
-            if (year == TRANSITION_YEAR) {
+            // Check if this is the transition year (2022)
+            if (year == TRANSITION_DATE.getYear()) {
+                // For transition year, use single year format
                 years.add(String.valueOf(year));
-            } else if (year < TRANSITION_YEAR) {
+            } else if (year < TRANSITION_DATE.getYear()) {
+                // Before transition: financial year format (Jul-Jun)
                 years.add(year + "-" + (year + 1));
             } else {
+                // After transition: calendar year format (Jan-Dec)
                 years.add(String.valueOf(year));
             }
         }
@@ -900,7 +896,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
         try {
             if (!accountingYear.contains("-")) {
                 int year = Integer.parseInt(accountingYear);
-                if (year == TRANSITION_YEAR) {
+                if (year == TRANSITION_DATE.getYear()) {
                     return YearType.TRANSITION_YEAR;
                 }
                 return YearType.CALENDAR_YEAR;
@@ -924,7 +920,8 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                 case ACCOUNTING_YEAR:
                     return LocalDate.of(endYear, 6, 30);
                 case TRANSITION_YEAR:
-                    return LocalDate.of(startYear, 12, 31);
+                    // For transition year, end date is June 30, 2022
+                    return TRANSITION_DATE;
                 case CALENDAR_YEAR:
                 default:
                     return LocalDate.of(startYear, 12, 31);
@@ -946,20 +943,24 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
 
             switch (yearType) {
                 case ACCOUNTING_YEAR:
+                    // July to December of start year
                     for (int month = 7; month <= 12; month++) {
                         months.add(YearMonth.of(startYear, month));
                     }
+                    // January to June of end year
                     for (int month = 1; month <= 6; month++) {
                         months.add(YearMonth.of(endYear, month));
                     }
                     break;
                 case TRANSITION_YEAR:
-                    for (int month = 7; month <= 12; month++) {
+                    // For transition year (2022), only include January to June
+                    for (int month = 1; month <= 6; month++) {
                         months.add(YearMonth.of(startYear, month));
                     }
                     break;
                 case CALENDAR_YEAR:
                 default:
+                    // January to December
                     for (int month = 1; month <= 12; month++) {
                         months.add(YearMonth.of(startYear, month));
                     }
@@ -986,8 +987,9 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
                     LocalDate yearEnd = LocalDate.of(endYear, 6, 30);
                     return (int) ChronoUnit.DAYS.between(yearStart, yearEnd) + 1;
                 case TRANSITION_YEAR:
-                    LocalDate transStart = LocalDate.of(startYear, 7, 1);
-                    LocalDate transEnd = LocalDate.of(startYear, 12, 31);
+                    // For transition year, from Jan 1 to June 30
+                    LocalDate transStart = LocalDate.of(startYear, 1, 1);
+                    LocalDate transEnd = TRANSITION_DATE;
                     return (int) ChronoUnit.DAYS.between(transStart, transEnd) + 1;
                 case CALENDAR_YEAR:
                 default:
@@ -1120,9 +1122,7 @@ public class WrongRemitanceContributionServiceImpl implements WrongRemitanceCont
         private BigDecimal pImc;
         private BigDecimal pIec;
         private BigDecimal gc;
-        private BigDecimal gic;
         private BigDecimal vc;
-        private BigDecimal vic;
         private BigDecimal ivc;
         private BigDecimal igc;
     }

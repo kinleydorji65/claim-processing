@@ -73,9 +73,7 @@ public class WrongRemitanceRecalculationResponse {
         
         // Other Components
         private BigDecimal gc;
-        private BigDecimal gic;
         private BigDecimal vc;
-        private BigDecimal vic;
         private BigDecimal ivc;
         private BigDecimal igc;
     }
@@ -105,9 +103,7 @@ public class WrongRemitanceRecalculationResponse {
         
         // Other Components
         private BigDecimal gc;
-        private BigDecimal gic;
         private BigDecimal vc;
-        private BigDecimal vic;
         private BigDecimal ivc;
         private BigDecimal igc;
         
@@ -137,9 +133,7 @@ public class WrongRemitanceRecalculationResponse {
         
         // Other Components
         private BigDecimal gc;
-        private BigDecimal gic;
         private BigDecimal vc;
-        private BigDecimal vic;
         private BigDecimal ivc;
         private BigDecimal igc;
     }

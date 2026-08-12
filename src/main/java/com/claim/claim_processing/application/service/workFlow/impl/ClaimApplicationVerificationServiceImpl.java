@@ -1,6 +1,7 @@
 package com.claim.claim_processing.application.service.workFlow.impl;
 
 import com.claim.claim_processing.application.DTO.request.application.ClaimApplicationDeductionRequestDto;
+import com.claim.claim_processing.application.DTO.request.detail.WrongRemitanceRequestDTO;
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationVerificationRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.ClaimApplicationWorkflowRequestDto;
 import com.claim.claim_processing.application.DTO.request.workFlow.GeneralClaimApplicationVerifierRequestDTO;
@@ -213,9 +214,45 @@ public class ClaimApplicationVerificationServiceImpl
                                         request.getCalculationSummary().getForFeitedComponents());
                 }
 
-                if (request.getWrongRemitanceRequestDTOs() != null) {
-                        wrongRemitances= wrongRemitanceService.create(claimApplication, request.getWrongRemitanceRequestDTOs());
+                if (request.getWrongRemitanceRequestDTOs() != null
+        && !request.getWrongRemitanceRequestDTOs().isEmpty()) {
+    List<WrongRemitanceRequestDTO> dtos = request.getWrongRemitanceRequestDTOs();
+
+    // Split into existing and new items
+    List<WrongRemitanceRequestDTO> existingItems = dtos.stream()
+            .filter(dto -> {
+                if (dto.getId() == null || dto.getId() <= 0) {
+                    return false;
                 }
+                try {
+                    return wrongRemitanceService.getById(dto.getId()) != null;
+                } catch (ClaimException e) {
+                    return false;
+                }
+            })
+            .toList();
+
+    List<WrongRemitanceRequestDTO> newItems = dtos.stream()
+            .filter(dto -> {
+                if (dto.getId() == null || dto.getId() <= 0) {
+                    return true;
+                }
+                try {
+                    return wrongRemitanceService.getById(dto.getId()) == null;
+                } catch (ClaimException e) {
+                    return true;
+                }
+            })
+            .toList();
+
+    if (!existingItems.isEmpty()) {
+        wrongRemitances.addAll(wrongRemitanceService.update(claimApplication, existingItems));
+    }
+
+    if (!newItems.isEmpty()) {
+        wrongRemitances.addAll(wrongRemitanceService.create(claimApplication, newItems));
+    }
+}
 
                 ClaimApplicationVerification claimVerification = verificationRepository
                                 .findByClaimApplication_ApplicationNumber(claimApplication.getApplicationNumber())
@@ -306,8 +343,10 @@ public class ClaimApplicationVerificationServiceImpl
                                                                 claimApplication.getLegalRecoveryDetail())
                                                 : null);
                 response.setWrongRemitanceResponseDTOs(
-                        claimApplication.getWrongRemitances() != null ? wrongRemitanceResponseMapper.toResponseList(claimApplication.getWrongRemitances()) : null
-                );
+                                claimApplication.getWrongRemitances() != null
+                                                ? wrongRemitanceResponseMapper
+                                                                .toResponseList(claimApplication.getWrongRemitances())
+                                                : null);
                 return response;
         }
 
