@@ -13,6 +13,7 @@ import com.claim.claim_processing.application.DTO.response.workFlow.ClaimApplica
 import com.claim.claim_processing.application.entity.application.ClaimApplication;
 import com.claim.claim_processing.application.entity.application.ClaimApplicationBankDetail;
 import com.claim.claim_processing.application.entity.calculation.ClaimApplicationCalculationComponent;
+import com.claim.claim_processing.application.entity.detail.BeneficiarySettlementDetail;
 import com.claim.claim_processing.application.entity.detail.NormalClaimDetail;
 import com.claim.claim_processing.application.entity.detail.WrongRemitance;
 import com.claim.claim_processing.application.entity.workFlow.ClaimApplicationApproval;
@@ -51,6 +52,7 @@ import com.claim.claim_processing.common.entities.common.activityEnum.ActivityEn
 import com.claim.claim_processing.integration.client.PensionServiceClient;
 import com.claim.claim_processing.integration.dto.PensionAutoTriggerRequestDto;
 import com.claim.claim_processing.integration.dto.PensionAutoTriggerResponseDto;
+import com.claim.claim_processing.integration.dto.PisLifeEventTriggerRequestDto;
 import com.claim.claim_processing.rule.pension.service.PensionService;
 
 import lombok.RequiredArgsConstructor;
@@ -329,6 +331,57 @@ private void triggerPensionAutoInitiation(ClaimApplication claimApplication, Str
             log.info("Pension already auto-initiated for claim {} (ref {}), skipping",
                     claimApplication.getApplicationNumber(),
                     claimApplication.getPensionApplicationRef());
+            return;
+        }
+
+        // Beneficiary/death claim -> auto-trigger the SURVIVOR pension stand-in application via
+        // pis-life-event, instead of the normal-claim path below (which only handles
+        // RETIREMENT/EARLY_RETIREMENT/MEDICAL_GROUND cessation types via NormalClaimDetail).
+        boolean isBeneficiaryClaim = claimApplication.getClaimType() != null
+                        && "BENEFICIARY_SETTLEMENT".equalsIgnoreCase(claimApplication.getClaimType().getCode());
+
+        if (isBeneficiaryClaim) {
+            boolean isTierOneForBeneficiary = claimApplication.getSchemeType() != null
+                            && "T1".equalsIgnoreCase(claimApplication.getSchemeType().getCode());
+
+            if (!isTierOneForBeneficiary) {
+                log.info("Beneficiary settlement claim {} is not Tier 1 — no pension auto-trigger",
+                                claimApplication.getApplicationNumber());
+                return;
+            }
+
+            BeneficiarySettlementDetail bsd = claimApplication.getBeneficiarySettlementDetail();
+            if (bsd == null || bsd.getDateOfDeath() == null) {
+                log.error("BENEFICIARY_SETTLEMENT claim {} has no BeneficiarySettlementDetail / date of death",
+                                claimApplication.getApplicationNumber());
+                claimApplication.setPensionTriggerStatus("FAILED");
+                claimApplicationRepository.saveAndFlush(claimApplication);
+                return;
+            }
+
+            PisLifeEventTriggerRequestDto pisRequest = PisLifeEventTriggerRequestDto.builder()
+                            .deceasedMemberCode(claimApplication.getMemberCode())
+                            .agencyCode(claimApplication.getAgencyCode())
+                            .dateOfDeath(bsd.getDateOfDeath())
+                            .pisEventReference("CLAIM-" + claimApplication.getApplicationNumber())
+                            .remarks("Auto-triggered from claim-processing beneficiary settlement approval by "
+                                            + approvedBy + ", claim " + claimApplication.getApplicationNumber())
+                            .build();
+
+            PensionAutoTriggerResponseDto pisResponse = pensionServiceClient.triggerPisLifeEvent(pisRequest);
+
+            if (pisResponse != null && pisResponse.getApplicationNo() != null) {
+                claimApplication.setPensionApplicationRef(pisResponse.getApplicationNo());
+                claimApplication.setPensionTriggerStatus("SENT");
+                claimApplicationRepository.saveAndFlush(claimApplication);
+                log.info("✅ Survivor pension application {} auto-initiated for beneficiary claim {}",
+                                pisResponse.getApplicationNo(), claimApplication.getApplicationNumber());
+            } else {
+                claimApplication.setPensionTriggerStatus("FAILED");
+                claimApplicationRepository.saveAndFlush(claimApplication);
+                log.error("❌ Pension service returned null/empty response for beneficiary claim {}",
+                                claimApplication.getApplicationNumber());
+            }
             return;
         }
 
